@@ -1,0 +1,177 @@
+"""Install the opt-in runtime for a local Windows build, and bind one mod to one room."""
+import base64
+import ctypes
+import json
+import hashlib
+import mmap
+import os
+from pathlib import Path
+import shutil
+import sys
+import uuid
+
+from .catalog import CHESTS, CHECK_FLAGS, SHOP_CHECKS, LEGACY_GAME, ITEM_IDS, LOCATION_IDS, PROTOCOL
+from .medallions import REST
+from .mod_codec import Codec
+from .save_bridge import atomic, write_json
+
+GAME_DATA = "GameData/GameDataList.Product.110.byml.zs"
+MARKER = "Archipelago/room-v1.txt"
+BUILD_MARK = b"OOTRR-AP native ABI 1"
+RT_FILES = ("ootrr_archipelago.inc", "ootrr_ap_items.inc", "ootrr_ap_digest.h")
+
+
+def cursor_hash(token):
+    from oot_rando.patching.soul_adapter import murmur3
+    return murmur3("Archipelago.ReceivedIndex." + token)
+
+
+def add_cursor(raw, token, baseline):
+    from .cursor_resource import append_saved_index
+    return append_saved_index(raw,cursor_hash(token),baseline)
+
+
+def bind_romfs(source, mod, data, baseline):
+    from oot_rando.game.resource_allocations import grow_resources
+    codec = Codec((source / "Pack/ZsDic.pack.zs").read_bytes())
+    def read(p):
+        f = mod / p
+        return (f if f.is_file() else source / p).read_bytes()
+    def put(p,b):
+        f=mod/p
+        f.parent.mkdir(parents=True,exist_ok=True)
+        f.write_bytes(b)
+    frame=read(GAME_DATA)
+    before=codec.decode(frame)
+    after=add_cursor(before,data["token"],baseline)
+    if data.get("kokiri_shop_checks"):
+        from .cursor_resource import append_saved_bool
+        for name in sorted(set(data["checks"]).intersection(SHOP_CHECKS)):
+            after=append_saved_bool(after,SHOP_CHECKS[name]["flag"])
+    table=read(REST)
+    updated,_=grow_resources(codec.decode(table),{GAME_DATA:max(len(after)-len(before),0)})
+    put(REST,codec.encode(updated,table))
+    put(GAME_DATA,codec.encode(after,frame))
+    put(MARKER,(data["token"]+"\n").encode("ascii"))
+
+
+def patch_source(original):
+    text=original.decode("utf-8")
+    nl="\r\n" if "\r\n" in text else "\n"
+    text=text.replace("\r\n","\n")
+    anchors=[
+        ("static void oot_update_player_cheats(Ctx *c, uint64_t actor, uint64_t components) {",
+         '#include "ootrr_archipelago.inc"\n\nstatic void oot_update_player_cheats(Ctx *c, uint64_t actor, uint64_t components) {'),
+        ("    oot_inventory_refresh(c, now);","    oot_inventory_refresh(c, now);\n    if (ap_player16(c, actor, components, now)) ap_tick16(c, now);"),
+        ("    hos_mods_init(image);","    hos_mods_init(image);\n#ifdef _WIN32\n    if (!ap_boot16()) {\n        hos_log(\"OOTRR-AP native ABI 1: activation impossible. Voir archipelago-jeu.log ou relancer la configuration.\");\n        MessageBoxW(NULL,L\"Le mod Archipelago est actif, mais sa salle ou son module est indisponible. Ferme l’ancien client et relance la configuration du mod.\", L\"Archipelago\", MB_OK | MB_ICONERROR);\n        return 3;\n    }\n#endif\n")]
+    prior=[new in text for _,new in anchors]
+    if all(prior) and text.count("ap_tick16(")==1 and text.count("ap_player16(")==1 and text.count("ap_boot16(")==1:
+        return original
+    required=("oot_gd_int(", "oot_gd_set(", "oot_flag_state(", "oot_item_give(", "oot_item_get(", "oot_gamedata_bool(", "oot_capacity(", "oot_singleton(", "oot_pouch_count(", "hos_oot_is_player(", "hos_user_dir")
+    # Upgrade the exact installed 0.1.6 hook without duplicating the bootstrap.
+    previous="    oot_inventory_refresh(c, now);\n    ap_tick16(c, now);"
+    if prior[0] and prior[2] and text.count(previous)==1 and text.count("ap_tick16(")==1 and text.count("ap_boot16(")==1 and all(name in text for name in required) and "ap_player16(" not in text:
+        return text.replace(previous,anchors[1][1],1).replace("\n",nl).encode("utf-8")
+    if any(prior) or "ap_boot16(" in text or not all(name in text for name in required) or any(text.count(old)!=1 for old,_ in anchors):
+        raise ValueError("Les sources de ce port n’exposent pas les fonctions attendues. Le port n’a pas été modifié.")
+    for old,new in anchors:
+        text=text.replace(old,new,1)
+    return text.replace("\n",nl).encode("utf-8")
+
+
+def protect_password(value):
+    if not value:
+        return ""
+    from ctypes import wintypes as w
+    class Blob(ctypes.Structure): _fields_=[("size",w.DWORD),("data",ctypes.c_void_p)]
+    raw=value.encode("utf-8")
+    buf=ctypes.create_string_buffer(raw)
+    inp=Blob(len(raw),ctypes.cast(buf,ctypes.c_void_p))
+    out=Blob()
+    protect=ctypes.WinDLL("crypt32",use_last_error=True).CryptProtectData
+    protect.argtypes=[ctypes.POINTER(Blob),w.LPCWSTR,ctypes.c_void_p,ctypes.c_void_p,ctypes.c_void_p,w.DWORD,ctypes.POINTER(Blob)]
+    if not protect(ctypes.byref(inp),"OOTRR Archipelago",None,None,None,1,ctypes.byref(out)):
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        return base64.b64encode(ctypes.string_at(out.data,out.size)).decode()
+    finally:
+        free=ctypes.WinDLL("kernel32").LocalFree
+        free.argtypes=[ctypes.c_void_p]
+        free(out.data)
+
+
+def install_tools(base, chooser, configured=None):
+    bundle=Path(sys.argv[0]).resolve().parent/"native"
+    guess=Path(configured) if configured else base.parent/"Programs/Triforce/tools"
+    if not (guess/"host/hos_main.c").is_file():
+        guess=chooser("Choisis le dossier tools de Triforce qui contient host et nx2",folder=True)
+    host=guess/"host"
+    source=host/"hos_main.c"
+    orig=source.read_bytes()
+    new=patch_source(orig)
+    if not (guess/"nx2/build.py").is_file() or "HOS_SHARE_NOTICE" not in (guess/"gpu/vk/vk_api.h").read_text(encoding="utf-8"):
+        raise ValueError("Outils Triforce incompatibles avec le client natif.")
+    helpers={n:(bundle/n).read_bytes() for n in RT_FILES}
+    digest=hashlib.sha256((bundle/"archipelago.dll").read_bytes()).digest()
+    expected=("static const unsigned char ap_dll_sha16[32] = {"+",".join(map(str,digest))+"};\n").encode()
+    if helpers["ootrr_ap_digest.h"]!=expected:
+        raise ValueError("Le module natif du ZIP est incomplet ou ne correspond pas à cette version.")
+    if new!=orig:
+        backup=source.with_name("hos_main.before-archipelago-"+hashlib.sha256(orig).hexdigest()[:12]+".bak")
+        if not backup.exists():
+            shutil.copy2(source,backup)
+    for n,raw in helpers.items():
+        path=host/n
+        if not path.exists() or path.read_bytes()!=raw:
+            atomic(path,raw)
+    if new!=orig:
+        atomic(source,new)
+    return guess
+
+
+def save_session(root, config, data, roster):
+    old=root/"native-session.json"
+    previous=json.loads(old.read_bytes()) if old.is_file() else {}
+    checks={}
+    for n in data["checks"]:
+        row=roster.get(n,("",""))
+        item,owner=(row["item"],row["player"]) if isinstance(row,dict) else row
+        checks[LOCATION_IDS[n]]=dict(Name=n,Flags=CHECK_FLAGS[n],Item=item,Owner=owner)
+    doc=dict(Room=data["room"],Slot=data["slot"],Game=data.get("game",LEGACY_GAME),Token=data["token"],Player=data["player"],Protocol=PROTOCOL,
+             RewardMode=data.get("reward_mode","legacy_gear"),
+             LocalItems=bool(data.get("local_items",False)),
+             Server=config["server"],ProtectedPassword=config["protected"],UUID=previous.get("UUID") or str(uuid.uuid4()),
+             CursorHash=cursor_hash(data["token"]),Baseline=config["baseline"],DeathLink=bool(data.get("death_link",False)),
+             Items={i:n for n,i in ITEM_IDS.items()},Checks=checks)
+    write_json(old,doc)
+
+
+def runtime_cache_name(baseline):
+    from importlib import resources
+    bundle=Path(sys.argv[0]).resolve().parent/"native/archipelago.dll"
+    digest=hashlib.sha256(bundle.read_bytes())
+    for source in sorted(resources.files(__package__).iterdir(), key=lambda path:path.name):
+        if source.is_file() and source.name.endswith((".py", ".cjs", ".wasm")):
+            digest.update(source.name.encode("utf-8")); digest.update(source.read_bytes())
+    return "jeu-016-mod-"+str(baseline)+"-"+digest.hexdigest()[:16]
+
+
+def compiled_game(romfs, tools=None):
+    bundle=Path(sys.argv[0]).resolve().parent/"native/archipelago.dll"
+    try:
+        module=bundle.read_bytes()
+    except OSError:
+        return False
+    if not module:
+        return False
+    expected=hashlib.sha256(module).digest()
+    helpers = [Path(tools)/"host"/name for name in RT_FILES] if tools else []
+    if any(not helper.is_file() for helper in helpers):
+        return False
+    for path in (romfs.parent/"Triforce.exe",romfs.parent/"bin/Triforce.exe"):
+        if path.is_file() and path.stat().st_size:
+            with path.open("rb") as f,mmap.mmap(f.fileno(),0,access=mmap.ACCESS_READ) as binary:
+                if (binary.find(BUILD_MARK)>=0 and binary.find(expected)>=0
+                        and all(helper.stat().st_mtime_ns<=path.stat().st_mtime_ns for helper in helpers)):
+                    return True
+    return False

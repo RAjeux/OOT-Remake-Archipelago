@@ -1,0 +1,899 @@
+{
+  "format": 1,
+  "game": "oot-remake:d927c9e173b3c1cf",
+  "files": [
+    "Banc/BottomOfTheWell/BottomOfTheWell_Dynamic.bcett.byml.zs",
+    "Banc/BottomOfTheWell/BottomOfTheWell_Static.bcett.byml.zs",
+    "Banc/DeathMountainCrater/DeathMountainCrater_Adult_Dynamic.bcett.byml.zs",
+    "Banc/DeathMountainCrater/DeathMountainCrater_Child_Dynamic.bcett.byml.zs",
+    "Banc/DeathMountainCrater/DeathMountainCrater_Child_Static.bcett.byml.zs",
+    "Banc/DodongoCavern/DodongoCavern_Dynamic.bcett.byml.zs",
+    "Banc/DodongoCavern/DodongoCavern_Static.bcett.byml.zs",
+    "Banc/FireTemple/FireTemple_Dynamic.bcett.byml.zs",
+    "Banc/FireTemple/FireTemple_Static.bcett.byml.zs",
+    "Banc/ForestTemple/ForestTemple_Dynamic.bcett.byml.zs",
+    "Banc/ForestTemple/ForestTemple_Static.bcett.byml.zs",
+    "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs",
+    "Banc/GerudoFortress/GerudoFortress_Adult_Static.bcett.byml.zs",
+    "Banc/GerudoValley/GerudoValley_Adult_Dynamic.bcett.byml.zs",
+    "Banc/HyruleCastle/HyruleCastle_Static.bcett.byml.zs",
+    "Banc/HyruleField/HyruleField_Adult_Dynamic.bcett.byml.zs",
+    "Banc/HyruleField/HyruleField_Adult_Static.bcett.byml.zs",
+    "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs",
+    "Banc/IceCavern/IceCavern_Dynamic.bcett.byml.zs",
+    "Banc/IceCavern/IceCavern_Static.bcett.byml.zs",
+    "Banc/InsideGanonCastle/InsideGanonCastle_Static.bcett.byml.zs",
+    "Banc/InsideJabuJabuBelly/InsideJabuJabuBelly_Static.bcett.byml.zs",
+    "Banc/KakarikoVillage/KakarikoVillage_Adult_Alternative_Dynamic.bcett.byml.zs",
+    "Banc/KakarikoVillage/KakarikoVillage_Adult_Alternative_Static.bcett.byml.zs",
+    "Banc/KakarikoVillage/KakarikoVillage_Adult_Dynamic.bcett.byml.zs",
+    "Banc/KakarikoVillage/KakarikoVillage_Adult_Static.bcett.byml.zs",
+    "Banc/KakarikoVillage/KakarikoVillage_Child_Dynamic.bcett.byml.zs",
+    "Banc/KakarikoVillage/KakarikoVillage_Child_Static.bcett.byml.zs",
+    "Banc/Market/Market_Adult_Static.bcett.byml.zs",
+    "Banc/Market/Market_Child_Static.bcett.byml.zs",
+    "Banc/ShadowTemple/ShadowTemple_Dynamic.bcett.byml.zs",
+    "Banc/ShadowTemple/ShadowTemple_Static.bcett.byml.zs",
+    "Banc/SpiritTemple/SpiritTemple_Dynamic.bcett.byml.zs",
+    "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs",
+    "Banc/WaterTemple/WaterTemple_Dynamic.bcett.byml.zs",
+    "Banc/WaterTemple/WaterTemple_Static.bcett.byml.zs",
+    "Banc/ZoraFountain/ZoraFountain_Child_Dynamic.bcett.byml.zs",
+    "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+    "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+  ],
+  "locations": [
+    {
+      "name": "Adult Spirit Temple Climb Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Adult Spirit Temple Climb Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Adult Spirit Temple Climb Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Adult Spirit Temple Climb Remake Pot 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Behind Fake Walls Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Behind Fake Walls Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Behind Fake Walls Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Behind Fake Walls Remake Pot 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Behind Fake Walls Remake Pot 5",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Behind Fake Walls Remake Pot 6",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Behind Fake Walls Remake Pot 7",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Behind Fake Walls Remake Pot 8",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Behind Fake Walls Remake Pot 9",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Behind Locked Doors Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Behind Locked Doors Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Behind Locked Doors Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Behind Locked Doors Remake Pot 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Main Area Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Main Area Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Main Area Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Main Area Remake Pot 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Main Area Remake Pot 5",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Main Area Remake Pot 6",
+      "state": "eligible"
+    },
+    {
+      "name": "Child Spirit Temple Beyond Metal Bridges Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Child Spirit Temple Beyond Metal Bridges Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Child Spirit Temple Climb Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Child Spirit Temple Climb Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Child Spirit Temple Climb Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Lower Nearby Adult Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Upper Local Child Remake Crate 1",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Upper Local Child Remake Crate 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Dodongos Cavern Before Boss Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Dodongos Cavern Before Boss Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Dodongos Cavern Before Boss Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Dodongos Cavern Before Boss Remake Pot 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Dodongos Cavern Before Upper Lizalfos Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Dodongos Cavern Climb Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Dodongos Cavern Climb Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Dodongos Cavern Climb Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Dodongos Cavern Lower Right Side Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Dodongos Cavern Mouth Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Dodongos Cavern Upper Lizalfos Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Dodongos Cavern Upper Lizalfos Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Fire Temple Boulder Maze Upper Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Fire Temple Flame Maze Remake Crate 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Fire Temple Flame Maze Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Fire Temple Flame Maze Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Fire Temple Narrow Path Room Remake Pot",
+      "state": "eligible"
+    },
+    {
+      "name": "Fire Temple Narrow Path Room Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Fire Temple Narrow Path Room Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Fire Temple Near Boss Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Fire Temple Near Boss Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Fire Temple Near Boss Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Forest Temple Block Push Room Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Forest Temple Block Push Room Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Forest Temple Block Push Room Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Forest Temple Central Area Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Forest Temple Central Area Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Forest Temple Frozen Eye Switch Room Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Forest Temple Outdoors High Balconies Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Forest Temple Outdoors High Balconies Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "GV Storms Grotto Adult Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "GV Storms Grotto Adult Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "GV Storms Grotto Adult Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "GV Storms Grotto Adult Remake Pot 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Ganons Castle Light Trial Boulder Room Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Ganons Castle Light Trial Ending Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Ganons Castle Shadow Trial Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Ganons Castle Shadow Trial Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Ganons Castle Spirit Trial Second Room Front Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Gerudo Fortress Adult Remake Crate 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Gerudo Fortress Adult Remake Crate 10",
+      "state": "eligible"
+    },
+    {
+      "name": "Gerudo Fortress Adult Remake Crate 11",
+      "state": "eligible"
+    },
+    {
+      "name": "Gerudo Fortress Adult Remake Crate 12",
+      "state": "eligible"
+    },
+    {
+      "name": "Gerudo Fortress Adult Remake Crate 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Gerudo Fortress Adult Remake Crate 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Gerudo Fortress Adult Remake Crate 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Gerudo Fortress Adult Remake Crate 5",
+      "state": "eligible"
+    },
+    {
+      "name": "Gerudo Fortress Adult Remake Crate 6",
+      "state": "eligible"
+    },
+    {
+      "name": "Gerudo Fortress Adult Remake Crate 7",
+      "state": "eligible"
+    },
+    {
+      "name": "Gerudo Fortress Adult Remake Crate 8",
+      "state": "eligible"
+    },
+    {
+      "name": "Gerudo Fortress Adult Remake Crate 9",
+      "state": "eligible"
+    },
+    {
+      "name": "HC Storms Grotto Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "HC Storms Grotto Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Cow Grotto Adult Remake Crate 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Hideout 1 Torch Jail Adult Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Hideout 1 Torch Jail Adult Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Hideout 1 Torch Jail Adult Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Hideout 1 Torch Jail Adult Remake Pot 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Hideout 2 Torches Jail Adult Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Hideout 2 Torches Jail Adult Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Hideout 3 Torches Jail Adult Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Hideout 3 Torches Jail Adult Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Hideout 3 Torches Jail Adult Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Hideout 4 Torches Jail Adult Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Hideout 4 Torches Jail Adult Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Hideout 4 Torches Jail Adult Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Hideout Break Room Adult Remake Flying Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Hideout Break Room Adult Remake Flying Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Hideout Break Room Adult Remake Flying Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Hyrule Field Adult Remake Crate 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Ice Cavern Behind Ice Walls Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Ice Cavern Behind Ice Walls Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Ice Cavern End Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Ice Cavern Map Room Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Ice Cavern Spinning Scythe Room Remake Flying Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Ice Cavern Spinning Scythe Room Remake Flying Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Ice Cavern Spinning Scythe Room Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Ice Cavern Spinning Scythe Room Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Jabu Jabus Belly Before Boss Remake Crate 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Jabu Jabus Belly Main Remake Crate 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Kak Backyard Adult Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Kak Backyard Adult Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Kak Backyard Adult Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Kak Backyard Adult Remake Pot 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Kak Backyard Child Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Kak Backyard Child Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Adult Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Adult Remake Pot 10",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Adult Remake Pot 11",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Adult Remake Pot 12",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Adult Remake Pot 13",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Adult Remake Pot 14",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Adult Remake Pot 15",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Adult Remake Pot 16",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Adult Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Adult Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Adult Remake Pot 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Adult Remake Pot 5",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Adult Remake Pot 6",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Adult Remake Pot 7",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Adult Remake Pot 8",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Adult Remake Pot 9",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Child Remake Crate 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Child Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Child Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Child Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Child Remake Pot 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Child Remake Pot 5",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Child Remake Pot 6",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Child Remake Pot 7",
+      "state": "eligible"
+    },
+    {
+      "name": "Kakariko Village Child Remake Pot 8",
+      "state": "eligible"
+    },
+    {
+      "name": "King Dodongo Boss Room Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "LH Lab Adult Remake Crate 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Lake Hylia Child Remake Crate 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Lon Lon Ranch Adult Remake Crate 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Lon Lon Ranch Adult Remake Crate 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Lon Lon Ranch Child Remake Crate 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Lon Lon Ranch Child Remake Crate 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Lon Lon Ranch Child Remake Crate 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Market Guard House Adult Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Market Guard House Child Remake Crate 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Market Guard House Child Remake Crate 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Market Guard House Child Remake Crate 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Market Guard House Child Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Market Guard House Child Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Market Guard House Child Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Shadow Temple Before Boss Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Shadow Temple Before Boss Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Shadow Temple Before Boss Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Shadow Temple Before Boss Remake Pot 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Shadow Temple Before Boss Remake Pot 5",
+      "state": "eligible"
+    },
+    {
+      "name": "Shadow Temple Before Boss Remake Pot 6",
+      "state": "eligible"
+    },
+    {
+      "name": "Shadow Temple Beginning Remake Flying Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Shadow Temple Beginning Remake Flying Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Shadow Temple Beginning Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Shadow Temple Beginning Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Shadow Temple Beginning Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Shadow Temple Beyond Boat Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Shadow Temple Falling Spikes Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Shadow Temple Falling Spikes Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Shadow Temple Invisible Spikes Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Shadow Temple Invisible Spikes Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Shadow Temple Invisible Spikes Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Shadow Temple Wind Tunnel Remake Pot",
+      "state": "eligible"
+    },
+    {
+      "name": "Spirit Temple Anubis Room Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Spirit Temple Beyond Anubis Room Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Spirit Temple Beyond Anubis Room Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Spirit Temple Big Mirror Room Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Spirit Temple Lobby Remake Flying Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Spirit Temple Lobby Remake Flying Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Spirit Temple Lobby Remake Flying Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Spirit Temple Lobby Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Spirit Temple Lobby Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Spirit Temple Lobby Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Spirit Temple Lobby Remake Pot 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Spirit Temple Lobby Remake Pot 5",
+      "state": "eligible"
+    },
+    {
+      "name": "Spirit Temple Lobby Remake Pot 6",
+      "state": "eligible"
+    },
+    {
+      "name": "Twinrova Boss Room Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Twinrova Boss Room Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Twinrova Boss Room Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Twinrova Boss Room Remake Pot 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Water Temple Before Boss Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Water Temple Before Boss Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Water Temple Central Bow Target Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Water Temple Dive Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Water Temple Dive Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Water Temple North Basement Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Water Temple North Basement Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Water Temple North Basement Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Water Temple River Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Zora River Adult Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Zora River Adult Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Zora River Adult Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Zora River Adult Remake Pot 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Zora River Child Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Zora River Child Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Zora River Child Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Zora River Child Remake Pot 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Zoras Fountain Child Remake Pot 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Zoras Fountain Child Remake Pot 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Zoras Fountain Child Remake Pot 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Zoras Fountain Child Remake Pot 4",
+      "state": "eligible"
+    }
+  ]
+}

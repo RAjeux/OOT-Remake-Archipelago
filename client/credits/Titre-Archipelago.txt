@@ -1,0 +1,6 @@
+Title lettering: rendered by tools/generate_art.py; not the official Archipelago wordmark.
+Cinzel font: Copyright 2020 The Cinzel Project Authors, SIL Open Font License 1.1.
+Font and license: moteur/ootrr-ap/web/assets/fonts/cinzel-latin-wght-normal.woff2 and OFL-Cinzel.txt.
+Colored Archipelago icon: Krista Corkos and Christopher Wilson, 2022. CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/ .
+Source: https://github.com/ArchipelagoMW/Archipelago . Sized and converted to ASTC for this fan-made mod.
+Mozencaz/OotrR MIT: title_badge.py (texture layout and encoder), credits/OotrR-MIT.txt.

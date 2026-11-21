@@ -1,0 +1,17 @@
+[package]
+name = "ootrr-web"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+ootrr-core = { path = "../randomizer/core" }
+ootrr-mem = { path = "../randomizer/mem" }
+ootrr-os = { path = "../randomizer/os" }
+
+[dev-dependencies]
+ootrr-game = { path = "../randomizer/game", features = ["fixtures"] }
+
+[lints]
+workspace = true

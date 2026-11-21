@@ -1,0 +1,485 @@
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"log"
+	"net/url"
+	"os"
+	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/gorilla/websocket"
+)
+
+type Location struct {
+	Name  string
+	Flags []uint32
+	Item  string
+	Owner string
+}
+type Config struct {
+	Room, Slot, Game, Token, Server, ProtectedPassword, UUID string
+	Player, Protocol                                         int
+	CursorHash                                               uint32
+	DeathLink                                                bool
+	RewardMode                                               string
+	LocalItems                                               bool
+	Items                                                    map[int]string
+	Checks                                                   map[int]Location
+}
+type Client struct {
+	cfg                       Config
+	root                      string
+	logger                    *log.Logger
+	mu                        sync.Mutex
+	flags                     []uint32
+	byFlag                    map[uint32][]int
+	seen                      map[int]bool
+	checked                   map[int]bool
+	history                   []networkItem
+	names                     map[int]string
+	ready, won, goalConfirmed bool
+	notices                   []string
+	revision                  uint64
+	death                     deathLink
+}
+type packet map[string]any
+type wire struct {
+	Cmd         string
+	Seed        string `json:"seed_name"`
+	Slot, Index int
+	Players     []struct {
+		Slot        int
+		Alias, Name string
+	}
+	Errors   []string
+	SlotData struct {
+		Token      string
+		Protocol   int
+		Checks     []int
+		RewardMode string `json:"reward_mode"`
+		LocalItems bool   `json:"local_items"`
+	} `json:"slot_data"`
+	Checked []int `json:"checked_locations"`
+	Items   []networkItem
+	Keys    map[string]json.RawMessage
+	Tags    []string
+	Data    json.RawMessage
+}
+type networkItem struct{ Item, Player, Location int }
+
+func (n *networkItem) UnmarshalJSON(b []byte) error {
+	if len(b) > 0 && b[0] == '[' {
+		var a []int
+		if err := json.Unmarshal(b, &a); err != nil {
+			return err
+		}
+		if len(a) < 3 {
+			return errors.New("objet AP incomplet")
+		}
+		n.Item, n.Location, n.Player = a[0], a[1], a[2]
+		return nil
+	}
+	type fields networkItem
+	return json.Unmarshal(b, (*fields)(n))
+}
+
+type journal struct {
+	Locations []int
+	Won       bool
+}
+
+func newClient(c Config, root string, logger *log.Logger) (*Client, error) {
+	if c.RewardMode != "" && c.RewardMode != "legacy_gear" && c.RewardMode != "all_chest_rewards" && c.RewardMode != "all_locations" {
+		return nil, errors.New("mode de récompenses inconnu")
+	}
+	if c.LocalItems != (c.RewardMode == "all_locations") {
+		return nil, errors.New("récompenses locales incompatibles avec le mode de cette salle")
+	}
+	uri, e := url.Parse(c.Server)
+	if e != nil || (uri.Scheme != "ws" && uri.Scheme != "wss") || uri.Hostname() == "" || uri.User != nil || c.Room == "" || c.Slot == "" || c.Player < 1 || c.Protocol != 1 || c.CursorHash == 0 || len(c.Checks) > 2000 || len(c.Checks) == 0 {
+		return nil, errors.New("configuration de salle invalide")
+	}
+	s := &Client{cfg: c, root: root, logger: logger, byFlag: map[uint32][]int{}, seen: map[int]bool{}, checked: map[int]bool{}, death: deathLink{state: -1}}
+	for id, loc := range c.Checks {
+		for _, flag := range loc.Flags {
+			if _, ok := s.byFlag[flag]; !ok {
+				s.flags = append(s.flags, flag)
+			}
+			s.byFlag[flag] = append(s.byFlag[flag], id)
+		}
+	}
+	if len(s.flags) > 4096 {
+		return nil, errors.New("trop de drapeaux de coffres")
+	}
+	sort.Slice(s.flags, func(i, j int) bool { return s.flags[i] < s.flags[j] })
+	raw, e := os.ReadFile(filepath.Join(root, "native-checks.json"))
+	if e == nil {
+		var j journal
+		if e = json.Unmarshal(raw, &j); e != nil {
+			return nil, e
+		}
+		for _, id := range j.Locations {
+			if _, ok := c.Checks[id]; ok {
+				s.seen[id] = true
+			}
+		}
+		s.won = j.Won
+	} else if !os.IsNotExist(e) {
+		return nil, e
+	}
+	return s, nil
+}
+func (s *Client) notice(t string) {
+	s.logger.Print(t)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.notices) < 512 {
+		s.notices = append(s.notices, t)
+	}
+}
+func (s *Client) opened(flags []uint32, goal bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, f := range flags {
+		for _, id := range s.byFlag[f] {
+			if !s.seen[id] {
+				s.seen[id] = true
+				s.revision++
+			}
+		}
+	}
+	if goal && !s.won {
+		s.won = true
+		s.revision++
+	}
+}
+func (s *Client) saveChecks() {
+	var written uint64
+	for range time.Tick(250 * time.Millisecond) {
+		s.mu.Lock()
+		rev := s.revision
+		if rev == written {
+			s.mu.Unlock()
+			continue
+		}
+		j := journal{Won: s.won}
+		for k := range s.seen {
+			j.Locations = append(j.Locations, k)
+		}
+		s.mu.Unlock()
+		sort.Ints(j.Locations)
+		raw, _ := json.Marshal(j)
+		dest := filepath.Join(s.root, "native-checks.json")
+		tmp := dest + ".tmp"
+		if e := os.WriteFile(tmp, raw, 0600); e == nil {
+			if e = os.Rename(tmp, dest); e == nil {
+				written = rev
+			}
+		}
+	}
+}
+func (s *Client) valid(m wire) bool {
+	roomMode, modMode := m.SlotData.RewardMode, s.cfg.RewardMode
+	if roomMode == "" {
+		roomMode = "legacy_gear"
+	}
+	if modMode == "" {
+		modMode = "legacy_gear"
+	}
+	if roomMode != modMode || m.SlotData.LocalItems != s.cfg.LocalItems {
+		return false
+	}
+	if m.Slot != s.cfg.Player || m.SlotData.Token != s.cfg.Token || m.SlotData.Protocol != s.cfg.Protocol || len(m.SlotData.Checks) != len(s.cfg.Checks) {
+		return false
+	}
+	unique := map[int]bool{}
+	for _, id := range m.SlotData.Checks {
+		if _, ok := s.cfg.Checks[id]; !ok || unique[id] {
+			return false
+		}
+		unique[id] = true
+	}
+	return true
+}
+func (s *Client) session(conn *websocket.Conn, password string) error {
+	defer conn.Close()
+	conn.SetReadLimit(40 << 20)
+	refresh := func() error { return conn.SetReadDeadline(time.Now().Add(85 * time.Second)) }
+	if err := refresh(); err != nil {
+		return err
+	}
+	conn.SetPongHandler(func(string) error { return refresh() })
+	// Only the reader parses packets. All WebSocket writes are serialized.
+	var writer sync.Mutex
+	send := func(p ...packet) error {
+		writer.Lock()
+		defer writer.Unlock()
+		_ = conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+		return conn.WriteJSON(p)
+	}
+	done := make(chan struct{})
+	var worker sync.WaitGroup
+	defer func() {
+		close(done)
+		conn.Close()
+		worker.Wait()
+		s.mu.Lock()
+		s.ready = false
+		// DeathLink is a live event: neither direction is replayed on reconnect.
+		s.death.pending, s.death.outgoing = nil, nil
+		s.mu.Unlock()
+	}()
+	auth := false
+	syncing := true
+	fenced := false
+	var history []networkItem
+	var fence string
+	synchronize := func() error {
+		fence = "ootrr-native-" + strconv.FormatInt(time.Now().UnixNano(), 16)
+		syncing = true
+		fenced = false
+		history = nil
+		s.mu.Lock()
+		s.ready = false
+		s.mu.Unlock()
+		return send(packet{"cmd": "Sync"}, packet{"cmd": "Get", "keys": []string{fence}})
+	}
+	var names = map[int]string{}
+	workerStarted := false
+	for {
+		var batch []wire
+		if e := conn.ReadJSON(&batch); e != nil {
+			return e
+		}
+		for _, m := range batch {
+			switch m.Cmd {
+			case "RoomInfo":
+				if m.Seed != s.cfg.Room {
+					return errors.New("mauvaise salle pour ce mod")
+				}
+				tags := []string{"AP"}
+				if s.cfg.DeathLink {
+					tags = append(tags, "DeathLink")
+				}
+				handling := 7
+				if s.cfg.LocalItems {
+					handling = 5
+				}
+				if e := send(packet{"cmd": "Connect", "name": s.cfg.Slot, "game": s.cfg.Game, "uuid": s.cfg.UUID, "password": password, "version": packet{"major": 0, "minor": 6, "build": 7, "class": "Version"}, "items_handling": handling, "tags": tags, "slot_data": true}); e != nil {
+					return e
+				}
+			case "ConnectionRefused":
+				return fmt.Errorf("connexion refusée : %s", strings.Join(m.Errors, ", "))
+			case "Connected":
+				if auth || !s.valid(m) {
+					return errors.New("ce mod ne correspond pas au slot de la salle")
+				}
+				auth = true
+				for _, p := range m.Players {
+					names[p.Slot] = p.Alias
+					if names[p.Slot] == "" {
+						names[p.Slot] = p.Name
+					}
+				}
+				s.mu.Lock()
+				s.names = names
+				s.checked = map[int]bool{}
+				for _, id := range m.Checked {
+					s.checked[id] = true
+				}
+				s.goalConfirmed = false
+				s.mu.Unlock()
+				s.notice("Archipelago connecté · " + s.cfg.Slot)
+				if e := synchronize(); e != nil {
+					return e
+				}
+			case "ReceivedItems":
+				if !auth {
+					continue
+				}
+				for _, it := range m.Items {
+					if _, ok := s.cfg.Items[it.Item]; !ok {
+						return errors.New("objet inconnu pour cette version du mod")
+					}
+				}
+				if syncing && m.Index == 0 {
+					history = nil
+				}
+				mismatch := m.Index < 0 || m.Index > len(history)
+				if !mismatch {
+					for i, v := range m.Items {
+						if m.Index+i < len(history) && history[m.Index+i] != v {
+							mismatch = true
+							break
+						}
+					}
+				}
+				if mismatch {
+					if e := synchronize(); e != nil {
+						return e
+					}
+					continue
+				}
+				old := len(history)
+				for i, v := range m.Items {
+					if m.Index+i >= old {
+						history = append(history, v)
+					}
+				}
+				if fenced {
+					s.mu.Lock()
+					s.history = append([]networkItem(nil), history...)
+					s.mu.Unlock()
+					for _, it := range history[old:] {
+						s.logger.Print("Objet en attente dans Zelda · " + s.cfg.Items[it.Item])
+					}
+				}
+			case "Retrieved":
+				if _, ok := m.Keys[fence]; !auth || !ok {
+					continue
+				}
+				syncing = false
+				fenced = true
+				s.mu.Lock()
+				s.history = append([]networkItem(nil), history...)
+				s.ready = true
+				s.mu.Unlock()
+				if !workerStarted {
+					workerStarted = true
+					worker.Add(1)
+					go func() {
+						defer worker.Done()
+						t := time.NewTicker(300 * time.Millisecond)
+						defer t.Stop()
+						last := map[int]time.Time{}
+						var lastGoal, lastPing time.Time
+						for {
+							select {
+							case <-done:
+								return
+							case now := <-t.C:
+								if now.Sub(lastPing) > 25*time.Second {
+									lastPing = now
+									if err := conn.WriteControl(websocket.PingMessage, nil, now.Add(8*time.Second)); err != nil {
+										conn.Close()
+										return
+									}
+								}
+								s.mu.Lock()
+								var missing []int
+								ready := s.ready
+								if ready {
+									for id := range s.seen {
+										if !s.checked[id] && now.Sub(last[id]) > 5*time.Second {
+											missing = append(missing, id)
+											last[id] = now
+										}
+									}
+								}
+								goal := ready && s.won && !s.goalConfirmed && now.Sub(lastGoal) > 10*time.Second
+								death := s.death.outgoing
+								s.death.outgoing = nil
+								s.mu.Unlock()
+								var ps []packet
+								if ready && death != nil {
+									ps = append(ps, packet{"cmd": "Bounce", "tags": []string{"DeathLink"}, "data": death})
+								}
+								if len(missing) > 0 {
+									sort.Ints(missing)
+									ps = append(ps, packet{"cmd": "LocationChecks", "locations": missing})
+								}
+								if goal {
+									lastGoal = now
+									ps = append(ps, packet{"cmd": "StatusUpdate", "status": 30})
+								}
+								if len(ps) > 0 {
+									if e := send(ps...); e != nil {
+										conn.Close()
+										return
+									}
+									if ready && death != nil {
+										s.logger.Print("DeathLink envoyé · " + death.Cause)
+									}
+									if goal {
+										s.mu.Lock()
+										s.goalConfirmed = true
+										s.mu.Unlock()
+									}
+								}
+							}
+						}
+					}()
+				}
+			case "Bounced":
+				if auth {
+					s.receiveDeath(m, time.Now())
+				}
+			case "RoomUpdate":
+				if !auth {
+					continue
+				}
+				for _, id := range m.Checked {
+					s.mu.Lock()
+					first := !s.checked[id]
+					s.checked[id] = true
+					ownName := s.names[s.cfg.Player]
+					s.mu.Unlock()
+					if loc, ok := s.cfg.Checks[id]; ok && first {
+						if loc.Owner != "" && (!s.cfg.LocalItems || (loc.Owner != s.cfg.Slot && loc.Owner != ownName)) {
+							s.notice(loc.Item + " envoyé à " + loc.Owner)
+						} else {
+							s.logger.Print("Emplacement validé · " + loc.Name)
+						}
+					}
+				}
+			}
+		}
+	}
+}
+func (s *Client) run(password string) {
+	go s.saveChecks()
+	delay := time.Second
+	for {
+		start := time.Now()
+		dialer := *websocket.DefaultDialer
+		dialer.HandshakeTimeout = 12 * time.Second
+		conn, resp, e := dialer.Dial(s.cfg.Server, nil)
+		if resp != nil && e != nil {
+			resp.Body.Close()
+		}
+		if e == nil {
+			e = s.session(conn, password)
+		}
+		if e != nil {
+			s.logger.Print("Connexion interrompue · ", e)
+		}
+		if time.Since(start) > 30*time.Second {
+			delay = time.Second
+		}
+		time.Sleep(delay)
+		if delay < 16*time.Second {
+			delay *= 2
+		}
+	}
+}
+func loadConfig(root, token string) (Config, error) {
+	var c Config
+	raw, e := os.ReadFile(filepath.Join(root, "native-session.json"))
+	if e != nil {
+		return c, e
+	}
+	d := json.NewDecoder(bytes.NewReader(raw))
+	e = d.Decode(&c)
+	if c.Token != token {
+		return c, errors.New("identifiant de salle différent")
+	}
+	return c, e
+}

@@ -1,0 +1,137 @@
+{
+  "format": 1,
+  "source": "GameData/GameDataList.Product.110",
+  "presets": [
+    {
+      "setting": "open_kakariko",
+      "value": "open",
+      "edits": [
+        {"kind": "bool", "name": "Npc_Hylia_Soldier_003_GateOpen", "value": true}
+      ],
+      "note": "The Kakariko gate to Death Mountain starts open. The guard flag it reads also opens the Happy Mask Shop and changes some Market and Kakariko talk. The flag's new game value is set in the flag list."
+    },
+    {
+      "setting": "zora_fountain",
+      "value": "open",
+      "edits": [
+        {"kind": "enum", "name": "Step_Get_StoneOfWater", "value": "Step07"},
+        {"kind": "bool", "name": "HavePlayedEvent.Dm_Zora_0010", "value": true}
+      ],
+      "note": "The Zora quest starts at the step King Zora reaches after reading Ruto's Letter (Get_StoneOfWater Step07), and the scene of King Zora moving counts as played so the wall beside him is gone. Impa's hint about the Zoras in the castle garden no longer appears and some Zora talk may assume the letter was read. The new game value is set in the flag list."
+    },
+    {
+      "setting": "jabu_open",
+      "value": "true",
+      "edits": [
+        {"kind": "bool", "name": "GaveFishToJabJab", "value": true},
+        {"kind": "bool", "name": "JabJabOpenedMouth", "value": true}
+      ],
+      "note": "Jabu Jabu starts as if he had been fed a fish once, so his mouth opens when you walk up and the mouth entrance works. The new game values are set in the flag list."
+    },
+    {
+      "setting": "gerudo_fortress",
+      "value": "fast",
+      "edits": [
+        {"kind": "enum", "name": "Step_SageOfSpirit", "value": "Step01"},
+        {"kind": "int", "name": "GerudoFortress_Meet_FourCarpenter_NumOfCarpenterHelped", "value": 3},
+        {"kind": "int", "name": "GerudoFortress_Meet_FourCarpenter_NumOfCarpenterHelped_02", "value": 1},
+        {"kind": "bool", "name": "GerudoFortress_Saved_Npc_Hylia_013_Adult", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_Saved_Npc_Hylia_014_Adult", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_Saved_Npc_Hylia_015_Adult", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_DestroyGerudoThief_Npc_Hylia_013_Adult", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_DestroyGerudoThief_Npc_Hylia_014_Adult", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_DestroyGerudoThief_Npc_Hylia_015_Adult", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_IsAfterHelpCarpenter_Npc_Hylia_013_Adult", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_IsAfterHelpCarpenter_Npc_Hylia_014_Adult", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_IsAfterHelpCarpenter_Npc_Hylia_015_Adult", "value": true}
+      ],
+      "note": "Tested in game. Three carpenters start free and the last one still needs rescuing. The Membership Card is vanilla and is granted by the game when the last carpenter is freed."
+    },
+    {
+      "setting": "gerudo_fortress",
+      "value": "open",
+      "edits": [
+        {"kind": "enum", "name": "Step_SageOfSpirit", "value": "Step02"},
+        {"kind": "int", "name": "GerudoFortress_Meet_FourCarpenter_NumOfCarpenterHelped", "value": 4},
+        {"kind": "int", "name": "GerudoFortress_Meet_FourCarpenter_NumOfCarpenterHelped_02", "value": 0},
+        {"kind": "bool", "name": "GerudoFortress_Saved_Npc_Hylia_013_Adult", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_Saved_Npc_Hylia_014_Adult", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_Saved_Npc_Hylia_015_Adult", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_Saved_Npc_Hylia_016_Adult", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_DestroyGerudoThief_Npc_Hylia_013_Adult", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_DestroyGerudoThief_Npc_Hylia_014_Adult", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_DestroyGerudoThief_Npc_Hylia_015_Adult", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_DestroyGerudoThief_Npc_Hylia_016_Adult", "value": true},
+        {"kind": "bool", "name": "HavePlayedEvent.Meet_FourCarpenter_ClearEvent", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_IsAfterCompleteTalk_Npc_Gerudo_001", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_GoToPrison_AfterClear", "value": true},
+        {"kind": "bool", "name": "IsGet.Item_Token_Gerudo", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_IsAfterClearEvent_Npc_Hylia_012_Adult", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_IsAfterHelpCarpenter_Npc_Hylia_013_Adult", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_IsAfterHelpCarpenter_Npc_Hylia_014_Adult", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_IsAfterHelpCarpenter_Npc_Hylia_015_Adult", "value": true},
+        {"kind": "bool", "name": "GerudoFortress_IsAfterHelpCarpenter_Npc_Hylia_016_Adult", "value": true}
+      ],
+      "note": "The fortress starts cleared and friendly. All carpenters are saved, no thieves remain, the Spirit quest is past the rescue step, and the Membership Card is owned from a new game. Holding the card keeps the guards passive and the Gerudo friendly. The card's native pool copy is replaced by Rupee (1). The shuffled Membership Card check is still offered by the cleared guard until its card event has been played."
+    },
+    {
+      "setting": "time_always_passes",
+      "value": "true",
+      "edits": [
+        {"kind": "bool", "name": "HyruleField_ArriveEntrance", "value": true},
+        {"kind": "bool", "name": "HavePlayedEvent.Dm_HrlField_0020", "value": true}
+      ],
+      "note": "The world clock runs from the start. The game normally holds the clock at 6:00 until Kaepora's first Hyrule Field talk and stops it at 15:00 until Impa's send off, and both flags it reads are set at new game. Kaepora, the Zelda meeting and the send off still play."
+    },
+    {
+      "setting": "skip_mask_quest",
+      "value": "true",
+      "edits": [
+        {"kind": "enum", "name": "Step_SubEvent_MaskSalesman", "value": "Complete"}
+      ],
+      "note": "The Happy Mask Shop quest starts complete, so once the shop opens every mask can be borrowed right away, including the Mask of Truth, without selling the Keaton, Skull, Spooky and Bunny masks first. Masks can no longer be sold for rupees, which gives no check. The new game value is set in the flag list, experimental and untested in the game."
+    },
+    {
+      "setting": "plant_beans",
+      "value": "true",
+      "edits": [
+        {"kind": "bool", "name": "IsPlantedMagicBean_SmallFarm.10857724324414230743", "value": true},
+        {"kind": "bool", "name": "IsPlantedMagicBean_SmallFarm.12044463103654268862", "value": true},
+        {"kind": "bool", "name": "IsPlantedMagicBean_SmallFarm.14429198438059673734", "value": true},
+        {"kind": "bool", "name": "IsPlantedMagicBean_SmallFarm.17092212646454540992", "value": true},
+        {"kind": "bool", "name": "IsPlantedMagicBean_SmallFarm.17500344509500247365", "value": true},
+        {"kind": "bool", "name": "IsPlantedMagicBean_SmallFarm.176409868210268833", "value": true},
+        {"kind": "bool", "name": "IsPlantedMagicBean_SmallFarm.18350441421271687772", "value": true},
+        {"kind": "bool", "name": "IsPlantedMagicBean_SmallFarm.5234955674857122897", "value": true},
+        {"kind": "bool", "name": "IsPlantedMagicBean_SmallFarm.6092667454768667954", "value": true},
+        {"kind": "bool", "name": "IsPlantedMagicBean_SmallFarm.6833516270248855649", "value": true},
+        {"kind": "int", "name": "Get_MagicBeans", "value": 9}
+      ],
+      "note": "Every magic bean patch starts planted, so the adult bean platforms are there from the start and no Magic Bean is needed. The Magic Bean is taken out of the item pool and the bean salesman in Zora's River has one sale left, for 60 rupees, which holds a random item when NPC rewards are shuffled. The new game values are set in the flag list, experimental and untested in the game."
+    },
+    {
+      "setting": "open_forest",
+      "value": "open",
+      "edits": [
+        {"kind": "bool", "name": "HavePlayedEvent.NaviHint_Trial", "value": true},
+        {"kind": "bool", "name": "HaveTalked.Npc_Navi", "value": true},
+        {"kind": "bool", "name": "ActionGuide_IsEnd.Navi", "value": true},
+        {"kind": "bool", "name": "ActionGuide_IsNew.Navi", "value": true}
+      ],
+      "note": "Navi's monster lesson from the Deku Tree's first room is marked as seen when a new game starts, so the D-pad calls Navi and targeting gives enemy information even if the Deku Tree is skipped. The new game values are set in the flag list, experimental and untested in the game."
+    },
+    {
+      "setting": "shuffle_dungeon_rewards",
+      "value": "true",
+      "edits": [
+        {"kind": "exp", "name": "SageOfShadow_Kakariko_Burning", "value": [[0, "IsGet.Item_Medal_Forest"], [0, "IsGet.Item_Medal_Fire"], [0, "IsGet.Item_Medal_Water"], [3], [3]]},
+        {"kind": "exp", "name": "AllSage_IsAfter_Step01_02_Exp", "value": [[0, "IsGet.Item_Medal_Forest"]]},
+        {"kind": "exp", "name": "AllSage_IsAfter_Step02_Exp", "value": [[0, "IsGet.Item_Medal_Shadow"], [0, "IsGet.Item_Medal_Spirit"], [3], [0, "HavePlayedEvent.Dm_TimeTemple_0130"], [5], [3]]}
+      ],
+      "note": "With Stones and Medallions shuffled, the story scenes that stand for a medallion check the medallion items instead of the sage quests. The Kakariko fire and Sheik's Nocturne of Shadow need the Forest, Fire and Water Medallions (SageOfShadow_Kakariko_Burning is rewritten). Sheik's Prelude of Light in the Temple of Time needs the Forest Medallion and the Light Arrows scene needs the Shadow and Spirit Medallions. Those two read the computed flags AllSage_IsAfter_Step01_02_Exp and AllSage_IsAfter_Step02_Exp, which nothing in the game read before and which are rewritten here, through two logic module edits and one map edit in the Temple of Time. Experimental and untested in the game."
+    }
+  ],
+  "control": [
+    {"kind": "int", "name": "PlayerStatus.CurrentRupee", "value": 42}
+  ]
+}

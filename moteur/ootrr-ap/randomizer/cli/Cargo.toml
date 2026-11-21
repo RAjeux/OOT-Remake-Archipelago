@@ -1,0 +1,19 @@
+[package]
+name = "ootrr"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "ootrr"
+path = "src/main.rs"
+
+[dependencies]
+ootrr-core = { path = "../core" }
+ootrr-web = { path = "../../web" }
+ootrr-mem = { path = "../mem" }
+
+[lints]
+workspace = true

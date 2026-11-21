@@ -1,0 +1,117 @@
+[
+    {
+        "region_name": "ZR Front",
+        "scene": "Zora River",
+        "hint": "ZORA_RIVER",
+        "locations": {
+            "ZR Child Front River Wonderitem 1": "is_child",
+            "ZR Child Front River Wonderitem 2": "is_child",
+            "ZR Child Front River Wonderitem 3": "is_child",
+            "ZR Child Front River Wonderitem 4": "is_child",
+            "ZR GS Tree": "can_plant_bugs and can_child_attack"
+
+        },
+        "exits": {
+            "Zora River": "can_blast_or_smash",
+            "Hyrule Field": "True"
+        }
+    },
+    {
+        "region_name": "Zora River",
+        "scene": "Zora River",
+        "hint": "ZORA_RIVER",
+        "locations": {
+            "ZR Magic Bean Salesman": "is_child",
+            "ZR Frogs Ocarina Game": "
+                is_child and
+                can_play(Zeldas_Lullaby) and can_play(Eponas_Song) and can_play(Sarias_Song) and
+                can_play(Suns_Song) and can_play(Song_of_Time) and can_play(Song_of_Storms) and
+                has_all_notes_for_song('ZR Frogs Ocarina Game')",
+            "ZR Frogs Zeldas Lullaby": "is_child and can_play(Zeldas_Lullaby)",
+            "ZR Frogs Eponas Song": "is_child and can_play(Eponas_Song)",
+            "ZR Frogs Sarias Song": "is_child and can_play(Sarias_Song)",
+            "ZR Frogs Suns Song": "is_child and can_play(Suns_Song)",
+            "ZR Frogs Song of Time": "is_child and can_play(Song_of_Time)",
+            "ZR Frogs in the Rain": "is_child and can_play(Song_of_Storms)",
+            "ZR Frogs Bug Game": "
+                is_child and
+                can_play(Zeldas_Lullaby) and can_play(Eponas_Song) and can_play(Sarias_Song) and
+                can_play(Suns_Song) and can_play(Song_of_Time) and can_play(Song_of_Storms) and
+                has_all_notes_for_song('ZR Frogs Ocarina Game')",
+            "ZR Near Open Grotto Freestanding PoH": "
+                is_child or here(can_plant_bean) or Hover_Boots or logic_zora_river_lower",
+            "ZR Near Domain Freestanding PoH": "is_child or Hover_Boots or logic_zora_river_upper",
+            "ZR Waterfall Red Rupee 1": "is_adult and (Iron_Boots or logic_zora_river_rupees)",
+            "ZR Waterfall Red Rupee 2": "is_adult and (Iron_Boots or logic_zora_river_rupees)",
+            "ZR Waterfall Red Rupee 3": "is_adult and (Iron_Boots or logic_zora_river_rupees)",
+            "ZR Waterfall Red Rupee 4": "is_adult and (Iron_Boots or logic_zora_river_rupees)",
+            "ZR Child River Wonderitem 1": "is_child",
+            "ZR Child River Wonderitem 2": "is_child",
+            "ZR Child River Wonderitem 3": "is_child",
+            "ZR Child River Wonderitem 4": "is_child",
+            "ZR Child River Wonderitem 5": "is_child",
+            "ZR Child River Wonderitem 6": "is_child",
+            "ZR Child River Wonderitem 7": "is_child",
+            "ZR Child River Wonderitem 8": "is_child",
+            "ZR Child River Wonderitem 9": "is_child",
+            "ZR Child River Wonderitem 10": "is_child",
+            "ZR Child River Wonderitem 11": "is_child",
+            "ZR Child River Wonderitem 12": "is_child",
+            "ZR Child River Wonderitem 13": "is_child",
+            "ZR Child River Wonderitem 14": "is_child",
+            "ZR Child River Wonderitem 15": "is_child",
+            "ZR Child River Wonderitem 16": "is_child",
+            "ZR Child River Wonderitem 17": "is_child",
+            "ZR Child River Wonderitem 18": "is_child",
+            "ZR Child River Wonderitem 19": "is_child",
+            "ZR Child River Wonderitem 20": "is_child",
+            "ZR Child River Wonderitem 21": "is_child",
+            "ZR Child River Wonderitem 22": "is_child",
+            "ZR Child River Wonderitem 23": "is_child",
+            "ZR Child River Wonderitem 24": "is_child",
+            "ZR Child River Wonderitem 25": "is_child",
+            "ZR Child River Wonderitem 26": "is_child",
+            "ZR Child River Wonderitem 27": "is_child",
+            "ZR GS Ladder": "is_child and (at_night or gold_skulls_ignore_daytime) and can_child_attack",
+            "ZR GS Near Raised Grottos": "can_use(Hookshot) and (at_night or gold_skulls_ignore_daytime)",
+            "ZR GS Above Bridge": "can_use(Hookshot) and (at_night or gold_skulls_ignore_daytime)",
+            "ZR Near Grottos Gossip Stone": "True",
+            "ZR Near Domain Gossip Stone": "True",
+            "Gossip Stone Fairy": "can_summon_gossip_fairy and has_bottle",
+            "Bean Plant Fairy": "is_child and can_plant_bean and can_play(Song_of_Storms) and has_bottle",
+            "Butterfly Fairy": "can_use(Sticks) and has_bottle",
+            "Bug Shrub": "
+                (is_child or here(can_plant_bean) or Hover_Boots or logic_zora_river_lower) and
+                can_cut_shrubs and has_bottle",
+            "ZR Frogs Ocarina Minigame Hint": "is_child"
+        },
+        "exits": {
+            "ZR Front": "True",
+            "ZR Open Grotto": "True",
+            "ZR Fairy Grotto": "here(can_blast_or_smash)",
+            "LW Underwater Entrance": "can_dive or can_use(Iron_Boots)",
+            "ZR Storms Grotto": "can_open_storm_grotto",
+            "ZR Behind Waterfall": "
+                can_play(Zeldas_Lullaby) or
+                (can_use(Hover_Boots) and logic_zora_with_hovers) or
+                (is_child and logic_zora_with_cucco)"
+        }
+    },
+    {
+        "region_name": "ZR Behind Waterfall",
+        "scene": "Zora River",
+        "hint": "ZORA_RIVER",
+        "exits": {
+            "Zora River": "True",
+            "Zoras Domain": "True"
+        }
+    },
+    {
+        "region_name": "ZR Top of Waterfall",
+        "scene": "Zora River",
+        "hint": "ZORA_RIVER",
+        "exits": {
+            "Zora River": "True"
+        }
+    }
+]

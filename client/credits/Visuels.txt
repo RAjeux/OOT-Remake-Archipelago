@@ -1,0 +1,6 @@
+Mozencaz/OotrR, e291a1b103bd52d8878207ba7800bf670418144c, MIT.
+Derived game resource routines and Archipelago medal. Adapted archive imports and BYML string reads.
+ainb 0.2.17 (hash adapter uses OotrR's compatible implementation), evfl 1.3.0; source files in this zipapp.
+Zstandard 1.5.7, official x64 Windows DLL, https://github.com/facebook/zstd/releases/tag/v1.5.7
+OOTRR 0.8.1 engine, https://github.com/ootrando/ootrr/releases/tag/v0.8.1
+AP networking reference https://github.com/HarbourMasters/Archipelago-SoH/releases/tag/Soh_1.4.2

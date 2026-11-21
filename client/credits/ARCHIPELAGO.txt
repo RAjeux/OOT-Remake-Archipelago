@@ -1,0 +1,3 @@
+The console tracker, chat and delivery queue draw on the design of Mozencaz/OotrR.
+https://github.com/Mozencaz/OotrR/tree/e291a1b103bd52d8878207ba7800bf670418144c
+The Triforce client uses its own inventory interface with OOTRR 0.8.1.

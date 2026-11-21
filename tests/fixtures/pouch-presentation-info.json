@@ -1,0 +1,1080 @@
+{
+  "game_version": "1.1.1",
+  "resource": "RSDB/PouchActorInfo.Product.111.rstbl.byml.zs",
+  "decoded_sha256": "ff56b92eeb7162b04a6137b8c78ecbf8b94a4eac0b6ae64f4e23cb1edf8d6a96",
+  "actors": {
+    "Item_AgonyStone": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "AgonyStone",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "HeadShortcut"
+    },
+    "Item_AlarmCucco": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Arrow_Fire": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Bow",
+      "PouchSpecialDeal": "None",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "FireArrow"
+    },
+    "Item_Arrow_Ice": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Bow",
+      "PouchSpecialDeal": "None",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "IceArrow"
+    },
+    "Item_Arrow_Light": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Bow",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "LightArrow"
+    },
+    "Item_Bomb": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "ActionGuideType": "Bomb"
+    },
+    "Item_BombBag_Large": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Bomb"
+    },
+    "Item_BombBag_Medium": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Bomb"
+    },
+    "Item_BombBag_Small": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Bomb"
+    },
+    "Item_BombBundle_Small": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "ActionGuideType": "Bomb"
+    },
+    "Item_BombchuBundle_Large": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "ActionGuideType": "Bombchu"
+    },
+    "Item_BombchuBundle_Medium": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "ActionGuideType": "Bombchu"
+    },
+    "Item_BombchuBundle_Small": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "ActionGuideType": "Bombchu"
+    },
+    "Item_Boomerang": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Boomerang"
+    },
+    "Item_Bottle": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "Bottle",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Bottle"
+    },
+    "Item_Bottle_BigPoe": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "Bottle",
+      "ActionGuideType": "Bottle"
+    },
+    "Item_Bottle_BlueFire": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "Bottle",
+      "ActionGuideType": "Bottle"
+    },
+    "Item_Bottle_BluePotion": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "Bottle",
+      "ActionGuideType": "Bottle"
+    },
+    "Item_Bottle_Bug": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "Bottle",
+      "ActionGuideType": "Bottle"
+    },
+    "Item_Bottle_Fairy": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "Bottle",
+      "ActionGuideType": "Bottle"
+    },
+    "Item_Bottle_Fish": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "Bottle",
+      "ActionGuideType": "Bottle"
+    },
+    "Item_Bottle_GreenPotion": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "Bottle",
+      "ActionGuideType": "Bottle"
+    },
+    "Item_Bottle_Letter": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "Bottle"
+    },
+    "Item_Bottle_Milk": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "Bottle",
+      "ActionGuideType": "Bottle"
+    },
+    "Item_Bottle_Poe": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "Bottle",
+      "ActionGuideType": "Bottle"
+    },
+    "Item_Bottle_RedPotion": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "Bottle",
+      "ActionGuideType": "Bottle"
+    },
+    "Item_BrokenSword": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_BulletBag_Large": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_BulletBag_Medium": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_ClaimCheck": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_CojiroCucco": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_DekuStick": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "ActionGuideType": "DekuStick"
+    },
+    "Item_DekuStickBundle_Small": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "ActionGuideType": "DekuStick"
+    },
+    "Item_DinFire": {
+      "PouchGetType": "Heart",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "DinFire"
+    },
+    "Item_Dungeon_BossKey": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "NotPushToPouch"
+    },
+    "Item_Dungeon_Compass": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "NotPushToPouch",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Dungeon_Map": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "NotPushToPouch",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Dungeon_SmallKey": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "SmallKey"
+    },
+    "Item_EyeDrop": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_EyeballFrog": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_FairyBless_DefenseDouble": {
+      "PouchGetType": "Heart",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "FairyBlessDefenseDouble",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_FairyBless_MP": {
+      "PouchGetType": "Heart",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "FairyBlessMP",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_FairyBless_MPDouble": {
+      "PouchGetType": "Heart",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "FairyBlessMPDouble",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_FaroreWind": {
+      "PouchGetType": "Heart",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "FaroreWind"
+    },
+    "Item_Gauntlet_Gold": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "Gauntlet",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Gauntlet_Goron": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "GoronGauntlet",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "GoronGauntlet"
+    },
+    "Item_Gauntlet_Silver": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "Gauntlet",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_GlassTruth": {
+      "PouchGetType": "Large",
+      "PouchCategory": "HeadArmor",
+      "PouchSpecialDeal": "GlassTruth",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "HeadShortcut"
+    },
+    "Item_Hammer": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Hammer"
+    },
+    "Item_HeavyBoot": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Boot",
+      "PouchSpecialDeal": "None",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "BootShortcut"
+    },
+    "Item_Hookshot": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Hookshot"
+    },
+    "Item_HoverBoot": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Boot",
+      "PouchSpecialDeal": "None",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "BootShortcut"
+    },
+    "Item_Longshot": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Longshot"
+    },
+    "Item_MagicBean": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "MagicBean"
+    },
+    "Item_Mask_Bunny": {
+      "PouchGetType": "Large",
+      "PouchCategory": "HeadArmor",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "HeadShortcut"
+    },
+    "Item_Mask_Gerudo": {
+      "PouchGetType": "Large",
+      "PouchCategory": "HeadArmor",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "HeadShortcut"
+    },
+    "Item_Mask_Goron": {
+      "PouchGetType": "Large",
+      "PouchCategory": "HeadArmor",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "HeadShortcut"
+    },
+    "Item_Mask_Keaton": {
+      "PouchGetType": "Large",
+      "PouchCategory": "HeadArmor",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "HeadShortcut"
+    },
+    "Item_Mask_Skull": {
+      "PouchGetType": "Large",
+      "PouchCategory": "HeadArmor",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "HeadShortcut"
+    },
+    "Item_Mask_Spooky": {
+      "PouchGetType": "Large",
+      "PouchCategory": "HeadArmor",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "HeadShortcut"
+    },
+    "Item_Mask_Truth": {
+      "PouchGetType": "Large",
+      "PouchCategory": "HeadArmor",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "HeadShortcut"
+    },
+    "Item_Mask_Zora": {
+      "PouchGetType": "Large",
+      "PouchCategory": "HeadArmor",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "HeadShortcut"
+    },
+    "Item_Medal_Fire": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Medal_Forest": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Medal_Light": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Medal_Shadow": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Medal_Spirit": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Medal_Water": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Melody_EponaSong": {
+      "PouchGetType": "Small",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "Melody",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Melody_FireBolero": {
+      "PouchGetType": "Small",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "Melody",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Melody_ForestMinuet": {
+      "PouchGetType": "Small",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "Melody",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Melody_LightPrelude": {
+      "PouchGetType": "Small",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "Melody",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Melody_SariaSong": {
+      "PouchGetType": "Small",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "Melody",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Melody_ScarecrowSong": {
+      "PouchGetType": "Small",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "Melody",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Melody_ShadowNocturne": {
+      "PouchGetType": "Small",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "Melody",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Melody_SpiritRequiem": {
+      "PouchGetType": "Small",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "Melody",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Melody_StormSong": {
+      "PouchGetType": "Small",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "Melody",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Melody_SunSong": {
+      "PouchGetType": "Small",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "Melody",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Melody_TimeSong": {
+      "PouchGetType": "Small",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "Melody",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Melody_WaterSerenade": {
+      "PouchGetType": "Small",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "Melody",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Melody_ZeldaLullaby": {
+      "PouchGetType": "Small",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "Melody",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_NayruLove": {
+      "PouchGetType": "Heart",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "NayruLove"
+    },
+    "Item_NutBag_Large": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_NutBag_Medium": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Ocarina_Fairy": {
+      "PouchGetType": "Small",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "Ocarina",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Ocarina_Time": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "Ocarina",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_OddMushroom": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_OddPowder": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_PoacherSaw": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_PocketCucco": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_PocketEgg": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Prescription": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Quiver_Large": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Quiver_Medium": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Range_Bow": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Bow",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Bow"
+    },
+    "Item_Range_SlingShot": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Bow",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "SlingShot"
+    },
+    "Item_Scale_Gold": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Scale_Silver": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_ScrubBusinessSeed": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Shield_Mirror": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Shield",
+      "PouchSpecialDeal": "None",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "EquipmentMenu"
+    },
+    "Item_StickBag_Large": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_StickBag_Medium": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Stone_Fire": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Stone_Forest": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Stone_Water": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Sword_Biggoron": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Weapon",
+      "PouchSpecialDeal": "None",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "EquipmentMenu"
+    },
+    "Item_Sword_Giant": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Weapon",
+      "PouchSpecialDeal": "None",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "EquipmentMenu"
+    },
+    "Item_Sword_Kokiri": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Weapon",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "AttackByWeapon"
+    },
+    "Item_Token_Gerudo": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Token_Gold": {
+      "PouchGetType": "Medium",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "TokenGold",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Wallet_Large": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_Wallet_Medium": {
+      "PouchGetType": "Large",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_WeirdEgg": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Item_ZeldaLetter": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Obj_Armor_Goron": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Armor",
+      "PouchSpecialDeal": "None",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "EquipmentMenu"
+    },
+    "Obj_Armor_Zora": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Armor",
+      "PouchSpecialDeal": "None",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "EquipmentMenu"
+    },
+    "Obj_Fairy": {
+      "PouchGetType": "Small",
+      "PouchCategory": "CureItem",
+      "PouchSpecialDeal": "NotPushToPouch",
+      "ActionGuideType": "Bottle"
+    },
+    "Obj_Heart": {
+      "PouchGetType": "Small",
+      "PouchCategory": "CureItem",
+      "PouchSpecialDeal": "NotPushToPouch",
+      "IsNotOpenStockNumDisplay": true
+    },
+    "Obj_Heart_Container": {
+      "PouchGetType": "Heart",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "HeartContainer",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true
+    },
+    "Obj_Heart_Piece": {
+      "PouchGetType": "Medium",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "HeartPiece",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true
+    },
+    "Obj_MiniGame_SmallKey": {
+      "PouchGetType": "Medium",
+      "PouchCategory": "KeyItem",
+      "PouchSpecialDeal": "NotPushToPouch",
+      "IsAutoSaveAfterGet": true
+    },
+    "Shop_Armor_Goron": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Armor",
+      "PouchSpecialDeal": "None",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "EquipmentMenu"
+    },
+    "Shop_Armor_Zora": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Armor",
+      "PouchSpecialDeal": "None",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "EquipmentMenu"
+    },
+    "Shop_ArrowBundle_01": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Arrow",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Shop_ArrowBundle_02": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Arrow",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Shop_ArrowBundle_03": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Arrow",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Shop_BombBundle_01": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Bomb"
+    },
+    "Shop_BombBundle_02": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Bomb"
+    },
+    "Shop_BombBundle_03": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Bomb"
+    },
+    "Shop_BombBundle_04": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Bomb"
+    },
+    "Shop_BombchuBundle_01": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "ActionGuideType": "Bombchu"
+    },
+    "Shop_BombchuBundle_02": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "ActionGuideType": "Bombchu"
+    },
+    "Shop_BombchuBundle_03": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "ActionGuideType": "Bombchu"
+    },
+    "Shop_BombchuBundle_04": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "ActionGuideType": "Bombchu"
+    },
+    "Shop_BombchuBundle_05": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "ActionGuideType": "Bombchu"
+    },
+    "Shop_BombchuBundle_06": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "ActionGuideType": "Bombchu"
+    },
+    "Shop_BombchuBundle_07": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "ActionGuideType": "Bombchu"
+    },
+    "Shop_BombchuBundle_08": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "ActionGuideType": "Bombchu"
+    },
+    "Shop_Bottle_BlueFire": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "NotPushToPouch",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Bottle"
+    },
+    "Shop_Bottle_Bug": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "NotPushToPouch",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Bottle"
+    },
+    "Shop_Bottle_Fairy": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "NotPushToPouch",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Bottle"
+    },
+    "Shop_Bottle_Fish": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "NotPushToPouch",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Bottle"
+    },
+    "Shop_Bottle_GreenPotion": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "NotPushToPouch",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Bottle"
+    },
+    "Shop_Bottle_HalfMilk": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "NotPushToPouch",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Bottle"
+    },
+    "Shop_Bottle_Poe": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "NotPushToPouch",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Bottle"
+    },
+    "Shop_Bottle_RedPotion": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "NotPushToPouch",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "Bottle"
+    },
+    "Shop_DekuNutBundle_01": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "DekuNut"
+    },
+    "Shop_DekuNutBundle_02": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "DekuNut"
+    },
+    "Shop_DekuSeedBundle_01": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Arrow",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Shop_DekuSeedBundle_02": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Arrow",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "Shop_DekuStick": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "ActionGuideType": "DekuStick"
+    },
+    "Shop_DekuStickBundle_Medium": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "DekuStick"
+    },
+    "Shop_Heart": {
+      "PouchGetType": "Small",
+      "PouchCategory": "CureItem",
+      "PouchSpecialDeal": "NotPushToPouch",
+      "IsNotOpenStockNumDisplay": true
+    },
+    "Shop_MagicJar_Small": {
+      "PouchGetType": "Small",
+      "PouchCategory": "CureItem",
+      "PouchSpecialDeal": "NotPushToPouch",
+      "IsNotOpenStockNumDisplay": true
+    },
+    "Shop_Weapon_Shield_Deku": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Shield",
+      "PouchSpecialDeal": "None",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true
+    },
+    "Shop_Weapon_Shield_Hylian": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Shield",
+      "PouchSpecialDeal": "None",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "EquipmentMenu"
+    },
+    "TBox_ArrowBundle_Large": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Arrow",
+      "PouchSpecialDeal": "None"
+    },
+    "TBox_ArrowBundle_Medium": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Arrow",
+      "PouchSpecialDeal": "None"
+    },
+    "TBox_DekuNutBundle": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Material",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "DekuNut"
+    },
+    "TBox_DekuSeedBundle": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Arrow",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
+    "TBox_Rupee_Blue": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Rupee",
+      "PouchSpecialDeal": "None"
+    },
+    "TBox_Rupee_Gold": {
+      "PouchGetType": "Medium",
+      "PouchCategory": "Rupee",
+      "PouchSpecialDeal": "None"
+    },
+    "TBox_Rupee_Green": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Rupee",
+      "PouchSpecialDeal": "None"
+    },
+    "TBox_Rupee_Purple": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Rupee",
+      "PouchSpecialDeal": "None"
+    },
+    "TBox_Rupee_Red": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Rupee",
+      "PouchSpecialDeal": "None"
+    },
+    "TBox_Shield_Deku": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Shield",
+      "PouchSpecialDeal": "None",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true
+    },
+    "TBox_Shield_Hylian": {
+      "PouchGetType": "Large",
+      "PouchCategory": "Shield",
+      "PouchSpecialDeal": "None",
+      "IsNotOpenStockNumDisplay": true,
+      "IsAutoSaveAfterGet": true,
+      "ActionGuideType": "EquipmentMenu"
+    },
+    "Tbox_MagicJar_Large": {
+      "PouchGetType": "Small",
+      "PouchCategory": "CureItem",
+      "PouchSpecialDeal": "NotPushToPouch"
+    }
+  }
+}

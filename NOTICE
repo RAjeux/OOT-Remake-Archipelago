@@ -1,0 +1,37 @@
+Ocarina of Time Remake × Archipelago
+
+The original integration code and its modifications are distributed under the
+GNU General Public License, version 3 or (at your option) any later version.
+The full license text is provided in LICENSE. Existing third-party copyright
+notices and licenses remain in effect for their respective files.
+
+This integration adapts OOTRR 0.8.1, licensed GPL-3.0-or-later. Its complete
+notices, including the MIT-licensed OoT Randomizer logic and other upstream
+contributions, are preserved in moteur/ootrr-ap/NOTICE and
+client/ootrr_triforce/NOTICE. Earlier OOTRR MIT notices are retained upstream.
+
+Python resource tools derived from Mozencaz/OotrR retain their MIT notice in
+client/credits/OotrR-MIT.txt. Python, Go and native dependencies retain their
+own license files in client/credits/, client/websockets/, native/vendor/,
+distribution/runtime/ and distribution/sources/. Reference Triforce host
+sources retain their original notices and provenance in references/triforce/.
+See REFERENCES.md for the source revisions and the paths of these notices.
+
+Artwork is licensed separately from the source code. The colored Archipelago
+icon is attributed to Krista Corkos and Christopher Wilson (2022), under
+Creative Commons Attribution-NonCommercial 4.0 International:
+https://creativecommons.org/licenses/by-nc/4.0/
+Adaptations include resizing, texture conversion and the in-game AP medal.
+See client/credits/Titre-Archipelago.txt and client/credits/Visuels.txt.
+The GPL does not replace the license or attribution of this artwork.
+
+The replacement text wordmark is rendered for this project with Cinzel.
+Cinzel is Copyright 2020 The Cinzel Project Authors and is distributed under
+the SIL Open Font License 1.1. Its notice is preserved in
+moteur/ootrr-ap/web/assets/fonts/OFL-Cinzel.txt. The original Archipelago web
+wordmark is not included. See tools/generate_art.py for the rendering recipe.
+
+Nintendo game files are not included. Ocarina of Time and the associated game
+names and artwork belong to their respective rights holders. This is an
+unofficial integration and does not imply endorsement by Nintendo, OOTRR,
+Triforce or the Archipelago project.

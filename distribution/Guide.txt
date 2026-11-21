@@ -1,0 +1,115 @@
+Archipelago · Ocarina of Time Remake · 0.2.0-alpha.1
+Alpha pour Triforce Windows 64 bits.
+https://github.com/RAjeux/OOT-Remake-Archipelago
+
+Cette version a été essayée avec Triforce 0.6.0. Les animations de réception
+et certains mouvements de caméra restent à améliorer. Hookshot et Fritchii
+ne sont pas pris en charge par l’intégration native de ce pack.
+
+Avant de commencer
+Prépare Windows 64 bits, Triforce et ses outils, ta propre extraction du jeu
+en version 1.1.1 (dossier romfs), OOTRR portable 0.8.1, Python 3.11 ou plus
+récent et Node.js 22 ou 24. Aucun fichier du jeu n’est fourni.
+La machine qui génère la salle doit disposer d’Archipelago et de l’APWorld
+fourni dans le ZIP. Le serveur de référence utilisé est Archipelago 0.6.7.
+Utilise une partie dédiée à ta salle Archipelago.
+
+Créer une salle
+1. Installe ootrr_remake.apworld dans Archipelago sur la machine de génération.
+2. Lance Creer-YAML.cmd pour préparer le YAML de Zelda. Les réglages OOTRR
+   pris en charge sont écrits directement dans le YAML, avec leurs explications.
+   Des exemples sont fournis dans le dépôt. Les options death_link et
+   kokiri_shop_checks sont décrites plus bas.
+3. Génère une salle avec ce YAML et ceux des autres joueurs. Récupère ton
+   fichier joueur .apootrr, puis démarre le serveur de cette salle.
+
+Première installation sur le PC de Zelda
+1. Ferme Zelda et tout ancien client de cette partie. Extrais entièrement le ZIP.
+2. Lance Configurer-le-mod-Archipelago.cmd et choisis ton fichier .apootrr.
+   Indique le dossier de mods utilisé par Triforce, ootrr.exe de la version
+   portable 0.8.1 et le dossier romfs du jeu 1.1.1 lorsque le programme les demande.
+   Après installation, le dossier de mod Archipelago contient archipelago.dll
+   à côté de romfs. Les chemins sont mémorisés pour les configurations suivantes.
+3. Entre l’adresse du serveur et son mot de passe seulement si la salle en a un.
+   Sur le PC qui héberge le serveur, l’adresse par défaut est 127.0.0.1:38281.
+4. Les outils du port se trouvent généralement dans
+   %LOCALAPPDATA%\Programs\Triforce\tools. Si une fenêtre les demande, choisis
+   le dossier contenant host et nx2. Le programme conserve une copie de la source
+   d’origine. Si les outils ne sont pas compatibles, l’installation le signale.
+5. Une fois la configuration terminée, ferme cette console. Dans Triforce Setup,
+   active Archipelago, puis reconstruis le jeu avec Build again.
+6. Attends la fin de la reconstruction et lance Zelda depuis Triforce.
+   La connexion Archipelago est ouverte par le jeu dès l’écran titre.
+
+Sessions suivantes et mises à jour
+Lance Zelda normalement depuis Triforce ; la console de configuration n’a pas
+besoin de rester ouverte. Pour revenir au profil normal, désactive Archipelago
+dans le launcher et redémarre le jeu.
+Après une mise à jour qui remplace les outils ou l’exécutable de Triforce,
+attends la fin de cette mise à jour, relance Configurer-le-mod-Archipelago.cmd,
+puis reconstruis le jeu. Ne configure pas le mod pendant une mise à jour du port.
+Chaque nouvelle salle demande son propre .apootrr et sa configuration.
+
+Vérifier la connexion
+Le serveur doit montrer ton slot connecté alors que Zelda est à l’écran titre.
+Observer-Archipelago.cmd affiche les notifications du jeu et peut être fermé
+à tout moment. « Jeu détecté · mod Archipelago actif » confirme le chargement
+et « Archipelago connecté » confirme l’acceptation du joueur par la salle.
+Le journal se trouve dans
+%LOCALAPPDATA%\OOTRR-Archipelago\<identifiant de salle>\archipelago-jeu.log.
+Ne partage pas les fichiers de session ou de configuration avec tes logs publics.
+
+Coffres et objets reçus
+Un coffre destiné à Zelda montre et donne directement l’objet natif assigné.
+Un coffre destiné à un autre joueur montre son médaillon et son destinataire,
+puis valide son emplacement AP. L’ancienne récompense locale n’est pas ajoutée.
+Seuls les coffres du catalogue et les huit achats Kokiri optionnels sont des
+emplacements réseau. Certaines récompenses locales hors AP, notamment les pièces
+de cœur, conservent le traitement d’OOTRR ; elles ne sont pas toutes identiques
+à celles du jeu non modifié.
+Les objets venant d’autres mondes sont remis dans l’ordre en partie active.
+Leur effet est natif ; leur présentation et certains mouvements de caméra
+restent imparfaits dans cette alpha.
+Le gain et son compteur de réception sont enregistrés ensemble. Les objets
+reçus pendant que Zelda est fermé restent sur le serveur et sont repris au
+chargement de la partie après reconnexion. Sauvegarde avant de quitter normalement.
+Le mod conserve les checks pendant une coupure et réessaie la connexion.
+
+Si une ressource de médaillon ne peut pas être préparée, le fichier
+medaillons-diagnostic.txt de la salle enregistre le problème. Le nom de l’objet
+et celui du destinataire restent disponibles dans les notifications du coffre.
+
+Les huit achats Kokiri
+Ajoute kokiri_shop_checks: true aux options Zelda du YAML avant de générer
+une nouvelle salle. Les réglages doivent fournir les huit emplacements de
+boutique. Chaque étagère vend une seule fois un objet pour un autre joueur,
+au prix prévu par la seed OOTRR. Le paiement et l’affichage épuisé sont ceux
+du jeu ; l’achat valide le check AP.
+Un achat a été vérifié en jeu avec réception par l’autre joueur et état épuisé
+conservé après rechargement. Les huit emplacements sont couverts par les tests
+automatisés, mais n’ont pas tous été rejoués en jeu.
+
+DeathLink
+Ajoute death_link: true aux options Zelda du YAML et active DeathLink dans
+les options des autres jeux participants avant de générer la salle.
+Une mort de Link est transmise aux autres joueurs DeathLink connectés.
+Une mort reçue tue Link en partie active, sans renvoyer une seconde mort.
+Pendant un achat ou une réception d’objet, elle attend la fin de l’événement
+pour laisser terminer la transaction. Le titre et les chargements ne gardent
+pas de mort en attente pour la partie suivante.
+Les deux directions ont été vérifiées sur Triforce 0.6.0, avec une vraie mort
+locale de Link. Le report pendant un événement est couvert par les tests
+simulés ; il reste à confirmer dans toutes les scènes du jeu.
+
+Anciennes salles
+Les anciens .apootrr conservent le comportement de leur salle et leur sauvegarde.
+Ne change pas manuellement les drapeaux d’une ancienne salle pour la convertir.
+Pour le comportement de cette alpha ou une autre sélection d’options, génère
+une nouvelle salle avec l’APWorld de ce pack et configure son nouveau .apootrr.
+
+Signaler un problème
+Précise la version du pack, celle de Triforce, le contexte du jeu et l’action
+qui reproduit le problème. Les fichiers joueur et les journaux peuvent contenir
+les noms des participants : vérifie leur contenu avant une publication.
+Le code, les tests, les limites connues et les crédits sont documentés dans
+le README du dépôt. Les tests automatisés ne remplacent pas les essais en jeu.

@@ -1,0 +1,12 @@
+[package]
+name = "ootrr-mem"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+ootrr-core = { path = "../core" }
+
+[lints.rust]
+unsafe_code = "deny"

@@ -1,0 +1,5529 @@
+{
+ "format": 1,
+ "revision": 2,
+ "note": "Identifiers only. Remake only pots, crates and flying pots: placed base actors whose hash no other catalog row holds, that use the drop and saved row of the pot slice (base actor, no Presence flag, no boss door resupply table, a supply row of reset type 88, 280 for flying pots, an own drop or own table of one shipped pickup or no own drop at all). Names are made up for this tool and never change, Archipelago reads them. The adult and the child copy of a spot are two rows. vanilla is the own drop, the item of the own table, else Rupee (1). region is the logic region the spot is added to. Rows 1 to 19 (revision 1) took the one region of every known check in the same dungeon room. Rows of revision 2 collect every region the data offers for the spot (the regions of the known checks with the same DefaultDungeonRoomIndex, the OoTR candidates of the remake research, the OoTR guess of the tracker table, else the known checks within 20 units in the same layer) and take the HARDER one, the region the vanilla playthrough reaches last at the age of the spot. basis says which. rule is the baseline: the age of the layer, can_break_crate for a crate, nothing else, unless every OoTR candidate agrees on one region and rule. These spots hold any item, key items included. A region that is too easy can lock a seed, fix it in data/logic/spot_overrides.json.",
+ "retire": [],
+ "locations": [
+  {
+   "name": "Dodongos Cavern Upper Lizalfos Remake Pot 1",
+   "area": "Dodongos Cavern",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "DodongoCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Dodongos Cavern Upper Lizalfos",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "12436656290806750367",
+     "files": [
+      "Banc/DodongoCavern/DodongoCavern_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess"
+  },
+  {
+   "name": "Dodongos Cavern Upper Lizalfos Remake Pot 2",
+   "area": "Dodongos Cavern",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "DodongoCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Dodongos Cavern Upper Lizalfos",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "6763794341906819086",
+     "files": [
+      "Banc/DodongoCavern/DodongoCavern_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess"
+  },
+  {
+   "name": "Fire Temple Narrow Path Room Remake Pot",
+   "area": "Fire Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "FireTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Fire Temple Narrow Path Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "11945600822575070219",
+     "files": [
+      "Banc/FireTemple/FireTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess"
+  },
+  {
+   "name": "Fire Temple Near Boss Remake Pot 1",
+   "area": "Fire Temple",
+   "kind": "pot",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "FireTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Fire Temple Near Boss",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "13720304619349543095",
+     "files": [
+      "Banc/FireTemple/FireTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess"
+  },
+  {
+   "name": "Fire Temple Near Boss Remake Pot 2",
+   "area": "Fire Temple",
+   "kind": "pot",
+   "vanilla": "Rupees (20)",
+   "item": "Obj_Rupee_Red",
+   "conf": "forced",
+   "folder": "FireTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Fire Temple Near Boss",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "2839526458267949318",
+     "files": [
+      "Banc/FireTemple/FireTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess"
+  },
+  {
+   "name": "Fire Temple Near Boss Remake Pot 3",
+   "area": "Fire Temple",
+   "kind": "pot",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "FireTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Fire Temple Near Boss",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "12275059645282086381",
+     "files": [
+      "Banc/FireTemple/FireTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess"
+  },
+  {
+   "name": "Forest Temple Outdoors High Balconies Remake Pot 1",
+   "area": "Forest Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ForestTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Forest Temple Outdoors High Balconies",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "6916546705775293667",
+     "files": [
+      "Banc/ForestTemple/ForestTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess"
+  },
+  {
+   "name": "Forest Temple Outdoors High Balconies Remake Pot 2",
+   "area": "Forest Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "ForestTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Forest Temple Outdoors High Balconies",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "9611679337718327541",
+     "files": [
+      "Banc/ForestTemple/ForestTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess"
+  },
+  {
+   "name": "GV Storms Grotto Adult Remake Pot 1",
+   "area": "Gerudo Valley",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "GerudoValley",
+   "via": "drop",
+   "age": "adult",
+   "region": "GV Storms Grotto",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "6896071498853277403",
+     "files": [
+      "Banc/GerudoValley/GerudoValley_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess"
+  },
+  {
+   "name": "GV Storms Grotto Adult Remake Pot 2",
+   "area": "Gerudo Valley",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "GerudoValley",
+   "via": "drop",
+   "age": "adult",
+   "region": "GV Storms Grotto",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "3407692112799570510",
+     "files": [
+      "Banc/GerudoValley/GerudoValley_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess"
+  },
+  {
+   "name": "GV Storms Grotto Adult Remake Pot 3",
+   "area": "Gerudo Valley",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "GerudoValley",
+   "via": "drop",
+   "age": "adult",
+   "region": "GV Storms Grotto",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "15334540056586068351",
+     "files": [
+      "Banc/GerudoValley/GerudoValley_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess"
+  },
+  {
+   "name": "GV Storms Grotto Adult Remake Pot 4",
+   "area": "Gerudo Valley",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "GerudoValley",
+   "via": "drop",
+   "age": "adult",
+   "region": "GV Storms Grotto",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "10851977283896645114",
+     "files": [
+      "Banc/GerudoValley/GerudoValley_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess"
+  },
+  {
+   "name": "Ice Cavern Behind Ice Walls Remake Pot 1",
+   "area": "Ice Cavern",
+   "kind": "pot",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "IceCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Ice Cavern Behind Ice Walls",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "17314383705983097019",
+     "files": [
+      "Banc/IceCavern/IceCavern_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess"
+  },
+  {
+   "name": "Ice Cavern Behind Ice Walls Remake Pot 2",
+   "area": "Ice Cavern",
+   "kind": "pot",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "IceCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Ice Cavern Behind Ice Walls",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "15011057361189787608",
+     "files": [
+      "Banc/IceCavern/IceCavern_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess"
+  },
+  {
+   "name": "Shadow Temple Invisible Spikes Remake Pot 1",
+   "area": "Shadow Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ShadowTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Shadow Temple Invisible Spikes",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "9863928399380026377",
+     "files": [
+      "Banc/ShadowTemple/ShadowTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess"
+  },
+  {
+   "name": "Shadow Temple Invisible Spikes Remake Pot 2",
+   "area": "Shadow Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ShadowTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Shadow Temple Invisible Spikes",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "15429078377557359609",
+     "files": [
+      "Banc/ShadowTemple/ShadowTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess"
+  },
+  {
+   "name": "Shadow Temple Wind Tunnel Remake Pot",
+   "area": "Shadow Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "ShadowTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Shadow Temple Wind Tunnel",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "1252191464782579179",
+     "files": [
+      "Banc/ShadowTemple/ShadowTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess"
+  },
+  {
+   "name": "Water Temple Before Boss Remake Pot 1",
+   "area": "Water Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "WaterTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Water Temple Before Boss",
+   "rule": "can_use(Longshot)",
+   "refs": [
+    {
+     "hash": "1279554567131519582",
+     "files": [
+      "Banc/WaterTemple/WaterTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely"
+  },
+  {
+   "name": "Water Temple Before Boss Remake Pot 2",
+   "area": "Water Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "WaterTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Water Temple Before Boss",
+   "rule": "can_use(Longshot)",
+   "refs": [
+    {
+     "hash": "4025608826386451139",
+     "files": [
+      "Banc/WaterTemple/WaterTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely"
+  },
+  {
+   "name": "Adult Spirit Temple Climb Remake Pot 1",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Adult Spirit Temple Climb",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "778407491583679134",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 7 check Spirit Temple Statue Room Hand Chest, took the harder region (sphere 20) over Child Spirit Temple Climb (18), Spirit Temple Central Chamber (18)"
+  },
+  {
+   "name": "Adult Spirit Temple Climb Remake Pot 2",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Adult Spirit Temple Climb",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "4299081678185954776",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 7 check Spirit Temple Statue Room Hand Chest, took the harder region (sphere 20) over Child Spirit Temple Climb (18), Spirit Temple Central Chamber (18)"
+  },
+  {
+   "name": "Adult Spirit Temple Climb Remake Pot 3",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Adult Spirit Temple Climb",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "7951190351490769890",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 7 check Spirit Temple Statue Room Hand Chest, took the harder region (sphere 20) over Child Spirit Temple Climb (18), Spirit Temple Central Chamber (18)"
+  },
+  {
+   "name": "Adult Spirit Temple Climb Remake Pot 4",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Adult Spirit Temple Climb",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "11376619372284527696",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 7 check Spirit Temple Statue Room Hand Chest, took the harder region (sphere 20) over Child Spirit Temple Climb (18), Spirit Temple Central Chamber (18)"
+  },
+  {
+   "name": "Bottom of the Well Behind Fake Walls Remake Pot 1",
+   "area": "Bottom of the Well",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "BottomOfTheWell",
+   "via": "drop",
+   "age": "both",
+   "region": "Bottom of the Well Behind Fake Walls",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "13474828754365101442",
+     "files": [
+      "Banc/BottomOfTheWell/BottomOfTheWell_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 1 check Bottom of the Well Center Skulltula Chest, room 1 check Bottom of the Well Compass Chest, room 1 check Bottom of the Well Right Bottom Fake Wall Chest and more, took the harder region (sphere 14) over Bottom of the Well Left Side (14), Bottom of the Well Main Area (13)"
+  },
+  {
+   "name": "Bottom of the Well Behind Fake Walls Remake Pot 2",
+   "area": "Bottom of the Well",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "BottomOfTheWell",
+   "via": "drop",
+   "age": "both",
+   "region": "Bottom of the Well Behind Fake Walls",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "2092886772595448761",
+     "files": [
+      "Banc/BottomOfTheWell/BottomOfTheWell_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 1 check Bottom of the Well Center Skulltula Chest, room 1 check Bottom of the Well Compass Chest, room 1 check Bottom of the Well Right Bottom Fake Wall Chest and more, took the harder region (sphere 14) over Bottom of the Well Left Side (14), Bottom of the Well Main Area (13)"
+  },
+  {
+   "name": "Bottom of the Well Behind Fake Walls Remake Pot 3",
+   "area": "Bottom of the Well",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "BottomOfTheWell",
+   "via": "drop",
+   "age": "both",
+   "region": "Bottom of the Well Behind Fake Walls",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "2443543311722520559",
+     "files": [
+      "Banc/BottomOfTheWell/BottomOfTheWell_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 1 check Bottom of the Well Center Skulltula Chest, room 1 check Bottom of the Well Compass Chest, room 1 check Bottom of the Well Right Bottom Fake Wall Chest and more, took the harder region (sphere 14) over Bottom of the Well Left Side (14), Bottom of the Well Main Area (13)"
+  },
+  {
+   "name": "Bottom of the Well Behind Fake Walls Remake Pot 4",
+   "area": "Bottom of the Well",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "BottomOfTheWell",
+   "via": "drop",
+   "age": "both",
+   "region": "Bottom of the Well Behind Fake Walls",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "3141423279806923469",
+     "files": [
+      "Banc/BottomOfTheWell/BottomOfTheWell_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 1 check Bottom of the Well Center Skulltula Chest, room 1 check Bottom of the Well Compass Chest, room 1 check Bottom of the Well Right Bottom Fake Wall Chest and more, took the harder region (sphere 14) over Bottom of the Well Left Side (14), Bottom of the Well Main Area (13)"
+  },
+  {
+   "name": "Bottom of the Well Behind Fake Walls Remake Pot 5",
+   "area": "Bottom of the Well",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "BottomOfTheWell",
+   "via": "drop",
+   "age": "both",
+   "region": "Bottom of the Well Behind Fake Walls",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "5265023541749704555",
+     "files": [
+      "Banc/BottomOfTheWell/BottomOfTheWell_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Bottom of the Well Compass Chest, took the harder region (sphere 14) over Bottom of the Well Left Side (14)"
+  },
+  {
+   "name": "Bottom of the Well Behind Fake Walls Remake Pot 6",
+   "area": "Bottom of the Well",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "BottomOfTheWell",
+   "via": "drop",
+   "age": "both",
+   "region": "Bottom of the Well Behind Fake Walls",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "8241360954609403613",
+     "files": [
+      "Banc/BottomOfTheWell/BottomOfTheWell_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 1 check Bottom of the Well Center Skulltula Chest, room 1 check Bottom of the Well Compass Chest, room 1 check Bottom of the Well Right Bottom Fake Wall Chest and more, took the harder region (sphere 14) over Bottom of the Well Left Side (14), Bottom of the Well Main Area (13)"
+  },
+  {
+   "name": "Bottom of the Well Behind Fake Walls Remake Pot 7",
+   "area": "Bottom of the Well",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "BottomOfTheWell",
+   "via": "drop",
+   "age": "both",
+   "region": "Bottom of the Well Behind Fake Walls",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "9098987026005330221",
+     "files": [
+      "Banc/BottomOfTheWell/BottomOfTheWell_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 1 check Bottom of the Well Center Skulltula Chest, room 1 check Bottom of the Well Compass Chest, room 1 check Bottom of the Well Right Bottom Fake Wall Chest and more, took the harder region (sphere 14) over Bottom of the Well Left Side (14), Bottom of the Well Main Area (13)"
+  },
+  {
+   "name": "Bottom of the Well Behind Fake Walls Remake Pot 8",
+   "area": "Bottom of the Well",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "BottomOfTheWell",
+   "via": "drop",
+   "age": "both",
+   "region": "Bottom of the Well Behind Fake Walls",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "11422150025867601433",
+     "files": [
+      "Banc/BottomOfTheWell/BottomOfTheWell_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 1 check Bottom of the Well Center Skulltula Chest, room 1 check Bottom of the Well Compass Chest, room 1 check Bottom of the Well Right Bottom Fake Wall Chest and more, took the harder region (sphere 14) over Bottom of the Well Left Side (14), Bottom of the Well Main Area (13)"
+  },
+  {
+   "name": "Bottom of the Well Behind Fake Walls Remake Pot 9",
+   "area": "Bottom of the Well",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "BottomOfTheWell",
+   "via": "drop",
+   "age": "both",
+   "region": "Bottom of the Well Behind Fake Walls",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "13514633590582184597",
+     "files": [
+      "Banc/BottomOfTheWell/BottomOfTheWell_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 1 check Bottom of the Well Center Skulltula Chest, room 1 check Bottom of the Well Compass Chest, room 1 check Bottom of the Well Right Bottom Fake Wall Chest and more, took the harder region (sphere 14) over Bottom of the Well Left Side (14), Bottom of the Well Main Area (13)"
+  },
+  {
+   "name": "Bottom of the Well Behind Locked Doors Remake Pot 1",
+   "area": "Bottom of the Well",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "BottomOfTheWell",
+   "via": "drop",
+   "age": "both",
+   "region": "Bottom of the Well Behind Locked Doors",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "3704217652444280802",
+     "files": [
+      "Banc/BottomOfTheWell/BottomOfTheWell_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 7 check Bottom of the Well GS Like Like Cage, took the harder region (sphere 15)"
+  },
+  {
+   "name": "Bottom of the Well Behind Locked Doors Remake Pot 2",
+   "area": "Bottom of the Well",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "BottomOfTheWell",
+   "via": "drop",
+   "age": "both",
+   "region": "Bottom of the Well Behind Locked Doors",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "5061848338283631993",
+     "files": [
+      "Banc/BottomOfTheWell/BottomOfTheWell_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 5 check Bottom of the Well GS East Inner Room, took the harder region (sphere 15) over Bottom of the Well Main Area (13)"
+  },
+  {
+   "name": "Bottom of the Well Behind Locked Doors Remake Pot 3",
+   "area": "Bottom of the Well",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "BottomOfTheWell",
+   "via": "drop",
+   "age": "both",
+   "region": "Bottom of the Well Behind Locked Doors",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "5777989807578063864",
+     "files": [
+      "Banc/BottomOfTheWell/BottomOfTheWell_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 5 check Bottom of the Well GS East Inner Room, took the harder region (sphere 15) over Bottom of the Well Main Area (13)"
+  },
+  {
+   "name": "Bottom of the Well Behind Locked Doors Remake Pot 4",
+   "area": "Bottom of the Well",
+   "kind": "pot",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "BottomOfTheWell",
+   "via": "drop",
+   "age": "both",
+   "region": "Bottom of the Well Behind Locked Doors",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "8650410172248468465",
+     "files": [
+      "Banc/BottomOfTheWell/BottomOfTheWell_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate Bottom of the Well Fire Keese Pot, tracker guess Bottom of the Well Fire Keese Pot, took the harder region (sphere 15) over Bottom of the Well Left Side (14), Bottom of the Well Main Area (13)"
+  },
+  {
+   "name": "Bottom of the Well Main Area Remake Pot 1",
+   "area": "Bottom of the Well",
+   "kind": "pot",
+   "vanilla": "Bombs (5)",
+   "item": "",
+   "conf": "forced",
+   "folder": "BottomOfTheWell",
+   "via": "drop",
+   "age": "both",
+   "region": "Bottom of the Well Main Area",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "1484084316515022872",
+     "files": [
+      "Banc/BottomOfTheWell/BottomOfTheWell_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Bottom of the Well Underwater Pot, room 9 check Bottom of the Well Map Chest, room 9 check Bottom of the Well Basement Pot 6 and more, took the harder region (sphere 13)"
+  },
+  {
+   "name": "Bottom of the Well Main Area Remake Pot 2",
+   "area": "Bottom of the Well",
+   "kind": "pot",
+   "vanilla": "Bombs (5)",
+   "item": "",
+   "conf": "forced",
+   "folder": "BottomOfTheWell",
+   "via": "drop",
+   "age": "both",
+   "region": "Bottom of the Well Main Area",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "9892629541424148846",
+     "files": [
+      "Banc/BottomOfTheWell/BottomOfTheWell_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 9 check Bottom of the Well Map Chest, room 9 check Bottom of the Well Basement Pot 6, room 9 check Bottom of the Well Basement Pot 10 and more, took the harder region (sphere 13)"
+  },
+  {
+   "name": "Bottom of the Well Main Area Remake Pot 3",
+   "area": "Bottom of the Well",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "BottomOfTheWell",
+   "via": "drop",
+   "age": "both",
+   "region": "Bottom of the Well Main Area",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "2976328581859030383",
+     "files": [
+      "Banc/BottomOfTheWell/BottomOfTheWell_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Bottom of the Well Invisible Chest, took the harder region (sphere 13)"
+  },
+  {
+   "name": "Bottom of the Well Main Area Remake Pot 4",
+   "area": "Bottom of the Well",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "BottomOfTheWell",
+   "via": "drop",
+   "age": "both",
+   "region": "Bottom of the Well Main Area",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "5999281521813032298",
+     "files": [
+      "Banc/BottomOfTheWell/BottomOfTheWell_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Bottom of the Well Invisible Chest, took the harder region (sphere 13)"
+  },
+  {
+   "name": "Bottom of the Well Main Area Remake Pot 5",
+   "area": "Bottom of the Well",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "BottomOfTheWell",
+   "via": "drop",
+   "age": "both",
+   "region": "Bottom of the Well Main Area",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "6677233868797591943",
+     "files": [
+      "Banc/BottomOfTheWell/BottomOfTheWell_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 3 check Bottom of the Well Freestanding Key, took the harder region (sphere 13)"
+  },
+  {
+   "name": "Bottom of the Well Main Area Remake Pot 6",
+   "area": "Bottom of the Well",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "BottomOfTheWell",
+   "via": "drop",
+   "age": "both",
+   "region": "Bottom of the Well Main Area",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "18305487040364591494",
+     "files": [
+      "Banc/BottomOfTheWell/BottomOfTheWell_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Bottom of the Well Invisible Chest, took the harder region (sphere 13)"
+  },
+  {
+   "name": "Child Spirit Temple Beyond Metal Bridges Remake Pot 1",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Child Spirit Temple Beyond Metal Bridges",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "7796220661333936673",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Spirit Temple Child Anubis Pot 3, took the harder region (sphere 17)"
+  },
+  {
+   "name": "Child Spirit Temple Beyond Metal Bridges Remake Pot 2",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Child Spirit Temple Beyond Metal Bridges",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "10768155177622331490",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Spirit Temple Child Anubis Pot 1, room 3 check Spirit Temple Child Anubis Pot 4, room 3 check Spirit Temple Child Anubis Pot 2, took the harder region (sphere 17)"
+  },
+  {
+   "name": "Child Spirit Temple Climb Remake Pot 1",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Deku Seeds (30)",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Child Spirit Temple Climb",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "4515702891486979263",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Spirit Temple Child Climb Pot, took the harder region (sphere 18) over Child Spirit Temple Beyond Metal Bridges (17)"
+  },
+  {
+   "name": "Child Spirit Temple Climb Remake Pot 2",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Child Spirit Temple Climb",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "13333368700054583083",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Spirit Temple Child Climb North Chest, took the harder region (sphere 18)"
+  },
+  {
+   "name": "Child Spirit Temple Climb Remake Pot 3",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Child Spirit Temple Climb",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "14221521666026319023",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Spirit Temple Child Climb North Chest, took the harder region (sphere 18) over Child Spirit Temple Beyond Metal Bridges (17)"
+  },
+  {
+   "name": "DMC Lower Nearby Adult Remake Pot 1",
+   "area": "Death Mountain Crater",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "DeathMountainCrater",
+   "via": "drop",
+   "age": "adult",
+   "region": "DMC Lower Nearby",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "16987791207545600180",
+     "files": [
+      "Banc/DeathMountainCrater/DeathMountainCrater_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check DMC Near GC Pot 2, took the harder region (sphere 12)"
+  },
+  {
+   "name": "DMC Upper Local Child Remake Crate 1",
+   "area": "Death Mountain Crater",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "DeathMountainCrater",
+   "via": "drop",
+   "age": "child",
+   "region": "DMC Upper Local",
+   "rule": "is_child and can_break_crate",
+   "refs": [
+    {
+     "hash": "4502491733150659917",
+     "files": [
+      "Banc/DeathMountainCrater/DeathMountainCrater_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check DMC GS Crate, nearby check DMC Child Rock 10, nearby check DMC Child Rock 12, took the harder region (sphere 6)"
+  },
+  {
+   "name": "DMC Upper Local Child Remake Crate 2",
+   "area": "Death Mountain Crater",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "DeathMountainCrater",
+   "via": "drop",
+   "age": "child",
+   "region": "DMC Upper Local",
+   "rule": "is_child and can_break_crate",
+   "refs": [
+    {
+     "hash": "12627030076101040890",
+     "files": [
+      "Banc/DeathMountainCrater/DeathMountainCrater_Child_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check DMC GS Crate, nearby check DMC Child Rock 10, nearby check DMC Child Rock 12, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Dodongos Cavern Before Boss Remake Pot 1",
+   "area": "Dodongos Cavern",
+   "kind": "pot",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "DodongoCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Dodongos Cavern Before Boss",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "2045413023280716382",
+     "files": [
+      "Banc/DodongoCavern/DodongoCavern_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 5 check Dodongos Cavern Last Block Pot 4, took the harder region (sphere 6) over Dodongos Cavern Before Upper Lizalfos (5), Dodongos Cavern Far Bridge (5), Dodongos Cavern Lower Right Side (5), Dodongos Cavern Torch Room (5)"
+  },
+  {
+   "name": "Dodongos Cavern Before Boss Remake Pot 2",
+   "area": "Dodongos Cavern",
+   "kind": "pot",
+   "vanilla": "Deku Seeds (30)",
+   "item": "",
+   "conf": "forced",
+   "folder": "DodongoCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Dodongos Cavern Before Boss",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "3215221221211819661",
+     "files": [
+      "Banc/DodongoCavern/DodongoCavern_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Dodongos Cavern Last Block Pot 3, took the harder region (sphere 6) over Dodongos Cavern Far Bridge (5)"
+  },
+  {
+   "name": "Dodongos Cavern Before Boss Remake Pot 3",
+   "area": "Dodongos Cavern",
+   "kind": "pot",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "DodongoCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Dodongos Cavern Before Boss",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "10493525405478862270",
+     "files": [
+      "Banc/DodongoCavern/DodongoCavern_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 5 check Dodongos Cavern Last Block Pot 4, took the harder region (sphere 6) over Dodongos Cavern Before Upper Lizalfos (5), Dodongos Cavern Far Bridge (5), Dodongos Cavern Lower Right Side (5), Dodongos Cavern Torch Room (5)"
+  },
+  {
+   "name": "Dodongos Cavern Before Boss Remake Pot 4",
+   "area": "Dodongos Cavern",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "DodongoCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Dodongos Cavern Before Boss",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "3975080901614021966",
+     "files": [
+      "Banc/DodongoCavern/DodongoCavern_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Dodongos Cavern Last Block Pot 2, took the harder region (sphere 6) over Dodongos Cavern Torch Room (5)"
+  },
+  {
+   "name": "Dodongos Cavern Before Upper Lizalfos Remake Pot 1",
+   "area": "Dodongos Cavern",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "DodongoCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Dodongos Cavern Before Upper Lizalfos",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "2530082567273905838",
+     "files": [
+      "Banc/DodongoCavern/DodongoCavern_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Dodongos Cavern Single Eye Switch Room Pot 1, took the harder region (sphere 5) over Dodongos Cavern Lower Right Side (5)"
+  },
+  {
+   "name": "Dodongos Cavern Climb Remake Pot 1",
+   "area": "Dodongos Cavern",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "DodongoCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Dodongos Cavern Climb",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "10636680471375736003",
+     "files": [
+      "Banc/DodongoCavern/DodongoCavern_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 13 check Dodongos Cavern Bomb Flower Platform Chest, room 13 check Dodongos Cavern Blade Room Pot 1, room 13 check Dodongos Cavern Blade Room Pot 2, took the harder region (sphere 5) over Dodongos Cavern Far Bridge (5), Dodongos Cavern Lower Right Side (5)"
+  },
+  {
+   "name": "Dodongos Cavern Climb Remake Pot 2",
+   "area": "Dodongos Cavern",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "DodongoCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Dodongos Cavern Climb",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "1786052373103713076",
+     "files": [
+      "Banc/DodongoCavern/DodongoCavern_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Dodongos Cavern Staircase Pot 4, room 10 check Dodongos Cavern Staircase Top Bombable Chest, room 10 check Dodongos Cavern Staircase Pot 3 and more, took the harder region (sphere 5) over Dodongos Cavern Far Bridge (5)"
+  },
+  {
+   "name": "Dodongos Cavern Climb Remake Pot 3",
+   "area": "Dodongos Cavern",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "DodongoCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Dodongos Cavern Climb",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "11604995372981625598",
+     "files": [
+      "Banc/DodongoCavern/DodongoCavern_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Dodongos Cavern Staircase Pot 3, took the harder region (sphere 5)"
+  },
+  {
+   "name": "Dodongos Cavern Lower Right Side Remake Pot 1",
+   "area": "Dodongos Cavern",
+   "kind": "pot",
+   "vanilla": "Deku Seeds (30)",
+   "item": "",
+   "conf": "forced",
+   "folder": "DodongoCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Dodongos Cavern Lower Right Side",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "14182867811396955150",
+     "files": [
+      "Banc/DodongoCavern/DodongoCavern_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 14 check Dodongos Cavern Right Side Pot 4, took the harder region (sphere 5)"
+  },
+  {
+   "name": "Dodongos Cavern Mouth Remake Pot 1",
+   "area": "Dodongos Cavern",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "DodongoCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Dodongos Cavern Mouth",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "7019968549718875208",
+     "files": [
+      "Banc/DodongoCavern/DodongoCavern_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Dodongos Cavern GS Back Room, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Fire Temple Boulder Maze Upper Remake Pot 1",
+   "area": "Fire Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "FireTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Fire Temple Boulder Maze Upper",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "1614774357493893481",
+     "files": [
+      "Banc/FireTemple/FireTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Fire Temple Boulder Maze Shortcut Chest, took the harder region (sphere 16)"
+  },
+  {
+   "name": "Fire Temple Flame Maze Remake Crate 1",
+   "area": "Fire Temple",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "FireTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Fire Temple Flame Maze",
+   "rule": "can_break_crate",
+   "refs": [
+    {
+     "hash": "6542764537258522428",
+     "files": [
+      "Banc/FireTemple/FireTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 10 check Fire Temple Flame Maze Left Side Pot 3, room 10 check Fire Temple Flame Maze Left Side Pot 1, room 10 check Fire Temple Compass Chest, took the harder region (sphere 17) over Fire Temple Upper (17)"
+  },
+  {
+   "name": "Fire Temple Flame Maze Remake Pot 1",
+   "area": "Fire Temple",
+   "kind": "pot",
+   "vanilla": "Bombs (5)",
+   "item": "",
+   "conf": "forced",
+   "folder": "FireTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Fire Temple Flame Maze",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "3049694327750200002",
+     "files": [
+      "Banc/FireTemple/FireTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 10 check Fire Temple Flame Maze Left Side Pot 3, room 10 check Fire Temple Flame Maze Left Side Pot 1, room 10 check Fire Temple Compass Chest, took the harder region (sphere 17) over Fire Temple Upper (17)"
+  },
+  {
+   "name": "Fire Temple Flame Maze Remake Pot 2",
+   "area": "Fire Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "FireTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Fire Temple Flame Maze",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "17781326666964833523",
+     "files": [
+      "Banc/FireTemple/FireTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 10 check Fire Temple Flame Maze Left Side Pot 3, room 10 check Fire Temple Flame Maze Left Side Pot 1, room 10 check Fire Temple Compass Chest, took the harder region (sphere 17) over Fire Temple Upper (17)"
+  },
+  {
+   "name": "Fire Temple Narrow Path Room Remake Pot 2",
+   "area": "Fire Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "FireTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Fire Temple Narrow Path Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "14488990020963596026",
+     "files": [
+      "Banc/FireTemple/FireTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Fire Temple Map Chest, took the harder region (sphere 16)"
+  },
+  {
+   "name": "Fire Temple Narrow Path Room Remake Pot 3",
+   "area": "Fire Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "FireTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Fire Temple Narrow Path Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "15901054600830633268",
+     "files": [
+      "Banc/FireTemple/FireTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Fire Temple Map Chest, took the harder region (sphere 16)"
+  },
+  {
+   "name": "Forest Temple Block Push Room Remake Pot 1",
+   "area": "Forest Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ForestTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Forest Temple Block Push Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "3947004986900705772",
+     "files": [
+      "Banc/ForestTemple/ForestTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Forest Temple Eye Switch Chest, took the harder region (sphere 15)"
+  },
+  {
+   "name": "Forest Temple Block Push Room Remake Pot 2",
+   "area": "Forest Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ForestTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Forest Temple Block Push Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "5080915951880062416",
+     "files": [
+      "Banc/ForestTemple/ForestTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Forest Temple Eye Switch Chest, took the harder region (sphere 15)"
+  },
+  {
+   "name": "Forest Temple Block Push Room Remake Pot 3",
+   "area": "Forest Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ForestTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Forest Temple Block Push Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "14169869109292081997",
+     "files": [
+      "Banc/ForestTemple/ForestTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Forest Temple Eye Switch Chest, took the harder region (sphere 15)"
+  },
+  {
+   "name": "Forest Temple Central Area Remake Pot 1",
+   "area": "Forest Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "ForestTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Forest Temple Central Area",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "2723241463527082223",
+     "files": [
+      "Banc/ForestTemple/ForestTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Forest Temple Lower Stalfos Pot 1, room 4 check Forest Temple First Stalfos Chest, took the harder region (sphere 14)"
+  },
+  {
+   "name": "Forest Temple Central Area Remake Pot 2",
+   "area": "Forest Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "ForestTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Forest Temple Central Area",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "8740962919121236974",
+     "files": [
+      "Banc/ForestTemple/ForestTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Forest Temple Lower Stalfos Pot 2, room 4 check Forest Temple First Stalfos Chest, took the harder region (sphere 14)"
+  },
+  {
+   "name": "Forest Temple Frozen Eye Switch Room Remake Pot 1",
+   "area": "Forest Temple",
+   "kind": "pot",
+   "vanilla": "Deku Seeds (30)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ForestTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Forest Temple Frozen Eye Switch Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "10045766070541814618",
+     "files": [
+      "Banc/ForestTemple/ForestTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 23 check Forest Temple Frozen Eye Switch Room Pot 2, took the harder region (sphere 17)"
+  },
+  {
+   "name": "Ganons Castle Light Trial Boulder Room Remake Pot 1",
+   "area": "Ganons Castle",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "InsideGanonCastle",
+   "via": "drop",
+   "age": "both",
+   "region": "Ganons Castle Light Trial Boulder Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "12580230096078651207",
+     "files": [
+      "Banc/InsideGanonCastle/InsideGanonCastle_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Ganons Castle Light Trial Boulder Pot, took the harder region (sphere 34)"
+  },
+  {
+   "name": "Ganons Castle Light Trial Ending Remake Pot 1",
+   "area": "Ganons Castle",
+   "kind": "pot",
+   "vanilla": "Deku Seeds (30)",
+   "item": "",
+   "conf": "forced",
+   "folder": "InsideGanonCastle",
+   "via": "drop",
+   "age": "both",
+   "region": "Ganons Castle Light Trial Ending",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "16440289444950368085",
+     "files": [
+      "Banc/InsideGanonCastle/InsideGanonCastle_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Ganons Castle Light Trial Pot 2, took the harder region (sphere 35)"
+  },
+  {
+   "name": "Ganons Castle Shadow Trial Remake Pot 1",
+   "area": "Ganons Castle",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "InsideGanonCastle",
+   "via": "drop",
+   "age": "both",
+   "region": "Ganons Castle Shadow Trial",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "1281722240804523266",
+     "files": [
+      "Banc/InsideGanonCastle/InsideGanonCastle_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 8 check Ganons Castle Shadow Trial Front Chest, took the harder region (sphere 32) over Ganons Castle Shadow Trial First Gap (32), Ganons Castle Shadow Trial Second Gap (32)"
+  },
+  {
+   "name": "Ganons Castle Shadow Trial Remake Pot 2",
+   "area": "Ganons Castle",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "InsideGanonCastle",
+   "via": "drop",
+   "age": "both",
+   "region": "Ganons Castle Shadow Trial",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "11807736569286227819",
+     "files": [
+      "Banc/InsideGanonCastle/InsideGanonCastle_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 8 check Ganons Castle Shadow Trial Front Chest, took the harder region (sphere 32) over Ganons Castle Shadow Trial First Gap (32), Ganons Castle Shadow Trial Second Gap (32)"
+  },
+  {
+   "name": "Ganons Castle Spirit Trial Second Room Front Remake Pot 1",
+   "area": "Ganons Castle",
+   "kind": "pot",
+   "vanilla": "Deku Seeds (30)",
+   "item": "",
+   "conf": "forced",
+   "folder": "InsideGanonCastle",
+   "via": "drop",
+   "age": "both",
+   "region": "Ganons Castle Spirit Trial Second Room Front",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "6946222676302551361",
+     "files": [
+      "Banc/InsideGanonCastle/InsideGanonCastle_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Ganons Castle Spirit Trial Crystal Switch Chest, took the harder region (sphere 33)"
+  },
+  {
+   "name": "Gerudo Fortress Adult Remake Crate 1",
+   "area": "Gerudos Fortress",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Gerudo Fortress",
+   "rule": "is_adult and can_break_crate",
+   "refs": [
+    {
+     "hash": "1693186935826757463",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess GF HBA Crate 10, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Gerudo Fortress Adult Remake Crate 2",
+   "area": "Gerudos Fortress",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Gerudo Fortress",
+   "rule": "is_adult and can_break_crate",
+   "refs": [
+    {
+     "hash": "2299167504535204510",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess GF HBA Crate 8, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Gerudo Fortress Adult Remake Crate 3",
+   "area": "Gerudos Fortress",
+   "kind": "crate",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Gerudo Fortress",
+   "rule": "is_adult and can_break_crate",
+   "refs": [
+    {
+     "hash": "2651615114908793933",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess GF HBA Crate 6, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Gerudo Fortress Adult Remake Crate 4",
+   "area": "Gerudos Fortress",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Gerudo Fortress",
+   "rule": "is_adult and can_break_crate",
+   "refs": [
+    {
+     "hash": "4127942712380630686",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess GF Crate 4, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Gerudo Fortress Adult Remake Crate 5",
+   "area": "Gerudos Fortress",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Gerudo Fortress",
+   "rule": "is_adult and can_break_crate",
+   "refs": [
+    {
+     "hash": "4589862650167016326",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess GF HBA Crate 7, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Gerudo Fortress Adult Remake Crate 6",
+   "area": "Gerudos Fortress",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Gerudo Fortress",
+   "rule": "is_adult and can_break_crate",
+   "refs": [
+    {
+     "hash": "8243865802736975992",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess GF Crate 3, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Gerudo Fortress Adult Remake Crate 7",
+   "area": "Gerudos Fortress",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Gerudo Fortress",
+   "rule": "is_adult and can_break_crate",
+   "refs": [
+    {
+     "hash": "8713486340033920524",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess GF HBA Crate 11, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Gerudo Fortress Adult Remake Crate 8",
+   "area": "Gerudos Fortress",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Gerudo Fortress",
+   "rule": "is_adult and can_break_crate",
+   "refs": [
+    {
+     "hash": "9507282379367090849",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess GF HBA Crate 9, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Gerudo Fortress Adult Remake Crate 9",
+   "area": "Gerudos Fortress",
+   "kind": "crate",
+   "vanilla": "Arrows (5)",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Gerudo Fortress",
+   "rule": "is_adult and can_break_crate",
+   "refs": [
+    {
+     "hash": "11192137055889843513",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess GF HBA Crate 5, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Gerudo Fortress Adult Remake Crate 10",
+   "area": "Gerudos Fortress",
+   "kind": "crate",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Gerudo Fortress",
+   "rule": "is_adult and can_break_crate",
+   "refs": [
+    {
+     "hash": "12014882968213567359",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess GF HBA Crate 4, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Gerudo Fortress Adult Remake Crate 11",
+   "area": "Gerudos Fortress",
+   "kind": "crate",
+   "vanilla": "Arrows (5)",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Gerudo Fortress",
+   "rule": "is_adult and can_break_crate",
+   "refs": [
+    {
+     "hash": "12729353069388613701",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess GF HBA Crate 13, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Gerudo Fortress Adult Remake Crate 12",
+   "area": "Gerudos Fortress",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Gerudo Fortress",
+   "rule": "is_adult and can_break_crate",
+   "refs": [
+    {
+     "hash": "16214070848493878572",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess GF HBA Crate 12, took the harder region (sphere 12)"
+  },
+  {
+   "name": "HC Storms Grotto Remake Pot 1",
+   "area": "Hyrule Castle",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "HyruleCastle",
+   "via": "drop",
+   "age": "both",
+   "region": "HC Storms Grotto",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "14678650210325974267",
+     "files": [
+      "Banc/HyruleCastle/HyruleCastle_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check HC GS Storms Grotto, took the harder region (sphere 13)"
+  },
+  {
+   "name": "HC Storms Grotto Remake Pot 2",
+   "area": "Hyrule Castle",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "HyruleCastle",
+   "via": "drop",
+   "age": "both",
+   "region": "HC Storms Grotto",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "17403667611047276834",
+     "files": [
+      "Banc/HyruleCastle/HyruleCastle_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check HC GS Storms Grotto, took the harder region (sphere 13)"
+  },
+  {
+   "name": "HF Cow Grotto Adult Remake Crate 1",
+   "area": "Hyrule Field",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "drop",
+   "age": "adult",
+   "region": "HF Cow Grotto",
+   "rule": "is_adult and can_break_crate",
+   "refs": [
+    {
+     "hash": "14654205574115276454",
+     "files": [
+      "Banc/HyruleField/HyruleField_Adult_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check HF GS Cow Grotto, took the harder region (sphere 18)"
+  },
+  {
+   "name": "Hideout 1 Torch Jail Adult Remake Pot 1",
+   "area": "Thieves Hideout",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Hideout 1 Torch Jail",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "10284629266025908616",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Hideout 1 Torch Jail Gerudo Key, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Hideout 1 Torch Jail Adult Remake Pot 2",
+   "area": "Thieves Hideout",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Hideout 1 Torch Jail",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "14446042898084265136",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Hideout 1 Torch Jail Gerudo Key, took the harder region (sphere 12) over Hideout 4 Torches Jail (12)"
+  },
+  {
+   "name": "Hideout 1 Torch Jail Adult Remake Pot 3",
+   "area": "Thieves Hideout",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Hideout 1 Torch Jail",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "16052743231004465758",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Hideout 1 Torch Jail Gerudo Key, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Hideout 1 Torch Jail Adult Remake Pot 4",
+   "area": "Thieves Hideout",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Hideout 1 Torch Jail",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "17564413325240842430",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Hideout 1 Torch Jail Gerudo Key, took the harder region (sphere 12) over Hideout 4 Torches Jail (12)"
+  },
+  {
+   "name": "Hideout 2 Torches Jail Adult Remake Pot 1",
+   "area": "Thieves Hideout",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Hideout 2 Torches Jail",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "2056417943849283718",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Hideout 2 Torch Jail Pot 2, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Hideout 2 Torches Jail Adult Remake Pot 2",
+   "area": "Thieves Hideout",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Hideout 2 Torches Jail",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "2601738864413660498",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Hideout 2 Torches Jail Gerudo Key, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Hideout 3 Torches Jail Adult Remake Pot 1",
+   "area": "Thieves Hideout",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Hideout 3 Torches Jail",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "940439159177345831",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Hideout 3 Torches Jail Gerudo Key, took the harder region (sphere 13)"
+  },
+  {
+   "name": "Hideout 3 Torches Jail Adult Remake Pot 2",
+   "area": "Thieves Hideout",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Hideout 3 Torches Jail",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "6163979871466990965",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Hideout 3 Torches Jail Gerudo Key, took the harder region (sphere 13)"
+  },
+  {
+   "name": "Hideout 3 Torches Jail Adult Remake Pot 3",
+   "area": "Thieves Hideout",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Hideout 3 Torches Jail",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "12036531709858383178",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Hideout 3 Torches Jail Gerudo Key, took the harder region (sphere 13)"
+  },
+  {
+   "name": "Hideout 4 Torches Jail Adult Remake Pot 1",
+   "area": "Thieves Hideout",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Hideout 4 Torches Jail",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "5950791967684866655",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Hideout 4 Torches Jail Gerudo Key, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Hideout 4 Torches Jail Adult Remake Pot 2",
+   "area": "Thieves Hideout",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Hideout 4 Torches Jail",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "7637566006997697590",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Hideout 4 Torch Jail Pot 1, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Hideout 4 Torches Jail Adult Remake Pot 3",
+   "area": "Thieves Hideout",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Hideout 4 Torches Jail",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "14149922038181651872",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Hideout 4 Torches Jail Gerudo Key, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Hideout Break Room Adult Remake Flying Pot 1",
+   "area": "Thieves Hideout",
+   "kind": "flying_pot",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Hideout Break Room",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "1503765887478653725",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Hideout Break Room Pot 2, took the harder region (sphere 13) over Gerudo Fortress (12), Hideout 1 Torch Jail (12)"
+  },
+  {
+   "name": "Hideout Break Room Adult Remake Flying Pot 2",
+   "area": "Thieves Hideout",
+   "kind": "flying_pot",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Hideout Break Room",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "10448629319757216336",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Hideout Break Room Pot 2, took the harder region (sphere 13) over Gerudo Fortress (12), Hideout 1 Torch Jail (12)"
+  },
+  {
+   "name": "Hideout Break Room Adult Remake Flying Pot 3",
+   "area": "Thieves Hideout",
+   "kind": "flying_pot",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "GerudoFortress",
+   "via": "drop",
+   "age": "adult",
+   "region": "Hideout Break Room",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "13384456307225149229",
+     "files": [
+      "Banc/GerudoFortress/GerudoFortress_Adult_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Hideout Break Room Pot 2, took the harder region (sphere 13) over Gerudo Fortress (12), Hideout 1 Torch Jail (12)"
+  },
+  {
+   "name": "Hyrule Field Adult Remake Crate 1",
+   "area": "Hyrule Field",
+   "kind": "crate",
+   "vanilla": "Rupees (20)",
+   "item": "Obj_Rupee_Red",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "drop",
+   "age": "adult",
+   "region": "Hyrule Field",
+   "rule": "is_adult and can_break_crate",
+   "refs": [
+    {
+     "hash": "12081469056021144650",
+     "files": [
+      "Banc/HyruleField/HyruleField_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check HF Adult Grass 11, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Ice Cavern End Remake Pot 1",
+   "area": "Ice Cavern",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "IceCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Ice Cavern End",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "3530383460685013192",
+     "files": [
+      "Banc/IceCavern/IceCavern_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Ice Cavern Iron Boots Chest, took the harder region (sphere 13)"
+  },
+  {
+   "name": "Ice Cavern Map Room Remake Pot 1",
+   "area": "Ice Cavern",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "IceCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Ice Cavern Map Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "9643663083142689369",
+     "files": [
+      "Banc/IceCavern/IceCavern_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 5 check Ice Cavern Map Chest, took the harder region (sphere 13)"
+  },
+  {
+   "name": "Ice Cavern Spinning Scythe Room Remake Flying Pot 1",
+   "area": "Ice Cavern",
+   "kind": "flying_pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "IceCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Ice Cavern Spinning Scythe Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "2531238234557984984",
+     "files": [
+      "Banc/IceCavern/IceCavern_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 3 check Ice Cavern GS Spinning Scythe Room, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Ice Cavern Spinning Scythe Room Remake Flying Pot 2",
+   "area": "Ice Cavern",
+   "kind": "flying_pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "IceCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Ice Cavern Spinning Scythe Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "16857043952557702868",
+     "files": [
+      "Banc/IceCavern/IceCavern_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 3 check Ice Cavern GS Spinning Scythe Room, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Ice Cavern Spinning Scythe Room Remake Pot 1",
+   "area": "Ice Cavern",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "IceCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Ice Cavern Spinning Scythe Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "2926506116712030829",
+     "files": [
+      "Banc/IceCavern/IceCavern_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Ice Cavern Spinning Scythe Pot 3, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Ice Cavern Spinning Scythe Room Remake Pot 2",
+   "area": "Ice Cavern",
+   "kind": "pot",
+   "vanilla": "Rupees (20)",
+   "item": "Obj_Rupee_Red",
+   "conf": "forced",
+   "folder": "IceCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "Ice Cavern Spinning Scythe Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "15712947819189423505",
+     "files": [
+      "Banc/IceCavern/IceCavern_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Ice Cavern Hall Pot 2, nearby check Ice Cavern Hall Pot 1, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Jabu Jabus Belly Before Boss Remake Crate 1",
+   "area": "Jabu Jabus Belly",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "InsideJabuJabuBelly",
+   "via": "drop",
+   "age": "both",
+   "region": "Jabu Jabus Belly Before Boss",
+   "rule": "can_break_crate",
+   "refs": [
+    {
+     "hash": "621843243819307036",
+     "files": [
+      "Banc/InsideJabuJabuBelly/InsideJabuJabuBelly_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Jabu Jabus Belly GS Near Boss, took the harder region (sphere 10)"
+  },
+  {
+   "name": "Jabu Jabus Belly Main Remake Crate 1",
+   "area": "Jabu Jabus Belly",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "InsideJabuJabuBelly",
+   "via": "drop",
+   "age": "both",
+   "region": "Jabu Jabus Belly Main",
+   "rule": "can_break_crate",
+   "refs": [
+    {
+     "hash": "16293430382336788523",
+     "files": [
+      "Banc/InsideJabuJabuBelly/InsideJabuJabuBelly_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Jabu Jabus Belly Basement Switch Room Pot 1, took the harder region (sphere 9)"
+  },
+  {
+   "name": "Kak Backyard Adult Remake Pot 1",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kak Backyard",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "1619904051930079553",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Alternative_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Odd Medicine Building Pot 2, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kak Backyard Adult Remake Pot 2",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kak Backyard",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "13635177047804265751",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Alternative_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Odd Medicine Building Pot 1, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kak Backyard Adult Remake Pot 3",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kak Backyard",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "7213843677856822468",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Odd Medicine Building Pot 2, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kak Backyard Adult Remake Pot 4",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kak Backyard",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "14889198299869016305",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Odd Medicine Building Pot 1, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kak Backyard Child Remake Pot 1",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "child",
+   "region": "Kak Backyard",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "8015913209367877534",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Odd Medicine Building Pot 2, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Kak Backyard Child Remake Pot 2",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "child",
+   "region": "Kak Backyard",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "35339038829944767",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Child_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Odd Medicine Building Pot 1, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Kakariko Village Adult Remake Pot 1",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kakariko Village",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "1155385119688866072",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Alternative_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Guards House Pot 2, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kakariko Village Adult Remake Pot 2",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kakariko Village",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "3081295406367672138",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Alternative_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Guards House Pot 3, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kakariko Village Adult Remake Pot 3",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kakariko Village",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "5365536334971735242",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Alternative_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Guards House Pot 1, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kakariko Village Adult Remake Pot 4",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kakariko Village",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "6202340199554483612",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Alternative_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Impas House Pot 2, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kakariko Village Adult Remake Pot 5",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kakariko Village",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "9430625341946461210",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Alternative_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Potion Shop Pot 2, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kakariko Village Adult Remake Pot 6",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kakariko Village",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "9498246738218276037",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Alternative_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Impas House Pot 1, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kakariko Village Adult Remake Pot 7",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kakariko Village",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "13040976737240109424",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Alternative_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Impas House Pot 3, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kakariko Village Adult Remake Pot 8",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kakariko Village",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "16338658219881018069",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Alternative_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Potion Shop Pot 3, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kakariko Village Adult Remake Pot 9",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kakariko Village",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "2664667477796335039",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Impas House Pot 2, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kakariko Village Adult Remake Pot 10",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kakariko Village",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "4262639976510329423",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Guards House Pot 1, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kakariko Village Adult Remake Pot 11",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kakariko Village",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "6663933541925368008",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Guards House Pot 3, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kakariko Village Adult Remake Pot 12",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kakariko Village",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "7120300037202526714",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Guards House Pot 2, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kakariko Village Adult Remake Pot 13",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kakariko Village",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "10132571390884605046",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Potion Shop Pot 3, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kakariko Village Adult Remake Pot 14",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kakariko Village",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "14020355262484604054",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Impas House Pot 3, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kakariko Village Adult Remake Pot 15",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kakariko Village",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "17332353328325691959",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Potion Shop Pot 2, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kakariko Village Adult Remake Pot 16",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "adult",
+   "region": "Kakariko Village",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "17417703929745359430",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Adult_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Impas House Pot 1, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kakariko Village Child Remake Crate 1",
+   "area": "Kakariko Village",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "child",
+   "region": "Kakariko Village",
+   "rule": "is_child and can_break_crate",
+   "refs": [
+    {
+     "hash": "610633925189690236",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Child Crate 4, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Kakariko Village Child Remake Pot 1",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "child",
+   "region": "Kakariko Village",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "700577879275312973",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Child_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Impas House Pot 3, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Kakariko Village Child Remake Pot 2",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "child",
+   "region": "Kakariko Village",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "3252450751793784313",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Child_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Guards House Pot 1, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Kakariko Village Child Remake Pot 3",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "child",
+   "region": "Kakariko Village",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "3252807497395580785",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Child_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Impas House Pot 2, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Kakariko Village Child Remake Pot 4",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "child",
+   "region": "Kakariko Village",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "6195808453148783180",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Child_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Guards House Pot 2, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Kakariko Village Child Remake Pot 5",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "child",
+   "region": "Kakariko Village",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "10165937155993394562",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Child_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Guards House Pot 3, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Kakariko Village Child Remake Pot 6",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "child",
+   "region": "Kakariko Village",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "14122332566338914320",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Child_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Potion Shop Pot 3, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Kakariko Village Child Remake Pot 7",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "child",
+   "region": "Kakariko Village",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "17991454493447452409",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Child_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Potion Shop Pot 2, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Kakariko Village Child Remake Pot 8",
+   "area": "Kakariko Village",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "KakarikoVillage",
+   "via": "drop",
+   "age": "child",
+   "region": "Kakariko Village",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "18078110404684471865",
+     "files": [
+      "Banc/KakarikoVillage/KakarikoVillage_Child_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Kak Near Impas House Pot 1, took the harder region (sphere 2)"
+  },
+  {
+   "name": "King Dodongo Boss Room Remake Pot 1",
+   "area": "Dodongos Cavern",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "DodongoCavern",
+   "via": "drop",
+   "age": "both",
+   "region": "King Dodongo Boss Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "1011984139792114332",
+     "files": [
+      "Banc/DodongoCavern/DodongoCavern_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Dodongos Cavern King Dodongo Heart, took the harder region (sphere 6)"
+  },
+  {
+   "name": "LH Lab Adult Remake Crate 1",
+   "area": "Lake Hylia",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "drop",
+   "age": "adult",
+   "region": "LH Lab",
+   "rule": "is_adult and can_break_crate",
+   "refs": [
+    {
+     "hash": "16274291912323313727",
+     "files": [
+      "Banc/HyruleField/HyruleField_Adult_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check LH GS Lab Crate, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Lake Hylia Child Remake Crate 1",
+   "area": "Lake Hylia",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "drop",
+   "age": "child",
+   "region": "Lake Hylia",
+   "rule": "is_child and can_break_crate",
+   "refs": [
+    {
+     "hash": "3139014475176937354",
+     "files": [
+      "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check LH GS Bean Patch, nearby check LH GS Lab Wall, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Lon Lon Ranch Adult Remake Crate 1",
+   "area": "Lon Lon Ranch",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "drop",
+   "age": "adult",
+   "region": "Lon Lon Ranch",
+   "rule": "is_adult and can_break_crate",
+   "refs": [
+    {
+     "hash": "4706627579492125828",
+     "files": [
+      "Banc/HyruleField/HyruleField_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate LLR Child Crate, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Lon Lon Ranch Adult Remake Crate 2",
+   "area": "Lon Lon Ranch",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "drop",
+   "age": "adult",
+   "region": "Lon Lon Ranch",
+   "rule": "is_adult and can_break_crate",
+   "refs": [
+    {
+     "hash": "13942975907881711341",
+     "files": [
+      "Banc/HyruleField/HyruleField_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate LLR Child Crate, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Lon Lon Ranch Child Remake Crate 1",
+   "area": "Lon Lon Ranch",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "drop",
+   "age": "child",
+   "region": "Lon Lon Ranch",
+   "rule": "is_child and can_break_crate",
+   "refs": [
+    {
+     "hash": "4293238463102171135",
+     "files": [
+      "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in Lon Lon Ranch with the rule is_child and can_break_crate"
+  },
+  {
+   "name": "Lon Lon Ranch Child Remake Crate 2",
+   "area": "Lon Lon Ranch",
+   "kind": "crate",
+   "vanilla": "Rupees (20)",
+   "item": "",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "drop",
+   "age": "child",
+   "region": "Lon Lon Ranch",
+   "rule": "is_child and can_break_crate",
+   "refs": [
+    {
+     "hash": "7249046631724680605",
+     "files": [
+      "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check LLR Child Crate, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Lon Lon Ranch Child Remake Crate 3",
+   "area": "Lon Lon Ranch",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "drop",
+   "age": "child",
+   "region": "Lon Lon Ranch",
+   "rule": "is_child and can_break_crate",
+   "refs": [
+    {
+     "hash": "13505816572168486267",
+     "files": [
+      "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in Lon Lon Ranch with the rule is_child and can_break_crate"
+  },
+  {
+   "name": "Market Guard House Adult Remake Pot 1",
+   "area": "Market",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "Market",
+   "via": "drop",
+   "age": "adult",
+   "region": "Market Guard House",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "1661231129625843374",
+     "files": [
+      "Banc/Market/Market_Adult_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate Market Guard House Child Pot 1, OoTR candidate Market Guard House Child Pot 2, OoTR candidate Market Guard House Child Pot 3 and more, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Market Guard House Child Remake Crate 1",
+   "area": "Market",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "Market",
+   "via": "drop",
+   "age": "child",
+   "region": "Market Guard House",
+   "rule": "is_child and can_break_crate",
+   "refs": [
+    {
+     "hash": "5653833064804058759",
+     "files": [
+      "Banc/Market/Market_Child_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Market Guard House Child Crate 3, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Market Guard House Child Remake Crate 2",
+   "area": "Market",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "Market",
+   "via": "drop",
+   "age": "child",
+   "region": "Market Guard House",
+   "rule": "is_child and can_break_crate",
+   "refs": [
+    {
+     "hash": "9299500760108964836",
+     "files": [
+      "Banc/Market/Market_Child_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Market Guard House Child Crate 2, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Market Guard House Child Remake Crate 3",
+   "area": "Market",
+   "kind": "crate",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "Market",
+   "via": "drop",
+   "age": "child",
+   "region": "Market Guard House",
+   "rule": "is_child and can_break_crate",
+   "refs": [
+    {
+     "hash": "15836061056953346480",
+     "files": [
+      "Banc/Market/Market_Child_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Market Guard House Child Crate 1, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Market Guard House Child Remake Pot 1",
+   "area": "Market",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "Market",
+   "via": "drop",
+   "age": "child",
+   "region": "Market Guard House",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "6159178651520699084",
+     "files": [
+      "Banc/Market/Market_Child_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Market Guard House Adult Pot 11, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Market Guard House Child Remake Pot 2",
+   "area": "Market",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "Market",
+   "via": "drop",
+   "age": "child",
+   "region": "Market Guard House",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "9625992517764898163",
+     "files": [
+      "Banc/Market/Market_Child_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Market Guard House Adult Pot 8, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Market Guard House Child Remake Pot 3",
+   "area": "Market",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "Market",
+   "via": "drop",
+   "age": "child",
+   "region": "Market Guard House",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "15645888800487826584",
+     "files": [
+      "Banc/Market/Market_Child_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Market Guard House Child Pot 29, nearby check Market Guard House Child Pot 2, nearby check Market Guard House Child Pot 30, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Shadow Temple Before Boss Remake Pot 1",
+   "area": "Shadow Temple",
+   "kind": "pot",
+   "vanilla": "Fairy Drop",
+   "item": "Obj_Fairy",
+   "conf": "forced",
+   "folder": "ShadowTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Shadow Temple Before Boss",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "3756369741882798824",
+     "files": [
+      "Banc/ShadowTemple/ShadowTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 17 check Shadow Temple Near Boss Pot 2, took the harder region (sphere 30) over Shadow Temple After Wind (29), Shadow Temple Boat (30)"
+  },
+  {
+   "name": "Shadow Temple Before Boss Remake Pot 2",
+   "area": "Shadow Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "ShadowTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Shadow Temple Before Boss",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "1349030569854865098",
+     "files": [
+      "Banc/ShadowTemple/ShadowTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 17 check Shadow Temple Near Boss Pot 2, took the harder region (sphere 30) over Shadow Temple After Wind (29), Shadow Temple Boat (30), Shadow Temple Falling Spikes (26)"
+  },
+  {
+   "name": "Shadow Temple Before Boss Remake Pot 3",
+   "area": "Shadow Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ShadowTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Shadow Temple Before Boss",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "9913774638860555567",
+     "files": [
+      "Banc/ShadowTemple/ShadowTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 17 check Shadow Temple Near Boss Pot 2, took the harder region (sphere 30) over Shadow Temple After Wind (29), Shadow Temple Boat (30)"
+  },
+  {
+   "name": "Shadow Temple Before Boss Remake Pot 4",
+   "area": "Shadow Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ShadowTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Shadow Temple Before Boss",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "11721675795691289040",
+     "files": [
+      "Banc/ShadowTemple/ShadowTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 17 check Shadow Temple Near Boss Pot 2, took the harder region (sphere 30) over Shadow Temple After Wind (29), Shadow Temple Boat (30)"
+  },
+  {
+   "name": "Shadow Temple Before Boss Remake Pot 5",
+   "area": "Shadow Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ShadowTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Shadow Temple Before Boss",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "15975907892717926899",
+     "files": [
+      "Banc/ShadowTemple/ShadowTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 17 check Shadow Temple Near Boss Pot 2, took the harder region (sphere 30) over Shadow Temple After Wind (29), Shadow Temple Boat (30)"
+  },
+  {
+   "name": "Shadow Temple Before Boss Remake Pot 6",
+   "area": "Shadow Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ShadowTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Shadow Temple Before Boss",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "17044246235202554271",
+     "files": [
+      "Banc/ShadowTemple/ShadowTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 17 check Shadow Temple Near Boss Pot 2, took the harder region (sphere 30) over Shadow Temple After Wind (29), Shadow Temple Boat (30)"
+  },
+  {
+   "name": "Shadow Temple Beginning Remake Flying Pot 1",
+   "area": "Shadow Temple",
+   "kind": "flying_pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ShadowTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Shadow Temple Beginning",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "11384529499855811655",
+     "files": [
+      "Banc/ShadowTemple/ShadowTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Shadow Temple Whispering Walls Front Pot 2, took the harder region (sphere 22)"
+  },
+  {
+   "name": "Shadow Temple Beginning Remake Flying Pot 2",
+   "area": "Shadow Temple",
+   "kind": "flying_pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ShadowTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Shadow Temple Beginning",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "15593483770892955044",
+     "files": [
+      "Banc/ShadowTemple/ShadowTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Shadow Temple Whispering Walls Front Pot 2, took the harder region (sphere 22)"
+  },
+  {
+   "name": "Shadow Temple Beginning Remake Pot 1",
+   "area": "Shadow Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ShadowTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Shadow Temple Beginning",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "17689953228344661448",
+     "files": [
+      "Banc/ShadowTemple/ShadowTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Shadow Temple Whispering Walls Left Pot 2, took the harder region (sphere 22)"
+  },
+  {
+   "name": "Shadow Temple Beginning Remake Pot 2",
+   "area": "Shadow Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ShadowTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Shadow Temple Beginning",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "637997711414805291",
+     "files": [
+      "Banc/ShadowTemple/ShadowTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 2 check Shadow Temple Whispering Walls Flying Pot, room 2 check Shadow Temple Whispering Walls Front Pot 2, room 2 check Shadow Temple Whispering Walls Front Pot 1 and more, took the harder region (sphere 22)"
+  },
+  {
+   "name": "Shadow Temple Beginning Remake Pot 3",
+   "area": "Shadow Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ShadowTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Shadow Temple Beginning",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "14017012371096777227",
+     "files": [
+      "Banc/ShadowTemple/ShadowTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Shadow Temple Whispering Walls Front Pot 2, took the harder region (sphere 22)"
+  },
+  {
+   "name": "Shadow Temple Beyond Boat Remake Pot 1",
+   "area": "Shadow Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "ShadowTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Shadow Temple Beyond Boat",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "7775851373127171934",
+     "files": [
+      "Banc/ShadowTemple/ShadowTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Shadow Temple Invisible Floormaster Pot 1, room 10 check Shadow Temple Spike Walls Pot, took the harder region (sphere 30) over Shadow Temple Beginning (22)"
+  },
+  {
+   "name": "Shadow Temple Falling Spikes Remake Pot 1",
+   "area": "Shadow Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ShadowTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Shadow Temple Falling Spikes",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "11474152021729303804",
+     "files": [
+      "Banc/ShadowTemple/ShadowTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Shadow Temple GS Falling Spikes Room, took the harder region (sphere 26)"
+  },
+  {
+   "name": "Shadow Temple Falling Spikes Remake Pot 2",
+   "area": "Shadow Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ShadowTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Shadow Temple Falling Spikes",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "15785610174252975907",
+     "files": [
+      "Banc/ShadowTemple/ShadowTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 11 check Shadow Temple Falling Spikes Lower Chest, room 11 check Shadow Temple Falling Spikes Switch Chest, room 11 check Shadow Temple Falling Spikes Lower Pot 2 and more, took the harder region (sphere 26)"
+  },
+  {
+   "name": "Shadow Temple Invisible Spikes Remake Pot 3",
+   "area": "Shadow Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ShadowTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Shadow Temple Invisible Spikes",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "5137262787253127252",
+     "files": [
+      "Banc/ShadowTemple/ShadowTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Shadow Temple Freestanding Key, took the harder region (sphere 27)"
+  },
+  {
+   "name": "Spirit Temple Anubis Room Remake Pot 1",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Spirit Temple Anubis Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "12710212233257432556",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Spirit Temple Beamos Hall Pot, took the harder region (sphere 21)"
+  },
+  {
+   "name": "Spirit Temple Beyond Anubis Room Remake Pot 1",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Spirit Temple Beyond Anubis Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "679707632344397059",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Spirit Temple Near Four Armos Chest, took the harder region (sphere 21)"
+  },
+  {
+   "name": "Spirit Temple Beyond Anubis Room Remake Pot 2",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Spirit Temple Beyond Anubis Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "2307858130780472122",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Spirit Temple Hallway Right Invisible Chest, took the harder region (sphere 21)"
+  },
+  {
+   "name": "Spirit Temple Big Mirror Room Remake Pot 1",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Spirit Temple Big Mirror Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "5898541057490100836",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check Spirit Temple Big Mirror Flying Pot 6, took the harder region (sphere 22)"
+  },
+  {
+   "name": "Spirit Temple Lobby Remake Flying Pot 1",
+   "area": "Spirit Temple",
+   "kind": "flying_pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Spirit Temple Lobby",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "418728388637525878",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 0 check Spirit Temple Lobby Flying Pot 1, room 0 check Spirit Temple Lobby Pot 1, took the harder region (sphere 16)"
+  },
+  {
+   "name": "Spirit Temple Lobby Remake Flying Pot 2",
+   "area": "Spirit Temple",
+   "kind": "flying_pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Spirit Temple Lobby",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "3921371032252202099",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 0 check Spirit Temple Lobby Flying Pot 1, room 0 check Spirit Temple Lobby Pot 1, took the harder region (sphere 16)"
+  },
+  {
+   "name": "Spirit Temple Lobby Remake Flying Pot 3",
+   "area": "Spirit Temple",
+   "kind": "flying_pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Spirit Temple Lobby",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "17681039064778216430",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Spirit Temple Lobby Flying Pot 2, room 0 check Spirit Temple Lobby Flying Pot 1, room 0 check Spirit Temple Lobby Pot 1, took the harder region (sphere 16)"
+  },
+  {
+   "name": "Spirit Temple Lobby Remake Pot 1",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Spirit Temple Lobby",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "103563951645462556",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 0 check Spirit Temple Lobby Flying Pot 1, room 0 check Spirit Temple Lobby Pot 1, took the harder region (sphere 16)"
+  },
+  {
+   "name": "Spirit Temple Lobby Remake Pot 2",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Spirit Temple Lobby",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "3030155917724115111",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 0 check Spirit Temple Lobby Flying Pot 1, room 0 check Spirit Temple Lobby Pot 1, took the harder region (sphere 16)"
+  },
+  {
+   "name": "Spirit Temple Lobby Remake Pot 3",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Spirit Temple Lobby",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "3892291898975768871",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 0 check Spirit Temple Lobby Flying Pot 1, room 0 check Spirit Temple Lobby Pot 1, took the harder region (sphere 16)"
+  },
+  {
+   "name": "Spirit Temple Lobby Remake Pot 4",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Spirit Temple Lobby",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "5871571106450718234",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 0 check Spirit Temple Lobby Flying Pot 1, room 0 check Spirit Temple Lobby Pot 1, took the harder region (sphere 16)"
+  },
+  {
+   "name": "Spirit Temple Lobby Remake Pot 5",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Spirit Temple Lobby",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "9856880919248647941",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Spirit Temple Lobby Pot 2, room 0 check Spirit Temple Lobby Flying Pot 1, room 0 check Spirit Temple Lobby Pot 1, took the harder region (sphere 16)"
+  },
+  {
+   "name": "Spirit Temple Lobby Remake Pot 6",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Spirit Temple Lobby",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "16244368682301461195",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Spirit Temple Lobby Pot 2, room 0 check Spirit Temple Lobby Flying Pot 1, room 0 check Spirit Temple Lobby Pot 1, took the harder region (sphere 16)"
+  },
+  {
+   "name": "Twinrova Boss Room Remake Pot 1",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Twinrova Boss Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "342314669160649648",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 33 check Spirit Temple Twinrova Heart, took the harder region (sphere 23)"
+  },
+  {
+   "name": "Twinrova Boss Room Remake Pot 2",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Twinrova Boss Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "858005297737691317",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 33 check Spirit Temple Twinrova Heart, took the harder region (sphere 23)"
+  },
+  {
+   "name": "Twinrova Boss Room Remake Pot 3",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Twinrova Boss Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "10709279745659693627",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 33 check Spirit Temple Twinrova Heart, took the harder region (sphere 23)"
+  },
+  {
+   "name": "Twinrova Boss Room Remake Pot 4",
+   "area": "Spirit Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "SpiritTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Twinrova Boss Room",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "15856393088785445745",
+     "files": [
+      "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 33 check Spirit Temple Twinrova Heart, took the harder region (sphere 23)"
+  },
+  {
+   "name": "Water Temple Central Bow Target Remake Pot 1",
+   "area": "Water Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "WaterTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Water Temple Central Bow Target",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "3591228656871093720",
+     "files": [
+      "Banc/WaterTemple/WaterTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Water Temple Central Bow Target Pot 1, took the harder region (sphere 16) over Water Temple River (15)"
+  },
+  {
+   "name": "Water Temple Dive Remake Pot 1",
+   "area": "Water Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "WaterTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Water Temple Dive",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "2730270174636576878",
+     "files": [
+      "Banc/WaterTemple/WaterTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Water Temple Near Compass Pot 2, took the harder region (sphere 14) over Water Temple Lobby (14), Water Temple Lowered Water Levels (14), Water Temple Middle Water Level (14)"
+  },
+  {
+   "name": "Water Temple Dive Remake Pot 2",
+   "area": "Water Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "WaterTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Water Temple Dive",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "16356631288008319500",
+     "files": [
+      "Banc/WaterTemple/WaterTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess Water Temple Near Compass Pot 3, took the harder region (sphere 14) over Water Temple Lobby (14), Water Temple Lowered Water Levels (14), Water Temple Middle Water Level (14)"
+  },
+  {
+   "name": "Water Temple North Basement Remake Pot 1",
+   "area": "Water Temple",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "WaterTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Water Temple North Basement",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "6304980196399281219",
+     "files": [
+      "Banc/WaterTemple/WaterTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 21 check Water Temple GS Near Boss Key Chest, took the harder region (sphere 17) over Water Temple River (15)"
+  },
+  {
+   "name": "Water Temple North Basement Remake Pot 2",
+   "area": "Water Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "WaterTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Water Temple North Basement",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "7109345210051555604",
+     "files": [
+      "Banc/WaterTemple/WaterTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 21 check Water Temple GS Near Boss Key Chest, took the harder region (sphere 17) over Water Temple Central Bow Target (16), Water Temple River (15)"
+  },
+  {
+   "name": "Water Temple North Basement Remake Pot 3",
+   "area": "Water Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "WaterTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Water Temple North Basement",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "7934783801419233385",
+     "files": [
+      "Banc/WaterTemple/WaterTemple_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 21 check Water Temple GS Near Boss Key Chest, took the harder region (sphere 17) over Water Temple River (15)"
+  },
+  {
+   "name": "Water Temple River Remake Pot 1",
+   "area": "Water Temple",
+   "kind": "pot",
+   "vanilla": "Recovery Heart",
+   "item": "",
+   "conf": "forced",
+   "folder": "WaterTemple",
+   "via": "drop",
+   "age": "both",
+   "region": "Water Temple River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "12534845042709325315",
+     "files": [
+      "Banc/WaterTemple/WaterTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "room 25 check Water Temple GS River, took the harder region (sphere 15) over Water Temple Dive (14)"
+  },
+  {
+   "name": "Zora River Adult Remake Pot 1",
+   "area": "Zora River",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "drop",
+   "age": "adult",
+   "region": "Zora River",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "4776081376285256939",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR Adult Rock 3, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Zora River Adult Remake Pot 2",
+   "area": "Zora River",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "drop",
+   "age": "adult",
+   "region": "Zora River",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "8953658065056150046",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR Adult Rock 3, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Zora River Adult Remake Pot 3",
+   "area": "Zora River",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "drop",
+   "age": "adult",
+   "region": "Zora River",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "10869334366827386783",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR Adult Rock 1, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Zora River Adult Remake Pot 4",
+   "area": "Zora River",
+   "kind": "pot",
+   "vanilla": "Deku Stick (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "drop",
+   "age": "adult",
+   "region": "Zora River",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "12253865241549498327",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR Adult Rock 1, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Zora River Child Remake Pot 1",
+   "area": "Zora River",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "drop",
+   "age": "child",
+   "region": "Zora River",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "5095784848033030406",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR Child Rock 3, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Child Remake Pot 2",
+   "area": "Zora River",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "drop",
+   "age": "child",
+   "region": "Zora River",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "5730330007630899881",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR Child Rock 1, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Child Remake Pot 3",
+   "area": "Zora River",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "drop",
+   "age": "child",
+   "region": "Zora River",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "8980910965654538945",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR Child Rock 3, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Child Remake Pot 4",
+   "area": "Zora River",
+   "kind": "pot",
+   "vanilla": "Deku Stick (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "drop",
+   "age": "child",
+   "region": "Zora River",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "13505325356541728049",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR Child Rock 1, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zoras Fountain Child Remake Pot 1",
+   "area": "Zoras Fountain",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "drop",
+   "age": "child",
+   "region": "Zoras Fountain",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "697465442349235192",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess ZF Near Jabu Pot 4, took the harder region (sphere 9)"
+  },
+  {
+   "name": "Zoras Fountain Child Remake Pot 2",
+   "area": "Zoras Fountain",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "drop",
+   "age": "child",
+   "region": "Zoras Fountain",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "7692213673625838330",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess ZF Near Jabu Pot 3, took the harder region (sphere 9)"
+  },
+  {
+   "name": "Zoras Fountain Child Remake Pot 3",
+   "area": "Zoras Fountain",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "drop",
+   "age": "child",
+   "region": "Zoras Fountain",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "10835121848480419248",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess ZF Near Jabu Pot 1, took the harder region (sphere 9)"
+  },
+  {
+   "name": "Zoras Fountain Child Remake Pot 4",
+   "area": "Zoras Fountain",
+   "kind": "pot",
+   "vanilla": "Rupee (1)",
+   "item": "",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "drop",
+   "age": "child",
+   "region": "Zoras Fountain",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "11382955502959013110",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess ZF Near Jabu Pot 2, took the harder region (sphere 9)"
+  }
+ ],
+ "unmatched_oot": [],
+ "unmatched_remake": []
+}

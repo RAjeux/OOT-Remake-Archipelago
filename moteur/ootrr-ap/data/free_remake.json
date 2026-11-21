@@ -1,0 +1,2599 @@
+{
+ "format": 1,
+ "revision": 1,
+ "note": "Identifiers only. Remake freestanding rupees and recovery hearts: placed Obj_Rupee and Obj_Heart actors with a permanent row (reset type 24) whose hash no other catalog row holds. One row per actor hash, so the adult and the child copy of a spot are two rows. Names are made up for this tool and never change, Archipelago reads them. item is the placed actor, vanilla its item. region and rule are chosen like data/pots_remake.json revision 2: every region the data offers (OoTR candidates of the remake research, the tracker guess, the known checks within 20 units in the same layer), the HARDER one at the age of the spot, and the baseline rule (the age only) unless every OoTR candidate agrees on one region and rule. Left out: the Zora diving game rupees, actors with a Presence flag, and spots with no known check nearby. They join the shuffle with shuffle_freestanding_items set to all and hold any item.",
+ "retire": [],
+ "locations": [
+  {
+   "name": "DMC Central Local Remake Rupee 1",
+   "area": "Death Mountain Crater",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "DeathMountainCrater",
+   "via": "actor",
+   "age": "both",
+   "region": "DMC Central Local",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "2137181062354999972",
+     "files": [
+      "Banc/DeathMountainCrater/DeathMountainCrater_Adult_Dynamic.bcett.byml.zs",
+      "Banc/DeathMountainCrater/DeathMountainCrater_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess DMC Child Blue Rupee 1, took the harder region (sphere 13)"
+  },
+  {
+   "name": "DMC Central Local Remake Rupee 2",
+   "area": "Death Mountain Crater",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "DeathMountainCrater",
+   "via": "actor",
+   "age": "both",
+   "region": "DMC Central Local",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "4077912846886775366",
+     "files": [
+      "Banc/DeathMountainCrater/DeathMountainCrater_Adult_Dynamic.bcett.byml.zs",
+      "Banc/DeathMountainCrater/DeathMountainCrater_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess DMC Child Blue Rupee 3, took the harder region (sphere 13)"
+  },
+  {
+   "name": "DMC Central Local Remake Rupee 3",
+   "area": "Death Mountain Crater",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "DeathMountainCrater",
+   "via": "actor",
+   "age": "both",
+   "region": "DMC Central Local",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "6794008535785537922",
+     "files": [
+      "Banc/DeathMountainCrater/DeathMountainCrater_Adult_Dynamic.bcett.byml.zs",
+      "Banc/DeathMountainCrater/DeathMountainCrater_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess DMC Child Blue Rupee 4, took the harder region (sphere 13)"
+  },
+  {
+   "name": "DMC Central Local Remake Rupee 4",
+   "area": "Death Mountain Crater",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "DeathMountainCrater",
+   "via": "actor",
+   "age": "both",
+   "region": "DMC Central Local",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "9089638521355540295",
+     "files": [
+      "Banc/DeathMountainCrater/DeathMountainCrater_Adult_Dynamic.bcett.byml.zs",
+      "Banc/DeathMountainCrater/DeathMountainCrater_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check DMC GS Bean Patch, took the harder region (sphere 13) over DMC Central Nearby (13)"
+  },
+  {
+   "name": "DMC Central Local Remake Rupee 5",
+   "area": "Death Mountain Crater",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "DeathMountainCrater",
+   "via": "actor",
+   "age": "both",
+   "region": "DMC Central Local",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "11105674007629451672",
+     "files": [
+      "Banc/DeathMountainCrater/DeathMountainCrater_Adult_Dynamic.bcett.byml.zs",
+      "Banc/DeathMountainCrater/DeathMountainCrater_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess DMC Child Blue Rupee 2, took the harder region (sphere 13)"
+  },
+  {
+   "name": "DMC Central Local Remake Rupee 6",
+   "area": "Death Mountain Crater",
+   "kind": "freestanding",
+   "vanilla": "Rupees (50)",
+   "item": "Obj_Rupee_Purple",
+   "conf": "forced",
+   "folder": "DeathMountainCrater",
+   "via": "actor",
+   "age": "both",
+   "region": "DMC Central Local",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "12599391464019187002",
+     "files": [
+      "Banc/DeathMountainCrater/DeathMountainCrater_Adult_Dynamic.bcett.byml.zs",
+      "Banc/DeathMountainCrater/DeathMountainCrater_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess DMC Child Blue Rupee 6, took the harder region (sphere 13)"
+  },
+  {
+   "name": "DMC Central Local Remake Rupee 7",
+   "area": "Death Mountain Crater",
+   "kind": "freestanding",
+   "vanilla": "Rupees (20)",
+   "item": "Obj_Rupee_Red",
+   "conf": "forced",
+   "folder": "DeathMountainCrater",
+   "via": "actor",
+   "age": "both",
+   "region": "DMC Central Local",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "14962149652005504200",
+     "files": [
+      "Banc/DeathMountainCrater/DeathMountainCrater_Adult_Dynamic.bcett.byml.zs",
+      "Banc/DeathMountainCrater/DeathMountainCrater_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in DMC Central Local with the rule is_child"
+  },
+  {
+   "name": "DMC Central Local Remake Rupee 8",
+   "area": "Death Mountain Crater",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "DeathMountainCrater",
+   "via": "actor",
+   "age": "both",
+   "region": "DMC Central Local",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "16794923646428529814",
+     "files": [
+      "Banc/DeathMountainCrater/DeathMountainCrater_Adult_Dynamic.bcett.byml.zs",
+      "Banc/DeathMountainCrater/DeathMountainCrater_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess DMC Child Red Rupee 2, took the harder region (sphere 13)"
+  },
+  {
+   "name": "DMC Central Local Remake Rupee 9",
+   "area": "Death Mountain Crater",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "DeathMountainCrater",
+   "via": "actor",
+   "age": "both",
+   "region": "DMC Central Local",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "17170677546946622823",
+     "files": [
+      "Banc/DeathMountainCrater/DeathMountainCrater_Adult_Dynamic.bcett.byml.zs",
+      "Banc/DeathMountainCrater/DeathMountainCrater_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess DMC Child Red Rupee 1, took the harder region (sphere 13)"
+  },
+  {
+   "name": "DMC Central Local Remake Rupee 10",
+   "area": "Death Mountain Crater",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "DeathMountainCrater",
+   "via": "actor",
+   "age": "both",
+   "region": "DMC Central Local",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "17524442172396680694",
+     "files": [
+      "Banc/DeathMountainCrater/DeathMountainCrater_Adult_Dynamic.bcett.byml.zs",
+      "Banc/DeathMountainCrater/DeathMountainCrater_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess DMC Child Blue Rupee 5, took the harder region (sphere 13)"
+  },
+  {
+   "name": "Death Mountain Remake Rupee 1",
+   "area": "Death Mountain Trail",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "DeathMountainTrail",
+   "via": "actor",
+   "age": "both",
+   "region": "Death Mountain",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "5008999164523690598",
+     "files": [
+      "Banc/DeathMountainTrail/DeathMountainTrail_Adult_Dynamic.bcett.byml.zs",
+      "Banc/DeathMountainTrail/DeathMountainTrail_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess DMT Rock Red Rupee, took the harder region (sphere 4)"
+  },
+  {
+   "name": "Death Mountain Remake Rupee 2",
+   "area": "Death Mountain Trail",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "DeathMountainTrail",
+   "via": "actor",
+   "age": "both",
+   "region": "Death Mountain",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "6307624256587354938",
+     "files": [
+      "Banc/DeathMountainTrail/DeathMountainTrail_Adult_Dynamic.bcett.byml.zs",
+      "Banc/DeathMountainTrail/DeathMountainTrail_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check DMT Rock Red Rupee, took the harder region (sphere 4)"
+  },
+  {
+   "name": "Death Mountain Remake Rupee 3",
+   "area": "Death Mountain Trail",
+   "kind": "freestanding",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "DeathMountainTrail",
+   "via": "actor",
+   "age": "both",
+   "region": "Death Mountain",
+   "rule": "is_child and (has_explosives or (logic_boomerang_boulders and Boomerang))",
+   "refs": [
+    {
+     "hash": "9972535766636368278",
+     "files": [
+      "Banc/DeathMountainTrail/DeathMountainTrail_Adult_Dynamic.bcett.byml.zs",
+      "Banc/DeathMountainTrail/DeathMountainTrail_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in Death Mountain with the rule is_child and (has_explosives or (logic_boomerang_boulders and Boomerang))"
+  },
+  {
+   "name": "Death Mountain Remake Rupee 4",
+   "area": "Death Mountain Trail",
+   "kind": "freestanding",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "DeathMountainTrail",
+   "via": "actor",
+   "age": "both",
+   "region": "Death Mountain",
+   "rule": "is_child and (has_explosives or (logic_boomerang_boulders and Boomerang))",
+   "refs": [
+    {
+     "hash": "12472730518306029279",
+     "files": [
+      "Banc/DeathMountainTrail/DeathMountainTrail_Adult_Dynamic.bcett.byml.zs",
+      "Banc/DeathMountainTrail/DeathMountainTrail_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in Death Mountain with the rule is_child and (has_explosives or (logic_boomerang_boulders and Boomerang))"
+  },
+  {
+   "name": "Death Mountain Remake Rupee 5",
+   "area": "Death Mountain Trail",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "DeathMountainTrail",
+   "via": "actor",
+   "age": "both",
+   "region": "Death Mountain",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "17286901874670360605",
+     "files": [
+      "Banc/DeathMountainTrail/DeathMountainTrail_Adult_Dynamic.bcett.byml.zs",
+      "Banc/DeathMountainTrail/DeathMountainTrail_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check DMT Rock Red Rupee, took the harder region (sphere 4)"
+  },
+  {
+   "name": "Deku Tree Before Boss Remake Heart 1",
+   "area": "Deku Tree",
+   "kind": "freestanding",
+   "vanilla": "Recovery Heart",
+   "item": "Obj_Heart_InWater",
+   "conf": "forced",
+   "folder": "InsideTheDekuTree",
+   "via": "actor",
+   "age": "both",
+   "region": "Deku Tree Before Boss",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "729508615351641392",
+     "files": [
+      "Banc/InsideTheDekuTree/InsideTheDekuTree_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate Deku Tree Basement Recovery Heart 1, OoTR candidate Deku Tree Basement Recovery Heart 2, OoTR candidate Deku Tree Basement Recovery Heart 3 and more, took the harder region (sphere 2) over Deku Tree Lobby (1)"
+  },
+  {
+   "name": "Deku Tree Before Boss Remake Heart 2",
+   "area": "Deku Tree",
+   "kind": "freestanding",
+   "vanilla": "Recovery Heart",
+   "item": "Obj_Heart",
+   "conf": "forced",
+   "folder": "InsideTheDekuTree",
+   "via": "actor",
+   "age": "both",
+   "region": "Deku Tree Before Boss",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "1922216023914752593",
+     "files": [
+      "Banc/InsideTheDekuTree/InsideTheDekuTree_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate Deku Tree Basement Recovery Heart 1, OoTR candidate Deku Tree Basement Recovery Heart 2, OoTR candidate Deku Tree Basement Recovery Heart 3, took the harder region (sphere 2) over Deku Tree Lobby (1)"
+  },
+  {
+   "name": "Deku Tree Before Boss Remake Heart 3",
+   "area": "Deku Tree",
+   "kind": "freestanding",
+   "vanilla": "Recovery Heart",
+   "item": "Obj_Heart_InWater",
+   "conf": "forced",
+   "folder": "InsideTheDekuTree",
+   "via": "actor",
+   "age": "both",
+   "region": "Deku Tree Before Boss",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "2222711177065858733",
+     "files": [
+      "Banc/InsideTheDekuTree/InsideTheDekuTree_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate Deku Tree Basement Recovery Heart 1, OoTR candidate Deku Tree Basement Recovery Heart 2, OoTR candidate Deku Tree Basement Recovery Heart 3 and more, took the harder region (sphere 2) over Deku Tree Lobby (1)"
+  },
+  {
+   "name": "Deku Tree Before Boss Remake Heart 4",
+   "area": "Deku Tree",
+   "kind": "freestanding",
+   "vanilla": "Recovery Heart",
+   "item": "Obj_Heart",
+   "conf": "forced",
+   "folder": "InsideTheDekuTree",
+   "via": "actor",
+   "age": "both",
+   "region": "Deku Tree Before Boss",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "16164791133086825945",
+     "files": [
+      "Banc/InsideTheDekuTree/InsideTheDekuTree_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate Deku Tree Basement Recovery Heart 1, OoTR candidate Deku Tree Basement Recovery Heart 2, OoTR candidate Deku Tree Basement Recovery Heart 3, took the harder region (sphere 2) over Deku Tree Lobby (1)"
+  },
+  {
+   "name": "Deku Tree Before Boss Remake Heart 5",
+   "area": "Deku Tree",
+   "kind": "freestanding",
+   "vanilla": "Recovery Heart",
+   "item": "Obj_Heart",
+   "conf": "forced",
+   "folder": "InsideTheDekuTree",
+   "via": "actor",
+   "age": "both",
+   "region": "Deku Tree Before Boss",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "16355617740219907263",
+     "files": [
+      "Banc/InsideTheDekuTree/InsideTheDekuTree_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate Deku Tree Basement Recovery Heart 1, OoTR candidate Deku Tree Basement Recovery Heart 2, OoTR candidate Deku Tree Basement Recovery Heart 3, took the harder region (sphere 2) over Deku Tree Lobby (1)"
+  },
+  {
+   "name": "Deku Tree Before Boss Remake Heart 6",
+   "area": "Deku Tree",
+   "kind": "freestanding",
+   "vanilla": "Recovery Heart",
+   "item": "Obj_Heart_InWater",
+   "conf": "forced",
+   "folder": "InsideTheDekuTree",
+   "via": "actor",
+   "age": "both",
+   "region": "Deku Tree Before Boss",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "16597323285320397604",
+     "files": [
+      "Banc/InsideTheDekuTree/InsideTheDekuTree_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate Deku Tree Basement Recovery Heart 1, OoTR candidate Deku Tree Basement Recovery Heart 2, OoTR candidate Deku Tree Basement Recovery Heart 3 and more, took the harder region (sphere 2) over Deku Tree Lobby (1)"
+  },
+  {
+   "name": "Fire Temple Boulder Maze Upper Remake Heart 1",
+   "area": "Fire Temple",
+   "kind": "freestanding",
+   "vanilla": "Recovery Heart",
+   "item": "Obj_Heart",
+   "conf": "forced",
+   "folder": "FireTemple",
+   "via": "actor",
+   "age": "both",
+   "region": "Fire Temple Boulder Maze Upper",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "876976950103637140",
+     "files": [
+      "Banc/FireTemple/FireTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate Fire Temple Moving Fire Room Recovery Heart 1, OoTR candidate Fire Temple Moving Fire Room Recovery Heart 2, tracker guess Fire Temple Moving Fire Room Recovery Heart 2, took the harder region (sphere 16) over Fire Temple Elevator Room (15), Fire Temple Narrow Path Room (16)"
+  },
+  {
+   "name": "Fire Temple Boulder Maze Upper Remake Heart 2",
+   "area": "Fire Temple",
+   "kind": "freestanding",
+   "vanilla": "Recovery Heart",
+   "item": "Obj_Heart",
+   "conf": "forced",
+   "folder": "FireTemple",
+   "via": "actor",
+   "age": "both",
+   "region": "Fire Temple Boulder Maze Upper",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "10973307894322368710",
+     "files": [
+      "Banc/FireTemple/FireTemple_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate Fire Temple Moving Fire Room Recovery Heart 1, OoTR candidate Fire Temple Moving Fire Room Recovery Heart 2, tracker guess Fire Temple Moving Fire Room Recovery Heart 1, took the harder region (sphere 16) over Fire Temple Elevator Room (15), Fire Temple Narrow Path Room (16)"
+  },
+  {
+   "name": "Hyrule Field Adult Remake Rupee 1",
+   "area": "Hyrule Field",
+   "kind": "freestanding",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "adult",
+   "region": "Hyrule Field",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "4525337806931267688",
+     "files": [
+      "Banc/HyruleField/HyruleField_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check HF Adult Grass 9, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kokiri Forest Adult Remake Rupee 1",
+   "area": "Kokiri Forest",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "KokiriForest",
+   "via": "actor",
+   "age": "adult",
+   "region": "Kokiri Forest",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "2512122383157745514",
+     "files": [
+      "Banc/KokiriForest/KokiriForest_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate KF Grass Near Ramp Green Rupee 1, OoTR candidate KF Grass Near Ramp Green Rupee 2, OoTR candidate KF Grass Near Midos Green Rupee 1 and more, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kokiri Forest Adult Remake Rupee 2",
+   "area": "Kokiri Forest",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "KokiriForest",
+   "via": "actor",
+   "age": "adult",
+   "region": "Kokiri Forest",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "3669266735444406174",
+     "files": [
+      "Banc/KokiriForest/KokiriForest_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate KF Grass Near Ramp Green Rupee 1, OoTR candidate KF Grass Near Ramp Green Rupee 2, OoTR candidate KF Grass Near Midos Green Rupee 1 and more, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kokiri Forest Adult Remake Rupee 3",
+   "area": "Kokiri Forest",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "KokiriForest",
+   "via": "actor",
+   "age": "adult",
+   "region": "Kokiri Forest",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "4462556192312188043",
+     "files": [
+      "Banc/KokiriForest/KokiriForest_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate KF Grass Near Ramp Green Rupee 1, OoTR candidate KF Grass Near Ramp Green Rupee 2, OoTR candidate KF Grass Near Midos Green Rupee 1 and more, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kokiri Forest Adult Remake Rupee 4",
+   "area": "Kokiri Forest",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "KokiriForest",
+   "via": "actor",
+   "age": "adult",
+   "region": "Kokiri Forest",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "4576019929976975366",
+     "files": [
+      "Banc/KokiriForest/KokiriForest_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate KF Grass Near Ramp Green Rupee 1, OoTR candidate KF Grass Near Ramp Green Rupee 2, OoTR candidate KF Grass Near Midos Green Rupee 1 and more, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kokiri Forest Adult Remake Rupee 5",
+   "area": "Kokiri Forest",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "KokiriForest",
+   "via": "actor",
+   "age": "adult",
+   "region": "Kokiri Forest",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "8686048425858269244",
+     "files": [
+      "Banc/KokiriForest/KokiriForest_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate KF Grass Near Ramp Green Rupee 1, OoTR candidate KF Grass Near Ramp Green Rupee 2, OoTR candidate KF Grass Near Midos Green Rupee 1 and more, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kokiri Forest Adult Remake Rupee 6",
+   "area": "Kokiri Forest",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "KokiriForest",
+   "via": "actor",
+   "age": "adult",
+   "region": "Kokiri Forest",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "9667799371071602538",
+     "files": [
+      "Banc/KokiriForest/KokiriForest_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate KF Grass Near Ramp Green Rupee 1, OoTR candidate KF Grass Near Ramp Green Rupee 2, OoTR candidate KF Grass Near Midos Green Rupee 1 and more, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kokiri Forest Adult Remake Rupee 7",
+   "area": "Kokiri Forest",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "KokiriForest",
+   "via": "actor",
+   "age": "adult",
+   "region": "Kokiri Forest",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "10327775662812412709",
+     "files": [
+      "Banc/KokiriForest/KokiriForest_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate KF Grass Near Ramp Green Rupee 1, OoTR candidate KF Grass Near Ramp Green Rupee 2, OoTR candidate KF Grass Near Midos Green Rupee 1 and more, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kokiri Forest Adult Remake Rupee 8",
+   "area": "Kokiri Forest",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "KokiriForest",
+   "via": "actor",
+   "age": "adult",
+   "region": "Kokiri Forest",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "12079876816721924835",
+     "files": [
+      "Banc/KokiriForest/KokiriForest_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate KF Grass Near Ramp Green Rupee 1, OoTR candidate KF Grass Near Ramp Green Rupee 2, OoTR candidate KF Grass Near Midos Green Rupee 1 and more, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kokiri Forest Adult Remake Rupee 9",
+   "area": "Kokiri Forest",
+   "kind": "freestanding",
+   "vanilla": "Rupees (50)",
+   "item": "Obj_Rupee_Purple",
+   "conf": "forced",
+   "folder": "KokiriForest",
+   "via": "actor",
+   "age": "adult",
+   "region": "Kokiri Forest",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "17212015369679208115",
+     "files": [
+      "Banc/KokiriForest/KokiriForest_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check KF GS House of Twins, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Kokiri Forest Remake Rupee 1",
+   "area": "Kokiri Forest",
+   "kind": "freestanding",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "KokiriForest",
+   "via": "actor",
+   "age": "both",
+   "region": "Kokiri Forest",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "6618764049130440222",
+     "files": [
+      "Banc/KokiriForest/KokiriForest_Adult_Dynamic.bcett.byml.zs",
+      "Banc/KokiriForest/KokiriForest_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in Kokiri Forest with the rule is_child"
+  },
+  {
+   "name": "Kokiri Forest Child Remake Rupee 1",
+   "area": "Kokiri Forest",
+   "kind": "freestanding",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "KokiriForest",
+   "via": "actor",
+   "age": "child",
+   "region": "Kokiri Forest",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "1564209214895161222",
+     "files": [
+      "Banc/KokiriForest/KokiriForest_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in Kokiri Forest with the rule is_child"
+  },
+  {
+   "name": "Kokiri Forest Child Remake Rupee 2",
+   "area": "Kokiri Forest",
+   "kind": "freestanding",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "KokiriForest",
+   "via": "actor",
+   "age": "child",
+   "region": "Kokiri Forest",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "2056926167552020049",
+     "files": [
+      "Banc/KokiriForest/KokiriForest_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in Kokiri Forest with the rule is_child"
+  },
+  {
+   "name": "Kokiri Forest Child Remake Rupee 3",
+   "area": "Kokiri Forest",
+   "kind": "freestanding",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "KokiriForest",
+   "via": "actor",
+   "age": "child",
+   "region": "Kokiri Forest",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "4490005694725260163",
+     "files": [
+      "Banc/KokiriForest/KokiriForest_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in Kokiri Forest with the rule is_child"
+  },
+  {
+   "name": "Kokiri Forest Child Remake Rupee 4",
+   "area": "Kokiri Forest",
+   "kind": "freestanding",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "KokiriForest",
+   "via": "actor",
+   "age": "child",
+   "region": "Kokiri Forest",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "6079532033038180376",
+     "files": [
+      "Banc/KokiriForest/KokiriForest_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in Kokiri Forest with the rule is_child"
+  },
+  {
+   "name": "Kokiri Forest Child Remake Rupee 5",
+   "area": "Kokiri Forest",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "KokiriForest",
+   "via": "actor",
+   "age": "child",
+   "region": "Kokiri Forest",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "11219803099333988363",
+     "files": [
+      "Banc/KokiriForest/KokiriForest_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in Kokiri Forest with the rule is_child"
+  },
+  {
+   "name": "Kokiri Forest Child Remake Rupee 6",
+   "area": "Kokiri Forest",
+   "kind": "freestanding",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "KokiriForest",
+   "via": "actor",
+   "age": "child",
+   "region": "Kokiri Forest",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "14381003020707329822",
+     "files": [
+      "Banc/KokiriForest/KokiriForest_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in Kokiri Forest with the rule is_child"
+  },
+  {
+   "name": "Kokiri Forest Child Remake Rupee 7",
+   "area": "Kokiri Forest",
+   "kind": "freestanding",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "KokiriForest",
+   "via": "actor",
+   "age": "child",
+   "region": "Kokiri Forest",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "16647730239269178270",
+     "files": [
+      "Banc/KokiriForest/KokiriForest_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in Kokiri Forest with the rule is_child"
+  },
+  {
+   "name": "LH Lab Adult Remake Rupee 1",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupees (20)",
+   "item": "Obj_Rupee_Red",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "adult",
+   "region": "LH Lab",
+   "rule": "is_adult and ((Progressive_Scale, 2) or can_use(Iron_Boots))",
+   "refs": [
+    {
+     "hash": "14062454289055492415",
+     "files": [
+      "Banc/HyruleField/HyruleField_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in LH Lab with the rule is_adult and ((Progressive_Scale, 2) or can_use(Iron_Boots))"
+  },
+  {
+   "name": "LH Lab Remake Rupee 1",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "both",
+   "region": "LH Lab",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "9924885918140405518",
+     "files": [
+      "Banc/HyruleField/HyruleField_Adult_Dynamic.bcett.byml.zs",
+      "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check LH GS Lab Crate, took the harder region (sphere 2) over Lake Hylia (2)"
+  },
+  {
+   "name": "LH Lab Remake Rupee 2",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupees (20)",
+   "item": "Obj_Rupee_Red",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "both",
+   "region": "LH Lab",
+   "rule": "(Progressive_Scale, 2) or can_use(Iron_Boots)",
+   "refs": [
+    {
+     "hash": "18417667443552316769",
+     "files": [
+      "Banc/HyruleField/HyruleField_Adult_Dynamic.bcett.byml.zs",
+      "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in LH Lab with the rule (Progressive_Scale, 2) or can_use(Iron_Boots)"
+  },
+  {
+   "name": "LH Lab Child Remake Rupee 1",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "child",
+   "region": "LH Lab",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "3689958676603857333",
+     "files": [
+      "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess LH Lab Dive Red Rupee 1, took the harder region (sphere 2) over Lake Hylia (2)"
+  },
+  {
+   "name": "LH Lab Child Remake Rupee 2",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "child",
+   "region": "LH Lab",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "8235277831792843095",
+     "files": [
+      "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess LH Lab Dive Red Rupee 2, took the harder region (sphere 2) over Lake Hylia (2)"
+  },
+  {
+   "name": "LH Lab Child Remake Rupee 3",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "child",
+   "region": "LH Lab",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "8955407423151725378",
+     "files": [
+      "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess LH Lab Dive Red Rupee 3, took the harder region (sphere 2) over Lake Hylia (2)"
+  },
+  {
+   "name": "Lake Hylia Adult Remake Rupee 1",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "adult",
+   "region": "Lake Hylia",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "578077075299673958",
+     "files": [
+      "Banc/HyruleField/HyruleField_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate LH Underwater Near Shore Green Rupee, OoTR candidate LH Underwater Green Rupee 1, OoTR candidate LH Underwater Green Rupee 2, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Lake Hylia Adult Remake Rupee 2",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "adult",
+   "region": "Lake Hylia",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "1586568880795558629",
+     "files": [
+      "Banc/HyruleField/HyruleField_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate LH Underwater Near Shore Green Rupee, OoTR candidate LH Underwater Green Rupee 1, OoTR candidate LH Underwater Green Rupee 2, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Lake Hylia Adult Remake Rupee 3",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "adult",
+   "region": "Lake Hylia",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "9989181491842997674",
+     "files": [
+      "Banc/HyruleField/HyruleField_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate LH Underwater Near Shore Green Rupee, OoTR candidate LH Underwater Green Rupee 1, OoTR candidate LH Underwater Green Rupee 2, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Lake Hylia Adult Remake Rupee 4",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "adult",
+   "region": "Lake Hylia",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "10848757081092766316",
+     "files": [
+      "Banc/HyruleField/HyruleField_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate LH Underwater Near Shore Green Rupee, OoTR candidate LH Underwater Green Rupee 1, OoTR candidate LH Underwater Green Rupee 2, took the harder region (sphere 12)"
+  },
+  {
+   "name": "Lake Hylia Remake Rupee 1",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "both",
+   "region": "Lake Hylia",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "7268667473541116466",
+     "files": [
+      "Banc/HyruleField/HyruleField_Adult_Dynamic.bcett.byml.zs",
+      "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate LH Underwater Near Shore Green Rupee, OoTR candidate LH Underwater Green Rupee 1, OoTR candidate LH Underwater Green Rupee 2, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Lake Hylia Remake Rupee 2",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "both",
+   "region": "Lake Hylia",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "14398093248612909712",
+     "files": [
+      "Banc/HyruleField/HyruleField_Adult_Dynamic.bcett.byml.zs",
+      "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate LH Underwater Near Shore Green Rupee, OoTR candidate LH Underwater Green Rupee 1, OoTR candidate LH Underwater Green Rupee 2, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Lake Hylia Remake Rupee 3",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "both",
+   "region": "Lake Hylia",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "15135356131305809944",
+     "files": [
+      "Banc/HyruleField/HyruleField_Adult_Dynamic.bcett.byml.zs",
+      "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate LH Underwater Near Shore Green Rupee, OoTR candidate LH Underwater Green Rupee 1, OoTR candidate LH Underwater Green Rupee 2, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Lake Hylia Child Remake Rupee 1",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "child",
+   "region": "Lake Hylia",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "629760094542173614",
+     "files": [
+      "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate LH Underwater Near Shore Green Rupee, OoTR candidate LH Underwater Green Rupee 1, OoTR candidate LH Underwater Green Rupee 2, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Lake Hylia Child Remake Rupee 2",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "child",
+   "region": "Lake Hylia",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "693126994387192480",
+     "files": [
+      "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess LH Underwater Near Shore Green Rupee, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Lake Hylia Child Remake Rupee 3",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "child",
+   "region": "Lake Hylia",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "2067586981487636357",
+     "files": [
+      "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate LH Underwater Near Shore Green Rupee, OoTR candidate LH Underwater Green Rupee 1, OoTR candidate LH Underwater Green Rupee 2 and more, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Lake Hylia Child Remake Rupee 4",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "child",
+   "region": "Lake Hylia",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "5355103373173124554",
+     "files": [
+      "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate LH Underwater Near Shore Green Rupee, OoTR candidate LH Underwater Green Rupee 1, OoTR candidate LH Underwater Green Rupee 2, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Lake Hylia Child Remake Rupee 5",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "child",
+   "region": "Lake Hylia",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "11917730692592781756",
+     "files": [
+      "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate LH Underwater Near Shore Green Rupee, OoTR candidate LH Underwater Green Rupee 1, OoTR candidate LH Underwater Green Rupee 2 and more, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Lake Hylia Child Remake Rupee 6",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "child",
+   "region": "Lake Hylia",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "18080167579417541655",
+     "files": [
+      "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate LH Underwater Near Shore Green Rupee, OoTR candidate LH Underwater Green Rupee 1, OoTR candidate LH Underwater Green Rupee 2, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Lake Hylia Child Remake Rupee 7",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "child",
+   "region": "Lake Hylia",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "8976284932613239030",
+     "files": [
+      "Banc/HyruleField/HyruleField_Child_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate LH Underwater Near Shore Green Rupee, OoTR candidate LH Underwater Green Rupee 1, OoTR candidate LH Underwater Green Rupee 2, took the harder region (sphere 2)"
+  },
+  {
+   "name": "Lake Hylia Child Remake Rupee 8",
+   "area": "Lake Hylia",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "HyruleField",
+   "via": "actor",
+   "age": "child",
+   "region": "Lake Hylia",
+   "rule": "is_child",
+   "refs": [
+    {
+     "hash": "10016653679204206712",
+     "files": [
+      "Banc/HyruleField/HyruleField_Child_Static.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "OoTR candidate LH Underwater Near Shore Green Rupee, OoTR candidate LH Underwater Green Rupee 1, OoTR candidate LH Underwater Green Rupee 2, took the harder region (sphere 2)"
+  },
+  {
+   "name": "ZF Underwater Adult Remake Rupee 1",
+   "area": "Zoras Fountain",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "actor",
+   "age": "adult",
+   "region": "ZF Underwater",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "2207729956021615024",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in ZF Underwater with the rule is_adult"
+  },
+  {
+   "name": "ZF Underwater Adult Remake Rupee 2",
+   "area": "Zoras Fountain",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "actor",
+   "age": "adult",
+   "region": "ZF Underwater",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "4077060633972129211",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in ZF Underwater with the rule is_adult"
+  },
+  {
+   "name": "ZF Underwater Adult Remake Rupee 3",
+   "area": "Zoras Fountain",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "actor",
+   "age": "adult",
+   "region": "ZF Underwater",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "4175716627569108253",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in ZF Underwater with the rule is_adult"
+  },
+  {
+   "name": "ZF Underwater Adult Remake Rupee 4",
+   "area": "Zoras Fountain",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "actor",
+   "age": "adult",
+   "region": "ZF Underwater",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "5568633841506517325",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in ZF Underwater with the rule is_adult"
+  },
+  {
+   "name": "ZF Underwater Adult Remake Rupee 5",
+   "area": "Zoras Fountain",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "actor",
+   "age": "adult",
+   "region": "ZF Underwater",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "5767588505352617062",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in ZF Underwater with the rule is_adult"
+  },
+  {
+   "name": "ZF Underwater Adult Remake Rupee 6",
+   "area": "Zoras Fountain",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "actor",
+   "age": "adult",
+   "region": "ZF Underwater",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "6511717208019100686",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in ZF Underwater with the rule is_adult"
+  },
+  {
+   "name": "ZF Underwater Adult Remake Rupee 7",
+   "area": "Zoras Fountain",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "actor",
+   "age": "adult",
+   "region": "ZF Underwater",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "7369210492575735847",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in ZF Underwater with the rule is_adult"
+  },
+  {
+   "name": "ZF Underwater Adult Remake Rupee 8",
+   "area": "Zoras Fountain",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "actor",
+   "age": "adult",
+   "region": "ZF Underwater",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "7430539662759067881",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in ZF Underwater with the rule is_adult"
+  },
+  {
+   "name": "ZF Underwater Adult Remake Rupee 9",
+   "area": "Zoras Fountain",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "actor",
+   "age": "adult",
+   "region": "ZF Underwater",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "9058546130605800023",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in ZF Underwater with the rule is_adult"
+  },
+  {
+   "name": "ZF Underwater Adult Remake Rupee 10",
+   "area": "Zoras Fountain",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "actor",
+   "age": "adult",
+   "region": "ZF Underwater",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "10247339190834717086",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in ZF Underwater with the rule is_adult"
+  },
+  {
+   "name": "ZF Underwater Adult Remake Rupee 11",
+   "area": "Zoras Fountain",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "actor",
+   "age": "adult",
+   "region": "ZF Underwater",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "10518148330968147601",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in ZF Underwater with the rule is_adult"
+  },
+  {
+   "name": "ZF Underwater Adult Remake Rupee 12",
+   "area": "Zoras Fountain",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "actor",
+   "age": "adult",
+   "region": "ZF Underwater",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "11672626208313429634",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in ZF Underwater with the rule is_adult"
+  },
+  {
+   "name": "ZF Underwater Adult Remake Rupee 13",
+   "area": "Zoras Fountain",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "actor",
+   "age": "adult",
+   "region": "ZF Underwater",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "11712600857155855626",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in ZF Underwater with the rule is_adult"
+  },
+  {
+   "name": "ZF Underwater Adult Remake Rupee 14",
+   "area": "Zoras Fountain",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "actor",
+   "age": "adult",
+   "region": "ZF Underwater",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "11743429110701869711",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in ZF Underwater with the rule is_adult"
+  },
+  {
+   "name": "ZF Underwater Adult Remake Rupee 15",
+   "area": "Zoras Fountain",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "actor",
+   "age": "adult",
+   "region": "ZF Underwater",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "15066348262714298279",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in ZF Underwater with the rule is_adult"
+  },
+  {
+   "name": "ZF Underwater Adult Remake Rupee 16",
+   "area": "Zoras Fountain",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraFountain",
+   "via": "actor",
+   "age": "adult",
+   "region": "ZF Underwater",
+   "rule": "is_adult",
+   "refs": [
+    {
+     "hash": "16981113694024920682",
+     "files": [
+      "Banc/ZoraFountain/ZoraFountain_Adult_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "likely",
+   "basis": "every OoTR candidate sits in ZF Underwater with the rule is_adult"
+  },
+  {
+   "name": "Zora River Remake Rupee 1",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "1308828964686406569",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR Adult Rock 7, nearby check ZR Child Rock 7, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Remake Rupee 2",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "1391937830947703725",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR Adult Rock 7, nearby check ZR Child Rock 7, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Remake Rupee 3",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "1482691670641189285",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR Adult Rock 8, nearby check ZR Child Rock 8, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Remake Rupee 4",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "2298283628328435720",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess ZR Waterfall Red Rupee 2, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Remake Rupee 5",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "3328888660444152381",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess ZR Waterfall Red Rupee 1, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Remake Rupee 6",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "3661284024861567877",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR GS Near Raised Grottos, nearby check ZR Near Open Grotto Freestanding PoH, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Remake Rupee 7",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "3922348358728399997",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR Near Open Grotto Freestanding PoH, nearby check ZR Adult Grass 1, nearby check ZR Child Grass 1, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Remake Rupee 8",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "4582064739131737845",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR GS Above Bridge, nearby check ZR GS Ladder, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Remake Rupee 9",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "4690834361593581821",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR Near Open Grotto Freestanding PoH, nearby check ZR Adult Grass 1, nearby check ZR Child Grass 1, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Remake Rupee 10",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "5230435736251084516",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR Adult Rock 7, nearby check ZR Child Rock 7, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Remake Rupee 11",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "6048109687318133293",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess ZR Waterfall Red Rupee 4, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Remake Rupee 12",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "9119591811446675392",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR Adult Rock 7, nearby check ZR Child Rock 7, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Remake Rupee 13",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "9631182645511745726",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR Adult Rock 8, nearby check ZR Child Rock 8, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Remake Rupee 14",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "9871945473853767030",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR Near Open Grotto Freestanding PoH, nearby check ZR Adult Grass 1, nearby check ZR Child Grass 1, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Remake Rupee 15",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "11633715633323756970",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR GS Near Raised Grottos, nearby check ZR Child Rock 7, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Remake Rupee 16",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "12818104578529512147",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR Near Open Grotto Freestanding PoH, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Remake Rupee 17",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "13410543774724933525",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR GS Near Raised Grottos, nearby check ZR Child Rock 7, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Remake Rupee 18",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "15482102146451554097",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "tracker guess ZR Waterfall Red Rupee 3, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Remake Rupee 19",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupees (5)",
+   "item": "Obj_Rupee_Blue",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "17324353931517538893",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR GS Near Raised Grottos, nearby check ZR Child Rock 7, took the harder region (sphere 6)"
+  },
+  {
+   "name": "Zora River Remake Rupee 20",
+   "area": "Zora River",
+   "kind": "freestanding",
+   "vanilla": "Rupee (1)",
+   "item": "Obj_Rupee_Green",
+   "conf": "forced",
+   "folder": "ZoraRiver",
+   "via": "actor",
+   "age": "both",
+   "region": "Zora River",
+   "rule": "True",
+   "refs": [
+    {
+     "hash": "18049114647202169539",
+     "files": [
+      "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+      "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs"
+     ]
+    }
+   ],
+   "ev": [
+    "remake"
+   ],
+   "grade": "guess",
+   "basis": "nearby check ZR Adult Rock 7, nearby check ZR Child Rock 7, took the harder region (sphere 6)"
+  }
+ ],
+ "unmatched_oot": [],
+ "unmatched_remake": []
+}

@@ -1,0 +1,788 @@
+{
+  "format": 1,
+  "note": "Remake shelf table for shuffle_shops. One row per OoTR shop location, mapped to the remake shelf slot that sells the same item (SHOP-A slots.tsv, by item). price is the remake price without the conditional discounts.",
+  "shops": [
+    {
+      "shop": "KF Shop",
+      "files": ["Npc_Kokiri_001_Shop_Child", "Npc_Kokiri_001_Shop_Child_ShortStock"],
+      "keepers": ["Npc_Kokiri_001_Shop_Adult", "Npc_Kokiri_001_Shop_Child", "Npc_Kokiri_001_Shop_Child_ShortStock"],
+      "bancs": ["Banc/KokiriForest/KokiriForest_Adult_Static.bcett.byml.zs", "Banc/KokiriForest/KokiriForest_Child_Static.bcett.byml.zs"],
+      "deal_order": [6, 0, 7, 2, 3, 1, 4, 5],
+      "deals": true,
+      "price_cap": 200
+    },
+    {
+      "shop": "Market Bazaar",
+      "files": ["Npc_Hylia_018_Shop"],
+      "keepers": ["Npc_Hylia_018_Shop_Child"],
+      "bancs": ["Banc/Market/Market_Child_Static.bcett.byml.zs"],
+      "deal_order": [6, 0, 1, 7, 5, 2, 3, 4],
+      "deals": true,
+      "once": true
+    },
+    {
+      "shop": "Kak Bazaar",
+      "files": ["Npc_Hylia_018_Shop_Adult"],
+      "keepers": ["Npc_Hylia_018_Shop_Adult"],
+      "bancs": ["Banc/KakarikoVillage/KakarikoVillage_Adult_Alternative_Static.bcett.byml.zs", "Banc/KakarikoVillage/KakarikoVillage_Adult_Static.bcett.byml.zs"],
+      "deal_order": [6, 0, 1, 7, 5, 2, 3, 4],
+      "deals": true,
+      "once": true
+    },
+    {
+      "shop": "Market Potion Shop",
+      "files": ["Npc_Hylia_020_Shop"],
+      "keepers": ["Npc_Hylia_020_Shop_Child"],
+      "bancs": ["Banc/Market/Market_Child_Static.bcett.byml.zs"],
+      "deal_order": [3, 0, 1, 2, 4, 5, 6, 7],
+      "deals": true,
+      "once": true
+    },
+    {
+      "shop": "Kak Potion Shop",
+      "files": ["Npc_Hylia_020_Shop_Adult"],
+      "keepers": ["Npc_Hylia_020_Shop_Adult"],
+      "bancs": ["Banc/KakarikoVillage/KakarikoVillage_Adult_Alternative_Static.bcett.byml.zs", "Banc/KakarikoVillage/KakarikoVillage_Adult_Static.bcett.byml.zs"],
+      "deal_order": [3, 0, 1, 2, 4, 5, 6, 7],
+      "deals": true,
+      "once": true
+    },
+    {
+      "shop": "Market Bombchu Shop",
+      "files": ["Npc_Hylia_021_Shop"],
+      "keepers": ["Npc_Hylia_021_Shop_Child"],
+      "bancs": ["Banc/Market/Market_Child_Static.bcett.byml.zs"],
+      "deal_order": [0, 1, 2, 3, 4, 5, 6, 7],
+      "deals": true,
+      "once": true
+    },
+    {
+      "shop": "GC Shop",
+      "files": ["Npc_Goron_011_Shop_Child"],
+      "keepers": ["Npc_Goron_011_Shop_Adult", "Npc_Goron_011_Shop_Child"],
+      "bancs": ["Banc/GoronCity/GoronCity_Adult_Static.bcett.byml.zs", "Banc/GoronCity/GoronCity_Child_Static.bcett.byml.zs"],
+      "deal_order": [3, 0, 1, 2, 4, 5, 6, 7],
+      "deals": true
+    },
+    {
+      "shop": "ZD Shop",
+      "files": ["Npc_Zora_011_Shop"],
+      "keepers": ["Npc_Zora_011_Shop_Adult", "Npc_Zora_011_Shop_Child"],
+      "bancs": ["Banc/ZoraDomain/ZoraDomain_Adult_Alternative_Static.bcett.byml.zs", "Banc/ZoraDomain/ZoraDomain_Adult_Static.bcett.byml.zs", "Banc/ZoraDomain/ZoraDomain_Child_Static.bcett.byml.zs"],
+      "deal_order": [3, 0, 1, 2, 4, 5, 6, 7],
+      "deals": true
+    }
+  ],
+  "slots": [
+    {
+      "name": "KF Shop Item 8",
+      "shop": "KF Shop",
+      "slot": 0,
+      "actor": "Shop_Heart",
+      "item": "Buy Heart",
+      "price": 5,
+      "counters": ["Shop_SoldNum.Npc_Kokiri_001_Shop_Child.0", "Shop_SoldNum.Npc_Kokiri_001_Shop_Child_ShortStock.0", "Shop_SoldNum.Npc_Kokiri_001_Shop_Adult.0"],
+      "target": "shop:Npc_Kokiri_001_Shop_Child.0"
+    },
+    {
+      "name": "KF Shop Item 6",
+      "shop": "KF Shop",
+      "slot": 1,
+      "actor": "Shop_DekuSeedBundle_02",
+      "item": "Buy Deku Seeds (10)",
+      "price": 15,
+      "counters": ["Shop_SoldNum.Npc_Kokiri_001_Shop_Child.1", "Shop_SoldNum.Npc_Kokiri_001_Shop_Child_ShortStock.1", "Shop_SoldNum.Npc_Kokiri_001_Shop_Adult.1"],
+      "target": "shop:Npc_Kokiri_001_Shop_Child.1"
+    },
+    {
+      "name": "KF Shop Item 2",
+      "shop": "KF Shop",
+      "slot": 2,
+      "actor": "Shop_DekuNutBundle_01",
+      "item": "Buy Deku Nut (5)",
+      "price": 20,
+      "counters": ["Shop_SoldNum.Npc_Kokiri_001_Shop_Child.2", "Shop_SoldNum.Npc_Kokiri_001_Shop_Child_ShortStock.2", "Shop_SoldNum.Npc_Kokiri_001_Shop_Adult.2"],
+      "target": "shop:Npc_Kokiri_001_Shop_Child.2"
+    },
+    {
+      "name": "KF Shop Item 3",
+      "shop": "KF Shop",
+      "slot": 3,
+      "actor": "Shop_DekuNutBundle_02",
+      "item": "Buy Deku Nut (10)",
+      "price": 30,
+      "counters": ["Shop_SoldNum.Npc_Kokiri_001_Shop_Child.3", "Shop_SoldNum.Npc_Kokiri_001_Shop_Child_ShortStock.3", "Shop_SoldNum.Npc_Kokiri_001_Shop_Adult.3"],
+      "target": "shop:Npc_Kokiri_001_Shop_Child.3"
+    },
+    {
+      "name": "KF Shop Item 5",
+      "shop": "KF Shop",
+      "slot": 4,
+      "actor": "Shop_DekuSeedBundle_01",
+      "item": "Buy Deku Seeds (30)",
+      "price": 30,
+      "counters": ["Shop_SoldNum.Npc_Kokiri_001_Shop_Child.4", "Shop_SoldNum.Npc_Kokiri_001_Shop_Child_ShortStock.4", "Shop_SoldNum.Npc_Kokiri_001_Shop_Adult.4"],
+      "target": "shop:Npc_Kokiri_001_Shop_Child.4"
+    },
+    {
+      "name": "KF Shop Item 7",
+      "shop": "KF Shop",
+      "slot": 5,
+      "actor": "Shop_DekuStickBundle_Medium",
+      "item": "Buy Deku Stick (5)",
+      "price": 40,
+      "counters": ["Shop_SoldNum.Npc_Kokiri_001_Shop_Child.5", "Shop_SoldNum.Npc_Kokiri_001_Shop_Child_ShortStock.5", "Shop_SoldNum.Npc_Kokiri_001_Shop_Adult.5"],
+      "target": "shop:Npc_Kokiri_001_Shop_Child.5"
+    },
+    {
+      "name": "KF Shop Item 1",
+      "shop": "KF Shop",
+      "slot": 6,
+      "actor": "Shop_Weapon_Shield_Deku",
+      "item": "Buy Deku Shield",
+      "price": 40,
+      "counters": ["Shop_SoldNum.Npc_Kokiri_001_Shop_Child.6", "Shop_SoldNum.Npc_Kokiri_001_Shop_Child_ShortStock.6", "Shop_SoldNum.Npc_Kokiri_001_Shop_Adult.6"],
+      "target": "shop:Npc_Kokiri_001_Shop_Child.6"
+    },
+    {
+      "name": "KF Shop Item 4",
+      "shop": "KF Shop",
+      "slot": 7,
+      "actor": "Shop_DekuStick",
+      "item": "Buy Deku Stick (1)",
+      "price": 10,
+      "counters": ["Shop_SoldNum.Npc_Kokiri_001_Shop_Child.7", "Shop_SoldNum.Npc_Kokiri_001_Shop_Child_ShortStock.7", "Shop_SoldNum.Npc_Kokiri_001_Shop_Adult.7"],
+      "target": "shop:Npc_Kokiri_001_Shop_Child.7"
+    },
+    {
+      "name": "Market Bazaar Item 4",
+      "shop": "Market Bazaar",
+      "slot": 0,
+      "actor": "Shop_Heart",
+      "item": "Buy Heart",
+      "price": 5,
+      "counters": ["Shop_SoldNum.Npc_Hylia_018_Shop_Child.0"],
+      "target": "shop:Npc_Hylia_018_Shop_Child.0"
+    },
+    {
+      "name": "Market Bazaar Item 6",
+      "shop": "Market Bazaar",
+      "slot": 1,
+      "actor": "Shop_MagicJar_Small",
+      "item": "Buy Magic Jar",
+      "price": 10,
+      "counters": ["Shop_SoldNum.Npc_Hylia_018_Shop_Child.1"],
+      "target": "shop:Npc_Hylia_018_Shop_Child.1"
+    },
+    {
+      "name": "Market Bazaar Item 8",
+      "shop": "Market Bazaar",
+      "slot": 2,
+      "actor": "Shop_DekuSeedBundle_02",
+      "item": "Buy Deku Seeds (10)",
+      "price": 15,
+      "counters": ["Shop_SoldNum.Npc_Hylia_018_Shop_Child.2"],
+      "target": "shop:Npc_Hylia_018_Shop_Child.2"
+    },
+    {
+      "name": "Market Bazaar Item 5",
+      "shop": "Market Bazaar",
+      "slot": 3,
+      "actor": "Shop_ArrowBundle_01",
+      "item": "Buy Arrows (10)",
+      "price": 20,
+      "counters": ["Shop_SoldNum.Npc_Hylia_018_Shop_Child.3"],
+      "target": "shop:Npc_Hylia_018_Shop_Child.3"
+    },
+    {
+      "name": "Market Bazaar Item 2",
+      "shop": "Market Bazaar",
+      "slot": 4,
+      "actor": "Shop_BombBundle_01",
+      "item": "Buy Bombs (5) for 35 Rupees",
+      "price": 35,
+      "counters": ["Shop_SoldNum.Npc_Hylia_018_Shop_Child.4"],
+      "target": "shop:Npc_Hylia_018_Shop_Child.4"
+    },
+    {
+      "name": "Market Bazaar Item 3",
+      "shop": "Market Bazaar",
+      "slot": 5,
+      "actor": "Shop_DekuNutBundle_01",
+      "item": "Buy Deku Nut (5)",
+      "price": 20,
+      "counters": ["Shop_SoldNum.Npc_Hylia_018_Shop_Child.5"],
+      "target": "shop:Npc_Hylia_018_Shop_Child.5"
+    },
+    {
+      "name": "Market Bazaar Item 1",
+      "shop": "Market Bazaar",
+      "slot": 6,
+      "actor": "Shop_Weapon_Shield_Hylian",
+      "item": "Buy Hylian Shield",
+      "price": 80,
+      "counters": ["Shop_SoldNum.Npc_Hylia_018_Shop_Child.6"],
+      "target": "shop:Npc_Hylia_018_Shop_Child.6"
+    },
+    {
+      "name": "Market Bazaar Item 7",
+      "shop": "Market Bazaar",
+      "slot": 7,
+      "actor": "Shop_DekuStick",
+      "item": "Buy Deku Stick (1)",
+      "price": 10,
+      "counters": ["Shop_SoldNum.Npc_Hylia_018_Shop_Child.7"],
+      "target": "shop:Npc_Hylia_018_Shop_Child.7"
+    },
+    {
+      "name": "Kak Bazaar Item 4",
+      "shop": "Kak Bazaar",
+      "slot": 0,
+      "actor": "Shop_Heart",
+      "item": "Buy Heart",
+      "price": 5,
+      "counters": ["Shop_SoldNum.Npc_Hylia_018_Shop_Adult.0"],
+      "target": "shop:Npc_Hylia_018_Shop_Adult.0"
+    },
+    {
+      "name": "Kak Bazaar Item 6",
+      "shop": "Kak Bazaar",
+      "slot": 1,
+      "actor": "Shop_MagicJar_Small",
+      "item": "Buy Magic Jar",
+      "price": 10,
+      "counters": ["Shop_SoldNum.Npc_Hylia_018_Shop_Adult.1"],
+      "target": "shop:Npc_Hylia_018_Shop_Adult.1"
+    },
+    {
+      "name": "Kak Bazaar Item 8",
+      "shop": "Kak Bazaar",
+      "slot": 2,
+      "actor": "Shop_DekuSeedBundle_02",
+      "item": "Buy Deku Seeds (10)",
+      "price": 15,
+      "counters": ["Shop_SoldNum.Npc_Hylia_018_Shop_Adult.2"],
+      "target": "shop:Npc_Hylia_018_Shop_Adult.2"
+    },
+    {
+      "name": "Kak Bazaar Item 5",
+      "shop": "Kak Bazaar",
+      "slot": 3,
+      "actor": "Shop_ArrowBundle_01",
+      "item": "Buy Arrows (10)",
+      "price": 20,
+      "counters": ["Shop_SoldNum.Npc_Hylia_018_Shop_Adult.3"],
+      "target": "shop:Npc_Hylia_018_Shop_Adult.3"
+    },
+    {
+      "name": "Kak Bazaar Item 2",
+      "shop": "Kak Bazaar",
+      "slot": 4,
+      "actor": "Shop_BombBundle_01",
+      "item": "Buy Bombs (5) for 35 Rupees",
+      "price": 35,
+      "counters": ["Shop_SoldNum.Npc_Hylia_018_Shop_Adult.4"],
+      "target": "shop:Npc_Hylia_018_Shop_Adult.4"
+    },
+    {
+      "name": "Kak Bazaar Item 3",
+      "shop": "Kak Bazaar",
+      "slot": 5,
+      "actor": "Shop_DekuNutBundle_01",
+      "item": "Buy Deku Nut (5)",
+      "price": 20,
+      "counters": ["Shop_SoldNum.Npc_Hylia_018_Shop_Adult.5"],
+      "target": "shop:Npc_Hylia_018_Shop_Adult.5"
+    },
+    {
+      "name": "Kak Bazaar Item 1",
+      "shop": "Kak Bazaar",
+      "slot": 6,
+      "actor": "Shop_Weapon_Shield_Hylian",
+      "item": "Buy Hylian Shield",
+      "price": 80,
+      "counters": ["Shop_SoldNum.Npc_Hylia_018_Shop_Adult.6"],
+      "target": "shop:Npc_Hylia_018_Shop_Adult.6"
+    },
+    {
+      "name": "Kak Bazaar Item 7",
+      "shop": "Kak Bazaar",
+      "slot": 7,
+      "actor": "Shop_DekuStick",
+      "item": "Buy Deku Stick (1)",
+      "price": 10,
+      "counters": ["Shop_SoldNum.Npc_Hylia_018_Shop_Adult.7"],
+      "target": "shop:Npc_Hylia_018_Shop_Adult.7"
+    },
+    {
+      "name": "Market Potion Shop Item 3",
+      "shop": "Market Potion Shop",
+      "slot": 0,
+      "actor": "Shop_Bottle_RedPotion",
+      "item": "Buy Red Potion for 30 Rupees",
+      "price": 30,
+      "counters": ["Shop_SoldNum.Npc_Hylia_020_Shop_Child.0"],
+      "target": "shop:Npc_Hylia_020_Shop_Child.0"
+    },
+    {
+      "name": "Market Potion Shop Item 1",
+      "shop": "Market Potion Shop",
+      "slot": 1,
+      "actor": "Shop_Bottle_GreenPotion",
+      "item": "Buy Green Potion",
+      "price": 30,
+      "counters": ["Shop_SoldNum.Npc_Hylia_020_Shop_Child.1"],
+      "target": "shop:Npc_Hylia_020_Shop_Child.1"
+    },
+    {
+      "name": "Market Potion Shop Item 5",
+      "shop": "Market Potion Shop",
+      "slot": 2,
+      "actor": "Shop_Bottle_HalfMilk",
+      "item": "Buy Half Milk",
+      "price": 20,
+      "counters": ["Shop_SoldNum.Npc_Hylia_020_Shop_Child.2"],
+      "target": "shop:Npc_Hylia_020_Shop_Child.2"
+    },
+    {
+      "name": "Market Potion Shop Item 4",
+      "shop": "Market Potion Shop",
+      "slot": 3,
+      "actor": "Shop_Bottle_Fairy",
+      "item": "Buy Fairy's Spirit",
+      "price": 50,
+      "counters": ["Shop_SoldNum.Npc_Hylia_020_Shop_Child.3"],
+      "target": "shop:Npc_Hylia_020_Shop_Child.3"
+    },
+    {
+      "name": "Market Potion Shop Item 2",
+      "shop": "Market Potion Shop",
+      "slot": 4,
+      "actor": "Shop_Bottle_BlueFire",
+      "item": "Buy Blue Fire",
+      "price": 200,
+      "counters": ["Shop_SoldNum.Npc_Hylia_020_Shop_Child.4"],
+      "target": "shop:Npc_Hylia_020_Shop_Child.4"
+    },
+    {
+      "name": "Market Potion Shop Item 7",
+      "shop": "Market Potion Shop",
+      "slot": 5,
+      "actor": "Shop_Bottle_Poe",
+      "item": "Buy Poe",
+      "price": 200,
+      "counters": ["Shop_SoldNum.Npc_Hylia_020_Shop_Child.5"],
+      "target": "shop:Npc_Hylia_020_Shop_Child.5"
+    },
+    {
+      "name": "Market Potion Shop Item 6",
+      "shop": "Market Potion Shop",
+      "slot": 6,
+      "actor": "Shop_Bottle_Bug",
+      "item": "Buy Bottle Bug",
+      "price": 30,
+      "counters": ["Shop_SoldNum.Npc_Hylia_020_Shop_Child.6"],
+      "target": "shop:Npc_Hylia_020_Shop_Child.6"
+    },
+    {
+      "name": "Market Potion Shop Item 8",
+      "shop": "Market Potion Shop",
+      "slot": 7,
+      "actor": "Shop_Bottle_Fish",
+      "item": "Buy Fish",
+      "price": 50,
+      "counters": ["Shop_SoldNum.Npc_Hylia_020_Shop_Child.7"],
+      "target": "shop:Npc_Hylia_020_Shop_Child.7"
+    },
+    {
+      "name": "Kak Potion Shop Item 3",
+      "shop": "Kak Potion Shop",
+      "slot": 0,
+      "actor": "Shop_Bottle_RedPotion",
+      "item": "Buy Red Potion for 30 Rupees",
+      "price": 30,
+      "counters": ["Shop_SoldNum.Npc_Hylia_020_Shop_Adult.0"],
+      "target": "shop:Npc_Hylia_020_Shop_Adult.0"
+    },
+    {
+      "name": "Kak Potion Shop Item 4",
+      "shop": "Kak Potion Shop",
+      "slot": 1,
+      "actor": "Shop_Bottle_GreenPotion",
+      "item": "Buy Green Potion",
+      "price": 30,
+      "counters": ["Shop_SoldNum.Npc_Hylia_020_Shop_Adult.1"],
+      "target": "shop:Npc_Hylia_020_Shop_Adult.1"
+    },
+    {
+      "name": "Kak Potion Shop Item 1",
+      "shop": "Kak Potion Shop",
+      "slot": 2,
+      "actor": "Shop_Bottle_HalfMilk",
+      "item": "Buy Half Milk",
+      "price": 20,
+      "counters": ["Shop_SoldNum.Npc_Hylia_020_Shop_Adult.2"],
+      "target": "shop:Npc_Hylia_020_Shop_Adult.2"
+    },
+    {
+      "name": "Kak Potion Shop Item 8",
+      "shop": "Kak Potion Shop",
+      "slot": 3,
+      "actor": "Shop_Bottle_Fairy",
+      "item": "Buy Fairy's Spirit",
+      "price": 50,
+      "counters": ["Shop_SoldNum.Npc_Hylia_020_Shop_Adult.3"],
+      "target": "shop:Npc_Hylia_020_Shop_Adult.3"
+    },
+    {
+      "name": "Kak Potion Shop Item 5",
+      "shop": "Kak Potion Shop",
+      "slot": 4,
+      "actor": "Shop_Bottle_BlueFire",
+      "item": "Buy Blue Fire",
+      "price": 200,
+      "counters": ["Shop_SoldNum.Npc_Hylia_020_Shop_Adult.4"],
+      "target": "shop:Npc_Hylia_020_Shop_Adult.4"
+    },
+    {
+      "name": "Kak Potion Shop Item 7",
+      "shop": "Kak Potion Shop",
+      "slot": 5,
+      "actor": "Shop_Bottle_Poe",
+      "item": "Buy Poe",
+      "price": 200,
+      "counters": ["Shop_SoldNum.Npc_Hylia_020_Shop_Adult.5"],
+      "target": "shop:Npc_Hylia_020_Shop_Adult.5"
+    },
+    {
+      "name": "Kak Potion Shop Item 6",
+      "shop": "Kak Potion Shop",
+      "slot": 6,
+      "actor": "Shop_Bottle_Bug",
+      "item": "Buy Bottle Bug",
+      "price": 30,
+      "counters": ["Shop_SoldNum.Npc_Hylia_020_Shop_Adult.6"],
+      "target": "shop:Npc_Hylia_020_Shop_Adult.6"
+    },
+    {
+      "name": "Kak Potion Shop Item 2",
+      "shop": "Kak Potion Shop",
+      "slot": 7,
+      "actor": "Shop_Bottle_Fish",
+      "item": "Buy Fish",
+      "price": 50,
+      "counters": ["Shop_SoldNum.Npc_Hylia_020_Shop_Adult.7"],
+      "target": "shop:Npc_Hylia_020_Shop_Adult.7"
+    },
+    {
+      "name": "Market Bombchu Shop Item 3",
+      "shop": "Market Bombchu Shop",
+      "slot": 0,
+      "actor": "Shop_BombchuBundle_03",
+      "item": "Buy Bombchu (1)",
+      "price": 15,
+      "counters": ["Shop_SoldNum.Npc_Hylia_021_Shop_Child.0"],
+      "target": "shop:Npc_Hylia_021_Shop_Child.0"
+    },
+    {
+      "name": "Market Bombchu Shop Item 4",
+      "shop": "Market Bombchu Shop",
+      "slot": 1,
+      "actor": "Shop_BombchuBundle_04",
+      "item": "Buy Bombchu (3)",
+      "price": 45,
+      "counters": ["Shop_SoldNum.Npc_Hylia_021_Shop_Child.1"],
+      "target": "shop:Npc_Hylia_021_Shop_Child.1"
+    },
+    {
+      "name": "Market Bombchu Shop Item 1",
+      "shop": "Market Bombchu Shop",
+      "slot": 2,
+      "actor": "Shop_BombchuBundle_05",
+      "item": "Buy Bombchu (5)",
+      "price": 75,
+      "counters": ["Shop_SoldNum.Npc_Hylia_021_Shop_Child.2"],
+      "target": "shop:Npc_Hylia_021_Shop_Child.2"
+    },
+    {
+      "name": "Market Bombchu Shop Item 6",
+      "shop": "Market Bombchu Shop",
+      "slot": 3,
+      "actor": "Shop_BombchuBundle_06",
+      "item": "Buy Bombchu (8)",
+      "price": 120,
+      "counters": ["Shop_SoldNum.Npc_Hylia_021_Shop_Child.3"],
+      "target": "shop:Npc_Hylia_021_Shop_Child.3"
+    },
+    {
+      "name": "Market Bombchu Shop Item 2",
+      "shop": "Market Bombchu Shop",
+      "slot": 4,
+      "actor": "Shop_BombchuBundle_01",
+      "item": "Buy Bombchu (10)",
+      "price": 140,
+      "counters": ["Shop_SoldNum.Npc_Hylia_021_Shop_Child.4"],
+      "target": "shop:Npc_Hylia_021_Shop_Child.4"
+    },
+    {
+      "name": "Market Bombchu Shop Item 7",
+      "shop": "Market Bombchu Shop",
+      "slot": 5,
+      "actor": "Shop_BombchuBundle_07",
+      "item": "Buy Bombchu (15)",
+      "price": 210,
+      "counters": ["Shop_SoldNum.Npc_Hylia_021_Shop_Child.5"],
+      "target": "shop:Npc_Hylia_021_Shop_Child.5"
+    },
+    {
+      "name": "Market Bombchu Shop Item 5",
+      "shop": "Market Bombchu Shop",
+      "slot": 6,
+      "actor": "Shop_BombchuBundle_02",
+      "item": "Buy Bombchu (20)",
+      "price": 240,
+      "counters": ["Shop_SoldNum.Npc_Hylia_021_Shop_Child.6"],
+      "target": "shop:Npc_Hylia_021_Shop_Child.6"
+    },
+    {
+      "name": "Market Bombchu Shop Item 8",
+      "shop": "Market Bombchu Shop",
+      "slot": 7,
+      "actor": "Shop_BombchuBundle_08",
+      "item": "Buy Bombchu (30)",
+      "price": 300,
+      "counters": ["Shop_SoldNum.Npc_Hylia_021_Shop_Child.7"],
+      "target": "shop:Npc_Hylia_021_Shop_Child.7"
+    },
+    {
+      "name": "GC Shop Item 6",
+      "shop": "GC Shop",
+      "slot": 0,
+      "actor": "Shop_Heart",
+      "item": "Buy Heart",
+      "price": 5,
+      "counters": ["Shop_SoldNum.Npc_Goron_011_Shop_Child.0", "Shop_SoldNum.Npc_Goron_011_Shop_Adult.0"],
+      "target": "shop:Npc_Goron_011_Shop_Child.0"
+    },
+    {
+      "name": "GC Shop Item 7",
+      "shop": "GC Shop",
+      "slot": 1,
+      "actor": "Shop_Bottle_RedPotion",
+      "item": "Buy Red Potion for 30 Rupees",
+      "price": 30,
+      "counters": ["Shop_SoldNum.Npc_Goron_011_Shop_Child.1", "Shop_SoldNum.Npc_Goron_011_Shop_Adult.1"],
+      "target": "shop:Npc_Goron_011_Shop_Child.1"
+    },
+    {
+      "name": "GC Shop Item 8",
+      "shop": "GC Shop",
+      "slot": 2,
+      "actor": "Shop_Bottle_Bug",
+      "item": "Buy Bottle Bug",
+      "price": 30,
+      "counters": ["Shop_SoldNum.Npc_Goron_011_Shop_Child.2", "Shop_SoldNum.Npc_Goron_011_Shop_Adult.2"],
+      "target": "shop:Npc_Goron_011_Shop_Child.2"
+    },
+    {
+      "name": "GC Shop Item 5",
+      "shop": "GC Shop",
+      "slot": 3,
+      "actor": "Shop_Armor_Goron",
+      "item": "Buy Goron Tunic",
+      "price": 600,
+      "counters": ["Shop_SoldNum.Npc_Goron_011_Shop_Child.3", "Shop_SoldNum.Npc_Goron_011_Shop_Adult.3"],
+      "target": "shop:Npc_Goron_011_Shop_Child.3"
+    },
+    {
+      "name": "GC Shop Item 1",
+      "shop": "GC Shop",
+      "slot": 4,
+      "actor": "Shop_BombBundle_01",
+      "item": "Buy Bombs (5) for 25 Rupees",
+      "price": 25,
+      "counters": ["Shop_SoldNum.Npc_Goron_011_Shop_Child.4", "Shop_SoldNum.Npc_Goron_011_Shop_Adult.4"],
+      "target": "shop:Npc_Goron_011_Shop_Child.4"
+    },
+    {
+      "name": "GC Shop Item 2",
+      "shop": "GC Shop",
+      "slot": 5,
+      "actor": "Shop_BombBundle_02",
+      "item": "Buy Bombs (10)",
+      "price": 45,
+      "counters": ["Shop_SoldNum.Npc_Goron_011_Shop_Child.5", "Shop_SoldNum.Npc_Goron_011_Shop_Adult.5"],
+      "target": "shop:Npc_Goron_011_Shop_Child.5"
+    },
+    {
+      "name": "GC Shop Item 3",
+      "shop": "GC Shop",
+      "slot": 6,
+      "actor": "Shop_BombBundle_03",
+      "item": "Buy Bombs (20)",
+      "price": 80,
+      "counters": ["Shop_SoldNum.Npc_Goron_011_Shop_Child.6", "Shop_SoldNum.Npc_Goron_011_Shop_Adult.6"],
+      "target": "shop:Npc_Goron_011_Shop_Child.6"
+    },
+    {
+      "name": "GC Shop Item 4",
+      "shop": "GC Shop",
+      "slot": 7,
+      "actor": "Shop_BombBundle_04",
+      "item": "Buy Bombs (30)",
+      "price": 110,
+      "counters": ["Shop_SoldNum.Npc_Goron_011_Shop_Child.7", "Shop_SoldNum.Npc_Goron_011_Shop_Adult.7"],
+      "target": "shop:Npc_Goron_011_Shop_Child.7"
+    },
+    {
+      "name": "ZD Shop Item 8",
+      "shop": "ZD Shop",
+      "slot": 0,
+      "actor": "Shop_Bottle_RedPotion",
+      "item": "Buy Red Potion for 30 Rupees",
+      "price": 30,
+      "counters": ["Shop_SoldNum.Npc_Zora_011_Shop_Child.0", "Shop_SoldNum.Npc_Zora_011_Shop_Adult.0"],
+      "target": "shop:Npc_Zora_011_Shop_Child.0"
+    },
+    {
+      "name": "ZD Shop Item 3",
+      "shop": "ZD Shop",
+      "slot": 1,
+      "actor": "Shop_Bottle_GreenPotion",
+      "item": "Buy Green Potion",
+      "price": 30,
+      "counters": ["Shop_SoldNum.Npc_Zora_011_Shop_Child.1", "Shop_SoldNum.Npc_Zora_011_Shop_Adult.1"],
+      "target": "shop:Npc_Zora_011_Shop_Child.1"
+    },
+    {
+      "name": "ZD Shop Item 5",
+      "shop": "ZD Shop",
+      "slot": 2,
+      "actor": "Shop_Bottle_Bug",
+      "item": "Buy Bottle Bug",
+      "price": 30,
+      "counters": ["Shop_SoldNum.Npc_Zora_011_Shop_Child.2", "Shop_SoldNum.Npc_Zora_011_Shop_Adult.2"],
+      "target": "shop:Npc_Zora_011_Shop_Child.2"
+    },
+    {
+      "name": "ZD Shop Item 1",
+      "shop": "ZD Shop",
+      "slot": 3,
+      "actor": "Shop_Armor_Zora",
+      "item": "Buy Zora Tunic",
+      "price": 600,
+      "counters": ["Shop_SoldNum.Npc_Zora_011_Shop_Child.3", "Shop_SoldNum.Npc_Zora_011_Shop_Adult.3"],
+      "target": "shop:Npc_Zora_011_Shop_Child.3"
+    },
+    {
+      "name": "ZD Shop Item 2",
+      "shop": "ZD Shop",
+      "slot": 4,
+      "actor": "Shop_ArrowBundle_01",
+      "item": "Buy Arrows (10)",
+      "price": 20,
+      "counters": ["Shop_SoldNum.Npc_Zora_011_Shop_Child.4", "Shop_SoldNum.Npc_Zora_011_Shop_Adult.4"],
+      "target": "shop:Npc_Zora_011_Shop_Child.4"
+    },
+    {
+      "name": "ZD Shop Item 4",
+      "shop": "ZD Shop",
+      "slot": 5,
+      "actor": "Shop_ArrowBundle_02",
+      "item": "Buy Arrows (30)",
+      "price": 50,
+      "counters": ["Shop_SoldNum.Npc_Zora_011_Shop_Child.5", "Shop_SoldNum.Npc_Zora_011_Shop_Adult.5"],
+      "target": "shop:Npc_Zora_011_Shop_Child.5"
+    },
+    {
+      "name": "ZD Shop Item 7",
+      "shop": "ZD Shop",
+      "slot": 6,
+      "actor": "Shop_Bottle_Fish",
+      "item": "Buy Fish",
+      "price": 30,
+      "counters": ["Shop_SoldNum.Npc_Zora_011_Shop_Child.6", "Shop_SoldNum.Npc_Zora_011_Shop_Adult.6"],
+      "target": "shop:Npc_Zora_011_Shop_Child.6"
+    },
+    {
+      "name": "ZD Shop Item 6",
+      "shop": "ZD Shop",
+      "slot": 7,
+      "actor": "Shop_ArrowBundle_03",
+      "item": "Buy Arrows (50)",
+      "price": 70,
+      "counters": ["Shop_SoldNum.Npc_Zora_011_Shop_Child.7", "Shop_SoldNum.Npc_Zora_011_Shop_Adult.7"],
+      "target": "shop:Npc_Zora_011_Shop_Child.7"
+    }
+  ],
+  "items": [
+    {
+      "name": "Buy Deku Seeds (10)",
+      "actor": "Shop_DekuSeedBundle_02"
+    },
+    {
+      "name": "Buy Deku Stick (5)",
+      "actor": "Shop_DekuStickBundle_Medium"
+    },
+    {
+      "name": "Buy Magic Jar",
+      "actor": "Shop_MagicJar_Small"
+    },
+    {
+      "name": "Buy Half Milk",
+      "actor": "Shop_Bottle_HalfMilk"
+    },
+    {
+      "name": "Buy Bombchu (1)",
+      "actor": "Shop_BombchuBundle_03"
+    },
+    {
+      "name": "Buy Bombchu (3)",
+      "actor": "Shop_BombchuBundle_04"
+    },
+    {
+      "name": "Buy Bombchu (8)",
+      "actor": "Shop_BombchuBundle_06"
+    },
+    {
+      "name": "Buy Bombchu (15)",
+      "actor": "Shop_BombchuBundle_07"
+    },
+    {
+      "name": "Buy Bombchu (30)",
+      "actor": "Shop_BombchuBundle_08"
+    }
+  ],
+  "keep": ["Buy Deku Shield", "Buy Hylian Shield", "Buy Goron Tunic", "Buy Zora Tunic", "Buy Deku Nut (5)", "Buy Deku Nut (10)", "Buy Deku Stick (1)", "Buy Bottle Bug", "Buy Fish", "Buy Fairy's Spirit", "Buy Blue Fire", "Buy Bombchu (5)", "Buy Bombchu (10)", "Buy Bombchu (20)", "Buy Arrows (10)", "Buy Deku Seeds (30)", "Buy Bombs (5) for 35 Rupees", "Buy Heart", "Buy Red Potion for 30 Rupees"],
+  "bottle": ["Buy Red Potion for 30 Rupees", "Buy Green Potion", "Buy Half Milk", "Buy Fairy's Spirit", "Buy Blue Fire", "Buy Poe", "Buy Bottle Bug", "Buy Fish"],
+  "bombs": ["Buy Bombchu (1)", "Buy Bombchu (3)", "Buy Bombchu (5)", "Buy Bombchu (8)", "Buy Bombchu (10)", "Buy Bombchu (15)", "Buy Bombchu (20)", "Buy Bombchu (30)"],
+  "deal_items": ["Boomerang", "Lens of Truth", "Megaton Hammer", "Kokiri Sword", "Mirror Shield", "Iron Boots", "Hover Boots", "Stone of Agony", "Gerudo Membership Card", "Fire Arrows", "Ice Arrows", "Light Arrows", "Dins Fire", "Farores Wind", "Nayrus Love"],
+  "rupees": [
+    ["Rupees (20)", 5],
+    ["Rupees (50)", 3],
+    ["Rupees (200)", 2]
+  ],
+  "pin": [
+    ["Buy Deku Shield", "KF Shop"]
+  ],
+  "stack": [
+    ["Bombs (5)", "Shop_BombBundle_01"],
+    ["Bombs (10)", "Shop_BombBundle_02"],
+    ["Bombs (20)", "Shop_BombBundle_03"],
+    ["Deku Nuts (5)", "Shop_DekuNutBundle_01"],
+    ["Deku Nuts (10)", "Shop_DekuNutBundle_02"],
+    ["Deku Stick (1)", "Shop_DekuStick"],
+    ["Deku Seeds (30)", "Shop_DekuSeedBundle_01"],
+    ["Arrows (10)", "Shop_ArrowBundle_01"],
+    ["Arrows (30)", "Shop_ArrowBundle_02"],
+    ["Recovery Heart", "Shop_Heart"]
+  ],
+  "upgrades": ["Hookshot", "Strength", "Wallet", "Scale", "NutBag", "StickBag", "Ocarina"],
+  "hearts": ["Piece of Heart", "Heart Container"],
+  "song_models": ["Dm_Item_Sheik_Harp", "Obj_Ocarina_Time"],
+  "flex": ["Bombs (5)", "Bombs (20)"],
+  "donors": [
+    ["Item_Ocarina_Fairy", "Dm_Item_Ocarina_Fairy"],
+    ["Item_Ocarina_Time", "Obj_Ocarina_Time"]
+  ]
+}

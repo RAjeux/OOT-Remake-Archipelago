@@ -1,0 +1,108 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Assembler le pack Windows",
+      "type": "process",
+      "command": "python3",
+      "args": [
+        "tools/build.py"
+      ],
+      "windows": {
+        "command": "py",
+        "args": [
+          "-3",
+          "tools/build.py"
+        ]
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Vérifier la distribution courante",
+      "type": "process",
+      "command": "python3",
+      "args": [
+        "tools/verify_release.py"
+      ],
+      "windows": {
+        "command": "py",
+        "args": [
+          "-3",
+          "tools/verify_release.py"
+        ]
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Exécuter les tests locaux",
+      "type": "process",
+      "command": "python3",
+      "args": [
+        "tools/test.py"
+      ],
+      "windows": {
+        "command": "py",
+        "args": [
+          "-3",
+          "tools/test.py"
+        ]
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Recompiler le client natif Windows",
+      "type": "process",
+      "command": "python3",
+      "args": [
+        "tools/build.py",
+        "--native"
+      ],
+      "windows": {
+        "command": "py",
+        "args": [
+          "-3",
+          "tools/build.py",
+          "--native"
+        ]
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Exécuter les tests réseau",
+      "type": "process",
+      "command": "python3",
+      "args": [
+        "tools/test.py",
+        "--network"
+      ],
+      "windows": {
+        "command": "py",
+        "args": [
+          "-3",
+          "tools/test.py",
+          "--network"
+        ]
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

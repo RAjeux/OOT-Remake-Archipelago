@@ -1,0 +1,2103 @@
+/* Horizon OS layer, native host: process start and boot.
+
+   What rtld and nn::init::Start do on hardware (see ports/zelda-totk/PORT.md, "How the game starts"), done here:
+   map the guest window, load the relocated image (nx_image.py already linked it), make this host thread the
+   guest main thread, run every module's DT_INIT in rtld's order (the SDK crt's _init: TLS registration with musl,
+   then the module's constructors), then nninitStartup and nnMain.
+
+   Usage: <game>.exe [image.bin] [--romfs <dir>] [--user <dir>] [--trace] [--prepare-shaders]
+   Environment: HOS_TRACE=1 (log HLE calls), HOS_MEMORY_MB (memory the game is told it has),
+                HOS_NVN_CONTINUE=1 (go on past nvnBootstrapLoader). */
+#include "hos.h"
+#include "hos_paths.h"
+#include "hos_instance.h"   /* ((Triforce) one game at a time for a game folder) */
+#include "hos_bench.h"      /* ((Triforce, 11-19) benchmark mode: HOS_BENCHMARK */
+#include "../gpu/vk/vk_api.h"
+#include "../gpu/vk/oot_cheat_items.h"
+#include "../gpu/vk/oot_debug_link.h"   /* ((Triforce) the Game flags and Cutscenes pages' lines) */
+#include "../gpu/vk/ultrawide_rows.h"   /* ((Triforce) the Ultrawide row's shapes: ultrawide_ratio) */
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#ifndef HOOKSHOT_VERSION   /* (nx2/build.py gives it: the release and a fingerprint of the sources, nx2/version.py) */
+#define HOOKSHOT_VERSION "unknown"
+#endif
+const char *hos_version(void) { return HOOKSHOT_VERSION; }   /* (discord_rpc.c's status) */
+#if defined(_WIN32) || defined(__EMSCRIPTEN__)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <mmsystem.h>
+#else
+#include <windows.h>   /* (linux: host/posix's) */
+#include <sys/mman.h>
+#ifdef __linux__
+#include <sys/prctl.h>
+#include <sys/sysinfo.h>
+#endif
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/syscall.h>
+#endif
+/* (linux) the separator of the paths the executable's folder is joined with */
+#ifdef _WIN32
+#define SEP 92
+#define SEP_S "\\"
+#else
+#define SEP '/'
+#define SEP_S "/"
+#endif
+
+#ifdef A64_MEM_ZERO
+/* web: guest address = wasm address; the guest window is wasm memory below the host's data (-sGLOBAL_BASE) */
+extern char __global_base;
+uint64_t hos_space_end;
+#define GUEST_SPACE (hos_space_end)
+#else
+#define GUEST_SPACE HOS_GUEST_SPACE
+#endif
+#define IMAGE_BASE hos_image_base   /* (the lift's: Eden's layout) */
+
+#ifdef _WIN32
+/* Windows 11 runs a process whose window is not in front (another window focused, a second monitor's overlay) at
+   efficiency speed (EcoQoS, the E-cores of a hybrid CPU) and may ignore its timer resolution request, which turns the
+   1 ms waits the pacing and short sleeps rely on into 15.6 ms ones. Opting out keeps full speed and the 1 ms timer
+   (ProcessPowerThrottling, 4: PROCESS_POWER_THROTTLING_EXECUTION_SPEED 0x1 and _IGNORE_TIMER_RESOLUTION 0x4 in the control
+   mask, off in the state). The ignore-timer-resolution control needs Windows 11; on Windows 10 the call fails and execution
+   speed alone is asked. HOS_POWER_THROTTLING=1 leaves Windows' throttling as it is (A/B runs).
+   ((Triforce) the comment and the outcome after NX2navi's plat_power_full, chrg6's.) Returns 2: full speed and the timer
+   kept, 1: full speed only, 0: neither (no such call here, or it failed), -1: left as it is by the switch */
+static int no_power_throttling(void) {
+    const char *e = getenv("HOS_POWER_THROTTLING");
+    if (e && atoi(e)) return -1;
+    typedef BOOL(WINAPI * SetInfo)(HANDLE, int, LPVOID, DWORD);
+    SetInfo set = (SetInfo)(void *)GetProcAddress(GetModuleHandleA("kernel32.dll"), "SetProcessInformation");
+    if (!set) return 0;
+    struct { ULONG version, control, state; } s = {1, 0x1 | 0x4, 0};
+    if (set(GetCurrentProcess(), 4, &s, sizeof s)) return 2;
+    s.control = 0x1;
+    return set(GetCurrentProcess(), 4, &s, sizeof s) ? 1 : 0;
+}
+#endif
+
+int hos_game_is_mkw(void) { return !strcmp(hos_main_build_id, "d00e4f399e411d0613aa8d26b1c02fef"); }
+
+/* gen/hos_image.c (build.py lift) */
+extern const uint64_t hos_main_stack_size;
+extern const int hos_main_priority, hos_main_core, hos_module_count;
+extern const uint64_t hos_module_init[];
+extern const char *const hos_module_name[];
+extern const uint64_t hos_entry_nninitStartup, hos_entry_nnMain;
+extern const uint64_t hos_entry_init_libc0, hos_entry_init_libc1, hos_entry_init_libc2, hos_entry_nnosInitialize,
+    hos_entry_nninitInitializeSdkModule;
+/* nn_fs.c */
+extern const char *hos_romfs_dir, *hos_user_dir;
+
+/* HOS_LARGE_PAGES=1 or =<MB> (experiment): the game's heap in 2 MB pages, for fewer TLB misses (the game's threads spend
+   their time on loads from a heap of 6.9 GB; 4 KB pages cover 8 MB of it in the CPU's second-level TLB, 2 MB pages 4 GB).
+   (triforce: the heap alone, from HOS_HEAP_BASE up: the window is 512 GB here and large pages are physical memory at once.
+   OoT asks for 6,894 MB; =1 takes 6,912.) That much is then physical memory from the start, locked, and Windows needs the
+   account to hold "Lock pages in memory" (SeLockMemoryPrivilege; log off and on after it is granted): without it, or
+   when Windows cannot find the memory in one piece, this logs why and uses normal pages. */
+int hos_large_pages;   /* (hos_mem.c: freed pages are not discarded there) */
+uint64_t hos_large_lo, hos_large_hi;   /* (the guest range in large pages: mkw_glue.c hos_commit, hos_mem.c) */
+#if defined(_WIN32) && !defined(A64_MEM_ZERO)
+#pragma comment(lib, "advapi32.lib")   /* (the token privilege calls) */
+static void *reserve_large(void *at, SIZE_T size) {
+    HANDLE token;
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token)) return NULL;
+    TOKEN_PRIVILEGES tp = {0};
+    tp.PrivilegeCount = 1;
+    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+    const BOOL looked = LookupPrivilegeValueA(NULL, "SeLockMemoryPrivilege", &tp.Privileges[0].Luid);
+    const BOOL adjusted = looked && AdjustTokenPrivileges(token, FALSE, &tp, 0, NULL, NULL);
+    const DWORD err = GetLastError();
+    CloseHandle(token);
+    if (!adjusted || err == ERROR_NOT_ALL_ASSIGNED) {
+        hos_log("mem: HOS_LARGE_PAGES: this account does not hold SeLockMemoryPrivilege (\"Lock pages in memory\"): "
+                "normal pages");
+        return NULL;
+    }
+    const SIZE_T large = GetLargePageMinimum();
+    if (!large || size % large) return NULL;
+    void *p = VirtualAlloc(at, size, MEM_RESERVE | MEM_COMMIT | MEM_LARGE_PAGES, PAGE_READWRITE);
+    if (!p) hos_log("mem: HOS_LARGE_PAGES: %llu MB of large pages not available (error %lu): normal pages",
+                    (unsigned long long)(size >> 20), GetLastError());
+    return p;
+}
+#endif
+
+#if !defined(_WIN32) && !defined(A64_MEM_ZERO)
+extern int hos_guest_memfd;   /* (below) */
+#endif
+/* The guest window lives at the constant A64_HOST_BASE (rt/a64.h), so lifted code never loads its base. */
+static int reserve_guest(void) {
+#if defined(A64_MEM_ZERO)
+    hos_space_end = (uint64_t)(uintptr_t)&__global_base & ~0xFFFFULL;
+    return hos_space_end >= (1ULL << 30);
+#elif defined(_WIN32)
+    /* Committed but untouched pages cost no physical memory. Write-watched: the renderer's buffer cache asks which
+       pages changed (GetWriteWatch) so that it uploads only those (soft write watch builds mark pages themselves). */
+#if defined(A64_WRITE_TRACK)
+    const DWORD watch = 0;
+    if (getenv("HOS_LARGE_PAGES")) {
+        /* three reservations: below the heap, the heap's large pages, above them (a commit never spans two: hos_commit) */
+        uint64_t mb = strtoull(getenv("HOS_LARGE_PAGES"), NULL, 10);
+        if (mb < 64) mb = 6912;
+        const uint64_t n = ((mb << 20) + 0x1FFFFFULL) & ~0x1FFFFFULL;
+        uint8_t *const base = (uint8_t *)A64_HOST_BASE;
+        const ULONGLONG t0 = GetTickCount64();
+        if (HOS_HEAP_BASE + n < GUEST_SPACE && VirtualAlloc(base, HOS_HEAP_BASE, MEM_RESERVE, PAGE_NOACCESS) == base) {
+            if (reserve_large(base + HOS_HEAP_BASE, (SIZE_T)n) == base + HOS_HEAP_BASE &&
+                VirtualAlloc(base + HOS_HEAP_BASE + n, GUEST_SPACE - HOS_HEAP_BASE - n, MEM_RESERVE, PAGE_NOACCESS)) {
+                void hos_commit_init(void);
+                hos_commit_init();
+                hos_large_lo = HOS_HEAP_BASE, hos_large_hi = HOS_HEAP_BASE + n, hos_large_pages = 1;
+                hos_log("mem: the game's heap is in large pages (%llu MB at %#llx, made in %llu ms)", (unsigned long long)(n >> 20),
+                        (unsigned long long)HOS_HEAP_BASE, (unsigned long long)(GetTickCount64() - t0));
+                return 1;
+            }
+            VirtualFree(base + HOS_HEAP_BASE, 0, MEM_RELEASE);
+            VirtualFree(base, 0, MEM_RELEASE);
+        }
+    }
+#else
+    const DWORD watch = MEM_WRITE_WATCH;
+#endif
+    /* mkw-recomp: 512 GB reserved (write-watched: the renderer's change tracking, a 16 MB bitmap), committed as the
+       runtime hands memory out (hos_commit) or on first touch */
+    void hos_commit_init(void);
+    hos_commit_init();
+    return VirtualAlloc((void *)A64_HOST_BASE, GUEST_SPACE, MEM_RESERVE | watch, PAGE_NOACCESS) == (void *)A64_HOST_BASE;
+#else
+    /* (linux) the whole window readable and writable at once, its pages made as they are first touched (no commit
+       step: MAP_NORESERVE). Decommitting is madvise (host/posix/win32_posix.c VirtualFree): the pages read as zero. */
+    void hos_commit_init(void);
+    hos_commit_init();   /* (the crash report) */
+    /* The window is a memfd's, shared, so the Vulkan back end can hand the GPU the game's own pages as a dma-buf
+       (udmabuf, gpu/vk/vk_memory.cpp import_dma_buf) instead of a host pointer: amdgpu checks every page of a host-pointer
+       import again at each command submission, 15-45 ms a submission in Kokiri Forest. Pages of a shared mapping are freed
+       with MADV_REMOVE, not MADV_DONTNEED (hos_posix_guest_discard). HOS_GUEST_MEMFD=0: anonymous memory, as before */
+    {
+        /* (only where /dev/udmabuf can be opened: a shared mapping's pages cannot be host-pointer imports (RADV:
+           VK_ERROR_INVALID_EXTERNAL_HANDLE), so a pool udmabuf refused would be no import at all. A pool larger than udmabuf's
+           size_limit_mb (64 MB unless raised) is imported as several dma-bufs bound into one sparse buffer, so no setting is
+           needed. HOS_GUEST_MEMFD=1: the memfd all the same) */
+        const char *e = getenv("HOS_GUEST_MEMFD");
+        int usable = 0;
+        unsigned long long limit_mb = 0;
+        {
+            const int u = open("/dev/udmabuf", O_RDWR | O_CLOEXEC);
+            if (u >= 0) {
+                close(u);
+                FILE *f = fopen("/sys/module/udmabuf/parameters/size_limit_mb", "r");
+                if (f) {
+                    if (fscanf(f, "%llu", &limit_mb) != 1) limit_mb = 0;
+                    fclose(f);
+                }
+                usable = limit_mb > 0;
+            }
+            if (!usable && !e)
+                hos_log("mem: guest memory stays host-pointer imports for the GPU (slow submissions on AMD): %s",
+                        u < 0 ? "/dev/udmabuf cannot be opened" : "udmabuf's size_limit_mb cannot be read");
+        }
+        if (e ? atoi(e) != 0 : usable) {
+            const int fd = (int)syscall(SYS_memfd_create, "hookshot-guest", 1u /* MFD_CLOEXEC */ | 2u /* MFD_ALLOW_SEALING */);
+            if (fd >= 0 && ftruncate(fd, (off_t)GUEST_SPACE) == 0) {
+                fcntl(fd, 1033 /* F_ADD_SEALS */, 0x0002 /* F_SEAL_SHRINK */ | 0x0004 /* F_SEAL_GROW */);
+                void *p = mmap((void *)A64_HOST_BASE, GUEST_SPACE, PROT_READ | PROT_WRITE,
+                               MAP_SHARED | MAP_FIXED_NOREPLACE | MAP_NORESERVE, fd, 0);
+                if (p == (void *)A64_HOST_BASE) {
+                    hos_guest_memfd = fd;
+                    hos_log("mem: the guest window is a memfd's (%d), shared with the GPU as dma-bufs", fd);
+                    return 1;
+                }
+                if (p != MAP_FAILED) munmap(p, GUEST_SPACE);
+            }
+            if (fd >= 0) close(fd);
+            hos_log("mem: no memfd for the guest window (errno %d): anonymous memory", errno);
+        }
+    }
+    if (mmap((void *)A64_HOST_BASE, GUEST_SPACE, PROT_READ | PROT_WRITE,
+             MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE | MAP_NORESERVE, -1, 0) != (void *)A64_HOST_BASE)
+        return 0;
+    /* (issue 312) no transparent huge pages in the guest window: the renderer imports its pools as userptr memory, and every
+       collapse khugepaged makes in them changes their mappings, which the kernel answers by pinning the pages again at the
+       next submission: ~250 ms a submit on RADV while the GPU sat idle. HOS_THP=1: as before */
+    if (!getenv("HOS_THP")) madvise((void *)A64_HOST_BASE, GUEST_SPACE, MADV_NOHUGEPAGE);
+#ifdef __linux__
+    /* (HOS_NO_THP=1, experiment: none outside the window either. With THP "always" 400-450 MB of the host heap's and the binary's bss are huge
+       pages, each resident whole when any of its 2 MB is touched) */
+    if (getenv("HOS_NO_THP")) prctl(PR_SET_THP_DISABLE, 1, 0, 0, 0);
+#endif
+    return 1;
+#endif
+}
+
+#if !defined(_WIN32) && !defined(A64_MEM_ZERO)
+/* the guest window's memfd for the Vulkan back end (-1: anonymous memory), and freeing guest pages so that
+   they read as zero again on either kind of mapping */
+int hos_guest_memfd = -1;
+int hos_posix_guest_memfd(void) { return hos_guest_memfd; }
+int hos_posix_guest_discard(void *p, size_t n) {
+    return madvise(p, n, hos_guest_memfd >= 0 ? MADV_REMOVE : MADV_DONTNEED);
+}
+#endif
+
+/* The guest window, for the renderer (gpu/render/rx_buffer.cpp). */
+uint8_t *hos_guest_base(void) { return A64_MEM; }
+uint64_t hos_guest_size(void) { return GUEST_SPACE; }
+
+/* Call guest code at `addr` as a fresh call from the top of the main thread's stack, with whatever arguments the
+   caller put in x0-x7 (call_guest clears x0 and x1 first; call_guest_args keeps them). */
+static void call_guest_args(Ctx *c, uint64_t addr, uint64_t sp, const char *what) {
+    A64Fn f = a64_lookup(addr);
+    if (!addr || !f) hos_fatal(c, "%s: no function at %#llx", what, (unsigned long long)addr);
+    hos_log("boot: %s (%#llx)", what, (unsigned long long)addr);
+    c->x[30] = 0;
+    c->x[31] = sp;
+    void hos_mem_checkpoint(const char *what);
+    hos_mem_checkpoint(what);
+    f(c);
+}
+static void call_guest(Ctx *c, uint64_t addr, uint64_t sp, const char *what) {
+    c->x[0] = c->x[1] = 0;
+    call_guest_args(c, addr, sp, what);
+}
+
+void hos_update_check(void);   /* (host/hos_update.c) */
+#ifndef _WIN32
+/* (linux) Saves live in $XDG_DATA_HOME/hookshot (~/.local/share/hookshot), so a rebuilt game folder still finds them.
+   A user/ folder beside the executable from before is moved there the first time, entry by entry. Anything that
+   cannot be moved keeps the old place. --user still wins. */
+static int is_dir(const char *p) {
+    const DWORD a = GetFileAttributesA(p);
+    return a != INVALID_FILE_ATTRIBUTES && (a & FILE_ATTRIBUTE_DIRECTORY);
+}
+static int copy_tree(const char *from, const char *to) {
+    if (!is_dir(from)) {
+        FILE *in = fopen(from, "rb"), *out = in ? fopen(to, "wb") : NULL;
+        int ok = in && out;
+        char buf[1 << 16];
+        for (size_t n; ok && (n = fread(buf, 1, sizeof buf, in)) > 0;) ok = fwrite(buf, 1, n, out) == n;
+        ok = ok && in && !ferror(in);
+        if (in) fclose(in);
+        if (out && fclose(out)) ok = 0;
+        return ok;
+    }
+    if (!CreateDirectoryA(to, NULL) && !is_dir(to)) return 0;
+    char pattern[MAX_PATH];
+    snprintf(pattern, sizeof pattern, "%s" SEP_S "*", from);
+    WIN32_FIND_DATAA fd;
+    HANDLE h = FindFirstFileA(pattern, &fd);
+    int ok = 1;
+    if (h != INVALID_HANDLE_VALUE) {
+        do {
+            if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, "..")) continue;
+            char a[MAX_PATH], b[MAX_PATH];
+            snprintf(a, sizeof a, "%s" SEP_S "%s", from, fd.cFileName);
+            snprintf(b, sizeof b, "%s" SEP_S "%s", to, fd.cFileName);
+            ok = copy_tree(a, b);
+        } while (ok && FindNextFileA(h, &fd));
+        FindClose(h);
+    }
+    return ok;
+}
+static void delete_tree(const char *p) {
+    if (!is_dir(p)) {
+        DeleteFileA(p);
+        return;
+    }
+    char pattern[MAX_PATH];
+    snprintf(pattern, sizeof pattern, "%s" SEP_S "*", p);
+    WIN32_FIND_DATAA fd;
+    HANDLE h = FindFirstFileA(pattern, &fd);
+    if (h != INVALID_HANDLE_VALUE) {
+        do {
+            if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, "..")) continue;
+            char a[MAX_PATH];
+            snprintf(a, sizeof a, "%s" SEP_S "%s", p, fd.cFileName);
+            delete_tree(a);
+        } while (FindNextFileA(h, &fd));
+        FindClose(h);
+    }
+    RemoveDirectoryA(p);
+}
+static const char *saves_dir(const char *beside) {
+    static char dir[MAX_PATH];
+    const char *xdg = getenv("XDG_DATA_HOME"), *home = getenv("HOME");
+    if (xdg && xdg[0] == '/') snprintf(dir, sizeof dir, "%s", xdg);
+    else if (home && home[0] == '/') {
+        snprintf(dir, sizeof dir, "%s/.local", home);
+        CreateDirectoryA(dir, NULL);
+        snprintf(dir, sizeof dir, "%s/.local/share", home);
+    } else return beside;
+    CreateDirectoryA(dir, NULL);
+    snprintf(dir + strlen(dir), sizeof dir - strlen(dir), "/hookshot");
+    CreateDirectoryA(dir, NULL);
+    if (GetFileAttributesA(dir) == INVALID_FILE_ATTRIBUTES) return beside;
+    char pattern[MAX_PATH];
+    snprintf(pattern, sizeof pattern, "%s" SEP_S "*", beside);
+    WIN32_FIND_DATAA fd;
+    HANDLE h = FindFirstFileA(pattern, &fd);
+    if (h == INVALID_HANDLE_VALUE) return dir;
+    int moved = 0, kept = 0;
+    do {
+        if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, "..")) continue;
+        char from[MAX_PATH], to[MAX_PATH];
+        snprintf(from, sizeof from, "%s" SEP_S "%s", beside, fd.cFileName);
+        snprintf(to, sizeof to, "%s" SEP_S "%s", dir, fd.cFileName);
+        if (GetFileAttributesA(to) != INVALID_FILE_ATTRIBUTES) kept++;
+        else if (MoveFileExA(from, to, 0)) moved++;
+        else if (copy_tree(from, to)) delete_tree(from), moved++;
+        else delete_tree(to), kept++;
+    } while (FindNextFileA(h, &fd));
+    FindClose(h);
+    if (kept) {
+        hos_log("saves: %d of %s's entries could not go to %s: the saves stay in %s", kept, beside, dir, beside);
+        return beside;
+    }
+    RemoveDirectoryA(beside);
+    if (moved) {
+        char note[MAX_PATH];
+        const char *sep = strrchr(beside, SEP);
+        snprintf(note, sizeof note, "%.*s" SEP_S "saves-moved.txt", sep ? (int)(sep - beside) : 0, beside);
+        FILE *f = fopen(note, "w");
+        if (f) {
+            fprintf(f, "Triforce's saves are now in\n%s\n\nThey moved there from the user folder that was here.\n", dir);
+            fclose(f);
+        }
+        hos_log("saves: moved from %s to %s", beside, dir);
+    }
+    return dir;
+}
+#endif
+
+/* triforce_env.txt beside the game: NAME=VALUE lines set as environment variables before anything reads them, for the
+   switches players are asked to test (RX_VK_NOOPT and the rest). Lines starting with # are notes. On Linux this runs
+   before the window, so HOS_HEADLESS and HOS_WINDOW_SIZE are already set when the window is made.
+   HOS_ENV_FILE=<path> reads that file instead: a scripted or A/B test run brings its own switches and leaves the
+   player's triforce_env.txt as it is.
+   (hookshot) triforce_env.txt is a file players pass around, so it sets only the game's own switches (RX_, HOS_,
+   HOOKSHOT_, EDEN_, NVN_, TOTK_ and SDL_ names), never HOS_ENV_FILE or SDL's library override, and no value that is a
+   path but RX_VK_DLSS_DIR's: the system's variables (the Vulkan loader's layers, PATH and the like) can load code, and
+   the dump switches write files where they name. The file HOS_ENV_FILE names sets anything. */
+static int env_line_allowed(const char *name, const char *value) {
+    static const char *const prefixes[] = {"RX_", "HOS_", "HOOKSHOT_", "EDEN_", "NVN_", "TOTK_", "SDL_"};
+    int ok = 0;
+    for (size_t i = 0; i < sizeof prefixes / sizeof *prefixes; i++) ok |= !strncmp(name, prefixes[i], strlen(prefixes[i]));
+    if (!ok || !strcmp(name, "HOS_ENV_FILE") || !strcmp(name, "SDL_DYNAMIC_API")) return 0;
+    /* (hookshot) nor the libraries SDL loads by name (SDL_VULKAN_LIBRARY, SDL_OPENGL_LIBRARY, SDL_VIDEO_GL_DRIVER,
+       SDL_VIDEO_EGL_DRIVER...): a bare file name is looked for beside the game and in the current folder on Windows */
+    if (!strncmp(name, "SDL_", 4) && (strstr(name, "_LIB") || strstr(name, "GL_DRIVER"))) return 0;
+    for (const char *p = name; *p; p++)
+        if (!((*p >= 'A' && *p <= 'Z') || (*p >= '0' && *p <= '9') || *p == '_')) return 0;
+    /* (hookshot) the switches that name a file to write or a folder take no value here, not even a bare name: one
+       resolves in the game's folder (HOS_SAMPLE_FILE=triforce_vk.dll emptied the renderer) */
+    const size_t nl = strlen(name);
+    int names_file = (nl > 5 && (!strcmp(name + nl - 5, "_FILE") || !strcmp(name + nl - 4, "_DIR"))) ||
+                     !strcmp(name, "RX_VK_FRAME_LOG") || !strcmp(name, "HOS_PRESENT_TRACE");
+    /* (hookshot) and the test switches whose value is a file or folder under another name (HOS_AUDIO_DUMP=image.bin
+       overwrote the game's image), or that press buttons and menu keys on a timer (a shared file erased a save from
+       the file select) */
+    static const char *const by_name[] = {
+        "HOS_AUDIO_DUMP", "HOS_AUDIO_WB_DUMP", "HOS_SHADER_DUMP", "HOS_FS_OVERLAY", "HOS_MODS", "HOS_INPUT_LIVE",
+        "HOS_INPUT_SCRIPT", "HOS_SAMPLE_ALL", "HOS_WATCH", "HOOKSHOT_BUILDER_HOME", "RX_VK_SHOTS", "RX_VK_SHOT_GO",
+        "RX_VK_FRAMELOG", "RX_VK_HANG_DUMP", "RX_VK_DUMP", "RX_VK_DUMP_SPV", "RX_VK_DUMP_MESH_SPV", "RX_VK_DUMP_STAGES",
+        "RX_VK_DUMP_FAILED", "RX_VK_IR", "RX_VK_MENU_SCRIPT", "RX_DUMP_WGSL", "RX_DUMP_SLOW_WGSL", "RX_DUMP_TICS",
+        "RX_WGSL_OVERRIDE"};
+    for (size_t i = 0; i < sizeof by_name / sizeof *by_name; i++) names_file |= !strcmp(name, by_name[i]);
+    /* RX_VK_DLSS_DIR: a folder on this PC, not a share (\\server\x or //server/x) or a device path */
+    if (!strcmp(name, "RX_VK_DLSS_DIR"))
+        return !((value[0] == '\\' || value[0] == '/') && (value[1] == '\\' || value[1] == '/'));
+    if (names_file) return 0;
+    const int drive = ((value[0] | 0x20) >= 'a' && (value[0] | 0x20) <= 'z' && value[1] == ':');
+    return !strpbrk(value, "/\\") && !drive && value[0] != '~' && strcmp(value, ".") && strcmp(value, "..");
+}
+static void load_hookshot_env(void) {
+    char path[MAX_PATH + 32];
+    const char *other = getenv("HOS_ENV_FILE");
+    if (other && *other) {
+        snprintf(path, sizeof path, "%s", other);
+    } else {
+        DWORD n = hos_game_path_a(path, MAX_PATH);
+        while (n && path[n - 1] != 92 && path[n - 1] != 47) n--;
+        memcpy(path + n, "triforce_env.txt", 17);
+    }
+    FILE *f = fopen(path, "r");
+    if (!f) return;
+    char line[512];
+    while (fgets(line, sizeof line, f)) {
+        char *s = line;
+        if ((unsigned char)s[0] == 0xEF && (unsigned char)s[1] == 0xBB && (unsigned char)s[2] == 0xBF) s += 3;   /* (Notepad's BOM) */
+        while (*s == ' ' || *s == 9) s++;
+        size_t len = strlen(s);
+        while (len && (s[len - 1] == 10 || s[len - 1] == 13 || s[len - 1] == ' ' || s[len - 1] == 9)) s[--len] = 0;
+        if (!len || *s == '#' || !strchr(s, '=')) continue;
+        char *eq = strchr(s, '=');
+        *eq = 0;
+        if (!(other && *other) && !env_line_allowed(s, eq + 1)) {
+            fprintf(stderr, "env: triforce_env.txt: %s left out (only the game's switches, and no paths, are taken from it)\n", s);
+            continue;
+        }
+#ifdef _WIN32
+        *eq = '=';
+        _putenv(s);
+#else
+        setenv(s, eq + 1, 1);
+#endif
+    }
+    fclose(f);
+}
+
+int hos_oot_protect_hearts;
+volatile int hos_oot_live_action;   /* (test runs) the live input file's "!cheat <action>": host/nn_hid.c */
+
+int hos_oot_hearts_enabled(void) {
+    int rx_option(int id, int otherwise);
+    if (hos_bench_on()) return 1;   /* ((Triforce) benchmark mode: the hearts protected, whatever the Debug tab says) */
+    const int menu = rx_option(HOS_OPT_CHEAT_HEARTS, -1);
+    return menu < 0 ? hos_oot_protect_hearts : menu;
+}
+
+int hos_oot_is_player(Ctx *c, uint64_t actor) {
+    if (recomp_load64(c, actor) != 0x84b6c460ULL) return 0;
+    // Other actors share this vtable. The actor's resource record identifies Link.
+    const uint64_t resource = recomp_load64(c, actor + 16);
+    return resource && recomp_load32(c, resource + 88) == 0x79616c50 &&
+           recomp_load16(c, resource + 92) == 0x7265 &&
+           recomp_load8(c, resource + 94) == 0;
+}
+
+#if defined(_WIN32) || defined(__linux__)   /* (the debug tools: host/posix has what they call) */
+/* QueryGetPouchContentNumByActorName (f_82a3c260): f_805b63e0(pouch manager, &name, 0, 0) counts one content. */
+static int oot_pouch_count(Ctx *c, const char *name) {
+    const uint64_t manager = recomp_load64(c, 0x84e98e28ULL);
+    A64Fn count = a64_lookup(0x805b63e0ULL);
+    if (!manager || !count || strlen(name) >= 0x60) return -1;
+    const Ctx saved = *c;
+    const uint64_t frame = (c->x[31] - 0x80) & ~0xfULL;
+    memcpy(A64_PTR(frame + 0x10), name, strlen(name) + 1);
+    recomp_store64_sp(c, frame, frame + 0x10);
+    c->x[31] = frame;
+    c->x[0] = manager, c->x[1] = frame, c->x[2] = 0, c->x[3] = 0;
+    count(c);
+    const int n = (int)(int32_t)c->x[0];
+    *c = saved;
+    return n;
+}
+
+static int oot_item_get(Ctx *c, const char *name);
+static int oot_item_give(Ctx *c, const char *name, int count);
+
+static void oot_edit_pouch(Ctx *c, int action) {
+    static const char *const items[] = {
+        "Item_DekuSeed", "Item_DekuNut", "Item_DekuStick", "Item_Bomb", "Item_Arrow_Normal"
+    };
+    const unsigned item = (unsigned)(action - 200) / 32;
+    const int delta = (action - 200) % 32 - 10;
+    if (item >= sizeof items / sizeof items[0] || !delta || delta < -10 || delta > 10) return;
+    const int have = oot_item_get(c, items[item]);
+    if (have < 0) return;
+    const int want = have + delta < 0 ? 0 : have + delta > 999 ? 999 : have + delta;
+    oot_item_give(c, items[item], want);
+    hos_log("cheats: inventory %s: %d -> %d", items[item], have, want);
+}
+
+/* The Inventory page (gpu/vk/oot_cheat_items.h): counts go to the menu twice a second, edits come back as actions. */
+#define OOT_ITEM_NAME(label, name, kind) name,
+#define OOT_ITEM_KIND(label, name, kind) kind,
+#define OOT_NO_SECTION(name)
+static const char *const oot_item_names[] = {OOT_CHEAT_ITEMS(OOT_NO_SECTION, OOT_ITEM_NAME)};
+static const unsigned char oot_item_kinds[] = {OOT_CHEAT_ITEMS(OOT_NO_SECTION, OOT_ITEM_KIND)};
+#define OOT_ITEM_COUNT (sizeof oot_item_names / sizeof oot_item_names[0])
+
+static int oot_gamedata_bool(Ctx *c, uint32_t hash, int *value);
+
+static void oot_inventory_refresh(Ctx *c, int64_t now) {
+    void rx_option_set(int id, int value);
+    static int64_t next;
+    if (now < next) return;
+    next = now + 500000000LL;
+    /* (a save is loaded once the pouch answers: before that GameData holds a new game's values, shown as unknown) */
+    const int loaded = oot_pouch_count(c, oot_item_names[0]) >= 0;
+    for (unsigned i = 0; i < OOT_ITEM_COUNT; i++)
+        rx_option_set(OOT_CHEAT_ITEM_BASE + (int)i, loaded ? oot_item_get(c, oot_item_names[i]) : -1);
+    {   /* Link's age for the Debug tab's Switch age row: 0 child, 1 adult, -1 no save loaded (Sequence_IsChildhood) */
+        int child = 1;
+        rx_option_set(OOT_CHEAT_AGE_ID, loaded && oot_gamedata_bool(c, 0xcea220d3u, &child) ? (child ? 0 : 1) : -1);
+    }
+}
+
+static void oot_inventory_edit(Ctx *c, int action) {
+    const unsigned item = (unsigned)(action - OOT_CHEAT_ITEM_ACTION) / 256, op = (unsigned)(action - OOT_CHEAT_ITEM_ACTION) % 256;
+    if (item >= OOT_ITEM_COUNT) return;
+    const char *name = oot_item_names[item];
+    const int have = oot_item_get(c, name);
+    if (have < 0) {
+        hos_log("cheats: inventory %s: the game's save data has no such item", name);
+        return;
+    }
+    int want = have;
+    if (op == 200) want = have > 0 ? 0 : 1;   /* unlock / relock */
+    else if (op < 128) want = have + (int)op - 64;
+    want = want < 0 ? 0 : want > 999 ? 999 : want;
+    if (want == have) return;
+    oot_item_give(c, name, want);
+    hos_log("cheats: inventory %s: %d -> %d", name, have, want);
+}
+
+static void oot_set_time(Ctx *c, unsigned hour) {
+    // ExecuteWmSetTime passes seconds since midnight to the world manager.
+    const uint64_t singleton = recomp_load64(c, 0x84c9e898ULL);
+    const uint64_t world = singleton ? recomp_load64(c, singleton) : 0;
+    A64Fn set_time = a64_lookup(0x834722d0ULL);
+    if (!set_time || !world || !recomp_load64(c, world + 0x510)) {
+        hos_log("cheats: world clock unavailable");
+        return;
+    }
+    const Ctx saved = *c;
+    c->x[0] = world;
+    c->x[1] = hour * 3600;
+    set_time(c);
+    *c = saved;
+    hos_log("cheats: requested %02u:00", hour);
+}
+
+/* Cross-map teleport (build e0f3ccfa). Map changes in this game only run through an event: an entrance actor
+   requests the Dm_SY_BancChangeGo event with NextBanc / NextStartPos / BootEventName arguments, the event calls
+   GameSystemActor's ReserveBancChange, and the sequence's ChangeBancOnEvent loads the map when the event ends.
+   This builds the same event request (see work/oot-teleport-research.md). The menu labels in gpu/vk/vk_menu.cpp
+   (teleport_names) follow this table's order. */
+typedef struct {
+    const char *child_banc, *child_start, *child_boot;
+    const char *adult_banc, *adult_start, *adult_boot;
+} OotDestination;
+static const OotDestination oot_destinations[] = {   /* (generated: work/oot-teleport-tools/write_destinations.py) */
+    {"KokiriForest_Child", "LostWoodBridge_FrontOfHyruleField", "Dm_SY_BancChangeArrive",
+     "KokiriForest_Adult", "LostWoodBridge_FrontOfHyruleField", "Dm_SY_BancChangeArrive"},   /* Kokiri Forest */
+    {"HyruleField_Child", "HyruleField_FrontOfLostWoodBridge", "Dm_SY_BancChangeArrive",
+     "HyruleField_Adult", "HyruleField_FrontOfLostWoodBridge", "Dm_SY_BancChangeArrive"},   /* Hyrule Field */
+    {"KakarikoVillage_Child", "KakarikoVillage_Entrance", "Dm_SY_BancChangeArrive_KakarikoVillage_01",
+     "KakarikoVillage_Adult", "KakarikoVillage_Entrance", "Dm_SY_BancChangeArrive_KakarikoVillage_01"},   /* Kakariko Village */
+    {"Market_Child", "Market_Entrance", "Dm_SY_BancChangeArrive_Market_02",
+     "Market_Adult", "Market_Entrance", "Dm_SY_BancChangeArrive_Market_02"},   /* Market */
+    {"HyruleCastle", "HyruleCastle_Entrance", "Dm_SY_BancChangeArrive_HyruleCastle_01",
+     "GanonCastle", "GanonCastleEntrance", "Dm_SY_BancChangeArrive_GanonCastle_01"},   /* Hyrule Castle */
+    {"LostWood_Child", "LostWood_FrontOfSacredForestMeadow", "Dm_SY_BancChangeArrive_LostWood",
+     "LostWood_Adult", "LostWood_FrontOfSacredForestMeadow", "Dm_SY_BancChangeArrive_LostWood"},   /* Lost Woods */
+    {"SacredForestMeadow_Child", "OutsideOfForestTemple", "Dm_SY_BancChangeArrive_SacredForestMeadow_01",
+     "SacredForestMeadow_Adult", "OutsideOfForestTemple", "Dm_SY_BancChangeArrive_SacredForestMeadow_01"},   /* Sacred Forest Meadow */
+    {"HyruleField_Child", "LakeHylia_FromGerudoValley", "Dm_SY_BancChangeArrive_LakeHylia_02",
+     "HyruleField_Adult", "LakeHylia_FromGerudoValley", "Dm_SY_BancChangeArrive_LakeHylia_02"},   /* Lake Hylia */
+    {"Graveyard_Child", "GraveYard_KakarikoSide", "Dm_SY_BancChangeArrive_Graveyard_01",
+     "Graveyard_Adult", "GraveYard_KakarikoSide", "Dm_SY_BancChangeArrive_Graveyard_01"},   /* Graveyard */
+    {"DeathMountainTrail_Child", "MountainTrail_KakarikoSide", "Dm_SY_BancChangeArrive_DeathMountainTrail_01",
+     "DeathMountainTrail_Adult", "MountainTrail_KakarikoSide", "Dm_SY_BancChangeArrive_DeathMountainTrail_01"},   /* Death Mountain Trail */
+    {"DeathMountainCrater_Child", "Crater_GoronCitySide", "DeathMountainCrater_Arrive",
+     "DeathMountainCrater_Adult", "Crater_GoronCitySide", "DeathMountainCrater_Arrive"},   /* Death Mountain Crater */
+    {"GoronCity_Child", "GoronCity_MountainTrailSide", "Dm_SY_BancChangeArrive_GoronCity_01",
+     "GoronCity_Adult", "GoronCity_MountainTrailSide", "Dm_SY_BancChangeArrive_GoronCity_01"},   /* Goron City */
+    {"ZoraRiver_Child", "ZoraRiver_Entrance", "Dm_SY_BancChangeArrive",
+     "ZoraRiver_Adult", "ZoraRiver_Entrance", "Dm_SY_BancChangeArrive"},   /* Zora's River */
+    {"ZoraDomain_Child", "ZoraDomain_FromZoraRiver", "Dm_SY_BancChangeArrive",
+     "ZoraDomain_Adult", "ZoraDomain_FromZoraRiver", "Dm_SY_BancChangeArrive"},   /* Zora's Domain */
+    {"ZoraFountain_Child", "ZoraFountain_FromZoraDomain", "Dm_SY_BancChangeArrive",
+     "ZoraFountain_Adult", "ZoraFountain_FromZoraDomain", "Dm_SY_BancChangeArrive"},   /* Zora's Fountain */
+    {"GerudoValley_Child", "GerudoValley_Entrance", "FromHyruleField_ArriveGerudoValley",
+     "GerudoValley_Adult", "GerudoValley_Entrance", "FromHyruleField_ArriveGerudoValley"},   /* Gerudo Valley */
+    {NULL, NULL, NULL,
+     "GerudoFortress_Adult", "GerudoFortress_FromHountedWasteland", "Dm_SY_BancChangeArrive_GerudoFortress_02"},   /* Gerudo Fortress */
+    {"HountedWasteland_Child", "HountedWasteland_FromGerudoFortress", "FromGerudoFortress_ArriveWateland",
+     "HountedWasteland_Adult", "HountedWasteland_FromGerudoFortress", "FromGerudoFortress_ArriveWateland"},   /* Haunted Wasteland */
+    {"DesertColossus_Child", "DesertColossus_FromHountedWasteland", "Dm_SY_BancChangeArrive_DesertColossus_01",
+     "DesertColossus_Adult", "DesertColossus_FromHountedWasteland", "Dm_SY_BancChangeArrive_DesertColossus_01"},   /* Desert Colossus */
+    {"InsideTheDekuTree", "Entrance", "Dm_SY_BancChangeArrive_InsideTheDekuTree_01",
+     "InsideTheDekuTree", "Entrance", "Dm_SY_BancChangeArrive_InsideTheDekuTree_01"},   /* Inside the Deku Tree */
+    {"DodongoCavern", "DodongoCavern_MountainTrailSide", "Dm_SY_BancChangeArrive",
+     "DodongoCavern", "DodongoCavern_MountainTrailSide", "Dm_SY_BancChangeArrive"},   /* Dodongo's Cavern */
+    {"InsideJabuJabuBelly", "InsideJabuJabuBelly_FromZoraFountain", "Dm_SY_BancChangeArrive",
+     "InsideJabuJabuBelly", "InsideJabuJabuBelly_FromZoraFountain", "Dm_SY_BancChangeArrive"},   /* Jabu-Jabu's Belly */
+    {"ForestTemple", "ForestTemple", "Dm_SY_BancChangeArrive",
+     "ForestTemple", "ForestTemple", "Dm_SY_BancChangeArrive"},   /* Forest Temple */
+    {"FireTemple", "FireTemple", "Dm_SY_BancChangeArrive",
+     "FireTemple", "FireTemple", "Dm_SY_BancChangeArrive"},   /* Fire Temple */
+    {"WaterTemple", "WaterTemple_FromLakeHylia", "SageOfWater_Arrival_WaterTemple",
+     "WaterTemple", "WaterTemple_FromLakeHylia", "SageOfWater_Arrival_WaterTemple"},   /* Water Temple */
+    {"ShadowTemple", "Entrance", "ShadowTemple_Arrive",
+     "ShadowTemple", "Entrance", "ShadowTemple_Arrive"},   /* Shadow Temple */
+    {"SpiritTemple", "SpiritTemple_FromRightHand", "Dm_SY_BancChangeArrive",
+     "SpiritTemple", "SpiritTemple_FromRightHand", "Dm_SY_BancChangeArrive"},   /* Spirit Temple */
+    {"BottomOfTheWell", "Well_KakarikoSide", "Dm_SY_BancChangeArrive",
+     "BottomOfTheWell", "Well_KakarikoSide", "Dm_SY_BancChangeArrive"},   /* Bottom of the Well */
+    {"IceCavern", "IceCavern_FromZoraFountain", "SageOfWater_Arrival_IceCavern",
+     "IceCavern", "IceCavern_FromZoraFountain", "SageOfWater_Arrival_IceCavern"},   /* Ice Cavern */
+    {"GerudoTrainingGround", "GerudoTrainingGround_FromGerudoFortress", "FromGerudoFortress_ArriveTrainingGround",
+     "GerudoTrainingGround", "GerudoTrainingGround_FromGerudoFortress", "FromGerudoFortress_ArriveTrainingGround"},   /* Gerudo Training Ground */
+    {"InsideGanonCastle", "Entrance", "Dm_SY_BancChangeArrive_InsideGanonCastle_01",
+     "InsideGanonCastle", "Entrance", "Dm_SY_BancChangeArrive_InsideGanonCastle_01"},   /* Ganon's Castle */
+};
+#define OOT_AGE_ACTION 999   /* (the Cheats page's Age row) */
+#define OOT_TELEPORT_ACTION 1000   /* (pouch edits use 200 to 348) */
+#define OOT_GAMEDATA_SLOT 0x84c9e180ULL   /* GameDataMgr, as ReserveBancChange's readers load it */
+#define OOT_EVENTMGR_SLOT 0x84c9e090ULL   /* EventMgr, as SeqOneShotRequestEvent loads it */
+#define OOT_EVENT_ARG_SIZE 0x1b20ULL      /* EventRequestArg: SeqOneShotRequestEvent reserves this much stack */
+
+static uint64_t oot_singleton(Ctx *c, uint64_t slot) {
+    const uint64_t holder = recomp_load64(c, slot);
+    return holder ? recomp_load64(c, holder) : 0;
+}
+
+/* GameDataMgr getters by MurMur3 name hash: f_8022d9c0 (bool) and f_80cd0ea0 (String64). 1 when found. */
+static int oot_gamedata_bool(Ctx *c, uint32_t hash, int *value) {
+    const uint64_t mgr = oot_singleton(c, OOT_GAMEDATA_SLOT);
+    A64Fn get = a64_lookup(0x8022d9c0ULL);
+    if (!mgr || !get) return 0;
+    const Ctx saved = *c;
+    const uint64_t out = (c->x[31] - 0x40) & ~0xfULL;
+    recomp_store64_sp(c, out, 0);
+    c->x[31] = out;
+    c->x[0] = mgr, c->x[1] = out, c->x[2] = hash;
+    get(c);
+    const int found = (int)(c->x[0] & 1);
+    *value = recomp_load8(c, out) & 1;
+    *c = saved;
+    return found;
+}
+
+static int oot_gamedata_string(Ctx *c, uint32_t hash, char *buf, size_t size) {
+    const uint64_t mgr = oot_singleton(c, OOT_GAMEDATA_SLOT);
+    A64Fn get = a64_lookup(0x80cd0ea0ULL);
+    buf[0] = 0;
+    if (!mgr || !get) return 0;
+    const Ctx saved = *c;
+    const uint64_t out = (c->x[31] - 0x40) & ~0xfULL;
+    recomp_store64_sp(c, out, 0);
+    c->x[31] = out;
+    c->x[0] = mgr, c->x[1] = out, c->x[2] = hash;
+    get(c);
+    const int found = (int)(c->x[0] & 1);
+    const uint64_t text = recomp_load64(c, out);
+    *c = saved;
+    if (!found || !text) return 0;
+    for (size_t i = 0; i + 1 < size; i++) {
+        buf[i] = (char)recomp_load8(c, text + i);
+        buf[i + 1] = 0;
+        if (!buf[i]) break;
+    }
+    return 1;
+}
+
+/* One argument of an EventRequestArg: the array of 200-byte entries at arg+8, capacity arg+0, count arg+16.
+   Entry: +0 type (1 string pointer, 4 bool), +8 name buffer, +16 its capacity, +152 the value. As
+   QueryBancChangeEventRequestArg (f_829df380) fills them. A string value is a pointer the request does not copy. */
+static int oot_event_arg(Ctx *c, uint64_t arg, const char *name, uint32_t type, uint64_t value) {
+    const uint32_t capacity = recomp_load32(c, arg), count = recomp_load32(c, arg + 16);
+    if (count >= capacity) return 0;
+    const uint64_t entry = recomp_load64(c, arg + 8) + (uint64_t)count * 200;
+    const uint64_t name_buf = recomp_load64(c, entry + 8);
+    const uint32_t name_cap = recomp_load32(c, entry + 16);
+    const size_t length = strlen(name);
+    if (!name_buf || length + 1 > name_cap) return 0;
+    memcpy(A64_PTR(name_buf), name, length + 1);
+    if (type == 4) recomp_store8(c, entry + 152, value & 1);
+    else recomp_store64(c, entry + 152, value);
+    recomp_store32(c, entry, type);
+    recomp_store32(c, arg + 16, count + 1);
+    return 1;
+}
+
+static struct {
+    int64_t requested_at, check_at;
+    unsigned destination;
+} teleport;
+static uint64_t teleport_result;   /* ((Triforce) the last request's own result, oot_teleport: benchmark mode's retry */
+
+/* (Triforce, lab) The pipeline crawl's commands, from the live input file (host/nn_hid.c). "!banc <map> <entry> <event>
+   [child|adult]" asks for a map change to any map by its names, as the game's own entrance actors do (the names are in the
+   maps' files: Banc/GameBancParam, the StartPos actors, the entrance actors' NextEventName); "!pos <x> <y> <z>" puts Link
+   there with his controller's ChangePosition, and holds him there after "!hold 1" (no falling between two places);
+   "!where" says the map, whether it loads, whether an event plays and where Link is. D:\src\lab\hookshot\crawl drives
+   them to draw every map's actors once, for the pipeline list; nothing sends them in play. */
+static struct {
+    SRWLOCK lock;
+    char banc[96], start[96], boot[128], go[96];   /* (go: the leaving event, "" the usual Dm_SY_BancChangeGo) */
+    int banc_pending, age;   /* (age: -1 as it is, 0 adult, 1 child) */
+    float pos[3];
+    int pos_pending, hold, where;
+    int64_t retry_at;
+    char give[96];   /* ("!give <pouch content name> <delta>": the Inventory page's edit by name, for the lab) */
+    int give_delta, give_pending;
+} crawl = {SRWLOCK_INIT};
+static const char *crawl_banc, *crawl_start, *crawl_boot, *crawl_go;   /* (set while oot_teleport serves a "!banc") */
+void hos_oot_live_crawl(const char *line) {
+    AcquireSRWLockExclusive(&crawl.lock);
+    char age[16] = "";
+    float x, y, z;
+    int on;
+    if (!strncmp(line, "!banc ", 6)) {
+        crawl.go[0] = 0;   /* ("!banc <map> <entry> <event> [child|adult|keep [<leaving event>]]") */
+        if (sscanf(line + 6, "%95s %95s %127s %15s %95s", crawl.banc, crawl.start, crawl.boot, age, crawl.go) >= 3) {
+            crawl.age = !strcmp(age, "child") ? 1 : !strcmp(age, "adult") ? 0 : -1;
+            crawl.banc_pending = 1, crawl.retry_at = 0;
+        }
+    } else if (!strncmp(line, "!pos ", 5)) {
+        if (sscanf(line + 5, "%f %f %f", &x, &y, &z) == 3) crawl.pos[0] = x, crawl.pos[1] = y, crawl.pos[2] = z, crawl.pos_pending = 1;
+    } else if (!strncmp(line, "!hold ", 6)) {
+        if (sscanf(line + 6, "%d", &on) == 1) crawl.hold = on != 0;
+    } else if (!strncmp(line, "!where", 6)) {
+        crawl.where = 1;
+    } else if (!strncmp(line, "!give ", 6)) {
+        if (sscanf(line + 6, "%95s %d", crawl.give, &crawl.give_delta) == 2) crawl.give_pending = 1;
+    } else if (!strncmp(line, "!items", 6)) {
+        crawl.give_pending = 2;
+    }
+    ReleaseSRWLockExclusive(&crawl.lock);
+}
+
+static int oot_teleport(Ctx *c, uint64_t actor, unsigned index) {
+    if (!crawl_banc && index >= sizeof oot_destinations / sizeof oot_destinations[0]) return 0;
+    const int64_t now = hos_now_ns();
+    if (teleport.requested_at && now - teleport.requested_at < 8000000000LL) {
+        hos_log("cheats: teleport ignored, a request is still in progress");
+        return 0;
+    }
+    const uint64_t events = oot_singleton(c, OOT_EVENTMGR_SLOT);
+    A64Fn make_arg = a64_lookup(0x80d99f10ULL), request = a64_lookup(0x80d9a820ULL);
+    A64Fn set_link = a64_lookup(0x802dc440ULL), release_link = a64_lookup(0x8022b6f0ULL);
+    if (!events || !make_arg || !request || !set_link || !release_link) {
+        hos_log("cheats: teleport unavailable (event manager %#llx)", (unsigned long long)events);
+        return 0;
+    }
+    if (recomp_load64(c, events + 104)) {   /* (the Main sequence's "Event" test: an event is playing) */
+        hos_log("cheats: teleport waits until the current event ends");
+        return 0;
+    }
+    int loading = 0, child = 1;
+    if (oot_gamedata_bool(c, 0xef2b60c2u, &loading) && loading) {   /* Sequence_IsLoadingBanc */
+        hos_log("cheats: teleport ignored while a map loads");
+        return 0;
+    }
+    if (!oot_gamedata_bool(c, 0xcea220d3u, &child)) hos_log("cheats: Sequence_IsChildhood not found, using child maps");
+    const OotDestination *d = &oot_destinations[crawl_banc ? 0 : index];
+    const char *banc = child ? d->child_banc : d->adult_banc;
+    const char *start = child ? d->child_start : d->adult_start;
+    const char *boot = child ? d->child_boot : d->adult_boot;
+    if (crawl_banc) banc = crawl_banc, start = crawl_start, boot = crawl_boot;   /* (the crawl's "!banc": any map) */
+    if (!banc) {
+        hos_log("cheats: teleport %u has no %s map", index, child ? "child" : "adult");
+        return 0;
+    }
+
+    /* The event reads its string arguments after this request returns, so they live in memory that stays. */
+    static uint64_t strings;
+    if (!strings) strings = hos_sys_alloc(512, 16);
+    if (!strings) return 0;
+    memset(A64_PTR(strings), 0, 512);
+    memcpy(A64_PTR(strings), banc, strlen(banc) + 1);
+    memcpy(A64_PTR(strings + 128), start, strlen(start) + 1);
+    memcpy(A64_PTR(strings + 256), boot, strlen(boot) + 1);
+
+    const char *event_env = getenv("HOS_OOT_TELEPORT_EVENT");
+    const char *event = event_env && *event_env ? event_env : "Dm_SY_BancChangeGo";
+    if (crawl_banc && crawl_go && *crawl_go) event = crawl_go;   /* (the crawl: the leaving event some maps' own exits use) */
+    const char *starter_env = getenv("HOS_OOT_TELEPORT_STARTER");
+    const int with_starter = !(starter_env && !strcmp(starter_env, "0"));
+
+    const Ctx saved = *c;
+    const uint64_t arg = (c->x[31] - OOT_EVENT_ARG_SIZE - 0x100) & ~0xfULL;
+    c->x[31] = arg;
+    c->x[0] = arg;
+    make_arg(c);
+    int ok = 1;
+    {   /* the event's name: arg+6800 points at its buffer, arg+6808 the capacity */
+        const uint64_t buf = recomp_load64(c, arg + 6800);
+        const uint32_t cap = recomp_load32(c, arg + 6808);
+        if (!buf || strlen(event) + 1 > cap) ok = 0;
+        else memcpy(A64_PTR(buf), event, strlen(event) + 1);
+    }
+    ok = ok && oot_event_arg(c, arg, "NextBanc", 1, strings);
+    ok = ok && oot_event_arg(c, arg, "NextStartPos", 1, strings + 128);
+    ok = ok && oot_event_arg(c, arg, "BootEventName", 1, strings + 256);
+    ok = ok && oot_event_arg(c, arg, "IsCheckAir", 4, 0);
+    if (ok && with_starter) {   /* the starter actor (arg+0x1950), as OneShotEventMemberRequestEventByEventName sets it */
+        c->x[31] = arg;
+        c->x[0] = arg + 0x1950, c->x[1] = actor, c->x[2] = 0;
+        set_link(c);
+    }
+    uint64_t result = 0;
+    if (ok) {
+        c->x[31] = arg;
+        c->x[0] = events, c->x[1] = arg;
+        request(c);
+        result = c->x[0];
+    }
+    /* SeqOneShotRequestEvent's cleanup of the arg's two actor links */
+    for (unsigned i = 0; i < 2; i++) {
+        const uint64_t link = arg + (i ? 0x1950 : 0x1968);
+        recomp_store64(c, link, 0x84994b20ULL);
+        c->x[31] = arg;
+        c->x[0] = link;
+        release_link(c);
+    }
+    *c = saved;
+    teleport_result = ok ? result : 0;   /* ((Triforce) benchmark mode: 0 = the event manager did not take it) */
+    const int refused = crawl_banc && (!ok || !result);   /* (the crawl: asked again soon, not after the 8 s of a request under way) */
+    teleport.requested_at = refused ? 0 : now;
+    teleport.check_at = refused ? 0 : now + 1500000000LL;
+    teleport.destination = index;
+    hos_log("cheats: teleport %s to %s at %s (boot %s, event %s, starter %d): request %s, result %#llx",
+            child ? "child" : "adult", banc, start, boot, event, with_starter, ok ? "sent" : "not built",
+            (unsigned long long)result);
+    if (crawl_banc) return ok && result != 0;   /* (the crawl asks again until the event manager takes the request) */
+    return ok;   /* (sent; the request's own result is only logged) */
+}
+
+/* Writes a GameData bool directly: GameDataMgr+32 is the (hash, index) table (+44 its size), the bools are 24-byte
+   entries at GameDataMgr+24 (+16 their count) with the value at +22, as f_8022d9c0 reads them. 1 when found. */
+static int oot_gamedata_set_bool(Ctx *c, uint32_t hash, int value) {
+    const uint64_t mgr = oot_singleton(c, OOT_GAMEDATA_SLOT);
+    if (!mgr) return 0;
+    const uint64_t table = recomp_load64(c, mgr + 32);
+    const uint32_t size = recomp_load32(c, mgr + 44);
+    if (!table || !size) return 0;
+    for (uint32_t probe = 0, slot = hash % size; probe < size; probe++, slot = (slot + 1) % size) {
+        const uint32_t key = recomp_load32(c, table + slot * 8ULL);
+        if (!key) return 0;
+        if (key != hash) continue;
+        const uint32_t index = recomp_load32(c, table + slot * 8ULL + 4), count = recomp_load32(c, mgr + 16);
+        if (index >= count) return 0;
+        recomp_store8(c, recomp_load64(c, mgr + 24) + index * 24ULL + 22, value ? 1 : 0);
+        return 1;
+    }
+    return 0;
+}
+
+/* ---- (Triforce, 11-13) The inventory in GameData ----
+   The items are GameData: struct "Pouch" (0x3da094e3) has a struct for each item, whose member "Stock" (0x22344481) is an
+   Int, the item's count; struct 0xade0ef78 has a Bool for each item, "got it once". The names' hashes are MurmurHash3
+   (seed 0), as the game's getters take them. Layout and setters as tangerineturtle1/NX2navi's co-op reads and writes
+   them (runtime/coop_game.c, MIT): the Int container at GameDataMgr+0xc8 (count +8, entries +0x10, the (hash, index)
+   table +0x18, its size +0x24; 40-byte entries, the current value at +0x1c), the structs' table at +0xc10 (count,
+   +8 entries of 32 bytes, +0x10 table, +0x1c size; an entry's members: +8 a table of (member hash, value hash) pairs,
+   +0x14 its size). Writes go through the game's own SetInt (0x80183b70) and SetBool (0x806a2b20; NX2navi names them from main, which is at 0x80020000 here): x0 the manager, x1 the
+   value, x2 the hash. They queue the change, and the game's per-frame drain writes the current and the saved value and
+   does its own bookkeeping, as for a change the game made. The event the Inventory page called before
+   (OneShotAddOrRemovePouchContent) answered "done" and added nothing, outside an event of the game's own. */
+static uint32_t oot_murmur3(const char *text) {
+    const size_t n = strlen(text);
+    uint32_t h = 0;
+    size_t i = 0;
+    for (; i + 4 <= n; i += 4) {
+        uint32_t k;
+        memcpy(&k, text + i, 4);
+        k *= 0xcc9e2d51u, k = k << 15 | k >> 17, k *= 0x1b873593u;
+        h ^= k, h = h << 13 | h >> 19, h = h * 5 + 0xe6546b64u;
+    }
+    uint32_t k = 0;
+    switch (n & 3) {
+    case 3: k ^= (uint32_t)(uint8_t)text[i + 2] << 16;   /* fall through */
+    case 2: k ^= (uint32_t)(uint8_t)text[i + 1] << 8;    /* fall through */
+    case 1: k ^= (uint8_t)text[i], k *= 0xcc9e2d51u, k = k << 15 | k >> 17, k *= 0x1b873593u, h ^= k;
+    }
+    h ^= (uint32_t)n;
+    h ^= h >> 16, h *= 0x85ebca6bu, h ^= h >> 13, h *= 0xc2b2ae35u, h ^= h >> 16;
+    return h;
+}
+
+/* the index a (hash, index) table of size cells gives for hash, -1 none (open addressing from hash % size) */
+static int64_t oot_gd_lookup(Ctx *c, uint64_t table, uint32_t size, uint32_t hash) {
+    if (!table || !size || size > (1u << 22) || !hash) return -1;
+    for (uint32_t probe = 0, slot = hash % size; probe < size; probe++, slot = slot + 1 == size ? 0 : slot + 1) {
+        const uint32_t key = recomp_load32(c, table + slot * 8ULL);
+        if (!key) return -1;
+        if (key == hash) return recomp_load32(c, table + slot * 8ULL + 4);
+    }
+    return -1;
+}
+
+/* a struct's entry by its hash, 0 none */
+static uint64_t oot_gd_struct(Ctx *c, uint64_t mgr, uint32_t hash) {
+    const int64_t i = oot_gd_lookup(c, recomp_load64(c, mgr + 0xc20), recomp_load32(c, mgr + 0xc2c), hash);
+    const uint64_t entries = recomp_load64(c, mgr + 0xc18);
+    return i < 0 || !entries || (uint64_t)i >= recomp_load32(c, mgr + 0xc10) ? 0 : entries + (uint64_t)i * 0x20;
+}
+
+/* the value hash of a struct's member, 0 none (the members' table is searched whole: a few dozen pairs) */
+static uint32_t oot_gd_member(Ctx *c, uint64_t entry, uint32_t member) {
+    const uint64_t table = entry ? recomp_load64(c, entry + 8) : 0;
+    const uint32_t size = entry ? recomp_load32(c, entry + 0x14) : 0;
+    if (!table || !size || size > 65536) return 0;
+    for (uint32_t i = 0; i < size; i++)
+        if (recomp_load32(c, table + 8ULL * i) == member) return recomp_load32(c, table + 8ULL * i + 4);
+    return 0;
+}
+
+/* an Int's entry by its hash, 0 none */
+static uint64_t oot_gd_int(Ctx *c, uint64_t mgr, uint32_t hash) {
+    const int64_t i = oot_gd_lookup(c, recomp_load64(c, mgr + 0xc8 + 0x18), recomp_load32(c, mgr + 0xc8 + 0x24), hash);
+    const uint64_t entries = recomp_load64(c, mgr + 0xc8 + 0x10);
+    return i < 0 || !entries || (uint64_t)i >= recomp_load32(c, mgr + 0xc8 + 8) ? 0 : entries + (uint64_t)i * 0x28;
+}
+
+/* the hash of an item's count (its Pouch struct's Stock), 0 when the Pouch has no such item */
+static uint32_t oot_item_stock_hash(Ctx *c, uint64_t mgr, const char *name) {
+    const uint32_t item = oot_gd_member(c, oot_gd_struct(c, mgr, 0x3da094e3u), oot_murmur3(name));
+    return item ? oot_gd_member(c, oot_gd_struct(c, mgr, item), 0x22344481u) : 0;
+}
+
+/* the game's own SetInt / SetBool: 1 when called */
+static int oot_gd_set(Ctx *c, uint64_t mgr, uint32_t hash, uint32_t value, int is_bool) {
+    A64Fn set = a64_lookup(is_bool ? 0x806a2b20ULL : 0x80183b70ULL);
+    if (!set || !mgr || !hash) return 0;
+    const Ctx saved = *c;
+    c->x[31] = (c->x[31] - 0x100) & ~0xfULL;
+    c->x[0] = mgr, c->x[1] = value, c->x[2] = hash;
+    set(c);
+    *c = saved;
+    return 1;
+}
+
+/* a Bool's entry by its hash, 0 none (24-byte entries, the current value at +22, as oot_gamedata_set_bool has them) */
+static uint64_t oot_gd_bool(Ctx *c, uint64_t mgr, uint32_t hash) {
+    const int64_t i = oot_gd_lookup(c, recomp_load64(c, mgr + 32), recomp_load32(c, mgr + 44), hash);
+    const uint64_t entries = recomp_load64(c, mgr + 24);
+    return i < 0 || !entries || (uint64_t)i >= recomp_load32(c, mgr + 16) ? 0 : entries + (uint64_t)i * 24;
+}
+
+/* An item's count as GameData has it: its Pouch struct's Stock, or 1 / 0 of its "got it once" flag where it has only
+   that (the songs). -1: the save data has no such item */
+static int oot_item_get(Ctx *c, const char *name) {
+    const uint64_t mgr = oot_singleton(c, OOT_GAMEDATA_SLOT);
+    if (!mgr) return -1;
+    const uint32_t stock = oot_item_stock_hash(c, mgr, name);
+    uint64_t entry = stock ? oot_gd_int(c, mgr, stock) : 0;
+    if (entry) return (int)recomp_load32(c, entry + 0x1c);
+    const uint32_t first = oot_gd_member(c, oot_gd_struct(c, mgr, 0xade0ef78u), oot_murmur3(name));
+    entry = first ? oot_gd_bool(c, mgr, first) : 0;
+    return entry ? recomp_load8(c, entry + 22) & 1 : -1;
+}
+
+/* What the bags hold, as the game's files have it (each bag's GameParameter/ExpansionMaxNumActor: "GameData" the name of
+   the size in the capacity struct 0xf80f8077, "MaxNum" the size). The game raises the size when it gives a bag; a bag or
+   ammunition set from here does the same, so that what is given can be carried and used. */
+static const struct { const char *bag, *what; int max; } oot_bags[] = {
+    {"Item_BombBag_Small", "Bomb", 20},      {"Item_BombBag_Medium", "Bomb", 30},      {"Item_BombBag_Large", "Bomb", 40},
+    {"Item_Quiver_Small", "Arrow", 30},      {"Item_Quiver_Medium", "Arrow", 40},      {"Item_Quiver_Large", "Arrow", 50},
+    {"Item_BulletBag_Small", "DekuSeed", 30}, {"Item_BulletBag_Medium", "DekuSeed", 40}, {"Item_BulletBag_Large", "DekuSeed", 50},
+    {"Item_NutBag_Small", "DekuNut", 20},    {"Item_NutBag_Medium", "DekuNut", 30},    {"Item_NutBag_Large", "DekuNut", 40},
+    {"Item_StickBag_Small", "DekuStick", 10}, {"Item_StickBag_Medium", "DekuStick", 20}, {"Item_StickBag_Large", "DekuStick", 30},
+    {"Item_Wallet_Medium", "Rupee", 500},    {"Item_Wallet_Large", "Rupee", 1000},
+};
+static const struct { const char *item, *what; } oot_ammo[] = {
+    {"Item_Bomb", "Bomb"}, {"Item_Bombchu", "Bomb"}, {"Item_Arrow_Normal", "Arrow"}, {"Item_DekuSeed", "DekuSeed"},
+    {"Item_DekuNut", "DekuNut"}, {"Item_DekuStick", "DekuStick"},
+};
+#define OOT_BAGS (sizeof oot_bags / sizeof oot_bags[0])
+
+/* a size of the capacity struct: its Int's hash (0 none), and its value now through *value */
+static uint32_t oot_capacity(Ctx *c, uint64_t mgr, const char *what, int *value) {
+    const uint32_t hash = oot_gd_member(c, oot_gd_struct(c, mgr, 0xf80f8077u), oot_murmur3(what));
+    const uint64_t entry = hash ? oot_gd_int(c, mgr, hash) : 0;
+    if (value) *value = entry ? (int)recomp_load32(c, entry + 0x1c) : 0;
+    return entry ? hash : 0;
+}
+
+/* a count of the Pouch set (and the item marked as got once), 1 when the Pouch has the item */
+static int oot_pouch_set(Ctx *c, uint64_t mgr, const char *name, int count) {
+    const uint32_t stock = oot_item_stock_hash(c, mgr, name);
+    if (!stock || !oot_gd_int(c, mgr, stock)) return 0;
+    oot_gd_set(c, mgr, stock, (uint32_t)(count < 0 ? 0 : count), 0);
+    const uint32_t first = oot_gd_member(c, oot_gd_struct(c, mgr, 0xade0ef78u), oot_murmur3(name));
+    if (count > 0 && first) oot_gd_set(c, mgr, first, 1, 1);   /* ("got it once": as the game marks what was got) */
+    return 1;
+}
+
+/* An item's count set, through the game's own setters: 1 done, 0 the save data has no such item */
+static int oot_item_give(Ctx *c, const char *name, int count) {
+    const uint64_t mgr = oot_singleton(c, OOT_GAMEDATA_SLOT);
+    if (!mgr) return 0;
+    for (unsigned i = 0; i < OOT_BAGS; i++) {   /* a bag: the size it gives, or without it the largest bag left */
+        if (strcmp(name, oot_bags[i].bag)) continue;
+        int size = 0, best = count > 0 ? oot_bags[i].max : !strcmp(oot_bags[i].what, "Rupee") ? 200 : 0;
+        const uint32_t hash = oot_capacity(c, mgr, oot_bags[i].what, &size);
+        for (unsigned k = 0; k < OOT_BAGS; k++)
+            if (k != i && !strcmp(oot_bags[k].what, oot_bags[i].what) && oot_bags[k].max > best && oot_item_get(c, oot_bags[k].bag) > 0)
+                best = oot_bags[k].max;
+        if (hash && best != size) oot_gd_set(c, mgr, hash, (uint32_t)best, 0);
+    }
+    for (unsigned i = 0; count > 0 && i < sizeof oot_ammo / sizeof oot_ammo[0]; i++) {   /* ammunition: a bag that holds it */
+        if (strcmp(name, oot_ammo[i].item)) continue;
+        int size = 0, fits = -1, largest = -1;
+        const uint32_t hash = oot_capacity(c, mgr, oot_ammo[i].what, &size);
+        for (unsigned k = 0; k < OOT_BAGS; k++) {
+            if (strcmp(oot_bags[k].what, oot_ammo[i].what)) continue;
+            if (largest < 0 || oot_bags[k].max > oot_bags[largest].max) largest = (int)k;
+            if (oot_bags[k].max >= count && (fits < 0 || oot_bags[k].max < oot_bags[fits].max)) fits = (int)k;
+        }
+        if (largest >= 0 && count > oot_bags[largest].max) count = oot_bags[largest].max, fits = largest;
+        if (hash && fits >= 0 && count > size) {
+            oot_pouch_set(c, mgr, oot_bags[fits].bag, 1);
+            oot_gd_set(c, mgr, hash, (uint32_t)oot_bags[fits].max, 0);
+        }
+    }
+    if (oot_pouch_set(c, mgr, name, count)) return 1;
+    const uint32_t first = oot_gd_member(c, oot_gd_struct(c, mgr, 0xade0ef78u), oot_murmur3(name));
+    if (first && oot_gd_bool(c, mgr, first)) return oot_gd_set(c, mgr, first, count > 0, 1);   /* (a song: its flag) */
+    return 0;
+}
+
+/* Age toggle: flips Sequence_IsChildhood (what the Temple of Time event sets) and reloads the current map, or the
+   Market when this map is not in oot_destinations, through the teleport so the other age's map and Link load. */
+static void oot_toggle_age(Ctx *c, uint64_t actor) {
+    int child = 1;
+    if (!oot_gamedata_bool(c, 0xcea220d3u, &child)) {
+        hos_log("cheats: age toggle: Sequence_IsChildhood not found");
+        return;
+    }
+    char current[80];
+    oot_gamedata_string(c, 0x1d6189dau, current, sizeof current);   /* Sequence_CurrentBanc */
+    unsigned target = 3;   /* Market (the Temple of Time is in it) */
+    for (unsigned i = 0; i < sizeof oot_destinations / sizeof oot_destinations[0]; i++) {
+        const OotDestination *d = &oot_destinations[i];
+        const char *other = child ? d->adult_banc : d->child_banc;
+        if (other && ((d->child_banc && !strcmp(d->child_banc, current)) || (d->adult_banc && !strcmp(d->adult_banc, current)))) {
+            target = i;
+            break;
+        }
+    }
+    if (!oot_gamedata_set_bool(c, 0xcea220d3u, !child)) {
+        hos_log("cheats: age toggle: could not write Sequence_IsChildhood");
+        return;
+    }
+    hos_log("cheats: age toggle: %s -> %s, reloading via destination %u (current map \"%s\")",
+            child ? "child" : "adult", child ? "adult" : "child", target, current);
+    if (!oot_teleport(c, actor, target)) {
+        oot_gamedata_set_bool(c, 0xcea220d3u, child);
+        hos_log("cheats: age toggle undone, the map change was not requested");
+    }
+}
+
+static void oot_teleport_followup(Ctx *c) {
+    if (!teleport.check_at || hos_now_ns() < teleport.check_at) return;
+    teleport.check_at = 0;
+    char next[80], current[80];
+    oot_gamedata_string(c, 0xee27bf71u, next, sizeof next);     /* Sequence_ReservedNextBanc */
+    oot_gamedata_string(c, 0x1d6189dau, current, sizeof current);   /* Sequence_CurrentBanc */
+    const uint64_t events = oot_singleton(c, OOT_EVENTMGR_SLOT);
+    hos_log("cheats: teleport check: reserved \"%s\", current \"%s\", event playing %d", next, current,
+            events && recomp_load64(c, events + 104) ? 1 : 0);
+}
+
+/* ---- (Triforce) Game flags by name and events by name: the Debug tab's two pages ----
+   After NX2navi's F9 panel (its flags by name and its cutscene starter; that code is not the owner's and none of it
+   is here: this is written on what the tools above already had of build e0f3ccfa). A flag is a Bool of GameData, which
+   the game knows by the MurmurHash3 of its name alone; an event is started by the name of its file. The pages read both
+   lists of names from the player's own game files (gpu/vk/debug_names.h) and send what they want as lines
+   (gpu/vk/oot_debug_link.h), read here at Link's update, on the game's thread, as the other tools' actions are.
+
+   A flag is read where oot_gd_bool finds it and changed through the game's own SetBool (oot_gd_set), so that what follows
+   a change of the game's own follows this one too; never while no save is loaded, and never one the save data does not
+   have. An event is asked of the event manager as oot_teleport asks for its map change, with no arguments and Link as
+   its starter; not while another plays, a map loads or no save is loaded. */
+static void oot_link_say(int kind, const char *text) {
+    void rx_option_set(int id, int value);
+    for (const char *t = text; *t; t++) rx_option_set(HOS_OPT_DEBUG_TEXT, (unsigned char)*t);
+    rx_option_set(HOS_OPT_DEBUG_SAID, kind);
+}
+
+/* a flag as the page shows it: '1' set, '0' not, '-' the save data has no such flag, '?' no save is loaded */
+static char oot_flag_state(Ctx *c, int loaded, uint32_t hash) {
+    const uint64_t mgr = loaded ? oot_singleton(c, OOT_GAMEDATA_SLOT) : 0;
+    if (!mgr) return '?';
+    const uint64_t entry = oot_gd_bool(c, mgr, hash);
+    return !entry ? '-' : recomp_load8(c, entry + 22) & 1 ? '1' : '0';
+}
+
+/* A flag set or cleared through the game's own setter: 1 asked of the game, 0 not (no save loaded, or the save data
+   has no such flag: nothing is called and nothing written then) */
+static int oot_flag_set(Ctx *c, int loaded, uint32_t hash, int value) {
+    const uint64_t mgr = loaded ? oot_singleton(c, OOT_GAMEDATA_SLOT) : 0;
+    if (!mgr || !hash || !oot_gd_bool(c, mgr, hash)) return 0;
+    return oot_gd_set(c, mgr, hash, value ? 1u : 0u, 1);
+}
+
+/* An event asked of the event manager by its name, Link its starter: what became of it in words (says), 1 when the
+   request was made. The request as oot_teleport builds it, without arguments */
+static int oot_start_event(Ctx *c, uint64_t actor, int loaded, const char *name, char *says, size_t cap) {
+    const uint64_t events = oot_singleton(c, OOT_EVENTMGR_SLOT);
+    A64Fn make_arg = a64_lookup(0x80d99f10ULL), request = a64_lookup(0x80d9a820ULL);
+    A64Fn set_link = a64_lookup(0x802dc440ULL), release_link = a64_lookup(0x8022b6f0ULL);
+    int loading = 0;
+    if (!loaded) return snprintf(says, cap, "Load a save first."), 0;
+    if (!oot_name_ok(name)) return snprintf(says, cap, "That is not an event's name."), 0;
+    if (!events || !make_arg || !request || !set_link || !release_link) return snprintf(says, cap, "The event manager is not there."), 0;
+    if (recomp_load64(c, events + 104)) return snprintf(says, cap, "Another event is playing."), 0;
+    if (oot_gamedata_bool(c, 0xef2b60c2u, &loading) && loading) return snprintf(says, cap, "A map is loading."), 0;   /* Sequence_IsLoadingBanc */
+    if (teleport.requested_at && hos_now_ns() - teleport.requested_at < 8000000000LL) return snprintf(says, cap, "A teleport is under way."), 0;
+    const Ctx saved = *c;
+    const uint64_t arg = (c->x[31] - OOT_EVENT_ARG_SIZE - 0x100) & ~0xfULL;
+    c->x[31] = arg;
+    c->x[0] = arg;
+    make_arg(c);
+    int ok = 1;
+    {   /* the event's name: arg+6800 points at its buffer, arg+6808 the capacity */
+        const uint64_t buf = recomp_load64(c, arg + 6800);
+        const uint32_t room = recomp_load32(c, arg + 6808);
+        if (!buf || strlen(name) + 1 > room) ok = 0;
+        else memcpy(A64_PTR(buf), name, strlen(name) + 1);
+    }
+    uint64_t result = 0;
+    if (ok) {
+        c->x[31] = arg;
+        c->x[0] = arg + 0x1950, c->x[1] = actor, c->x[2] = 0;
+        set_link(c);
+        c->x[31] = arg;
+        c->x[0] = events, c->x[1] = arg;
+        request(c);
+        result = c->x[0];
+    }
+    for (unsigned i = 0; i < 2; i++) {   /* (the arg's two actor links let go, as SeqOneShotRequestEvent does) */
+        const uint64_t link = arg + (i ? 0x1950 : 0x1968);
+        recomp_store64(c, link, 0x84994b20ULL);
+        c->x[31] = arg;
+        c->x[0] = link;
+        release_link(c);
+    }
+    *c = saved;
+    hos_log("cheats: event %s: request %s, result %#llx", name, ok ? "sent" : "not built", (unsigned long long)result);
+    if (!ok) return snprintf(says, cap, "The request could not be built."), 0;
+    snprintf(says, cap, result ? "%s asked of the game." : "The game did not take %s.", name);
+    return 1;
+}
+
+/* The pages' lines taken and answered, at Link's update (now: hos_now_ns): a line read whole before it is acted on; the
+   watched flags' states twice a second, and at once after a line. Nothing is read of the game while no line came and no
+   flag is watched */
+static void oot_link_tick(Ctx *c, uint64_t actor, int64_t now) {
+    int rx_option(int id, int otherwise);
+    static uint32_t watch[OOT_WATCH_MAX];
+    static int watching;
+    static int64_t next;
+    static char line[OOT_LINE_MAX + 1];
+    static size_t used;
+    static int long_line;
+    int loaded = -1, byte;   /* (a save is loaded once the pouch answers, as the Inventory page has it: asked once a tick at most) */
+    while ((byte = rx_option(HOS_OPT_DEBUG_ASK, 0)) > 0) {
+        if (byte != '\n') {
+            if (used < OOT_LINE_MAX) line[used++] = (char)byte;
+            else long_line = 1;
+            continue;
+        }
+        line[used] = 0;
+        const int whole = !long_line;
+        used = 0, long_line = 0;
+        OotAsk ask;
+        if (!whole || !oot_ask_parse(line, &ask)) continue;   /* (not a line of the pages': dropped) */
+        if (loaded < 0) loaded = oot_pouch_count(c, oot_item_names[0]) >= 0;
+        if (ask.kind == 'W') {
+            memcpy(watch, ask.watch, sizeof watch);
+            watching = ask.count;
+        } else if (ask.kind == 'F') {
+            const int done = oot_flag_set(c, loaded, ask.hash, ask.value);
+            hos_log("cheats: flag %08x %s: %s", (unsigned)ask.hash, ask.value ? "set" : "cleared",
+                    done ? "asked of the game" : loaded ? "the save data has no such flag" : "no save is loaded");
+            oot_link_say(OOT_SAID_STATUS, done ? (ask.value ? "Flag set." : "Flag cleared.") : loaded ? "The save data has no such flag." : "Load a save first.");
+        } else {
+            char says[160];
+            oot_start_event(c, actor, loaded, ask.name, says, sizeof says);
+            oot_link_say(OOT_SAID_STATUS, says);
+        }
+        next = now + 100000000LL;   /* (the states soon: a change is made at the game's next frame) */
+    }
+    if (!watching || now < next) return;
+    next = now + 500000000LL;
+    if (loaded < 0) loaded = oot_pouch_count(c, oot_item_names[0]) >= 0;
+    char states[16 + OOT_WATCH_MAX];
+    int at = snprintf(states, sizeof states, "%08x ", (unsigned)oot_watch_sum(watch, watching));
+    for (int i = 0; i < watching; i++) states[at++] = oot_flag_state(c, loaded, watch[i]);
+    states[at] = 0;
+    oot_link_say(OOT_SAID_FLAGS, states);
+}
+
+static uint64_t oot_gameplay_view(Ctx *c) {
+    const uint64_t singleton = recomp_load64(c, 0x84ca6bc0ULL);
+    const uint64_t manager = singleton ? recomp_load64(c, singleton) : 0;
+    const uint64_t cameras = manager && recomp_load32(c, manager + 32) ? recomp_load64(c, manager + 40) : 0;
+    const uint64_t camera = cameras ? recomp_load64(c, cameras) : 0;
+    return camera ? recomp_load64(c, camera + 120) : 0;
+}
+
+static float oot_load_float(Ctx *c, uint64_t addr) {
+    const uint32_t bits = recomp_load32(c, addr);
+    float value;
+    memcpy(&value, &bits, sizeof value);
+    return value;
+}
+
+/* ((Triforce, 11-19) benchmark mode, host/hos_bench.c) its tour at Link's update: the map's state while it waits for play or for
+   an arrival (nothing is read of the game while a scene is measured), and the teleports it asks for, sent at once: its own
+   pace, not the 8 s a teleport from the menu keeps between two */
+static void oot_bench_tick(Ctx *c, uint64_t actor, int64_t now) {
+    if (!hos_bench_on() || !hos_bench_link_wants_state()) return;
+    char current[80];
+    int loading = 0;
+    oot_gamedata_string(c, 0x1d6189dau, current, sizeof current);   /* Sequence_CurrentBanc */
+    oot_gamedata_bool(c, 0xef2b60c2u, &loading);                    /* Sequence_IsLoadingBanc */
+    const uint64_t events = oot_singleton(c, OOT_EVENTMGR_SLOT);
+    const int event = events && recomp_load64(c, events + 104) ? 1 : 0;
+    const int want = hos_bench_link(now, actor, current, loading, event);
+    if (want < 0) return;
+    teleport.requested_at = 0;
+    teleport_result = 0;
+    const int sent = oot_teleport(c, actor, (unsigned)want);
+    hos_bench_teleport_sent(want, sent && teleport_result != 0);   /* (a request the event manager refused: asked again soon) */
+}
+static _Thread_local uint64_t flight_transform_controller;
+static _Thread_local uint64_t flight_pose_actor;
+static _Thread_local float flight_transform_yaw;
+static int64_t flight_player_seen;
+
+static void oot_update_player_cheats(Ctx *c, uint64_t actor, uint64_t components) {
+    int rx_option(int id, int otherwise);
+    static uint64_t flying_actor, marked_actor, marked_controller;
+    static int64_t last_tick, last_player_tick;
+    static float target[3], velocity[3], mark[3], yaw;
+    const int flying = rx_option(HOS_OPT_CHEAT_FLIGHT, 0) > 0;
+    if (!flying) flying_actor = 0;
+    const int64_t now = hos_now_ns();
+    __atomic_store_n(&flight_player_seen, now, __ATOMIC_RELAXED);
+    if (marked_actor != actor || now - last_player_tick > 2000000000LL) marked_controller = 0;
+    last_player_tick = now;
+    int action = rx_option(HOS_OPT_CHEAT_ACTION, 0);
+    if (!action) action = __atomic_exchange_n(&hos_oot_live_action, 0, __ATOMIC_RELAXED);
+    oot_teleport_followup(c);
+    oot_bench_tick(c, actor, now);   /* ((Triforce, 11-19) benchmark mode: its tour, host/hos_bench.c */
+    oot_inventory_refresh(c, now);
+    oot_link_tick(c, actor, now);   /* ((Triforce) the Game flags and Cutscenes pages) */
+    if (action >= OOT_CHEAT_ITEM_ACTION && action < OOT_CHEAT_ITEM_ACTION + 256 * (int)OOT_ITEM_COUNT) {
+        oot_inventory_edit(c, action);
+    } else if (action == OOT_AGE_ACTION) {
+        oot_toggle_age(c, actor);
+    } else if (action >= OOT_TELEPORT_ACTION) {
+        oot_teleport(c, actor, (unsigned)(action - OOT_TELEPORT_ACTION));
+    } else if (action >= 200) {
+        oot_edit_pouch(c, action);
+    } else if (action >= 100 && action < 124) {
+        oot_set_time(c, action - 100);
+    }
+    /* (Triforce, lab) the crawl's commands: see crawl above */
+    static float crawl_target[3];
+    static int crawl_holding;
+    static uint64_t crawl_actor;
+    int crawl_goto = 0;
+    {
+        char b[96], s[96], e[128], g[96];
+        int try_banc = 0, age = -1, where = 0, hold;
+        AcquireSRWLockExclusive(&crawl.lock);
+        if (crawl.banc_pending && now >= crawl.retry_at) {
+            memcpy(b, crawl.banc, sizeof b), memcpy(s, crawl.start, sizeof s), memcpy(e, crawl.boot, sizeof e);
+            memcpy(g, crawl.go, sizeof g);
+            age = crawl.age, try_banc = 1;
+        }
+        if (crawl.pos_pending) crawl.pos_pending = 0, memcpy(crawl_target, crawl.pos, sizeof crawl_target), crawl_goto = 1;
+        where = crawl.where, crawl.where = 0;
+        hold = crawl.hold;
+        char give[96] = "";
+        int give_delta = 0;
+const int give_pending = crawl.give_pending;
+        if (give_pending) crawl.give_pending = 0, memcpy(give, crawl.give, sizeof give), give_delta = crawl.give_delta;
+        ReleaseSRWLockExclusive(&crawl.lock);
+        if (give_pending == 1 && give[0]) {
+            const int had = oot_item_get(c, give);
+            const int done = had >= 0 && oot_item_give(c, give, had + give_delta);
+            hos_log("cheats: crawl: give %s %+d: GameData had %d (-1: no such item), the pouch %d: %s", give, give_delta, had,
+                    oot_pouch_count(c, give), done ? "set" : "not set");
+        }
+        if (give_pending == 2) {   /* ("!items": every item of the Inventory page as the pouch and GameData have it) */
+            const uint64_t mgr = oot_singleton(c, OOT_GAMEDATA_SLOT);
+            const uint64_t pouch = mgr ? oot_gd_struct(c, mgr, 0x3da094e3u) : 0;
+            hos_log("cheats: crawl: items: manager %#llx (the other holder: %#llx), Pouch struct %#llx with %u member cells, %u Ints",
+                    (unsigned long long)mgr, (unsigned long long)recomp_load64(c, 0x84ea42a8ULL), (unsigned long long)pouch,
+                    pouch ? recomp_load32(c, pouch + 0x14) : 0, mgr ? recomp_load32(c, mgr + 0xc8 + 8) : 0);
+            char line[400], num[16];
+            size_t used = 0;
+            for (unsigned i = 0; mgr && i < OOT_ITEM_COUNT; i++) {
+                snprintf(num, sizeof num, "%d", oot_item_get(c, oot_item_names[i]));
+                used += (size_t)snprintf(line + used, sizeof line - used, " %s=%d/%s", oot_item_names[i],
+                                         oot_pouch_count(c, oot_item_names[i]), num);
+                if (used > 280 || i + 1 == OOT_ITEM_COUNT) hos_log("cheats: crawl: items (pouch/GameData):%s", line), used = 0;
+            }
+            /* (the member hashes of the Pouch and of the "got it once" struct: which names the game has, by MurmurHash3) */
+            static const uint32_t dumps[3] = {0x3da094e3u, 0xade0ef78u, 0xf80f8077u};
+            for (unsigned d = 0; mgr && d < 3; d++) {
+                const uint64_t e = oot_gd_struct(c, mgr, dumps[d]);
+                const uint64_t table = e ? recomp_load64(c, e + 8) : 0;
+                const uint32_t size = e ? recomp_load32(c, e + 0x14) : 0;
+                used = 0;
+                for (uint32_t i = 0; table && size <= 65536 && i < size; i++) {
+                    const uint32_t m = recomp_load32(c, table + 8ULL * i);
+                    const uint64_t cap = m && d == 2 ? oot_gd_int(c, mgr, recomp_load32(c, table + 8ULL * i + 4)) : 0;
+                    if (m && d == 2) used += (size_t)snprintf(line + used, sizeof line - used, " %08x=%d", m, cap ? (int)recomp_load32(c, cap + 0x1c) : -1);
+                    else if (m) used += (size_t)snprintf(line + used, sizeof line - used, " %08x", m);
+                    if (used > 280 || (i + 1 == size && used)) hos_log("cheats: crawl: members %08x:%s", dumps[d], line), used = 0;
+                }
+            }
+        }
+        if (try_banc) {
+            int child = 1;
+            const int known = oot_gamedata_bool(c, 0xcea220d3u, &child);   /* Sequence_IsChildhood */
+            const int flip = known && age >= 0 && age != child;
+            if (flip) oot_gamedata_set_bool(c, 0xcea220d3u, age);
+            crawl_banc = b, crawl_start = s, crawl_boot = e, crawl_go = g;
+            const int ok = oot_teleport(c, actor, 0);
+            crawl_banc = NULL;
+            if (!ok && flip) oot_gamedata_set_bool(c, 0xcea220d3u, child);
+            AcquireSRWLockExclusive(&crawl.lock);
+            if (ok) crawl.banc_pending = 0;
+            else crawl.retry_at = now + 2000000000LL;
+            ReleaseSRWLockExclusive(&crawl.lock);
+            if (ok) crawl_holding = 0, crawl_goto = 0;
+        }
+        if (where) {
+            char current[80];
+            int loading = 0, child = 1;
+            oot_gamedata_string(c, 0x1d6189dau, current, sizeof current);   /* Sequence_CurrentBanc */
+            oot_gamedata_bool(c, 0xef2b60c2u, &loading);                    /* Sequence_IsLoadingBanc */
+            oot_gamedata_bool(c, 0xcea220d3u, &child);
+            const uint64_t events = oot_singleton(c, OOT_EVENTMGR_SLOT);
+            hos_log("cheats: crawl: where: map \"%s\" loading %d event %d child %d pos %.1f %.1f %.1f", current, loading,
+                    events && recomp_load64(c, events + 104) ? 1 : 0, child, oot_load_float(c, actor + 796),
+                    oot_load_float(c, actor + 800), oot_load_float(c, actor + 804));
+        }
+        if (crawl_goto) crawl_holding = hold, crawl_actor = actor;
+        if (!hold || crawl_actor != actor) crawl_holding = 0;   /* (another Link: another map) */
+    }
+    if (!flying && action != 2 && action != 3 && !crawl_goto && !crawl_holding) return;
+
+    // Follow OneShotPhysicsCctChangePosition to Link's controller.
+    const unsigned offsets[] = {80, 32, 16, 8};
+    uint64_t controller = components;
+    for (unsigned i = 0; i < sizeof offsets / sizeof offsets[0]; i++) {
+        controller = recomp_load64(c, controller + offsets[i]);
+        if (!controller) return;
+    }
+    const uint64_t vtable = recomp_load64(c, controller);
+    if (vtable != 0x84c54f10ULL || recomp_load64(c, vtable + 0xe8) != 0x806d2530ULL) return;
+    A64Fn change_position = a64_lookup(0x806d2530ULL);
+    if (!change_position) return;
+
+    if (action == 2) {
+        for (unsigned i = 0; i < 3; i++) {
+            const uint32_t bits = recomp_load32(c, actor + 796 + i * 4);
+            memcpy(&mark[i], &bits, sizeof bits);
+        }
+        marked_actor = actor;
+        marked_controller = controller;
+        hos_log("cheats: marked position %.2f %.2f %.2f", mark[0], mark[1], mark[2]);
+    }
+    if (crawl_goto || (crawl_holding && !flying)) {   /* (the crawl: Link put at its place, and kept there while held) */
+        const Ctx saved = *c;
+        const uint64_t arg = c->x[31] - 16;
+        for (unsigned i = 0; i < 3; i++) {
+            uint32_t bits;
+            memcpy(&bits, &crawl_target[i], sizeof bits);
+            recomp_store32_sp(c, arg + i * 4, bits);
+        }
+        recomp_store32_sp(c, arg + 12, 0);
+        c->x[31] = arg;
+        c->x[0] = controller;
+        c->x[1] = arg;
+        change_position(c);
+        *c = saved;
+        if (crawl_goto)
+            hos_log("cheats: crawl: Link put at %.1f %.1f %.1f%s", crawl_target[0], crawl_target[1], crawl_target[2],
+                    crawl_holding ? ", held" : "");
+        if (!flying && action != 2 && action != 3) return;
+    }
+    const int returning = action == 3 && marked_controller == controller;
+    if (action == 3 && !returning) hos_log("cheats: no mark for this player controller");
+    if (!flying && !returning) return;
+    const int64_t elapsed = now - last_tick;
+    if (flying_actor != actor)
+        yaw = atan2f(oot_load_float(c, actor + 816), oot_load_float(c, actor + 840));
+    if (returning) {
+        memcpy(target, mark, sizeof target);
+        memset(velocity, 0, sizeof velocity);
+        flying_actor = flying ? actor : 0;
+    } else if (flying_actor != actor || elapsed < 0 || elapsed > 250000000) {
+        for (unsigned i = 0; i < 3; i++) target[i] = oot_load_float(c, actor + 796 + i * 4);
+        memset(velocity, 0, sizeof velocity);
+        flying_actor = actor;
+        last_tick = now;
+        return;
+    } else if (elapsed == 0) {
+        return;
+    }
+    last_tick = now;
+
+    DWORD foreground = 0;
+    GetWindowThreadProcessId(GetForegroundWindow(), &foreground);
+    if (!returning) {
+        const float dt = fminf((float)elapsed * 1e-9f, 0.05f);
+        float desired[3] = {0};
+        if (foreground == GetCurrentProcessId() && !rx_option(1, 0) && !rx_option(HOS_OPT_CHEAT_CAMERA, 0)) {
+            uint64_t hos_flight_input(void);
+            const uint64_t axes = hos_flight_input();
+            const float right = (int16_t)axes / 32767.0f, forward = (int16_t)(axes >> 16) / 32767.0f;
+            const int vertical = (GetAsyncKeyState(VK_PRIOR) < 0) - (GetAsyncKeyState(VK_NEXT) < 0);
+            const uint64_t view = oot_gameplay_view(c);
+            float rx = 1, rz = 0;
+            if (view && recomp_load64(c, view) == 0x84c18a88ULL) {
+                const float x = oot_load_float(c, view + 8), z = oot_load_float(c, view + 16);
+                const float length = hypotf(x, z);
+                if (length > 0.01f) rx = x / length, rz = z / length;
+            }
+            desired[0] = rx * right + rz * forward;
+            desired[1] = vertical ? vertical : (int16_t)(axes >> 32);
+            desired[2] = rz * right - rx * forward;
+        }
+        const float length = sqrtf(desired[0] * desired[0] + desired[1] * desired[1] + desired[2] * desired[2]);
+        const float speed = 4.0f / fmaxf(1.0f, length);
+        const float blend = 1.0f - expf(-12.0f * dt);
+        for (unsigned i = 0; i < 3; i++) {
+            velocity[i] += (desired[i] * speed - velocity[i]) * blend;
+            target[i] += velocity[i] * dt;
+        }
+        if (hypotf(desired[0], desired[2]) > 0.08f) {
+            const float delta = remainderf(atan2f(desired[0], desired[2]) - yaw, 6.28318531f);
+            yaw += fmaxf(-8.0f * dt, fminf(delta, 8.0f * dt));
+        }
+    }
+
+    const Ctx saved = *c;
+    const uint64_t arg = c->x[31] - 16;
+    for (unsigned i = 0; i < 3; i++) {
+        uint32_t bits;
+        memcpy(&bits, &target[i], sizeof bits);
+        recomp_store32_sp(c, arg + i * 4, bits);
+    }
+    recomp_store32_sp(c, arg + 12, 0);
+    c->x[31] = arg;
+    c->x[0] = controller;
+    c->x[1] = arg;
+    flight_transform_yaw = yaw;
+    flight_pose_actor = flying && !returning ? actor : 0;
+    flight_transform_controller = flying && !returning ? controller : 0;
+    change_position(c);
+    flight_transform_controller = 0;
+    *c = saved;
+    if (returning) hos_log("cheats: returned to %.2f %.2f %.2f", mark[0], mark[1], mark[2]);
+}
+#endif
+
+int hos_oot_flight_shortcut_ready(void) {
+#if defined(_WIN32) || defined(__linux__)   /* (the debug tools: host/posix has what they call) */
+    const int64_t seen = __atomic_load_n(&flight_player_seen, __ATOMIC_RELAXED);
+    return seen && hos_now_ns() - seen < 250000000;
+#else
+    return 0;
+#endif
+}
+
+#if defined(_WIN32) || defined(__linux__)   /* (the debug tools: host/posix has what they call) */
+static void oot_write_flight_rotation(Ctx *c, uint64_t matrix) {
+    const float s = sinf(flight_transform_yaw), co = cosf(flight_transform_yaw);
+    const float rotation[3][3] = {{co, 0, s}, {0, 1, 0}, {-s, 0, co}};
+    for (unsigned row = 0; row < 3; row++) {
+        for (unsigned col = 0; col < 3; col++) {
+            uint32_t bits;
+            memcpy(&bits, &rotation[row][col], sizeof bits);
+            recomp_store32(c, matrix + row * 16 + col * 4, bits);
+        }
+    }
+}
+#endif
+
+void hos_oot_flight_rotation(Ctx *c, uint64_t controller, uint64_t matrix) {
+#if defined(_WIN32) || defined(__linux__)   /* (the debug tools: host/posix has what they call) */
+    if (flight_transform_controller == controller) oot_write_flight_rotation(c, matrix);
+#else
+    (void)c;
+    (void)controller;
+    (void)matrix;
+#endif
+}
+
+void hos_oot_flight_pose(Ctx *c, uint64_t actor, uint64_t matrix) {
+#if defined(_WIN32) || defined(__linux__)   /* (the debug tools: host/posix has what they call) */
+    if (flight_pose_actor == actor) {
+        flight_pose_actor = 0;
+        oot_write_flight_rotation(c, matrix);
+    }
+#else
+    (void)c;
+    (void)actor;
+    (void)matrix;
+#endif
+}
+
+void hos_oot_lift_player(Ctx *c, uint64_t actor) {
+#if defined(_WIN32) || defined(__linux__)   /* (the debug tools: host/posix has what they call) */
+    flight_pose_actor = 0;
+    if (recomp_load64(c, actor) != 0x84b45e18ULL) return;
+    const uint64_t components = recomp_load64(c, actor + 624);
+    const uint64_t movement = components ? recomp_load64(c, components + 800) : 0;
+    if (movement < HOS_HEAP_BASE + 0x1d50 || recomp_load64(c, movement + 24) != actor ||
+        !hos_oot_is_player(c, movement - 0x1d50)) return;
+
+    // Link can be updated by different guest workers on successive frames.
+    static SRWLOCK cheats_lock = SRWLOCK_INIT;
+    if (!TryAcquireSRWLockExclusive(&cheats_lock)) return;
+    oot_update_player_cheats(c, actor, components);
+    ReleaseSRWLockExclusive(&cheats_lock);
+#else
+    (void)c;
+    (void)actor;
+#endif
+}
+
+#if defined(_WIN32) || defined(__linux__)   /* (the debug tools: host/posix has what they call) */
+static void oot_build_free_view(Ctx *c, uint64_t view, uint64_t out) {
+    int rx_option(int id, int otherwise);
+    static uint64_t active_view;
+    static int64_t last_tick;
+    static double eye[3], yaw, pitch;
+    const int64_t now = hos_now_ns();
+    const int64_t elapsed = now - last_tick;
+
+    if (!view) {
+        active_view = 0;
+        return;
+    }
+    if (active_view != view || elapsed > 500000000) {
+        double target[3];
+        memcpy(eye, A64_PTR(view + 96), sizeof eye);
+        memcpy(target, A64_PTR(view + 120), sizeof target);
+        const double x = eye[0] - target[0], y = eye[1] - target[1], z = eye[2] - target[2];
+        yaw = atan2(x, z);
+        pitch = atan2(y, hypot(x, z));
+        active_view = view;
+        hos_log("cheats: free camera at %.2f %.2f %.2f", eye[0], eye[1], eye[2]);
+    }
+    last_tick = now;
+    DWORD foreground = 0;
+    GetWindowThreadProcessId(GetForegroundWindow(), &foreground);
+    const double dt = elapsed > 0 && elapsed < 100000000 ? (double)elapsed * 1e-9 : 0;
+    const int control = foreground == GetCurrentProcessId() && !rx_option(1, 0);
+    int height = 0;
+    uint64_t hos_free_camera_input(int *height);
+    const uint64_t input = control ? hos_free_camera_input(&height) : 0;
+    if (control) {
+        yaw -= 1.6 * dt * (int16_t)(input >> 32) / 32767.0;
+        pitch -= 1.2 * dt * (int16_t)(input >> 48) / 32767.0;
+        pitch = fmax(-1.55, fmin(1.55, pitch));
+    }
+    const double sy = sin(yaw), cy = cos(yaw), sp = sin(pitch), cp = cos(pitch);
+    const double axes[3][3] = {{cy, 0, -sy}, {-sp * sy, cp, -sp * cy}, {cp * sy, sp, cp * cy}};
+    if (control) {
+        const double step = dt * (GetAsyncKeyState(VK_CONTROL) < 0 ? 30.0 : 8.0);
+        const double right = (int16_t)input / 32767.0;
+        const double forward = (int16_t)(input >> 16) / 32767.0;
+        const int key_height = (GetAsyncKeyState(VK_PRIOR) < 0) - (GetAsyncKeyState(VK_NEXT) < 0);
+        eye[1] += step * (key_height ? key_height : height);
+        for (int i = 0; i < 3; i++)
+            eye[i] += step * (right * axes[0][i] - forward * axes[2][i]);
+    }
+    for (int row = 0; row < 3; row++) {
+        const double *axis = axes[row];
+        const float values[4] = {(float)axis[0], (float)axis[1], (float)axis[2],
+            (float)-(axis[0] * eye[0] + axis[1] * eye[1] + axis[2] * eye[2])};
+        for (int col = 0; col < 4; col++) {
+            uint32_t bits;
+            memcpy(&bits, &values[col], sizeof bits);
+            recomp_store32(c, out + (row * 4 + col) * 4, bits);
+        }
+    }
+}
+#endif
+
+void hos_oot_free_view(Ctx *c, uint64_t view) {
+#if defined(_WIN32) || defined(__linux__)   /* (the debug tools: host/posix has what they call) */
+    int rx_option(int id, int otherwise);
+    if (!view || recomp_load64(c, view) != 0x84c18a88ULL) return;
+
+    // Camera zero supplies the gameplay view. The same matrix routine also serves other cameras.
+    if (oot_gameplay_view(c) != view) return;
+
+    static SRWLOCK lock = SRWLOCK_INIT;
+    AcquireSRWLockExclusive(&lock);
+    const int enabled = rx_option(HOS_OPT_CHEAT_CAMERA, 0);
+    oot_build_free_view(c, enabled ? view : 0, view + 8);
+    ReleaseSRWLockExclusive(&lock);
+#else
+    (void)c;
+    (void)view;
+#endif
+}
+
+float hos_aspect_ratio = 0;   /* (the window's default shape: host/display.c) */
+/* (Triforce, after NX2navi's game_aspect) The Insert menu's Ultrawide row (ultrawide= in the options file, of options_version
+   version) as the picture's shape, width over height, 0 for the game's own 16:9: 0 the game's own, 1 a fixed 16:10, 2 a fixed
+   21:9 (64:27), 3 a fixed 32:9 (gpu/vk/ultrawide_rows.h). The fixed ones are for a window, or for a screen of that shape; a
+   screen of another shape shows the picture between black bars. A file from before options_version 6 whose row is 1 had the
+   main monitor's shape (screen_w x screen_h), no longer a choice: the shape nearest it. A value past the row is its nearest
+   end, as the menu reads it (gpu/vk/vk_menu.cpp) */
+static float ultrawide_ratio(int row, int version, int screen_w, int screen_h) {
+    return ultrawide_row_ratio(ultrawide_row_read(row, version, screen_w, screen_h));
+}
+/* (nx2/oot_wide.py) read by the widescreen patches in the game's code; 0: the game's own 16:9 */
+volatile uint64_t hos_wide_out, hos_wide_scene;
+/* (nx2/oot_native_resolution.py) mode 1's scene base scale 1.0 instead of 0.8: Resolution 100% (host/nn_vi.c keeps it current),
+   HOS_SCENE_NATIVE=0/1 over it */
+volatile int hos_native_scene;
+volatile int hos_fix_res;   /* (nx2/oot_native_resolution.py's cached-scale refresh: HOS_FIX_RES=1; #849's fixed-scale patch does it by default) */
+volatile float hos_wide_ratio, hos_wide_squeeze, hos_wide_margin;
+volatile uint32_t hos_wide_keep_mask = 0xf;   /* (nx2/oot_wide.py KEEP_VTABLES: the screens that keep the whole picture, a bit each; MkwVkHost.wide_menus) */
+/* (nx2/oot_occlusion.py) read by the game's code where it decides to make occlusion queries: 1, none (HOOKSHOT_OCCLUSION_OFF=1) */
+volatile int hos_occlusion_off;
+static void occlusion_switch(void) {
+    const char *e = getenv("HOOKSHOT_OCCLUSION_OFF");
+    hos_occlusion_off = e && e[0] == '1';
+    if (hos_occlusion_off) hos_log("occlusion off: the game makes no occlusion queries (HOOKSHOT_OCCLUSION_OFF=1)");
+}
+/* (hookshot, issue 1241) The game needs about 10 GB of memory and swap together (the page file on Windows): on 8 GB of RAM
+   and no swap it closed before the title with no word of why, and adding swap let it play. Below that, the log says so and
+   a message says it once at boot; the game starts anyway. The text, or 0 when there is enough */
+#define HOS_MEMORY_NEEDED_MB 10240ull
+static int memory_notice_text(unsigned long long ram_mb, unsigned long long swap_mb, char *out, size_t cap) {
+    /* ((Triforce, 11-18) and no swap at all below 40 GB of memory: a player's PC of 32 GB with Windows' page file off
+       crashed as every save loaded, 17 "commit ... failed (error 1455)" before it: the game's own memory and the
+       renderer's reach about 21 GB there, and without a page file the other programs' share counts against the same
+       limit. With the page file back on it played (#bug-tracker 11-18) */
+    if (swap_mb == 0 && ram_mb < 40960ull) {
+        snprintf(out, cap,
+                 "This PC has %.1f GB of memory and no swap (the page file on Windows is turned off). Loading a save the game "
+                 "uses about 21 GB, and without a page file Windows can run out and the game closes.\n\nOn Windows: search "
+                 "\"Adjust the appearance and performance of Windows\", Advanced, Virtual memory: Change, tick \"Automatically "
+                 "manage paging file size for all drives\", then restart the PC. It starts now anyway.",
+                 ram_mb / 1024.0);
+        return 1;
+    }
+    if (ram_mb + swap_mb >= HOS_MEMORY_NEEDED_MB) return 0;
+    snprintf(out, cap,
+             "This PC has %.1f GB of memory and %.1f GB of swap (the page file on Windows). The game needs about %llu GB of the "
+             "two together; with less it can close by itself while it loads.\n\nClose other programs, or add swap (on Windows: "
+             "let it manage the page file's size), then start the game again. It starts now anyway.",
+             ram_mb / 1024.0, swap_mb / 1024.0, HOS_MEMORY_NEEDED_MB / 1024);
+    return 1;
+}
+#ifndef A64_MEM_ZERO
+static void memory_notice(void) {
+    unsigned long long ram = 0, swap = 0;   /* (MB) */
+#ifdef _WIN32
+    MEMORYSTATUSEX m = {sizeof m};
+    if (!GlobalMemoryStatusEx(&m)) return;
+    ram = m.ullTotalPhys >> 20;
+    swap = m.ullTotalPageFile > m.ullTotalPhys ? (m.ullTotalPageFile - m.ullTotalPhys) >> 20 : 0;   /* (the commit limit: RAM and page file) */
+#elif defined(__linux__)
+    struct sysinfo si;
+    if (sysinfo(&si)) return;
+    ram = ((unsigned long long)si.totalram * si.mem_unit) >> 20, swap = ((unsigned long long)si.totalswap * si.mem_unit) >> 20;
+#else
+    return;
+#endif
+    char text[512];
+    if (!memory_notice_text(ram, swap, text, sizeof text)) {
+        hos_log("boot: %llu MB of memory, %llu MB of swap", ram, swap);
+        return;
+    }
+    if (swap == 0 && ram + swap >= HOS_MEMORY_NEEDED_MB)   /* ((Triforce, 11-18) memory_notice_text's no-swap case) */
+        hos_log("boot: NO PAGE FILE: %llu MB of memory, 0 MB of swap: loading a save can run out of memory (error 1455)", ram);
+    else
+        hos_log("boot: LOW MEMORY: %llu MB of memory, %llu MB of swap, below the ~%llu MB the game needs", ram, swap, HOS_MEMORY_NEEDED_MB);
+    if (getenv("HOS_HEADLESS")) return;
+#ifndef _WIN32
+    int hos_sdl_load(void);
+    hos_sdl_load();   /* (host/posix MessageBoxA shows it through the SDL already loaded) */
+#endif
+    MessageBoxA(NULL, text, "Triforce", MB_OK | MB_ICONWARNING);
+}
+#endif
+#ifdef _WIN32
+/* (hookshot) On laptops with two GPUs, the drivers run a program on the dedicated one when it exports these (NVIDIA Optimus, AMD
+   PowerXpress): without them a laptop could put the game on its integrated GPU, 5 fps (issue 176) */
+__declspec(dllexport) unsigned long NvOptimusEnablement = 1;
+__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+
+/* (hookshot) The game's paths are UTF-8 char strings through Windows' A functions and fopen: its manifest (nx2/win_manifest.py)
+   makes the process's code page UTF-8, from Windows 10 1903 on. Before that, or with the manifest missing, those take the system's
+   ANSI code page, and a folder name it cannot spell (Japanese on a Western Windows, an emoji) comes back as "?": nothing opens and
+   the game closed with no window and no log. The exe's own path through GetModuleFileNameA must name the exe (a name past MAX_PATH
+   bytes fails the same way); when it does not, a message says why (none for the builder's --prepare-shaders run: its log has it). */
+static int narrow_paths_ok(int argc, char **argv) {
+    char a[MAX_PATH];
+    const DWORD n = GetModuleFileNameA(NULL, a, MAX_PATH);
+    if (n && n < MAX_PATH && GetFileAttributesA(a) != INVALID_FILE_ATTRIBUTES) return 1;
+    wchar_t w[MAX_PATH * 2] = L"";
+    GetModuleFileNameW(NULL, w, MAX_PATH * 2);
+    fprintf(stderr, "hookshot: this folder's path cannot be opened (code page %u, %s): move the game to a folder with a plain name\n",
+            GetACP(), n >= MAX_PATH ? "too long" : "has characters the code page lacks");
+    int quiet = getenv("HOS_HEADLESS") != NULL;
+    for (int i = 1; i < argc; i++) quiet |= !strcmp(argv[i], "--prepare-shaders");
+    if (!quiet) {
+        wchar_t text[MAX_PATH * 2 + 640];
+        _snwprintf(text, sizeof text / sizeof text[0],
+                   L"Triforce can't open its files in this folder:\n\n%ls\n\n"
+                   L"%ls\n\nMove the game folder somewhere with a shorter name of plain letters and digits (for example C:\\Games\\Triforce), "
+                   L"or update Windows.",
+                   w, GetACP() == CP_UTF8 ? L"The path is too long."
+                                          : L"Its name has characters this Windows can only give the game from Windows 10 version 1903 on.");
+        text[sizeof text / sizeof text[0] - 1] = 0;
+        MessageBoxW(NULL, text, L"Triforce", MB_OK | MB_ICONERROR | MB_SETFOREGROUND);
+    }
+    return 0;
+}
+
+/* ((Triforce) handoff §5) One game at a time for a game folder: host/hos_instance.h. Taken before the log is opened (a second
+   copy's rotation moved the first's triforce_log.txt away and wrote over it) and after a restart's wait for the run before it.
+   A copy that finds the folder held waits up to 5 s for one that is ending (a close and a new start at once; 20 s after the
+   menu's Restart), then says which process holds it and ends: a message box, or for the builder's --prepare-shaders run and
+   HOS_HEADLESS a line on stdout and stderr. 0: refused. HOS_SINGLE_INSTANCE=0: no lock */
+static int instance_held = -1;   /* (for the log's line: 1 held, 0 not asked) */
+static int one_game_per_folder(int argc, char **argv, int restart) {
+    const char *e = getenv("HOS_SINGLE_INSTANCE");
+    if (e && !strcmp(e, "0")) return instance_held = 0, 1;
+    wchar_t folder[1100];
+    DWORD n = hos_game_path_w(folder, 1100);
+    if (!n || n >= 1100) return instance_held = 0, 1;
+    hos_instance_folder_of(folder);   /* ((Triforce) "C:\" for a game at a drive's root, not drive C's working directory) */
+    HosInstanceWho who;
+    if (hos_instance_take(folder, restart ? 20000 : 5000, &who)) return instance_held = 1, 1;
+    wchar_t text[2600];
+    hos_instance_message(folder, &who, text, sizeof text / sizeof text[0]);
+    int quiet = getenv("HOS_HEADLESS") != NULL;
+    for (int i = 1; i < argc; i++) quiet |= !strcmp(argv[i], "--prepare-shaders");
+    if (quiet) {
+        printf("@@error Triforce is running from this game folder (process %lu): it prepares its shaders itself\n", (unsigned long)who.pid);
+        fprintf(stderr, "triforce: this game folder is held by process %lu: not started\n", (unsigned long)who.pid);
+        fflush(stdout);
+    } else {
+        MessageBoxW(NULL, text, L"Triforce", MB_OK | MB_ICONINFORMATION | MB_SETFOREGROUND);
+    }
+    return 0;
+}
+
+int main(int argc, char **argv) {
+#else
+static int game_main(int argc, char **argv) {
+#endif
+#ifdef _WIN32
+    if (!narrow_paths_ok(argc, argv)) return 1;
+    load_hookshot_env();
+#endif
+    occlusion_switch();
+    {
+        const char *protect_hearts = getenv("HOS_OOT_PROTECT_HEARTS");
+        hos_oot_protect_hearts = protect_hearts && !strcmp(protect_hearts, "1");
+    }
+    hos_bench_init();   /* ((Triforce, 11-19) benchmark mode, HOS_BENCHMARK: host/hos_bench.c */
+    if (hos_bench_on()) hos_oot_protect_hearts = 1;
+#ifdef _WIN32
+    {   // (the whole process, not only the window's thread: the renderer asks the window's size from its own, and on a 4K screen at 150%
+        // Windows answered such a thread 2560 x 1440: the picture was that size, in the corner of the window. Hookshot issues 15, 18, 20)
+        typedef BOOL(WINAPI * SetAware)(void *);
+        SetAware set = (SetAware)(void *)GetProcAddress(GetModuleHandleA("user32.dll"), "SetProcessDpiAwarenessContext");
+        if (set && !getenv("HOS_DPI_UNAWARE")) set((void *)(intptr_t)-4);
+    }
+#endif
+    {   // (started from its icon the game has nowhere to log to: triforce_log.txt beside it, last run only, for players to send in)
+#ifdef _WIN32
+        {   /* (started again by the Insert menu's Restart now (host/hos_relaunch.c): the run before still has its log open until
+               it exits, so wait for it (up to 10 s) before the log moves to .1, or the move fails and its log is overwritten) */
+            const char *of = getenv("HOS_RESTART_OF");
+            const int restart = of && *of;
+            if (restart) {
+                HANDLE before = OpenProcess(SYNCHRONIZE, FALSE, (DWORD)strtoul(of, NULL, 10));
+                if (before) WaitForSingleObject(before, 10000), CloseHandle(before);
+                SetEnvironmentVariableA("HOS_RESTART_OF", NULL);   /* (not passed on: a later restart sets its own) */
+                _putenv("HOS_RESTART_OF=");
+            }
+            if (!one_game_per_folder(argc, argv, restart)) {   /* ((Triforce) before the log: host/hos_instance.h) */
+                for (int i = 1; i < argc; i++)
+                    if (!strcmp(argv[i], "--prepare-shaders")) return 3;   /* (as with no Vulkan: the game prepares at its start) */
+                return 1;
+            }
+        }
+#endif
+        HANDLE err = GetStdHandle(STD_ERROR_HANDLE);
+        if (!err || err == INVALID_HANDLE_VALUE || GetFileType(err) == FILE_TYPE_UNKNOWN) {
+            char path[MAX_PATH + 32];
+            DWORD n = hos_game_path_a(path, MAX_PATH);
+            while (n && path[n - 1] != 92 && path[n - 1] != 47) n--;
+            /* (the four runs before stay as triforce_log.1.txt (the last) to .4.txt: a player who started the game again after a
+               crash sent in the new run's log, and the crash was gone) */
+            char from[MAX_PATH + 32], to[MAX_PATH + 32];
+            for (int k = 4; k >= 1; k--) {
+                if (k == 1) memcpy(from + n, "triforce_log.txt", 17), memcpy(from, path, n);
+                else memcpy(from, path, n), snprintf(from + n, 32, "triforce_log.%d.txt", k - 1);
+                memcpy(to, path, n), snprintf(to + n, 32, "triforce_log.%d.txt", k);
+                MoveFileExA(from, to, MOVEFILE_REPLACE_EXISTING);
+            }
+            memcpy(path + n, "triforce_log.txt", 17);
+            if (freopen(path, "w", stderr)) setvbuf(stderr, NULL, _IONBF, 0);
+        }
+    }
+    hos_log("triforce %s", HOOKSHOT_VERSION);   /* (the log's first line: which build a report comes from) */
+#ifdef _WIN32
+    if (instance_held >= 0)
+        hos_log("instance: %s", instance_held ? "this game folder is this run's (a second copy started on it says so and ends)"
+                                              : "no lock on this game folder (HOS_SINGLE_INSTANCE=0, or its path was not found)");
+#endif
+#ifdef _WIN32
+    {   /* ((Triforce) every run, the shader preparation's too, as NX2navi's, and said in the log: it was the game's run alone,
+           after its image was read, and the log never said whether Windows took it) */
+        const int got = no_power_throttling();
+        hos_log("power: %s", got == 2 ? "full speed and the 1 ms timer kept when the window is not in front"
+                             : got == 1 ? "full speed kept when the window is not in front (no timer control here: Windows 10)"
+                             : got == 0 ? "Windows' throttling of a window not in front stays as it is (refused, or no such call)"
+                                        : "Windows' throttling of a window not in front left as it is (HOS_POWER_THROTTLING=1)");
+    }
+#endif
+    const char *image = NULL;
+    for (int i = 1; i < argc; i++) {
+        if (!strcmp(argv[i], "--romfs") && i + 1 < argc) hos_romfs_dir = argv[++i];
+        else if (!strcmp(argv[i], "--user") && i + 1 < argc) hos_user_dir = argv[++i];
+        else if (!strcmp(argv[i], "--trace")) hos_trace = 1;
+        else if (!strcmp(argv[i], "--prepare-shaders")) {   /* (hookshot) a build's last step: no game */
+#ifdef _WIN32
+            _putenv("HOOKSHOT_PREPARE_ONLY=1");
+#else
+            setenv("HOOKSHOT_PREPARE_ONLY", "1", 1);
+#endif
+            int rx_prepare_shaders(void);
+            if (rx_prepare_shaders()) {
+                printf("@@done shaders\n");
+                return 0;
+            }
+            printf("@@error no usable Vulkan here: the game prepares its shaders at its first start\n");
+            return 3;
+        }
+        else if (!image) image = argv[i];
+    }
+#ifdef _WIN32
+    {   /* (hookshot) the Discord status (discord_rpc.c), a game run only (a --prepare-shaders run returned above). Linux starts
+           it in its own main, below; on Windows it was never started: no status and no "discord:" line in any log */
+        void hos_discord_start(void);
+        hos_discord_start();
+    }
+#endif
+    static char beside_image[MAX_PATH], beside_romfs[MAX_PATH], beside_user[MAX_PATH];
+    if (!image) {   /* (hookshot) started with nothing, as a game is: everything beside the executable (the builder's folder) */
+        char dir[MAX_PATH];
+        const DWORD len = hos_game_path_a(dir, MAX_PATH);
+        char *slash = len ? strrchr(dir, SEP) : NULL;
+        if (slash) {
+            *slash = 0;
+            SetCurrentDirectoryA(dir);
+            snprintf(beside_image, MAX_PATH, "%s" SEP_S "image.bin", dir);
+            snprintf(beside_romfs, MAX_PATH, "%s" SEP_S "romfs", dir);
+            snprintf(beside_user, MAX_PATH, "%s" SEP_S "user", dir);
+            if (GetFileAttributesA(beside_image) != INVALID_FILE_ATTRIBUTES) {
+                hos_update_check();   /* (a game folder from the builder: is a newer release out? host/hos_update.c) */
+                image = beside_image;
+                if (!hos_romfs_dir) hos_romfs_dir = beside_romfs;
+#ifndef _WIN32
+                if (!hos_user_dir) hos_user_dir = saves_dir(beside_user);
+#else
+                if (!hos_user_dir) hos_user_dir = beside_user;
+#endif
+            }
+        }
+    }
+    if (!image) {
+        fprintf(stderr, "usage: %s [image.bin] [--romfs <dir>] [--user <dir>] [--trace] [--prepare-shaders]\n",
+                argv[0]);
+        return 2;
+    }
+    if (getenv("HOS_TRACE")) hos_trace = 1;
+    if (!hos_user_dir) hos_user_dir = "user";
+    CreateDirectoryA(hos_user_dir, NULL);
+    if (!reserve_guest()) {
+        fprintf(stderr, "cannot reserve the guest window\n");
+        return 1;
+    }
+#ifdef A64_MEM_ZERO
+    web_fs_init(NULL, hos_romfs_dir);
+    /* (the whole file, no range: the server sends it brotli-compressed, 85 -> 26 MB) */
+    const int got = web_fetch_all(image, A64_MEM + IMAGE_BASE, GUEST_SPACE - IMAGE_BASE);
+    if (got < 0) {
+        fprintf(stderr, "cannot fetch %s\n", image);
+        return 1;
+    }
+    size_t n = (size_t)got;
+#else
+    FILE *f = fopen(image, "rb");
+    if (!f) {
+        fprintf(stderr, "cannot open %s\n", image);
+        return 1;
+    }
+    /* exactly the file's size: a read into "the rest of the guest window" (~4 GB) made Windows commit physical memory
+       for ~2 GB of it before the game ran (the whole heap was resident from the start, ~1.3 GB of it never used) */
+    fseek(f, 0, SEEK_END);
+    const long long file_size = _ftelli64(f);
+    fseek(f, 0, SEEK_SET);
+    if (file_size > 0) hos_commit(IMAGE_BASE, (uint64_t)file_size);
+    /* (Triforce: the kernel writes guest memory here, before any renderer runs: the lazy write-back's rule all the same) */
+    const int io = file_size > 0 ? hos_guest_io_begin(A64_MEM + IMAGE_BASE, (uint64_t)file_size) : 0;
+    size_t n = file_size > 0 && (uint64_t)file_size <= GUEST_SPACE - IMAGE_BASE
+                   ? fread(A64_MEM + IMAGE_BASE, 1, (size_t)file_size, f) : 0;
+    hos_guest_io_end(io);
+    fclose(f);
+#endif
+    if (IMAGE_BASE + n != hos_image_end) {
+        fprintf(stderr, "%s: %zu bytes, the lifted code expects %#llx: lift and image do not match\n", image, n,
+                (unsigned long long)(hos_image_end - IMAGE_BASE));
+        return 1;
+    }
+    hos_mem_init(hos_image_end);
+    {   /* (hookshot) Widescreen and ultrawide (nx2/oot_wide.py): HOS_ASPECT=<ratio> (2.3889 for 3440x1440), else the Insert menu's
+           Ultrawide (off unless set: a fixed 16:10, 21:9 or 32:9, ultrawide_ratio). The game's picture takes that shape at its own height (the
+           world wider at the sides on an ultrawide screen, narrower on a 16:10 or 4:3 one), its 16:9 cameras the picture's ratio. Wider
+           than 16:9 the HUD, menus and movies keep the middle 16:9; narrower they fill the picture's width. Until now the one 16:9
+           constant in the game's data was changed and the 16:9 picture stretched to the window. */
+        const char *e = getenv("HOS_ASPECT");
+        float want = e ? (float)atof(e) : 0.0f;
+        if (!e) {
+            int row = 0, version = 0;
+            char path[MAX_PATH];
+            const DWORD len = hos_game_path_a(path, MAX_PATH);
+            char *slash = len ? strrchr(path, SEP) : NULL;
+            if (slash) {
+                snprintf(slash + 1, (size_t)(path + MAX_PATH - slash - 1), "triforce_options.ini");
+                FILE *o = fopen(path, "r");
+                if (o) {
+                    char line[80];
+                    while (fgets(line, sizeof line, o)) {
+                        if (!strncmp(line, "ultrawide=", 10)) row = atoi(line + 10);
+                        if (!strncmp(line, "options_version=", 16)) version = atoi(line + 16);   /* ((Triforce) 1's old meaning before 6) */
+                        /* (the game sizes its scene before the menu is up: Resolution 100% read here too) */
+                        /* (resolution=1 no longer raises the scene: #849 makes a fixed Resolution reach the 3D; HOS_SCENE_NATIVE=1 below) */
+                    }
+                    fclose(o);
+                }
+            }
+            want = ultrawide_ratio(row, version, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
+        }
+        if (getenv("HOS_SCENE_NATIVE")) hos_native_scene = atoi(getenv("HOS_SCENE_NATIVE")) != 0;
+        if (getenv("HOS_FIX_RES")) hos_fix_res = atoi(getenv("HOS_FIX_RES")) != 0;
+        if (hos_native_scene) hos_log("boot: HOS_SCENE_NATIVE=1: the scene's base scale 1.0 (the game's 0.8 otherwise)");
+        extern volatile uint64_t hos_wide_out, hos_wide_scene;
+        extern volatile float hos_wide_ratio, hos_wide_squeeze, hos_wide_margin;
+        const double game = 16.0 / 9.0;
+        /* (a screen narrower than 16:9 too, 16:10 to 5:4: the picture keeps the game's height and is narrower, the
+           cameras take its ratio, and the HUD fills its width instead of a middle 16:9 wider than the screen. A 4:3 CRT
+           at the 1440 output: picture 1920 x 1440, scene 1440 x 1080, HUD 100%) */
+        if (want > game * 1.01 || (want > 1.0f && want < game * 0.99)) {
+            double r = want > 32.0 / 9.0 ? 32.0 / 9.0 : want < 5.0 / 4.0 ? 5.0 / 4.0 : want;
+            uint32_t hos_output_size(int height);   /* (host/nn_applet.c: the Output resolution's height, 1440 as shipped) */
+            unsigned oh = hos_output_size(1), ow = (unsigned)(oh * r / 8 + 0.5) * 8;   /* (whole multiples of 8 pixels) */
+            /* (at most 3840 x 2160's pixels, the shape kept: the game's render targets come from a pool sized for its picture
+               (host/nn_applet.c hos_rt_pool_size), and a 32:9 screen at the 4K output made a 7680 x 2160 one. Its pool at the
+               output's size ran out as Kokiri Forest loaded (a null pointer, issue 1031); a pool for the whole picture, 1.4 GB,
+               failed the game's own reservation at boot. 5400 x 1520 there, more than the 5120 x 1440 screens it was seen on) */
+            if ((double)ow * oh > 3840.0 * 2160.0) {
+                oh = (unsigned)(sqrt(3840.0 * 2160.0 / r) / 8) * 8;
+                ow = (unsigned)(oh * r / 8) * 8;
+            }
+            const unsigned sh = oh * 3 / 4, sw = (unsigned)(ow * 0.75 / 8 + 0.5) * 8;   /* (the scene, 3/4 of the picture as shipped) */
+            hos_wide_out = (uint64_t)oh << 32 | ow;
+            hos_wide_scene = (uint64_t)sh << 32 | sw;
+            hos_wide_ratio = (float)ow / (float)oh;
+            hos_wide_squeeze = (float)fmin(1.0, game / ((double)ow / oh));   /* (a narrower screen: the whole width) */
+            hos_wide_margin = (1.0f - hos_wide_squeeze) / 2.0f;
+            hos_aspect_ratio = hos_wide_ratio;
+            hos_log("boot: widescreen: picture %ux%u, scene %ux%u, camera ratio %.4f, HUD and movies in the middle %.1f%%", ow, oh, sw, sh,
+                    (double)hos_wide_ratio, hos_wide_squeeze * 100.0);
+        } else if (want > 1.0f) {
+            hos_log("boot: widescreen: a %.4f screen is 16:9: the game's own picture", (double)want);
+        }
+    }
+    hos_log("boot: image %zu MB at %#llx, %llu MB of memory for the game", n >> 20, IMAGE_BASE,
+            (unsigned long long)(hos_total_memory >> 20));
+#ifndef A64_MEM_ZERO
+    memory_notice();
+#endif
+    void hos_mods_init(const char *image_path);
+    hos_mods_init(image);   /* mods.c: <exe folder>\mods (RomFS files) */
+
+    Ctx *c = hos_boot_main_thread(hos_main_stack_size);
+    uint64_t sp = c->x[31];
+    void hos_prof_start(void);
+    hos_prof_start();   /* HOS_PROFILE=<seconds> */
+#ifdef _WIN32
+    timeBeginPeriod(1);   /* 1 ms timer resolution: the 60 Hz vsync and the game's frame pacing sleep in short steps */
+#endif
+    void hos_display_start(void);
+    hos_display_start();  /* the game's window; HOS_HEADLESS=1 for none */
+    /* nn::init::Start's order (sdk+0xfa060), with rtld's three callbacks done here: f1 only marks rtld initialized,
+       f2 is every module's DT_INIT, f3 the DT_FINIs (not needed: we never return from nnMain to unload). */
+    call_guest(c, hos_entry_init_libc0, sp, "_init_libc0");
+    c->x[0] = hos_thread_handle(hos_self());   /* the main thread's handle */
+    c->x[1] = 0;                               /* program arguments: none (an unmapped address) */
+    call_guest_args(c, hos_entry_nnosInitialize, sp, "nnosInitialize");
+    void hos_thread_adopt_guest(HosThread *t);
+    hos_thread_adopt_guest(hos_self());
+    call_guest(c, hos_entry_init_libc1, sp, "_init_libc1");
+    /* nninitInitializeSdkModule (sdk+0xfa000) only opens the SDK's service clients (sm:, diag, oe, aoc, err, fs,
+       pctl) over IPC; the HLE stands in for every one of them, so it is not run. */
+    call_guest(c, hos_entry_nninitStartup, sp, "nninitStartup");
+    call_guest(c, hos_entry_init_libc2, sp, "_init_libc2");
+    for (int i = 0; i < hos_module_count; i++) {
+        char what[64];
+        snprintf(what, sizeof what, "%s DT_INIT", hos_module_name[i]);
+        call_guest(c, hos_module_init[i], sp, what);
+    }
+    call_guest(c, hos_entry_nnMain, sp, "nnMain");
+    hos_log("nnMain returned");
+    return 0;
+}
+
+#ifndef _WIN32
+/* (linux) The window belongs on the process's main thread (SDL), so the game runs on a thread of its own, with the
+   stack the guest main thread's lifted code needs (the main thread has the system's 8 MB): host/posix/display_sdl.c */
+static int game_argc;
+static char **game_argv;
+static DWORD WINAPI game_thread(void *p) {
+    (void)p;
+    void hos_stack_guarantee(void);   /* (hos_thread.c: room for a stack overflow's crash report) */
+    hos_stack_guarantee();
+    ExitProcess((UINT)game_main(game_argc, game_argv));
+}
+int main(int argc, char **argv) {
+    int hos_display_init(void);
+    void hos_display_loop(void);
+    load_hookshot_env();
+    game_argc = argc, game_argv = argv;
+    int prepare_shaders = 0;
+    for (int i = 1; i < argc; i++) {
+        if (!strcmp(argv[i], "--prepare-shaders")) prepare_shaders = 1;
+        else if (!strcmp(argv[i], "--romfs") || !strcmp(argv[i], "--user")) i++;
+    }
+    /* The builder's preparation worker needs Vulkan, but no SDL display. */
+    const int window = prepare_shaders ? 0 : hos_display_init();
+    if (window < 0) {
+        hos_log_flush();
+        return 1;
+    }
+    if (!prepare_shaders) {   /* (hookshot) the Discord status (discord_rpc.c): only a game run */
+        void hos_discord_start(void);
+        hos_discord_start();
+    }
+    HANDLE t = CreateThread(NULL, 64u << 20, game_thread, NULL, 0, NULL);
+    if (!t) {
+        fprintf(stderr, "cannot start the game's thread\n");
+        return 1;
+    }
+    SetThreadDescription(t, L"Game");
+    if (window) hos_display_loop();   /* (does not return: the window's events until the process ends) */
+    WaitForSingleObject(t, INFINITE);
+    return 0;
+}
+#endif

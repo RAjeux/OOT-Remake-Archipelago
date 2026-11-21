@@ -1,0 +1,22 @@
+{
+"format": 1,
+"why": "every ordinary cow is an Animal_Cow and shares one flow, one event row and one actor pack, so each one becomes its own actor class, a sibling of Animal_Cow_LinkHouse with its own flow, event rows, schedule and pack, and its scene placements switch to that class",
+"clones": [
+{"location": "DMT Cow Grotto Cow", "class": "Animal_Cow_DMT", "pilot": true, "spots": [
+ {"file": "Banc/DeathMountainTrail/DeathMountainTrail_Child_Dynamic.bcett.byml.zs", "hash": "6253945510651149508"},
+ {"file": "Banc/DeathMountainTrail/DeathMountainTrail_Adult_Dynamic.bcett.byml.zs", "hash": "15885469363360155465"}]},
+{"location": "Kak Impas House Cow", "class": "Animal_Cow_Kakariko", "pilot": false, "spots": [
+ {"file": "Banc/KakarikoVillage/KakarikoVillage_Child_Dynamic.bcett.byml.zs", "hash": "3581309213670406493"},
+ {"file": "Banc/KakarikoVillage/KakarikoVillage_Adult_Dynamic.bcett.byml.zs", "hash": "13825940715109866119"},
+ {"file": "Banc/KakarikoVillage/KakarikoVillage_Adult_Alternative_Dynamic.bcett.byml.zs", "hash": "17113125743534325889"}]},
+{"location": "HF Cow Grotto Cow", "class": "Animal_Cow_HFGrotto", "pilot": false, "spots": [
+ {"file": "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs", "hash": "4825657261695689152"},
+ {"file": "Banc/HyruleField/HyruleField_Adult_Dynamic.bcett.byml.zs", "hash": "1795271317212409607"}]},
+{"location": "LLR Stables Left Cow", "class": "Animal_Cow_LLR_Left", "pilot": false, "spots": [
+ {"file": "Banc/HyruleField/HyruleField_Child_Static.bcett.byml.zs", "hash": "5665703420335364217"},
+ {"file": "Banc/HyruleField/HyruleField_Adult_Dynamic.bcett.byml.zs", "hash": "6142142215325798939"}]},
+{"location": "LLR Stables Right Cow", "class": "Animal_Cow_LLR_Right", "pilot": false, "spots": [
+ {"file": "Banc/HyruleField/HyruleField_Child_Static.bcett.byml.zs", "hash": "2139721051512122393"},
+ {"file": "Banc/HyruleField/HyruleField_Adult_Dynamic.bcett.byml.zs", "hash": "14685178647961621150"}]}
+]
+}

@@ -1,0 +1,940 @@
+{
+  "format": 1,
+  "game": "oot-remake:9a5f9d871efbb521",
+  "files": [
+    "Banc/BottomOfTheWell/BottomOfTheWell_Static.bcett.byml.zs",
+    "Banc/DeathMountainCrater/DeathMountainCrater_Adult_Dynamic.bcett.byml.zs",
+    "Banc/DeathMountainCrater/DeathMountainCrater_Child_Dynamic.bcett.byml.zs",
+    "Banc/DeathMountainTrail/DeathMountainTrail_Adult_Dynamic.bcett.byml.zs",
+    "Banc/DeathMountainTrail/DeathMountainTrail_Adult_Static.bcett.byml.zs",
+    "Banc/DeathMountainTrail/DeathMountainTrail_Child_Dynamic.bcett.byml.zs",
+    "Banc/DeathMountainTrail/DeathMountainTrail_Child_Static.bcett.byml.zs",
+    "Banc/DesertColossus/DesertColossus_Adult_Dynamic.bcett.byml.zs",
+    "Banc/DesertColossus/DesertColossus_Child_Dynamic.bcett.byml.zs",
+    "Banc/GerudoValley/GerudoValley_Adult_Dynamic.bcett.byml.zs",
+    "Banc/GerudoValley/GerudoValley_Child_Dynamic.bcett.byml.zs",
+    "Banc/HyruleField/HyruleField_Adult_Dynamic.bcett.byml.zs",
+    "Banc/HyruleField/HyruleField_Adult_Static.bcett.byml.zs",
+    "Banc/HyruleField/HyruleField_Child_Dynamic.bcett.byml.zs",
+    "Banc/HyruleField/HyruleField_Child_Static.bcett.byml.zs",
+    "Banc/InsideTheDekuTree/InsideTheDekuTree_Static.bcett.byml.zs",
+    "Banc/KakarikoVillage/KakarikoVillage_Adult_Static.bcett.byml.zs",
+    "Banc/KakarikoVillage/KakarikoVillage_Child_Static.bcett.byml.zs",
+    "Banc/KokiriForest/KokiriForest_Adult_Dynamic.bcett.byml.zs",
+    "Banc/KokiriForest/KokiriForest_Adult_Static.bcett.byml.zs",
+    "Banc/KokiriForest/KokiriForest_Child_Dynamic.bcett.byml.zs",
+    "Banc/KokiriForest/KokiriForest_Child_Static.bcett.byml.zs",
+    "Banc/SacredForestMeadow/SacredForestMeadow_Adult_Static.bcett.byml.zs",
+    "Banc/SacredForestMeadow/SacredForestMeadow_Child_Static.bcett.byml.zs",
+    "Banc/ZoraRiver/ZoraRiver_Adult_Dynamic.bcett.byml.zs",
+    "Banc/ZoraRiver/ZoraRiver_Adult_Static.bcett.byml.zs",
+    "Banc/ZoraRiver/ZoraRiver_Child_Dynamic.bcett.byml.zs",
+    "Banc/ZoraRiver/ZoraRiver_Child_Static.bcett.byml.zs"
+  ],
+  "locations": [
+    {
+      "name": "Bottom of the Well Grass 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Grass 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Grass 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Grass 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Grass 5",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Grass 6",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Grass 7",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Grass 8",
+      "state": "eligible"
+    },
+    {
+      "name": "Bottom of the Well Grass 9",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Adult Rock 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Adult Rock 10",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Adult Rock 11",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Adult Rock 12",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Adult Rock 13",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Adult Rock 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Adult Rock 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Adult Rock 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Adult Rock 5",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Adult Rock 6",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Adult Rock 7",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Adult Rock 8",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Adult Rock 9",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Child Rock 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Child Rock 10",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Child Rock 11",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Child Rock 12",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Child Rock 13",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Child Rock 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Child Rock 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Child Rock 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Child Rock 5",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Child Rock 6",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Child Rock 7",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Child Rock 8",
+      "state": "eligible"
+    },
+    {
+      "name": "Colossus Child Rock 9",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Adult Rock 1",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Adult Rock 10",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Adult Rock 11",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Adult Rock 12",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Adult Rock 13",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Adult Rock 14",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Adult Rock 15",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Adult Rock 16",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Adult Rock 17",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Adult Rock 2",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Adult Rock 3",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Adult Rock 4",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Adult Rock 5",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Adult Rock 6",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Adult Rock 7",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Adult Rock 8",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Adult Rock 9",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Child Rock 1",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Child Rock 10",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Child Rock 12",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Child Rock 15",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Child Rock 16",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Child Rock 17",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Child Rock 2",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Child Rock 3",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Child Rock 4",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Child Rock 5",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Child Rock 6",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Child Rock 7",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Child Rock 8",
+      "state": "eligible"
+    },
+    {
+      "name": "DMC Child Rock 9",
+      "state": "eligible"
+    },
+    {
+      "name": "DMT Adult Grass 1",
+      "state": "eligible"
+    },
+    {
+      "name": "DMT Adult Rock 1",
+      "state": "eligible"
+    },
+    {
+      "name": "DMT Adult Rock 2",
+      "state": "eligible"
+    },
+    {
+      "name": "DMT Adult Rock 3",
+      "state": "eligible"
+    },
+    {
+      "name": "DMT Adult Rock 6",
+      "state": "eligible"
+    },
+    {
+      "name": "DMT Adult Rock 7",
+      "state": "eligible"
+    },
+    {
+      "name": "DMT Child Grass 1",
+      "state": "eligible"
+    },
+    {
+      "name": "DMT Child Rock 1",
+      "state": "eligible"
+    },
+    {
+      "name": "DMT Child Rock 3",
+      "state": "eligible"
+    },
+    {
+      "name": "DMT Child Rock 4",
+      "state": "eligible"
+    },
+    {
+      "name": "DMT Child Rock 5",
+      "state": "eligible"
+    },
+    {
+      "name": "DMT Child Rock 6",
+      "state": "eligible"
+    },
+    {
+      "name": "DMT Child Rock 7",
+      "state": "eligible"
+    },
+    {
+      "name": "Deku Tree Grass 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Deku Tree Grass 10",
+      "state": "eligible"
+    },
+    {
+      "name": "Deku Tree Grass 11",
+      "state": "eligible"
+    },
+    {
+      "name": "Deku Tree Grass 12",
+      "state": "eligible"
+    },
+    {
+      "name": "Deku Tree Grass 13",
+      "state": "eligible"
+    },
+    {
+      "name": "Deku Tree Grass 14",
+      "state": "eligible"
+    },
+    {
+      "name": "Deku Tree Grass 15",
+      "state": "eligible"
+    },
+    {
+      "name": "Deku Tree Grass 16",
+      "state": "eligible"
+    },
+    {
+      "name": "Deku Tree Grass 17",
+      "state": "eligible"
+    },
+    {
+      "name": "Deku Tree Grass 18",
+      "state": "eligible"
+    },
+    {
+      "name": "Deku Tree Grass 2",
+      "state": "eligible"
+    },
+    {
+      "name": "Deku Tree Grass 3",
+      "state": "eligible"
+    },
+    {
+      "name": "Deku Tree Grass 4",
+      "state": "eligible"
+    },
+    {
+      "name": "Deku Tree Grass 5",
+      "state": "eligible"
+    },
+    {
+      "name": "Deku Tree Grass 6",
+      "state": "eligible"
+    },
+    {
+      "name": "Deku Tree Grass 7",
+      "state": "eligible"
+    },
+    {
+      "name": "Deku Tree Grass 8",
+      "state": "special"
+    },
+    {
+      "name": "Deku Tree Grass 9",
+      "state": "eligible"
+    },
+    {
+      "name": "GV Adult Rock 1",
+      "state": "eligible"
+    },
+    {
+      "name": "GV Adult Rock 2",
+      "state": "eligible"
+    },
+    {
+      "name": "GV Adult Rock 3",
+      "state": "eligible"
+    },
+    {
+      "name": "GV Adult Rock 4",
+      "state": "eligible"
+    },
+    {
+      "name": "GV Adult Rock 5",
+      "state": "eligible"
+    },
+    {
+      "name": "GV Adult Rock 6",
+      "state": "eligible"
+    },
+    {
+      "name": "GV Adult Rock 7",
+      "state": "eligible"
+    },
+    {
+      "name": "GV Child Rock 5",
+      "state": "eligible"
+    },
+    {
+      "name": "GV Child Rock 6",
+      "state": "eligible"
+    },
+    {
+      "name": "GV Child Rock 7",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Grass 1",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Grass 10",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Grass 11",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Grass 12",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Grass 13",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Grass 14",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Grass 15",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Grass 16",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Grass 17",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Grass 18",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Grass 2",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Grass 3",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Grass 4",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Grass 5",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Grass 6",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Grass 7",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Grass 8",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Grass 9",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Rock 1",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Rock 2",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Rock 3",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Rock 4",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Rock 5",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Adult Rock 6",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Grass 13",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Grass 14",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Grass 16",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Grass 17",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Grass 18",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Grass 19",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Grass 2",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Grass 20",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Grass 3",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Grass 4",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Grass 9",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Rock 1",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Rock 2",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Rock 3",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Rock 4",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Rock 5",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Rock 6",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Rock 7",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Rock 8",
+      "state": "eligible"
+    },
+    {
+      "name": "HF Child Rock 9",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Adult Grass 1",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Adult Grass 2",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Adult Grass 3",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Adult Grass 4",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Adult Grass 5",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Adult Grass 6",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Adult Grass 7",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Adult Grass 8",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Adult Rock 1",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Adult Rock 13",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Adult Rock 16",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Adult Rock 18",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Adult Rock 19",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Adult Rock 2",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Adult Rock 3",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Adult Rock 4",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Adult Rock 6",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Adult Rock 9",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Grass 1",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Grass 2",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Grass 3",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Grass 4",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Grass 5",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Grass 6",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Grass 7",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Grass 8",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Rock 1",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Rock 10",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Rock 11",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Rock 12",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Rock 14",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Rock 15",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Rock 17",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Rock 18",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Rock 19",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Rock 2",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Rock 3",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Rock 4",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Rock 5",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Rock 7",
+      "state": "eligible"
+    },
+    {
+      "name": "KF Child Rock 8",
+      "state": "eligible"
+    },
+    {
+      "name": "Kak Adult Grass 1",
+      "state": "eligible"
+    },
+    {
+      "name": "Kak Child Grass 1",
+      "state": "eligible"
+    },
+    {
+      "name": "SFM Adult Grass 1",
+      "state": "eligible"
+    },
+    {
+      "name": "SFM Adult Grass 2",
+      "state": "eligible"
+    },
+    {
+      "name": "SFM Adult Grass 3",
+      "state": "eligible"
+    },
+    {
+      "name": "SFM Adult Grass 4",
+      "state": "eligible"
+    },
+    {
+      "name": "SFM Adult Grass 5",
+      "state": "eligible"
+    },
+    {
+      "name": "SFM Adult Grass 6",
+      "state": "eligible"
+    },
+    {
+      "name": "SFM Adult Grass 7",
+      "state": "eligible"
+    },
+    {
+      "name": "SFM Child Grass 1",
+      "state": "eligible"
+    },
+    {
+      "name": "SFM Child Grass 2",
+      "state": "eligible"
+    },
+    {
+      "name": "SFM Child Grass 3",
+      "state": "eligible"
+    },
+    {
+      "name": "SFM Child Grass 4",
+      "state": "eligible"
+    },
+    {
+      "name": "SFM Child Grass 5",
+      "state": "eligible"
+    },
+    {
+      "name": "SFM Child Grass 6",
+      "state": "eligible"
+    },
+    {
+      "name": "SFM Child Grass 7",
+      "state": "eligible"
+    },
+    {
+      "name": "ZR Adult Grass 1",
+      "state": "eligible"
+    },
+    {
+      "name": "ZR Adult Rock 1",
+      "state": "eligible"
+    },
+    {
+      "name": "ZR Adult Rock 2",
+      "state": "eligible"
+    },
+    {
+      "name": "ZR Adult Rock 3",
+      "state": "eligible"
+    },
+    {
+      "name": "ZR Adult Rock 4",
+      "state": "eligible"
+    },
+    {
+      "name": "ZR Adult Rock 5",
+      "state": "eligible"
+    },
+    {
+      "name": "ZR Adult Rock 6",
+      "state": "eligible"
+    },
+    {
+      "name": "ZR Adult Rock 7",
+      "state": "eligible"
+    },
+    {
+      "name": "ZR Adult Rock 8",
+      "state": "eligible"
+    },
+    {
+      "name": "ZR Child Grass 1",
+      "state": "eligible"
+    },
+    {
+      "name": "ZR Child Rock 1",
+      "state": "eligible"
+    },
+    {
+      "name": "ZR Child Rock 2",
+      "state": "eligible"
+    },
+    {
+      "name": "ZR Child Rock 3",
+      "state": "eligible"
+    },
+    {
+      "name": "ZR Child Rock 4",
+      "state": "eligible"
+    },
+    {
+      "name": "ZR Child Rock 5",
+      "state": "eligible"
+    },
+    {
+      "name": "ZR Child Rock 6",
+      "state": "eligible"
+    },
+    {
+      "name": "ZR Child Rock 7",
+      "state": "eligible"
+    },
+    {
+      "name": "ZR Child Rock 8",
+      "state": "eligible"
+    }
+  ]
+}

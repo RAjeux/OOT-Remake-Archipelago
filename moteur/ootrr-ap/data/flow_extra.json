@@ -1,0 +1,400 @@
+{
+"format": 1,
+"note": "Structural event flow edits for the gated flow locations of data/flow_locations.json. They run only when the location receives an item other than its vanilla one, after the ordinary parameter edits of that location. $item stands for the chosen item actor. The specs of the always list run in every seed build whatever is placed, they hold the magic gauge edits that follow from only the Magic Meter items giving a meter and the edits that open the fountains and the summit owl without Din's Fire. The locations join the pool only with shuffle_rewards=supported and shuffle_rewards_extra on. Design and evidence in docs/flow_checks.md sections 3, 4 and 8, build notes in docs/flow_checks_built_2.md.",
+"locations": [
+{
+"name": "Kak 20 Gold Skulltula Reward",
+"why": "skip the Stone of Agony help page, the FALSE case of the guide check jumps to the flag write that the TRUE path already implies",
+"ops": [
+{"kind": "retarget", "file": "GatheringTokenGold.bfevfl", "index": 233, "event": "Event377", "case": 1, "old": 237, "new": 234},
+{"kind": "retarget", "file": "GatheringTokenGold.bfevfl", "index": 230, "event": "Event374", "case": 1, "old": 241, "new": 231}
+]
+},
+{
+"name": "GC Rolling Goron as Child",
+"why": "the refusal without a bomb bag (talk event 12) is replaced by the grant talks 75 and 76, so the check only needs the Goron stopped",
+"ops": [
+{"kind": "retarget", "file": "Npc_Goron_006_Child.bfevfl", "index": 3, "event": "Event13", "case": 1, "old": 12, "new": 75},
+{"kind": "retarget", "file": "Npc_Goron_006_Child.bfevfl", "index": 10, "event": "Event12", "case": 1, "old": 12, "new": 76},
+{"kind": "retarget", "file": "Npc_Goron_006_Child.bfevfl", "index": 11, "event": "Event21", "case": 1, "old": 12, "new": 75}
+]
+},
+{
+"name": "DMT Biggoron",
+"why": "nothing is taken from the player (both knife cases go to the neither branch 35) and the sword only hand over with its equip loop is swapped for the entry event 266 uses for the Prescription",
+"ops": [
+{"kind": "retarget", "file": "Npc_Goron_Biggoron_Adult.bfevfl", "index": 57, "event": "Event53", "case": 0, "old": 67, "new": 35},
+{"kind": "retarget", "file": "Npc_Goron_Biggoron_Adult.bfevfl", "index": 58, "event": "Event54", "case": 0, "old": 66, "new": 35},
+{"kind": "swap_sub", "file": "Npc_Goron_Biggoron_Adult.bfevfl", "index": 95, "event": "Event123",
+ "from": "Dm_SY_GetInEvent:GetInEventItemSwordBiggoron", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurnForPosCamera_BigGoron",
+ "params": [["Target", 3], ["ActorName", "$item"], ["ASName", "Handover"], ["Npc_EventStarter", "actor:Npc_Goron_Biggoron_Adult"], ["NpcActorName", "Npc_Goron_Biggoron_Adult"], ["NpcInstanceName", ""]]}
+]
+},
+{
+"name": "GC Medigoron",
+"why": "one sale only: the offer no longer closes on the Biggoron Sword (event 17), the stock check asks the dead talk flag instead of the knife (event 2), the shop sets that flag after the hand over and keeps a broken knife, the shop item and its display model follow the chosen item",
+"ops": [
+{"kind": "retarget", "file": "Npc_Goron_Medigoron_Adult.bfevfl", "index": 17, "event": "Event19", "case": 0, "old": 23, "new": 14},
+{"kind": "query", "file": "Npc_Goron_Medigoron_Adult.bfevfl", "index": 2, "event": "Event6",
+ "from": "PouchSystemActor.EventQueryIsExistInPouch", "to": "GameDataActor.EventQueryIsGameDataBool",
+ "params": [["GameDataName", "HaveTalked_Special.Npc_Goron_Medigoron_Adult_Talk_Event26"], ["Index", -1]]},
+{"kind": "set", "file": "Npc_Goron_Medigoron_Adult.bfevfl", "index": 6, "event": "Event11", "param": "ActorName", "old": "Shop_Sword_Giant", "new": "$item"},
+{"kind": "rename_actor", "file": "Npc_Goron_Medigoron_Adult.bfevfl", "old": "Item_Sword_Giant", "new": "$item"},
+{"kind": "insert_set", "file": "SimpleShop.bfevfl", "index": 112, "event": "Event119", "flag": "HaveTalked_Special.Npc_Goron_Medigoron_Adult_Talk_Event26"},
+{"kind": "retarget", "file": "SimpleShop.bfevfl", "index": 36, "event": "Event25", "case": 0, "old": 37, "new": 19}
+]
+},
+{
+"name": "Kak Anju as Adult",
+"why": "trade quest hand in: the first time grant of Item_PocketEgg is cloned so the shuffled item follows it once, the vanilla grant, removal and step request stay, the spoil retry grants stay vanilla",
+"ops": [
+{"kind": "clone_sub", "file": "Npc_Hylia_049_Adult.bfevfl", "index": 223, "event": "Event264", "param": "ReveiveItem", "old": "Item_PocketEgg", "new": "$item"}
+]
+},
+{
+"name": "Kak Anju Trade Pocket Cucco",
+"why": "trade quest hand in: the first time grant of Item_CojiroCucco is cloned so the shuffled item follows it once, the vanilla grant, removal and step request stay, the spoil retry grants stay vanilla",
+"ops": [
+{"kind": "clone_sub", "file": "Npc_Hylia_049_Adult.bfevfl", "index": 194, "event": "Event234", "param": "ReveiveItem", "old": "Item_CojiroCucco", "new": "$item"}
+]
+},
+{
+"name": "LW Trade Cojiro",
+"why": "trade quest hand in: the first time grant of Item_OddMushroom is cloned so the shuffled item follows it once, the vanilla grant, removal and step request stay, the spoil retry grants stay vanilla",
+"ops": [
+{"kind": "clone_sub", "file": "Npc_Hylia_017_Adult.bfevfl", "index": 72, "event": "Event100", "param": "ReveiveItem", "old": "Item_OddMushroom", "new": "$item"}
+]
+},
+{
+"name": "Kak Granny Trade Odd Mushroom",
+"why": "trade quest hand in: the first time grant of Item_OddPowder is cloned so the shuffled item follows it once, the vanilla grant, removal and step request stay, the spoil retry grants stay vanilla",
+"ops": [
+{"kind": "clone_sub", "file": "Npc_Hylia_053_Adult.bfevfl", "index": 127, "event": "Event167", "param": "ReveiveItem", "old": "Item_OddPowder", "new": "$item"}
+]
+},
+{
+"name": "LW Trade Odd Potion",
+"why": "trade quest hand in: the first time grant of Item_PoacherSaw is cloned so the shuffled item follows it once, the vanilla grant, removal and step request stay, the spoil retry grants stay vanilla",
+"ops": [
+{"kind": "clone_sub", "file": "Npc_Kokiri_Fado_Adult.bfevfl", "index": 122, "event": "Event123", "param": "ActorName", "old": "Item_PoacherSaw", "new": "$item"}
+]
+},
+{
+"name": "GV Trade Poachers Saw",
+"why": "trade quest hand in: the first time grant of Item_BrokenSword is cloned so the shuffled item follows it once, the vanilla grant, removal and step request stay, the spoil retry grants stay vanilla",
+"ops": [
+{"kind": "clone_sub", "file": "Npc_Hylia_012_Adult.bfevfl", "index": 113, "event": "Event58", "param": "ReveiveItem", "old": "Item_BrokenSword", "new": "$item"}
+]
+},
+{
+"name": "DMT Trade Broken Sword",
+"why": "trade quest hand in: the first time grant of Item_Prescription is cloned so the shuffled item follows it once, the vanilla grant, removal and step request stay, the spoil retry grants stay vanilla",
+"ops": [
+{"kind": "clone_sub", "file": "Npc_Goron_Biggoron_Adult.bfevfl", "index": 266, "event": "Event232", "param": "ActorName", "old": "Item_Prescription", "new": "$item"}
+]
+},
+{
+"name": "ZD Trade Prescription",
+"why": "trade quest hand in: the first time grant of Item_EyeballFrog is cloned so the shuffled item follows it once, the vanilla grant, removal and step request stay, the spoil retry grants stay vanilla",
+"ops": [
+{"kind": "clone_sub", "file": "Npc_Zora_KingZora_adult.bfevfl", "index": 174, "event": "Event131", "param": "ActorName", "old": "Item_EyeballFrog", "new": "$item"}
+]
+},
+{
+"name": "LH Trade Eyeball Frog",
+"why": "trade quest hand in: the first time grant of Item_EyeDrop is cloned so the shuffled item follows it once, the vanilla grant, removal and step request stay, the spoil retry grants stay vanilla",
+"ops": [
+{"kind": "clone_sub", "file": "Npc_Hylia_045_Adult.bfevfl", "index": 182, "event": "Event26", "param": "ReveiveItem", "old": "Item_EyeDrop", "new": "$item"}
+]
+},
+{
+"name": "DMT Trade Eyedrops",
+"why": "trade quest hand in: the first time grant of Item_ClaimCheck is cloned so the shuffled item follows it once, the vanilla grant, removal and step request stay, the spoil retry grants stay vanilla",
+"ops": [
+{"kind": "clone_sub", "file": "Dm_DeathMtTrail_0050.bfevfl", "index": 5, "event": "Event21", "param": "ActorName", "old": "Item_ClaimCheck", "new": "$item"}
+]
+},
+{
+"name": "KF Links House Cow",
+"why": "cow milk is repeatable and the grant pushes into an empty bottle, so the entry that starts the milk scene (PushToBottleMilk_LinkHouse, only this cow uses it) first asks a spare persistent flag, and while it is clear sets it and hands out the shuffled item with a plain get scene, then runs the vanilla milk path unchanged",
+"ops": [
+{"kind": "once_grant", "file": "Animal_Cow.bfevfl", "index": 136, "event": "Event2", "entry": "PushToBottleMilk_LinkHouse", "flag": "HavePlayedEvent.Dm_StaffCredit_0027", "child": false,
+ "sub": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "$item"], ["IsNpcEventStarter", false]]}
+]
+},
+{
+"name": "GV Cow",
+"why": "same once flag gate in front of the shared Gerudo milk entry (PushToBottleMilk_LinkHouse0) with a child check first, the Gerudo Valley cow stands only in the child valley and the Gerudo Fortress cow only in the adult fortress, so adults keep the vanilla path",
+"ops": [
+{"kind": "once_grant", "file": "Animal_Cow.bfevfl", "index": 106, "event": "Event113", "entry": "PushToBottleMilk_LinkHouse0", "flag": "HavePlayedEvent.Dm_StaffCredit_0028", "child": true,
+ "sub": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "$item"], ["IsNpcEventStarter", false]]}
+]
+},
+{
+"name": "ZR Frogs Zeldas Lullaby",
+"why": "the caller of TeachNewMusic for Zelda's Lullaby also passes the chosen item, the five rupee payouts of TeachNewMusic (picked by MiniGame_FrogTenors_GetCount) hand out that argument with the plain get scene instead of the rupee sub, which also drops its own pose and wait, the rupee display open (from events 79 and 203) and close are skipped, the count still rises at event 243 and the song flag is still set at event 74. The shared edits are listed for every song and run once",
+"ops": [
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 80, "event": "Event172", "from": ":TeachNewMusic", "to": ":TeachNewMusic", "params": [["GameDataName", "MiniGame_FrogTenors_ZeldaLullaby"], ["ActorName", "$item"]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 79, "event": "Event171", "old": 235, "new": 233},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 203, "event": "Event346", "old": 235, "new": 233},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 236, "event": "Event381", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 236, "event": "Event381", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 239, "event": "Event388", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 239, "event": "Event388", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 240, "event": "Event389", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 240, "event": "Event389", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 241, "event": "Event390", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 241, "event": "Event390", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 242, "event": "Event391", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 242, "event": "Event391", "old": 234, "new": 243}
+]
+},
+{
+"name": "ZR Frogs Eponas Song",
+"why": "the caller of TeachNewMusic for Epona's Song also passes the chosen item, the five rupee payouts of TeachNewMusic (picked by MiniGame_FrogTenors_GetCount) hand out that argument with the plain get scene instead of the rupee sub, which also drops its own pose and wait, the rupee display open (from events 79 and 203) and close are skipped, the count still rises at event 243 and the song flag is still set at event 74. The shared edits are listed for every song and run once",
+"ops": [
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 81, "event": "Event220", "from": ":TeachNewMusic", "to": ":TeachNewMusic", "params": [["GameDataName", "MiniGame_FrogTenors_EponaSong"], ["ActorName", "$item"]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 79, "event": "Event171", "old": 235, "new": 233},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 203, "event": "Event346", "old": 235, "new": 233},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 236, "event": "Event381", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 236, "event": "Event381", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 239, "event": "Event388", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 239, "event": "Event388", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 240, "event": "Event389", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 240, "event": "Event389", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 241, "event": "Event390", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 241, "event": "Event390", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 242, "event": "Event391", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 242, "event": "Event391", "old": 234, "new": 243}
+]
+},
+{
+"name": "ZR Frogs Sarias Song",
+"why": "the caller of TeachNewMusic for Saria's Song also passes the chosen item, the five rupee payouts of TeachNewMusic (picked by MiniGame_FrogTenors_GetCount) hand out that argument with the plain get scene instead of the rupee sub, which also drops its own pose and wait, the rupee display open (from events 79 and 203) and close are skipped, the count still rises at event 243 and the song flag is still set at event 74. The shared edits are listed for every song and run once",
+"ops": [
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 82, "event": "Event221", "from": ":TeachNewMusic", "to": ":TeachNewMusic", "params": [["GameDataName", "MiniGame_FrogTenors_SariaSong"], ["ActorName", "$item"]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 79, "event": "Event171", "old": 235, "new": 233},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 203, "event": "Event346", "old": 235, "new": 233},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 236, "event": "Event381", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 236, "event": "Event381", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 239, "event": "Event388", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 239, "event": "Event388", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 240, "event": "Event389", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 240, "event": "Event389", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 241, "event": "Event390", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 241, "event": "Event390", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 242, "event": "Event391", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 242, "event": "Event391", "old": 234, "new": 243}
+]
+},
+{
+"name": "ZR Frogs Suns Song",
+"why": "the caller of TeachNewMusic for the Sun's Song also passes the chosen item, the five rupee payouts of TeachNewMusic (picked by MiniGame_FrogTenors_GetCount) hand out that argument with the plain get scene instead of the rupee sub, which also drops its own pose and wait, the rupee display open (from events 79 and 203) and close are skipped, the count still rises at event 243 and the song flag is still set at event 74. The shared edits are listed for every song and run once",
+"ops": [
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 83, "event": "Event222", "from": ":TeachNewMusic", "to": ":TeachNewMusic", "params": [["GameDataName", "MiniGame_FrogTenors_SunSong"], ["ActorName", "$item"]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 79, "event": "Event171", "old": 235, "new": 233},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 203, "event": "Event346", "old": 235, "new": 233},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 236, "event": "Event381", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 236, "event": "Event381", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 239, "event": "Event388", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 239, "event": "Event388", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 240, "event": "Event389", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 240, "event": "Event389", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 241, "event": "Event390", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 241, "event": "Event390", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 242, "event": "Event391", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 242, "event": "Event391", "old": 234, "new": 243}
+]
+},
+{
+"name": "ZR Frogs Song of Time",
+"why": "the caller of TeachNewMusic for the Song of Time also passes the chosen item, the five rupee payouts of TeachNewMusic (picked by MiniGame_FrogTenors_GetCount) hand out that argument with the plain get scene instead of the rupee sub, which also drops its own pose and wait, the rupee display open (from events 79 and 203) and close are skipped, the count still rises at event 243 and the song flag is still set at event 74. The shared edits are listed for every song and run once",
+"ops": [
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 84, "event": "Event223", "from": ":TeachNewMusic", "to": ":TeachNewMusic", "params": [["GameDataName", "MiniGame_FrogTenors_TimeSong"], ["ActorName", "$item"]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 79, "event": "Event171", "old": 235, "new": 233},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 203, "event": "Event346", "old": 235, "new": 233},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 236, "event": "Event381", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 236, "event": "Event381", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 239, "event": "Event388", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 239, "event": "Event388", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 240, "event": "Event389", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 240, "event": "Event389", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 241, "event": "Event390", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 241, "event": "Event390", "old": 234, "new": 243},
+{"kind": "swap_sub", "file": "MiniGame_FrogTenors.bfevfl", "index": 242, "event": "Event391", "from": ":GetRupy_FrogsTenors", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "arg:ActorName"], ["IsNpcEventStarter", false]]},
+{"kind": "next", "file": "MiniGame_FrogTenors.bfevfl", "index": 242, "event": "Event391", "old": 234, "new": 243}
+]
+},
+{
+"name": "ZR Frogs Bug Game",
+"why": "only the first win of the bug game hands out the Heart Piece, through the callers at event 71 and at event 91 (retry), both picked by the MiniGame_FrogTenors_InsectRepellent flag that the win sets, so only their ActorName follows the chosen item and the Blue Rupee callers 72 and 92 stay vanilla",
+"ops": [
+{"kind": "set", "file": "MiniGame_FrogTenors.bfevfl", "index": 71, "event": "Event161", "param": "ActorName", "old": "Obj_Heart_Piece", "new": "$item"},
+{"kind": "set", "file": "MiniGame_FrogTenors.bfevfl", "index": 91, "event": "Event75", "param": "ActorName", "old": "Obj_Heart_Piece", "new": "$item"}
+]
+},
+{
+"name": "GF Cow",
+"why": "the Gerudo Fortress cow shares the Gerudo milk entry (PushToBottleMilk_LinkHouse0) with the Gerudo Valley cow and only stands in the adult fortress, so the same once flag gate asks for an adult first, and when the valley gate is also on both gates hang off one age check",
+"ops": [
+{"kind": "once_grant", "file": "Animal_Cow.bfevfl", "index": 106, "event": "Event113", "entry": "PushToBottleMilk_LinkHouse0", "flag": "HavePlayedEvent.Dm_StaffCredit_0023", "adult": true,
+ "sub": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "$item"], ["IsNpcEventStarter", false]]}
+]
+},
+{
+"name": "DMT Cow Grotto Cow",
+"why": "an ordinary cow made into its own actor class Animal_Cow_DMT (data/cow_clones.json), whose own flow copies the Link's House milk path, so the same once flag gate goes in front of its own milk entry and no other cow sees it",
+"ops": [
+{"kind": "once_grant", "file": "Animal_Cow_DMT.bfevfl", "index": 2, "event": "Event2", "entry": "PushToBottleMilk", "flag": "HavePlayedEvent.Dm_StaffCredit_0029", "child": false,
+ "sub": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "$item"], ["IsNpcEventStarter", false]]}
+]
+},
+{
+"name": "Kak Impas House Cow",
+"why": "an ordinary cow made into its own actor class Animal_Cow_Kakariko (data/cow_clones.json), whose own flow copies the Link's House milk path, so the same once flag gate goes in front of its own milk entry and no other cow sees it",
+"ops": [
+{"kind": "once_grant", "file": "Animal_Cow_Kakariko.bfevfl", "index": 2, "event": "Event2", "entry": "PushToBottleMilk", "flag": "HavePlayedEvent.Dm_StaffCredit_0030", "child": false,
+ "sub": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "$item"], ["IsNpcEventStarter", false]]}
+]
+},
+{
+"name": "HF Cow Grotto Cow",
+"why": "an ordinary cow made into its own actor class Animal_Cow_HFGrotto (data/cow_clones.json), whose own flow copies the Link's House milk path, so the same once flag gate goes in front of its own milk entry and no other cow sees it",
+"ops": [
+{"kind": "once_grant", "file": "Animal_Cow_HFGrotto.bfevfl", "index": 2, "event": "Event2", "entry": "PushToBottleMilk", "flag": "HavePlayedEvent.Dm_StaffCredit_0024", "child": false,
+ "sub": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "$item"], ["IsNpcEventStarter", false]]}
+]
+},
+{
+"name": "LLR Stables Left Cow",
+"why": "an ordinary cow made into its own actor class Animal_Cow_LLR_Left (data/cow_clones.json), whose own flow copies the Link's House milk path, so the same once flag gate goes in front of its own milk entry and no other cow sees it",
+"ops": [
+{"kind": "once_grant", "file": "Animal_Cow_LLR_Left.bfevfl", "index": 2, "event": "Event2", "entry": "PushToBottleMilk", "flag": "HavePlayedEvent.Dm_StaffCredit_0025", "child": false,
+ "sub": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "$item"], ["IsNpcEventStarter", false]]}
+]
+},
+{
+"name": "LLR Stables Right Cow",
+"why": "an ordinary cow made into its own actor class Animal_Cow_LLR_Right (data/cow_clones.json), whose own flow copies the Link's House milk path, so the same once flag gate goes in front of its own milk entry and no other cow sees it",
+"ops": [
+{"kind": "once_grant", "file": "Animal_Cow_LLR_Right.bfevfl", "index": 2, "event": "Event2", "entry": "PushToBottleMilk", "flag": "HavePlayedEvent.Dm_StaffCredit_0026", "child": false,
+ "sub": "Dm_SY_GetInEvent:GetInEvent_NotTurn_NotNpc", "params": [["ActorName", "$item"], ["IsNpcEventStarter", false]]}
+]
+},
+{
+"name": "DMT Great Fairy Reward",
+"why": "a returning visit asks IsGet.Item_DinFire (event 21) and while it is false offers the gift again for 25 rupees, a shuffled gift never sets it, so the check reads a spare persistent flag that is set right after the gift (event 308)",
+"ops": [
+{"kind": "set", "file": "Dm_FairyFountain_Din.bfevfl", "index": 21, "event": "Event78", "param": "GameDataName", "old": "IsGet.Item_DinFire", "new": "HavePlayedEvent.Dm_Title_0080"},
+{"kind": "insert_set", "file": "Dm_FairyFountain_Din.bfevfl", "index": 308, "event": "Event212", "flag": "HavePlayedEvent.Dm_Title_0080"}
+]
+},
+{
+"name": "HC Great Fairy Reward",
+"why": "a returning visit asks IsGet.Item_FairyBless_MP (event 4) and while it is false offers the gift again, a shuffled gift never sets it, so the check reads a spare persistent flag that is set right after the gift (event 108)",
+"ops": [
+{"kind": "set", "file": "Dm_FairyFountain_Power.bfevfl", "index": 4, "event": "Event11", "param": "GameDataName", "old": "IsGet.Item_FairyBless_MP", "new": "HavePlayedEvent.Dm_Title_0096"},
+{"kind": "insert_set", "file": "Dm_FairyFountain_Power.bfevfl", "index": 108, "event": "Event141", "flag": "HavePlayedEvent.Dm_Title_0096"}
+]
+},
+{
+"name": "ZF Great Fairy Reward",
+"why": "a returning visit asks IsGet.Item_FaroreWind (event 4) and while it is false offers the gift again, a shuffled gift never sets it, so the check reads a spare persistent flag that is set right after the gift (event 107)",
+"ops": [
+{"kind": "set", "file": "Dm_FairyFountain_Frore.bfevfl", "index": 4, "event": "Event11", "param": "GameDataName", "old": "IsGet.Item_FaroreWind", "new": "HavePlayedEvent.Dm_Title_0110"},
+{"kind": "insert_set", "file": "Dm_FairyFountain_Frore.bfevfl", "index": 107, "event": "Event174", "flag": "HavePlayedEvent.Dm_Title_0110"}
+]
+},
+{
+"name": "Colossus Great Fairy Reward",
+"why": "a returning visit asks IsGet.Item_NayruLove (event 4) and while it is false offers the gift again, a shuffled gift never sets it, so the check reads a spare persistent flag that is set right after the gift (event 98)",
+"ops": [
+{"kind": "set", "file": "Dm_FairyFountain_Nayru.bfevfl", "index": 4, "event": "Event10", "param": "GameDataName", "old": "IsGet.Item_NayruLove", "new": "HavePlayedEvent.Dm_Title_0120"},
+{"kind": "insert_set", "file": "Dm_FairyFountain_Nayru.bfevfl", "index": 98, "event": "Event163", "flag": "HavePlayedEvent.Dm_Title_0120"}
+]
+},
+{
+"name": "OGC Great Fairy Reward",
+"why": "a returning visit asks IsGet.Item_FairyBless_DefenseDouble (event 4) and while it is false offers the gift again, a shuffled gift never sets it, so the check reads a spare persistent flag that is set right after the gift (event 75)",
+"ops": [
+{"kind": "set", "file": "Dm_FairyFountain_Courage.bfevfl", "index": 4, "event": "Event11", "param": "GameDataName", "old": "IsGet.Item_FairyBless_DefenseDouble", "new": "HavePlayedEvent.Dm_Title_0056"},
+{"kind": "insert_set", "file": "Dm_FairyFountain_Courage.bfevfl", "index": 75, "event": "Event144", "flag": "HavePlayedEvent.Dm_Title_0056"}
+]
+},
+{
+"name": "DMC Great Fairy Reward",
+"why": "the Wisdom gift sub plays the double magic gauge birth after the item (events 75 to 78 of Dm_SY_GetInEvent) whatever the item is, only the magic meter items can create that gauge, so another item is handed over with the plain fountain gift sub that the other fountains use. A returning visit asks IsGet.Item_FairyBless_MPDouble (event 4) and while it is false offers the gift again, a shuffled gift never sets it, so the check reads a spare persistent flag that is set right after the gift",
+"ops": [
+{"kind": "swap_sub", "file": "Dm_FairyFountain_Wisdom.bfevfl", "index": 72, "event": "Event144",
+ "from": "Dm_SY_GetInEvent:GetInEvent_GreatFairyWisdom", "to": "Dm_SY_GetInEvent:GetInEvent_Demo_NotLookatObjectEntry",
+ "params": [["ActorName", "$item"]]},
+{"kind": "set", "file": "Dm_FairyFountain_Wisdom.bfevfl", "index": 4, "event": "Event10", "param": "GameDataName", "old": "IsGet.Item_FairyBless_MPDouble", "new": "HavePlayedEvent.Dm_Title_0100"},
+{"kind": "insert_set", "file": "Dm_FairyFountain_Wisdom.bfevfl", "index": 72, "event": "Event144", "flag": "HavePlayedEvent.Dm_Title_0100"}
+]
+},
+{
+"name": "Market Potion Shop Free Bottle",
+"why": "the tutorial bars the shop door until the escaped bug is caught, and the bug needs an empty bottle, so with another item in place of the gift the offer first asks for an empty bottle: the per talk flag check of event 16 becomes that pouch check, with one the flow runs the vanilla offer and tutorial unchanged except the first talk lines, without one the keeper says the shop opens soon (event 62) and nothing is given or started",
+"ops": [
+{"kind": "query", "file": "Npc_Hylia_020_Shop_Child.bfevfl", "index": 16, "event": "Event33",
+ "from": "GameDataActor.EventQueryIsGameDataBool", "to": "PouchSystemActor.EventQueryIsAnyBottleEmpty", "params": []},
+{"kind": "retarget", "file": "Npc_Hylia_020_Shop_Child.bfevfl", "index": 16, "event": "Event33", "case": 1, "old": 15, "new": 62}
+]
+},
+{
+"name": "Market Potion Shop Red Potion",
+"why": "the bug reward pours the Red Potion into the equipped bottle, so another item is handed over with the plain NPC gift sub, the same call Malon uses for the Weird Egg, and the tutorial still ends with the Cleared flag that opens the shop",
+"ops": [
+{"kind": "swap_sub", "file": "Npc_Hylia_020_Shop_Child.bfevfl", "index": 138, "event": "Event172",
+ "from": "Dm_SY_GetInEvent:GetInEventInEquipedBottle", "to": "Dm_SY_GetInEvent:GetInEvent_NotTurn",
+ "params": [["ActorName", "$item"], ["ASName", "Wait"], ["Target", 3], ["NpcActorName", "Npc_Hylia_020_Shop_Child"], ["NpcInstanceName", ""], ["Npc_EventStarter", "actor:Npc_Hylia_020_Shop_Child"]]}
+]
+}
+],
+"always": [
+{
+"name": "Din fountain gauge",
+"why": "Din's Fire no longer carries the magic meter, so the Din gift sub must never be told the player had no magic (GreatFairy_HasNoMPOnDinDemo, set by event 579 when PlayerStatus.MPMax is 0), that flag makes the sub play the gauge birth for a gauge that Din's Fire cannot create, both cases of the check go to event 42 whatever the gift is and the flag is never set",
+"ops": [
+{"kind": "retarget", "file": "Dm_FairyFountain_Din.bfevfl", "index": 579, "event": "Event52", "case": 0, "old": 580, "new": 42},
+{"kind": "retarget", "file": "Dm_FairyFountain_Din.bfevfl", "index": 579, "event": "Event52", "case": 1, "old": 580, "new": 42}
+]
+},
+{
+"name": "Fire Arrow pickup gauge",
+"why": "the pickup of the Fire Arrows (the one actor with the Obj_Fire_Arrow tag, case 1 of the tag check) plays the MPOpen gauge birth when PlayerStatus.MPMax is 0, Fire Arrows no longer carry the magic meter, so both cases of the check in event 176 end in the 30 frame wait of event 180 and no gauge is born",
+"ops": [
+{"kind": "retarget", "file": "Dm_SY_Get.bfevfl", "index": 176, "event": "Event102", "case": 0, "old": 178, "new": 180},
+{"kind": "retarget", "file": "Dm_SY_Get.bfevfl", "index": 176, "event": "Event102", "case": 1, "old": 178, "new": 180}
+]
+},
+{
+"name": "Doubled magic without the improved spin",
+"why": "pots, rocks, grass, flying pots and skulltulas drop a fixed tier, so a doubled magic drop picked up out of order would leave the Gift of Improved Spin missing for good. Right after a pickup puts itself in the pouch (event 7, AddOwnToPouch, before event 183 picks the gauge birth) a player who holds Item_FairyBless_MPDouble but not Item_FairyBless_MP gets the first gift, then the doubled magic again in case the first gift lowered the bar, both handed over as a chest does",
+"ops": [
+{"kind": "backfill", "file": "Dm_SY_Get.bfevfl", "index": 7, "event": "Event35", "old": 183, "have": "Item_FairyBless_MPDouble", "lack": "Item_FairyBless_MP", "give": ["Item_FairyBless_MP", "Item_FairyBless_MPDouble"]}
+]
+},
+{
+"name": "Fairy fountains without Din's Fire",
+"why": "after Zelda's Lullaby on the Triforce mark every fountain but the Din one asks IsGet.Item_DinFire (event 3 of TriForcePoint, shared by all six fountains) and without the spell Navi gives a hint and the fountain stays shut, the fountains are free from the start, so the no case also goes to event 57, the riddle sound and the transition to the fountain",
+"ops": [
+{"kind": "retarget", "file": "TriForcePoint.bfevfl", "index": 3, "event": "Event8", "case": 1, "old": 46, "new": 57}
+]
+},
+{
+"name": "Summit owl without Din's Fire",
+"why": "the Death Mountain summit owl asks IsGet.Item_DinFire (event 3) and without the spell only talks about the fairy behind the rock, the ride is free from the start, so the no case also goes to event 12, the talk that offers the ride to Kakariko",
+"ops": [
+{"kind": "retarget", "file": "Npc_Kaepora_DeathMountainTrail.bfevfl", "index": 3, "event": "Event4", "case": 1, "old": 16, "new": 12}
+]
+},
+{
+"name": "Fortress gatekeeper keeps the Spirit quest step",
+"why": "the gatekeeper's first talk as a member (event 31 marks the talk, event 4 asks the SageOfSpirit quest for Step02) would skip the carpenter rescue for a player who is a member through the Gerudo Card alone, the rescue already moves the quest to Step02, so event 31 goes straight to event 87 and the gate still opens",
+"ops": [
+{"kind": "next", "file": "Npc_Gerudo_006.bfevfl", "index": 31, "event": "Event6", "old": 4, "new": 87}
+]
+}
+]
+}

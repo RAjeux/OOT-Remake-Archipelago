@@ -1,0 +1,22 @@
+name: ZeldaTest
+game: Ocarina of Time Remake
+Ocarina of Time Remake:
+  progression_balancing: 50
+  accessibility: full
+  death_link: true
+  kokiri_shop_checks: true
+  shuffle_chests: all
+  shuffle_smallkeys: keysanity
+  shuffle_bosskeys: keysanity
+  shuffle_ganon_bosskey: keysanity
+  shuffle_mapcompass: keysanity
+  open_forest: open
+  open_kakariko: open
+  door_of_time_condition: open
+  door_of_time_escape: moat
+  starting_hearts: 6
+  starting_items: [deku_shield, big_bomb_bag]
+  starting_songs: [eponas_song]
+  faster_blocks: true
+  trials: 3
+  enemy_health: 125

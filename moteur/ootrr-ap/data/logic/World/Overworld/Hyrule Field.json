@@ -1,0 +1,38 @@
+[
+    {
+        "region_name": "Hyrule Field",
+        "scene": "Hyrule Field",
+        "hint": "HYRULE_FIELD",
+        "locations": {
+            "HF Redead Grotto Chest": "can_open_storm_grotto and can_kill_redead",
+            "HF Tunnel Ledge Chest": "is_child",
+            "HF East Poe Chest": "is_adult",
+            "HF South Poe Chest": "is_adult",
+            "HF Lake Poe Chest": "is_adult",
+            "HF Ocarina of Time Item": "is_child and (door_of_time_escape == 'moat' or story_stones) and Ocarina",
+            "Song from Ocarina of Time": "is_child and (door_of_time_escape == 'moat' or story_stones) and Ocarina",
+            "Big Poe Kill": "can_ride_epona and Bow and has_bottle and Hookshot",
+            "HF Child Above Drawbridge Wonderitem 1": "is_child",
+            "HF Child Above Drawbridge Wonderitem 2": "is_child",
+            "HF Child Above Drawbridge Wonderitem 3": "is_child"
+        },
+        "exits": {
+            "LW Bridge": "True",
+            "Lake Hylia": "True",
+            "Gerudo Valley": "True",
+            "Market Entrance": "True",
+            "Kakariko Village": "True",
+            "ZR Front": "True",
+            "Lon Lon Ranch": "True",
+            "HF Southeast Grotto": "here(can_blast_or_smash)",
+            "HF Open Grotto": "True",
+            "HF Inside Fence Grotto": "can_open_bomb_grotto",
+            # There is a hammerable boulder as adult which is not there as child
+            "HF Cow Grotto": "(is_child or Megaton_Hammer) and can_open_bomb_grotto",
+            "HF Near Market Grotto": "here(can_blast_or_smash)",
+            "HF Fairy Grotto": "here(can_blast_or_smash)",
+            "HF Near Kak Grotto": "can_open_bomb_grotto",
+            "HF Tektite Grotto": "can_open_bomb_grotto"
+        }
+    }
+]
