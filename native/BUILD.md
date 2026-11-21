@@ -10,3 +10,9 @@ For a Windows x64 build, use Go with cgo enabled and a compatible x64 C compiler
 Ship the DLL and its corresponding digest header together. Changes to the digest or the bridge require a new local game build. The compiled game and its assets are produced on the player's PC.
 
 The host must provide `hos_desired_language()`. The bridge uses the selected Triforce game language for automatic French or English runtime text; unsupported languages fall back to English. This does not change AP item IDs, slot names, or chat messages.
+
+The embedded connection page also installs `ootrr_ap_menu.inc` beside `gpu/vk/vk_menu.cpp`, patched by `client/ootrr_triforce/menu_setup.py`. Rebuild the executable and renderer together. The renderer discovers the host's `ootrr_ap_menu16` export without changing Triforce's Vulkan host ABI. The tab is shown only for an active, verified AP runtime.
+
+The DLL exports `AP_ConnectionInfo(char*, int)`, `AP_Connect(char*, char*, int, int)`, and `AP_Disconnect()`. The snapshot contains server, bound player/room, safe connection state/error codes, password-presence and automatic-connection flags, and the effective language. It never returns a password. Connect accepts password modes 0 (keep), 1 (replace and protect), or 2 (clear), and a startup-connection flag of 0 or 1. Network dialing and synchronization run asynchronously.
+
+Connection changes retain the same client, profile lock, item history, saved cursor, and check journal. Only connection fields in `native-session.json` are replaced atomically; seed fields and unknown metadata are preserved. A cancelled connection cannot publish packets into its replacement session. DeathLink is cleared across disconnection because it is a live event.

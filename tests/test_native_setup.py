@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
-from ootrr_triforce.native_setup import BUILD_MARK, compiled_game, runtime_cache_name
+from ootrr_triforce.native_setup import BUILD_MARK, MENU_BUILD_MARK, MENU_FILES, compiled_game, runtime_cache_name
 
 
 class CompiledGameTests(unittest.TestCase):
@@ -22,6 +22,7 @@ class CompiledGameTests(unittest.TestCase):
             native.mkdir(parents=True)
             dll = native / "archipelago.dll"
             executable = romfs.parent / "Triforce.exe"
+            renderer = romfs.parent / "triforce_vk.dll"
             expected = hashlib.sha256(b"current DLL").digest()
             old = hashlib.sha256(b"previous DLL").digest()
             with patch.object(sys, "argv", [str(root / "release/Client-OOT-Remake.pyz")]):
@@ -32,15 +33,30 @@ class CompiledGameTests(unittest.TestCase):
                     executable.write_bytes(binary)
                     self.assertFalse(compiled_game(romfs))
                 executable.write_bytes(BUILD_MARK + b"\0" * 32 + expected)
+                self.assertFalse(compiled_game(romfs), "The Options menu renderer must be rebuilt too.")
+                renderer.write_bytes(b"old renderer")
+                self.assertFalse(compiled_game(romfs))
+                renderer.write_bytes(MENU_BUILD_MARK)
                 self.assertTrue(compiled_game(romfs))
                 tools = root / "tools"
                 host = tools / "host"
                 host.mkdir(parents=True)
+                menu = tools / "gpu/vk"
+                menu.mkdir(parents=True)
                 for name in ("ootrr_archipelago.inc", "ootrr_ap_items.inc", "ootrr_ap_digest.h"):
                     helper = host / name
                     helper.write_bytes(b"installed host adapter")
                     os.utime(helper, ns=(1_000_000_000, 1_000_000_000))
+                for name in (*MENU_FILES, "vk_menu.cpp"):
+                    helper = menu / name
+                    helper.write_bytes(b"installed menu adapter")
+                    os.utime(helper, ns=(1_000_000_000, 1_000_000_000))
                 os.utime(executable, ns=(2_000_000_000, 2_000_000_000))
+                os.utime(renderer, ns=(2_000_000_000, 2_000_000_000))
+                self.assertTrue(compiled_game(romfs,tools))
+                os.utime(menu / MENU_FILES[0], ns=(3_000_000_000, 3_000_000_000))
+                self.assertFalse(compiled_game(romfs,tools), "A menu update requires a rebuilt renderer.")
+                os.utime(renderer, ns=(4_000_000_000, 4_000_000_000))
                 self.assertTrue(compiled_game(romfs,tools))
                 os.utime(host / "ootrr_archipelago.inc", ns=(3_000_000_000, 3_000_000_000))
                 self.assertFalse(compiled_game(romfs,tools), "An adapter update requires recompilation too.")

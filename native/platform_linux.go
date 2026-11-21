@@ -27,3 +27,10 @@ func password(p string) (string, error) {
 	}
 	return "", nil
 }
+
+func protectPassword(plain string) (string, error) {
+	if plain != "" {
+		return "", fmt.Errorf("Windows credentials cannot be created on Linux")
+	}
+	return "", nil
+}

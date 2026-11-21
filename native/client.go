@@ -31,6 +31,7 @@ type Config struct {
 	Player, Protocol                                         int
 	CursorHash                                               uint32
 	DeathLink                                                bool
+	AutoConnect                                              *bool
 	RewardMode                                               string
 	LocalItems                                               bool
 	Items                                                    map[int]string
@@ -52,6 +53,7 @@ type Client struct {
 	notices                   []string
 	revision                  uint64
 	death                     deathLink
+	connection                *connectionControl
 }
 type packet map[string]any
 type wire struct {
@@ -112,6 +114,7 @@ func newClient(c Config, root string, logger *log.Logger) (*Client, error) {
 	}
 	c.Language = normalizeLanguage(c.Language)
 	s := &Client{cfg: c, root: root, logger: logger, byFlag: map[uint32][]int{}, seen: map[int]bool{}, checked: map[int]bool{}, death: deathLink{state: -1}}
+	s.connection = newConnectionControl(c)
 	for id, loc := range c.Checks {
 		for _, flag := range loc.Flags {
 			if _, ok := s.byFlag[flag]; !ok {
@@ -206,6 +209,10 @@ func (s *Client) valid(m wire) bool {
 	return true
 }
 func (s *Client) session(conn *websocket.Conn, password string) error {
+	return s.sessionEpoch(conn, password, 0)
+}
+
+func (s *Client) sessionEpoch(conn *websocket.Conn, password string, epoch uint64) error {
 	defer conn.Close()
 	conn.SetReadLimit(40 << 20)
 	refresh := func() error { return conn.SetReadDeadline(time.Now().Add(85 * time.Second)) }
@@ -228,9 +235,11 @@ func (s *Client) session(conn *websocket.Conn, password string) error {
 		conn.Close()
 		worker.Wait()
 		s.mu.Lock()
-		s.ready = false
-		// DeathLink is a live event: neither direction is replayed on reconnect.
-		s.death.pending, s.death.outgoing = nil, nil
+		if s.connectionCurrentLocked(epoch) {
+			s.ready = false
+			// DeathLink is a live event: neither direction is replayed on reconnect.
+			s.death.pending, s.death.outgoing = nil, nil
+		}
 		s.mu.Unlock()
 	}()
 	auth := false
@@ -244,7 +253,12 @@ func (s *Client) session(conn *websocket.Conn, password string) error {
 		fenced = false
 		history = nil
 		s.mu.Lock()
+		if !s.connectionCurrentLocked(epoch) {
+			s.mu.Unlock()
+			return errConnectionReplaced
+		}
 		s.ready = false
+		s.connection.state = "synchronizing"
 		s.mu.Unlock()
 		return send(packet{"cmd": "Sync"}, packet{"cmd": "Get", "keys": []string{fence}})
 	}
@@ -256,6 +270,9 @@ func (s *Client) session(conn *websocket.Conn, password string) error {
 			return e
 		}
 		for _, m := range batch {
+			if !s.connectionCurrent(epoch) {
+				return errConnectionReplaced
+			}
 			switch m.Cmd {
 			case "RoomInfo":
 				if m.Seed != s.cfg.Room {
@@ -286,6 +303,10 @@ func (s *Client) session(conn *websocket.Conn, password string) error {
 					}
 				}
 				s.mu.Lock()
+				if !s.connectionCurrentLocked(epoch) {
+					s.mu.Unlock()
+					return errConnectionReplaced
+				}
 				s.names = names
 				s.checked = map[int]bool{}
 				for _, id := range m.Checked {
@@ -332,6 +353,10 @@ func (s *Client) session(conn *websocket.Conn, password string) error {
 				}
 				if fenced {
 					s.mu.Lock()
+					if !s.connectionCurrentLocked(epoch) {
+						s.mu.Unlock()
+						return errConnectionReplaced
+					}
 					s.history = append([]networkItem(nil), history...)
 					s.mu.Unlock()
 					for _, it := range history[old:] {
@@ -345,8 +370,13 @@ func (s *Client) session(conn *websocket.Conn, password string) error {
 				syncing = false
 				fenced = true
 				s.mu.Lock()
+				if !s.connectionCurrentLocked(epoch) {
+					s.mu.Unlock()
+					return errConnectionReplaced
+				}
 				s.history = append([]networkItem(nil), history...)
 				s.ready = true
+				s.connection.state, s.connection.errorCode = "connected", ""
 				s.mu.Unlock()
 				if !workerStarted {
 					workerStarted = true
@@ -371,7 +401,7 @@ func (s *Client) session(conn *websocket.Conn, password string) error {
 								}
 								s.mu.Lock()
 								var missing []int
-								ready := s.ready
+								ready := s.ready && s.connectionCurrentLocked(epoch)
 								if ready {
 									for id := range s.seen {
 										if !s.checked[id] && now.Sub(last[id]) > 5*time.Second {
@@ -424,6 +454,10 @@ func (s *Client) session(conn *websocket.Conn, password string) error {
 				}
 				for _, id := range m.Checked {
 					s.mu.Lock()
+					if !s.connectionCurrentLocked(epoch) {
+						s.mu.Unlock()
+						return errConnectionReplaced
+					}
 					first := !s.checked[id]
 					s.checked[id] = true
 					ownName := s.names[s.cfg.Player]
@@ -437,32 +471,6 @@ func (s *Client) session(conn *websocket.Conn, password string) error {
 					}
 				}
 			}
-		}
-	}
-}
-func (s *Client) run(password string) {
-	go s.saveChecks()
-	delay := time.Second
-	for {
-		start := time.Now()
-		dialer := *websocket.DefaultDialer
-		dialer.HandshakeTimeout = 12 * time.Second
-		conn, resp, e := dialer.Dial(s.cfg.Server, nil)
-		if resp != nil && e != nil {
-			resp.Body.Close()
-		}
-		if e == nil {
-			e = s.session(conn, password)
-		}
-		if e != nil {
-			s.logger.Print("Connection interrupted · ", e)
-		}
-		if time.Since(start) > 30*time.Second {
-			delay = time.Second
-		}
-		time.Sleep(delay)
-		if delay < 16*time.Second {
-			delay *= 2
 		}
 	}
 }

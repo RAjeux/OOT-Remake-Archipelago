@@ -1,4 +1,4 @@
-Archipelago · Ocarina of Time Remake · 0.2.1-alpha.2
+Archipelago · Ocarina of Time Remake · 0.3.0-alpha.1
 Alpha for Triforce on Windows x64.
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
@@ -42,13 +42,23 @@ First installation on the Zelda player's PC
 
 Later sessions and updates
 Launch Zelda normally from Triforce; the configuration console does not
-need to stay open. To return to normal play, disable Archipelago in the
+need to stay open. Open the game's Options screen from the title screen
+or the pause menu, then select the Archipelago tab. Enter the server,
+set a password if required, and choose Connect. The panel shows connection
+status and errors. A controller can enter text using the on-screen keyboard.
+Use Disconnect to stop the network connection for the current session.
+Automatic connection controls the next game startup; changes are saved
+when you choose Connect. The player shown is bound to the prepared mod.
+To return to normal play, disable Archipelago in the
 launcher and restart the game.
 If an update replaces Triforce's tools or executable, let the update finish,
 run Configure-Archipelago.cmd again, and rebuild the game. A change to the
 mod's native library also requires rebuilding Triforce with its new digest.
 Do not configure the mod while the host is updating.
 Each new room requires its own .apootrr file and configuration.
+Upgrading to 0.3.0-alpha.1 requires running the configuration again and
+using Build again: both the native network library and the Options renderer
+have changed. Existing rooms and saves remain supported.
 
 Language
 The mod automatically follows the game language selected in Triforce.

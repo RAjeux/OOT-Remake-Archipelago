@@ -7,6 +7,7 @@ from unittest.mock import patch
 dist=Path('dist').resolve()
 sys.path.insert(0,str(dist/'Client-OOT-Remake.pyz'))
 from ootrr_triforce import native_setup as n,player,install_mod
+from ootrr_triforce.menu_setup import patch_renderer
 sys.argv[0]=str(dist/'Client-OOT-Remake.pyz')
 def write(path,data):
     path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(data)
@@ -17,13 +18,20 @@ async def check(tmp):
     write(host/'nn_applet.c',b'const char *hos_desired_language(void) { return "en-US"; }\n')
     write(tools/'nx2/build.py',b'')
     write(tools/'gpu/vk/vk_api.h',(triforce_root()/'gpu/vk/vk_api.h').read_bytes())
+    renderer_orig=Path('tests/fixtures/triforce-menu-source.cpp').read_bytes()
+    renderer=tools/'gpu/vk/vk_menu.cpp'
+    write(renderer,renderer_orig)
     profile=tmp/'userdata'
     assert n.install_tools(profile,None,tools).samefile(tools)
     assert n.install_tools(profile,None,tools).samefile(tools)
     assert len(list(host.glob('*.bak')))==1 and next(host.glob('*.bak')).read_bytes()==orig
     assert (host/'hos_main.c').read_bytes()==n.patch_source(orig)
+    assert renderer.read_bytes()==patch_renderer(renderer_orig)
+    assert len(list(renderer.parent.glob('*.bak')))==1
+    assert next(renderer.parent.glob('*.bak')).read_bytes()==renderer_orig
     assert not (profile/'native-016/archipelago.dll').exists()
     for name in n.RT_FILES:assert (host/name).read_bytes()==(dist/'native'/name).read_bytes()
+    for name in n.MENU_FILES:assert (renderer.parent/name).read_bytes()==(dist/'native'/name).read_bytes()
     with ZipFile(next(Path('tests/fixtures/neutre').glob('*.zip'))) as z:
         for name in z.namelist():
             if name.endswith(('.apootrr','.archipelago')):z.extract(name,tmp)

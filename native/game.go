@@ -54,10 +54,9 @@ func AP_Start(rootText, tokenText *C.char) C.int {
 	}
 	pw, e := password(c.ProtectedPassword)
 	if e != nil {
-		logbook.Print("Cannot read the local password; run the mod configuration again.")
-		out.Close()
-		return 0
+		logbook.Print("Cannot read the local password; update it in the Archipelago menu.")
 	}
+	s.initializePassword(pw, e)
 	if e = lockProfile(root); e != nil {
 		logbook.Print("Another client is already using this room.")
 		out.Close()
@@ -68,7 +67,7 @@ func AP_Start(rootText, tokenText *C.char) C.int {
 		logbook.Print("Cannot publish the display language: ", e)
 	}
 	s.notice("active", c.Slot)
-	go s.run(pw)
+	go s.run()
 	go s.readSaves()
 	return 1
 }

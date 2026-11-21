@@ -21,6 +21,8 @@ GAME_DATA = "GameData/GameDataList.Product.110.byml.zs"
 MARKER = "Archipelago/room-v1.txt"
 BUILD_MARK = b"OOTRR-AP native ABI 1"
 RT_FILES = ("ootrr_archipelago.inc", "ootrr_ap_items.inc", "ootrr_ap_digest.h")
+MENU_FILES = ("ootrr_ap_menu.inc",)
+MENU_BUILD_MARK = b"ootrr_ap_menu16"
 BOOTSTRAP = '    hos_mods_init(image);\n#ifdef _WIN32\n    if (!ap_boot16()) {\n        ap_boot_error16();\n        return 3;\n    }\n#endif\n'
 # Retain the exact old hook only to upgrade existing installations safely.
 LEGACY_BOOTSTRAP = '    hos_mods_init(image);\n#ifdef _WIN32\n    if (!ap_boot16()) {\n        hos_log("OOTRR-AP native ABI 1: activation impossible. Voir archipelago-jeu.log ou relancer la configuration.");\n        MessageBoxW(NULL,L"Le mod Archipelago est actif, mais sa salle ou son module est indisponible. Ferme l’ancien client et relance la configuration du mod.", L"Archipelago", MB_OK | MB_ICONERROR);\n        return 3;\n    }\n#endif\n'
@@ -108,6 +110,7 @@ def protect_password(value):
 
 
 def install_tools(base, chooser, configured=None):
+    from .menu_setup import patch_renderer
     bundle=Path(sys.argv[0]).resolve().parent/"native"
     guess=Path(configured) if configured else base.parent/"Programs/Triforce/tools"
     if not (guess/"host/hos_main.c").is_file():
@@ -122,6 +125,12 @@ def install_tools(base, chooser, configured=None):
     if not applet.is_file() or "const char *hos_desired_language(void)" not in applet.read_text(encoding="utf-8"):
         raise ValueError(tr('Triforce tools are incompatible with the native client.'))
     helpers={n:(bundle/n).read_bytes() for n in RT_FILES}
+    renderer=guess/"gpu/vk/vk_menu.cpp"
+    if not renderer.is_file():
+        raise ValueError(tr('Triforce tools are incompatible with the native client.'))
+    renderer_original=renderer.read_bytes()
+    renderer_updated=patch_renderer(renderer_original)
+    menu_helpers={n:(bundle/n).read_bytes() for n in MENU_FILES}
     digest=hashlib.sha256((bundle/"archipelago.dll").read_bytes()).digest()
     expected=("static const unsigned char ap_dll_sha16[32] = {"+",".join(map(str,digest))+"};\n").encode()
     if helpers["ootrr_ap_digest.h"]!=expected:
@@ -130,10 +139,20 @@ def install_tools(base, chooser, configured=None):
         backup=source.with_name("hos_main.before-archipelago-"+hashlib.sha256(orig).hexdigest()[:12]+".bak")
         if not backup.exists():
             shutil.copy2(source,backup)
+    if renderer_updated!=renderer_original:
+        backup=renderer.with_name("vk_menu.before-archipelago-"+hashlib.sha256(renderer_original).hexdigest()[:12]+".bak")
+        if not backup.exists():
+            shutil.copy2(renderer,backup)
     for n,raw in helpers.items():
         path=host/n
         if not path.exists() or path.read_bytes()!=raw:
             atomic(path,raw)
+    for n,raw in menu_helpers.items():
+        path=renderer.parent/n
+        if not path.exists() or path.read_bytes()!=raw:
+            atomic(path,raw)
+    if renderer_updated!=renderer_original:
+        atomic(renderer,renderer_updated)
     if new!=orig:
         atomic(source,new)
     return guess
@@ -153,6 +172,7 @@ def save_session(root, config, data, roster):
              RewardMode=data.get("reward_mode","legacy_gear"),
              LocalItems=bool(data.get("local_items",False)),
              Server=config["server"],ProtectedPassword=config["protected"],UUID=previous.get("UUID") or str(uuid.uuid4()),
+             AutoConnect=previous.get("AutoConnect",True),
              CursorHash=cursor_hash(data["token"]),Baseline=config["baseline"],DeathLink=bool(data.get("death_link",False)),
              Language=detect_language(root,config),
              ItemNames={ITEM_IDS[n]:names for n,names in item_names().items() if n in ITEM_IDS},
@@ -180,12 +200,18 @@ def compiled_game(romfs, tools=None):
         return False
     expected=hashlib.sha256(module).digest()
     helpers = [Path(tools)/"host"/name for name in RT_FILES] if tools else []
-    if any(not helper.is_file() for helper in helpers):
+    menu_helpers = ([Path(tools)/"gpu/vk"/name for name in (*MENU_FILES,"vk_menu.cpp")]
+                    if tools else [])
+    if any(not helper.is_file() for helper in (*helpers,*menu_helpers)):
         return False
     for path in (romfs.parent/"Triforce.exe",romfs.parent/"bin/Triforce.exe"):
-        if path.is_file() and path.stat().st_size:
+        renderer=path.parent/"triforce_vk.dll"
+        if path.is_file() and path.stat().st_size and renderer.is_file() and renderer.stat().st_size:
             with path.open("rb") as f,mmap.mmap(f.fileno(),0,access=mmap.ACCESS_READ) as binary:
                 if (binary.find(BUILD_MARK)>=0 and binary.find(expected)>=0
-                        and all(helper.stat().st_mtime_ns<=path.stat().st_mtime_ns for helper in helpers)):
-                    return True
+                        and all(helper.stat().st_mtime_ns<=path.stat().st_mtime_ns for helper in helpers)
+                        and all(helper.stat().st_mtime_ns<=renderer.stat().st_mtime_ns for helper in menu_helpers)):
+                    with renderer.open("rb") as vf,mmap.mmap(vf.fileno(),0,access=mmap.ACCESS_READ) as menu_binary:
+                        if menu_binary.find(MENU_BUILD_MARK)>=0:
+                            return True
     return False

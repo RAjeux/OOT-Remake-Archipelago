@@ -46,3 +46,17 @@ func password(protected string) (string, error) {
 	defer windows.LocalFree(windows.Handle(unsafe.Pointer(out.Data)))
 	return string(unsafe.Slice(out.Data, int(out.Size))), nil
 }
+
+func protectPassword(plain string) (string, error) {
+	if plain == "" {
+		return "", nil
+	}
+	raw := []byte(plain)
+	in := windows.DataBlob{Size: uint32(len(raw)), Data: &raw[0]}
+	var out windows.DataBlob
+	if err := windows.CryptProtectData(&in, nil, nil, 0, nil, 1, &out); err != nil {
+		return "", err
+	}
+	defer windows.LocalFree(windows.Handle(unsafe.Pointer(out.Data)))
+	return base64.StdEncoding.EncodeToString(unsafe.Slice(out.Data, int(out.Size))), nil
+}

@@ -9,12 +9,36 @@ static void (*ap_applied16)(int);
 static int (*ap_note16)(char *,int);
 static void (*ap_opened16)(uint32_t *,int,int);
 static int (*ap_death16)(int);
+static int (*ap_connection_info16)(char *,int);
+static int (*ap_connect16)(char *,char *,int,int);
+static int (*ap_disconnect16)(void);
 static uint32_t ap_cursor16, ap_flags16[4096];
 static int ap_flag_count16;
 static int ap_event_mode16;
 static uint64_t ap_delivery_actor16;
 static uint64_t ap_delivery_epoch16;
 static char ap_profile16[4096];
+
+/* The renderer's Options tab discovers this narrow host entry point without
+   changing Triforce's rendering ABI. Connection work stays in the verified
+   network DLL; no menu call touches guest state or restarts the save worker. */
+__declspec(dllexport) int ootrr_ap_menu16(int action,const char *server,const char *password,
+                                       int password_mode,int automatic,char *out,int cap) {
+    if (out && cap>0) out[0]=0;
+    if (!ap_connection_info16 || !ap_connect16 || !ap_disconnect16) return 0;
+    if (action==0) return ap_connection_info16(out,cap);
+    int result;
+    if (action==1) {
+        if (!server || !password) return -2;
+        result=ap_connect16((char*)server,(char*)password,password_mode,automatic);
+    } else if (action==2) {
+        result=ap_disconnect16();
+    } else {
+        return -2;
+    }
+    if (out && cap>0) ap_connection_info16(out,cap);
+    return result;
+}
 
 /* Only the packaged AP DLL may run. Keep the verified file open without
    sharing writes/deletes until the Windows loader has mapped the same file. */
@@ -102,8 +126,12 @@ static int ap_boot16(void) {
     ap_note16=(int(*)(char*,int))GetProcAddress(lib,"AP_Note");
     ap_opened16=(void(*)(uint32_t*,int,int))GetProcAddress(lib,"AP_Opened");
     ap_death16=(int(*)(int))GetProcAddress(lib,"AP_DeathLink");
+    ap_connection_info16=(int(*)(char*,int))GetProcAddress(lib,"AP_ConnectionInfo");
+    ap_connect16=(int(*)(char*,char*,int,int))GetProcAddress(lib,"AP_Connect");
+    ap_disconnect16=(int(*)(void))GetProcAddress(lib,"AP_Disconnect");
     int (*event_delivery)(void)=(int(*)(void))GetProcAddress(lib,"AP_EventDelivery");
-    if (!flags||!cursor||!ap_next16||!ap_applied16||!ap_note16||!ap_opened16||!ap_death16||!event_delivery) return 0;
+    if (!flags||!cursor||!ap_next16||!ap_applied16||!ap_note16||!ap_opened16||!ap_death16||!event_delivery||
+        !ap_connection_info16||!ap_connect16||!ap_disconnect16) return 0;
     if (!ap_start_client16(start,set_language,utf8,token)) return 0;
     snprintf(ap_profile16,sizeof ap_profile16,"%s\\user",utf8);
     hos_user_dir=ap_profile16;

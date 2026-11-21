@@ -1,6 +1,6 @@
 # Ocarina of Time Remake × Archipelago
 
-**0.2.1-alpha.2 — native integration for Triforce on Windows x64.** When the mod is enabled, the game connects to its Archipelago room from the title screen. This alpha uses OOTRR 0.8.1 and game version 1.1.1.
+**0.3.0-alpha.1 — native integration for Triforce on Windows x64.** Manage Archipelago connections from Zelda's **Options → Archipelago** tab, at the title screen or in the pause menu. Automatic connection at startup remains enabled by default. This alpha uses OOTRR 0.8.1 and game version 1.1.1.
 
 Title-screen connections, items received while the game was closed, local and remote chests, one Kokiri purchase, and DeathLink in both directions have been tested on **Triforce 0.6.0**. **Item presentation animations and some camera movements still need improvement.** All eight Kokiri purchases have automated coverage; they have not all been purchased in the game. Hookshot and Fritchii are not supported by this native integration.
 
@@ -18,7 +18,9 @@ Download the Windows ZIP from the [project releases](https://github.com/RAjeux/O
 1. On the machine generating the room, install `ootrr_remake.apworld` in Archipelago. Use `Create-YAML.cmd` or the [examples](examples/) to prepare your YAML, then generate the room with the other players' YAML files.
 2. On the Zelda player's PC, run `Configure-Archipelago.cmd`. Select your `.apootrr` player file, the requested directories, and the server address. The program prepares the mod and its room profile.
 3. Enable **Archipelago** in Triforce Setup, then rebuild the game with **Build again**. This is required on first installation and when the native library or host tools change.
-4. Launch Zelda normally from Triforce. You can close the configuration console. `Observe-Archipelago.cmd` displays connection status and notifications.
+4. Launch Zelda normally from Triforce. Open **Options → Archipelago** to change the server, enter a password, connect or disconnect, and view connection errors. The tab supports keyboard, mouse, and controller, including an on-screen keyboard. You can close the configuration console; `Observe-Archipelago.cmd` remains an optional diagnostic tool.
+
+The initial mod preparation is still required for each room. The menu changes the connection to that prepared room; its player and save binding stay fixed. See the [in-game connection guide](docs/IN-GAME-CONNECTION.md).
 
 The [player guide](distribution/Guide.txt) covers installation, updates, and troubleshooting. The older French command filenames remain available for compatibility. No Nintendo game files are included in the repository or release.
 
@@ -50,8 +52,9 @@ Python client code is in `client/`, the APWorld in `apworld/`, the native bridge
 | --- | --- |
 | Options, AP logic, and player files | `apworld/ootrr_remake/`, `client/ootrr_triforce/settings.py`, `catalog.py` |
 | Mod preparation and installation | `player.py`, `native_setup.py`, `install_mod.py` in `client/ootrr_triforce/` |
-| Connections, items, checks, and DeathLink | `native/client.go`, `game.go`, `deathlink.go` |
+| Connections, items, checks, and DeathLink | `native/client.go`, `connection.go`, `game.go`, `deathlink.go` |
 | Triforce gameplay bridge | `native/ootrr_archipelago.inc`, `ootrr_ap_items.inc` |
+| Embedded connection menu | `native/ootrr_ap_menu.inc`, `client/ootrr_triforce/menu_setup.py` |
 | Language discovery and translations | `i18n.py`, `i18n_fr.json`, `item_names.py` in `client/ootrr_triforce/`; `native/localization.go` |
 | Chests, medals, item receipts, and shops | `medallions.py`, `receipt_events.py`, `shop_events.py`, `ap_shops.py` in `client/ootrr_triforce/` |
 | OOTRR engine and generation | `moteur/ootrr-ap/randomizer/core/src/bin/ootrr_ap.rs`, `slice/generate.rs` |
@@ -66,10 +69,10 @@ From the repository root on Windows:
 
 ```powershell
 py -3 tools/build.py
-py -3 tools/verify_release.py --version 0.2.1-alpha.2
+py -3 tools/verify_release.py --version 0.3.0-alpha.1
 ```
 
-The output is `dist/Archipelago-OOT-Remake-0.2.1-alpha.2.zip`, including the `.pyz` client, APWorld, and their sources. `VERSION` declares the release version. The default assembly uses the supplied native DLL and WebAssembly engine without downloading dependencies. It does not rebuild Triforce.
+The output is `dist/Archipelago-OOT-Remake-0.3.0-alpha.1.zip`, including the `.pyz` client, APWorld, and their sources. `VERSION` declares the release version. The default assembly uses the supplied native DLL and WebAssembly engine without downloading dependencies. It does not rebuild Triforce.
 
 To rebuild the supplied components:
 
