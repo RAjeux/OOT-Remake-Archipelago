@@ -16,7 +16,9 @@ async def check(tmp):
     write(host/'hos_main.c',orig)
     write(tools/'nx2/build.py',b'')
     write(tools/'gpu/vk/vk_api.h',(triforce_root()/'gpu/vk/vk_api.h').read_bytes())
-    profile=tmp/'userdata';assert n.install_tools(profile,None,tools)==tools and n.install_tools(profile,None,tools)==tools
+    profile=tmp/'userdata'
+    assert n.install_tools(profile,None,tools).samefile(tools)
+    assert n.install_tools(profile,None,tools).samefile(tools)
     assert len(list(host.glob('*.bak')))==1 and next(host.glob('*.bak')).read_bytes()==orig
     assert (host/'hos_main.c').read_bytes()==n.patch_source(orig)
     assert not (profile/'native-016/archipelago.dll').exists()

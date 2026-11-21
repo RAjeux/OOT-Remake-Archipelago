@@ -244,7 +244,7 @@ def check():
                 assert CHEST_GIVE in event_info.entry_calls(raw(event_info.flow_path(expected_flow)),event)
         assert ap.NEW_TEX.encode() in raw(ap.NEW_MODEL_FILE) and raw(REST).startswith(b'RESTBL')
         assert tree(base)==baseline and tree(game)==vanilla
-        assert prepare(root,cfg,roster,moved)==dest
+        assert prepare(root,cfg,roster,moved).samefile(dest)
         if '--room' not in sys.argv:
             # V2 keeps foreign medals and gives self-owned rewards physically,
             # with a native model and no ReceivedItems cursor increment.

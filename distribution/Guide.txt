@@ -1,4 +1,4 @@
-Archipelago · Ocarina of Time Remake · 0.2.0-alpha.1
+Archipelago · Ocarina of Time Remake · 0.2.0-alpha.2
 Alpha pour Triforce Windows 64 bits.
 https://github.com/RAjeux/OOT-Remake-Archipelago
 

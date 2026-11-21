@@ -304,7 +304,11 @@ func TestDeathLinkWireAndReconnect(t *testing.T) {
 	}
 	disabled.deathState(0, now)
 	disabled.receiveDeath(bounced("Ami", 79), now)
-	if disabled.deathState(0, now) || disabled.death.outgoing != nil {
+	killed := disabled.deathState(0, now)
+	disabled.mu.Lock()
+	outgoing := disabled.death.outgoing != nil
+	disabled.mu.Unlock()
+	if killed || outgoing {
 		t.Fatal("disabled DeathLink has an effect")
 	}
 }

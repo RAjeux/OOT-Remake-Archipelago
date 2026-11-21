@@ -1,6 +1,6 @@
 # Ocarina of Time Remake × Archipelago
 
-**0.2.0-alpha.1 — intégration native pour Triforce Windows 64 bits.** Le jeu se connecte à la salle Archipelago dès l’écran titre lorsque le mod est actif. Cette alpha utilise OOTRR 0.8.1 et les fichiers du jeu en version 1.1.1.
+**0.2.0-alpha.2 — intégration native pour Triforce Windows 64 bits.** Le jeu se connecte à la salle Archipelago dès l’écran titre lorsque le mod est actif. Cette alpha utilise OOTRR 0.8.1 et les fichiers du jeu en version 1.1.1.
 
 Les connexions, objets reçus hors ligne, coffres personnels et distants, un achat Kokiri et DeathLink dans les deux sens ont été essayés sur **Triforce 0.6.0**. **Les animations de réception et certains mouvements de caméra restent à améliorer.** Les huit achats Kokiri sont couverts par les tests automatisés ; ils n’ont pas tous été rejoués en jeu. Hookshot et Fritchii ne sont pas pris en charge par cette intégration native.
 
@@ -55,10 +55,10 @@ Depuis la racine, sous Windows :
 
 ```powershell
 py -3 tools/build.py
-py -3 tools/verify_release.py --version 0.2.0-alpha.1
+py -3 tools/verify_release.py --version 0.2.0-alpha.2
 ```
 
-Le résultat est `dist/Archipelago-OOT-Remake-0.2.0-alpha.1.zip`, avec le client `.pyz`, l’APWorld et leurs sources. La version du pack est déclarée dans `VERSION`. L’assemblage par défaut utilise la DLL et le moteur WebAssembly fournis et ne télécharge rien. Il ne reconstruit pas le jeu Triforce.
+Le résultat est `dist/Archipelago-OOT-Remake-0.2.0-alpha.2.zip`, avec le client `.pyz`, l’APWorld et leurs sources. La version du pack est déclarée dans `VERSION`. L’assemblage par défaut utilise la DLL et le moteur WebAssembly fournis et ne télécharge rien. Il ne reconstruit pas le jeu Triforce.
 
 Pour reconstruire les composants fournis :
 

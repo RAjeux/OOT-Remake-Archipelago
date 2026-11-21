@@ -68,7 +68,7 @@ def check_install(root):
     src=root/'stage'
     mods=root/'Programs'/'Triforce'/'mods';mods.mkdir(parents=True)
     old=mods/'My Seed/romfs'/im.REST;put(old,b'old')
-    assert im.known_folder(root)==mods
+    assert im.known_folder(root).samefile(mods)
     with patch('builtins.input',return_value='n'):im.offer_old_seed(mods)
     assert old.exists()
     with patch('builtins.input',return_value='o'):im.offer_old_seed(mods)
@@ -76,7 +76,9 @@ def check_install(root):
     other=mods/'Cosmetics/romfs'/im.REST;put(other,b'other')
     assert list(im.tables(mods))==[Path('Cosmetics')]
     root_valid=im.validate_root(mods,root/'game',root/'apdata')
-    new=im.install(src,root_valid,'test');assert new==mods/'Archipelago'
+    # Windows TEMP may use an 8.3 alias while validate_root returns its long path.
+    assert root_valid.samefile(mods)
+    new=im.install(src,root_valid,'test');assert new.samefile(mods/'Archipelago')
     inode=new.stat().st_ino
     assert im.install(src,mods,'test').stat().st_ino==inode
     put(src/'Archipelago/romfs/changed',b'changed')
