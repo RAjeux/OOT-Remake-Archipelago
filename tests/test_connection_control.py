@@ -102,7 +102,7 @@ class ConnectionControlTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="ootrr-companion-unit-")
         self.addCleanup(self.temporary.cleanup)
-        self.root = Path(self.temporary.name) / TOKEN
+        self.root = Path(self.temporary.name).resolve() / TOKEN
         self.before = session(self.root)
 
     def assert_safe(self, value):
@@ -293,7 +293,8 @@ class ConnectionControlTests(unittest.TestCase):
         self.assertEqual((self.root / "native-session.json").read_bytes(), before)
 
     def test_discovery_markers_explicit_path_and_host_language(self):
-        base = Path(self.temporary.name)
+        # Hosted Windows runners may expose TEMP through an 8.3 alias.
+        base = Path(self.temporary.name).resolve()
         second = base / ("c" * 64)
         session(second, Token="c" * 64, Slot="Zelda")
         os.utime(second / "native-session.json", (2_000_000_000, 2_000_000_000))
