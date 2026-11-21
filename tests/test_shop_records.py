@@ -8,7 +8,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
 from ootrr_triforce.ap_shops import prepare_shops, shop_records
-from ootrr_triforce.catalog import SHOP_CHECKS
+from ootrr_triforce.catalog import ITEM_DATA, ITEM_IDS, SHOP_CHECKS
 
 
 class ShopRecordTests(unittest.TestCase):
@@ -34,7 +34,21 @@ class ShopRecordTests(unittest.TestCase):
         self.assertEqual({row["flag_name"] for row in validated},
                          {"Archipelago.Shop.KF." + str(slot) for slot in range(8)})
 
-    def test_missing_self_owned_and_invalid_price_fail_before_writing(self):
+    def test_local_rewards_keep_a_unique_presentation_and_native_recipe(self):
+        names = list(SHOP_CHECKS)
+        for name in names:
+            self.roster[name].update(item="Bow", player="Link", item_id=ITEM_IDS["Bow"], local=True)
+        records = shop_records(self.roster, self.settings)
+        self.assertEqual(len({row["actor"] for row in records}), 8)
+        for row in records:
+            self.assertEqual(row["local_item"], "Bow")
+            self.assertEqual(row["native_actor"], ITEM_DATA["Bow"]["actor"])
+            self.assertTrue(row["actor"].startswith("Item_AP_"))
+        self.settings["foreign_only_shops"] = True
+        with self.assertRaisesRegex(ValueError, "test room reserves"):
+            shop_records(self.roster, self.settings)
+
+    def test_missing_unknown_local_and_invalid_price_fail_before_writing(self):
         first = next(iter(SHOP_CHECKS))
         with self.assertRaises(ValueError):
             shop_records({name: row for name, row in self.roster.items() if name != first}, self.settings)

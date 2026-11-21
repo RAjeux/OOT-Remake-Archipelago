@@ -9,14 +9,14 @@ from pathlib import Path
 import shutil
 import tempfile
 
-from .catalog import CHESTS, ITEM_DATA, ITEM_IDS
+from .catalog import CHESTS, ITEM_DATA, ITEM_IDS, SHOP_CHECKS
 from .engine import run_engine
 from .mod_codec import Codec
 
 REST = "System/Resource/ResourceSizeTable.Product.111.Nin_Ounce_NVN2.rsizetable.zs"
 GET = ("Dm_SY_GetInEvent", "GetInEvent_NotTurn_NotNpc")
 CHEST_ENTRY = "Success_"
-REVISION = 5
+REVISION = 6
 
 
 def chest_flows(raw, records, *, native_pouch=None, small_raw=None):
@@ -233,7 +233,9 @@ def patch_mod(romfs, mod, roster, moved, *, full_rewards=False, local_items=Fals
         item, player = ((reward["item"], reward["player"]) if isinstance(reward, dict) else reward[:2])
         key = ap_item.ap_item(json.dumps([name, item, player], ensure_ascii=False))
         local = bool(local_items and isinstance(reward, dict) and reward.get("local"))
-        if not local:
+        # Shop shelves need a unique per-location actor even for local goods.
+        # The shop pass replaces its display with the native item presentation.
+        if not local or name in SHOP_CHECKS:
             labels[key] = (item, player, reward.get("game")) if isinstance(reward, dict) else (item, player)
         if name in CHESTS:
             placements[name] = key

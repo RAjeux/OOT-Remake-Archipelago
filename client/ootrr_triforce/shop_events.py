@@ -1,24 +1,28 @@
 """Commit AP shelf purchases after the shop's successful native grant.
 
 Native prices, payment, item presentation and sold-out checks stay in DisplayShop.
-AP dummy actors have no Zelda inventory effect. Only their capacity question is
-bypassed, because NotPushToPouch actors otherwise reach the native error branch.
+Unique shelf actors have no Zelda inventory effect. Local rewards use the same
+native grant recipes as physical chests, without a network received-item cursor.
+Their capacity question is bypassed because NotPushToPouch presentation actors
+otherwise reach the native error branch.
 """
 from .i18n import tr
 from pathlib import Path
 import re
 
-from .catalog import SHOP_CHECKS
+from .catalog import ITEM_DATA, SHOP_CHECKS
 from .medallions import REST
 from .mod_codec import Codec
 
 FLOW_PATH = "Event/EventFlow/DisplayShop.bfevfl.zs"
+POUCH_FLOW_PATH = "Event/EventFlow/GetPouchContent.bfevfl.zs"
 ENTRY = "OOTRR_APShopPurchased"
 PREFIX = "OOTRR_APShop_"
 SELECTED = "Shop_SelectItemName"
 CAPACITY_QUERY = "EventQueryCanAddToPorchByGameData"
 GRANTS = ((156, "Event281"), (461, "Event543"))
 CAPACITY = ((6, "Event77"), (170, "Event303"))
+BOTTLE_CAPACITY = (186, "Event325")
 SHOP_FLAGS = {record["flag_name"] for record in SHOP_CHECKS.values()}
 
 
@@ -42,6 +46,11 @@ def _records(records):
             raise ValueError(tr('Invalid Archipelago shop metadata.'))
         if actor in actors or flag in flags or set(counts) & counters:
             raise ValueError(tr('Each Archipelago purchase must have its own actor, flag and unique counters.'))
+        if "local_item" in record or "native_actor" in record:
+            item = record.get("local_item")
+            if (not isinstance(item, str) or item not in ITEM_DATA
+                    or record.get("native_actor") != ITEM_DATA[item]["actor"]):
+                raise ValueError(tr('Unknown local Archipelago item: ') + str(item))
         actors.add(actor); flags.add(flag); counters.update(counts)
         result.append({**record, "counters": list(counts)})
     return sorted(result, key=lambda record: record["flag_name"])
@@ -72,7 +81,7 @@ def _retarget(event, previous, following):
     return changed
 
 
-def patch_shop_flow(raw, records):
+def patch_shop_flow(raw, records, *, pouch_raw=None):
     """Return the edited flow; refuse unknown grant/capacity layouts before editing."""
     from evfl.entry_point import EntryPoint
     from evfl.event import ActionEvent, SubFlowEvent, SwitchEvent
@@ -91,6 +100,42 @@ def patch_shop_flow(raw, records):
         raise ValueError(tr('Archipelago purchase tracking is already prepared.'))
     original_events = list(chart.events)
     original_entries = list(chart.entry_points)
+    local_records = [record for record in records if "local_item" in record]
+    def bottle_refill(record):
+        metadata = ITEM_DATA.get(record.get("local_item"), {})
+        return bool(metadata.get("bottle_item") and metadata.get("pouch_special") == "NotPushToPouch")
+
+    bottle_refusal = None
+    if any(bottle_refill(record) for record in records):
+        index, name = BOTTLE_CAPACITY
+        event = chart.events[index] if index < len(chart.events) else None
+        if (event is None or event.name != name or not isinstance(event.data, SwitchEvent)
+                or str(event.data.actor.v.identifier) != "PouchSystemActor"
+                or _command(event, "query") != "EventQueryIsAnyBottleEmpty"
+                or event.data.params is not None
+                or set(event.data.cases) != {0, 1}
+                or any(case.v is None for case in event.data.cases.values())):
+            raise ValueError(tr('Unknown shop capacity condition: ') + name)
+        # The authored refusal reselects the shelf and runs NotAvailableTalk.
+        # Reusing it avoids paying or closing the AP check when no bottle fits.
+        bottle_refusal = event.data.cases[1].v
+        if (event.data.cases[0].v.name != "Event240" or bottle_refusal.name != "Event333"
+                or not isinstance(bottle_refusal.data, ActionEvent)
+                or str(bottle_refusal.data.actor.v.identifier) != "Npc_EventStarter"
+                or _command(bottle_refusal, "action") != "EventTriggerShopItemSelect"
+                or bottle_refusal.data.params is not None):
+            raise ValueError(tr('Unknown shop capacity condition: ') + name)
+    grant_entry = None
+    if local_records:
+        if pouch_raw is None:
+            raise ValueError(tr('Native get-item event not found.'))
+        from .native_presentations import copy_entry
+        from .receipt_events import _action, _silent_grant
+        native = FlowEditor(pouch_raw, POUCH_FLOW_PATH)
+        _silent_grant(native, None, entry_name=PREFIX + "TemporaryGrant", prefix=PREFIX + "Temporary")
+        grant_entry = copy_entry(
+            native.chart, editor, PREFIX + "TemporaryGrant", PREFIX + "Native",
+            skip=lambda event: _action(event) in {"EventTriggerSetForGetWindow", "EventTriggerSetHavePlayedGetEvent"})
     continuations = {}
     for index, name in GRANTS:
         event = chart.events[index] if index < len(chart.events) else None
@@ -120,7 +165,7 @@ def patch_shop_flow(raw, records):
     # Counter values are absolute: repeat callbacks cannot increase stock usage.
     hook = None
     for number, record in reversed(list(enumerate(records, 1))):
-        tail = None
+        tail = editor.action(PREFIX + f"Save{number}", "GameSystemActor", "EventTriggerRequestAutoSave", None)
         for index, name in reversed(list(enumerate(record["counters"]))):
             node = editor.action(PREFIX + f"Sold{number}_{index}", "GameDataActor",
                                  "EventTriggerSetGameDataInt", {"GameDataName": name, "Index": -1, "Value": 1})
@@ -130,7 +175,29 @@ def patch_shop_flow(raw, records):
                                   "EventTriggerSetGameDataBool",
                                   {"GameDataName": record["flag_name"], "Index": -1, "Value": True})
         link(collected, tail)
-        hook = selected(PREFIX + f"Which{number}", record["actor"], collected, hook)
+        reward = collected
+        if "local_item" in record:
+            from .native_presentations import append_recipe, append_tier_choice
+            metadata = ITEM_DATA[record["local_item"]]
+            stem = PREFIX + f"Local{number}"
+            core_name = stem + "_Pouch"
+            recipe = append_recipe(editor, metadata, core_name, grant_entry, collected)
+            # A normal pouch subflow returns here; direct dungeon/cure recipes
+            # already terminate at the purchase commit supplied above.
+            if (isinstance(recipe.data, SubFlowEvent)
+                    and recipe.data.entry_point_name == grant_entry):
+                link(recipe, collected)
+            core = EntryPoint(core_name)
+            core.main_event = make_index(recipe)
+            chart.entry_points.append(core)
+            def give(branch, actor):
+                return editor.subflow(branch + "_Give", "", core_name, {"ActorName": actor})
+            reward = append_tier_choice(editor, metadata, stem, give)
+            # A retried successful-purchase callback must not grant a local
+            # item twice. The saved location flag commits with its effect.
+            reward = editor.switch(stem + "_AlreadyCollected", "GameDataActor", "EventQueryIsGameDataBool",
+                                   {"GameDataName": record["flag_name"], "Index": -1}, collected, reward)
+        hook = selected(PREFIX + f"Which{number}", record["actor"], reward, hook)
     entry = EntryPoint(ENTRY)
     entry.main_event = make_index(hook)
     chart.entry_points.append(entry)
@@ -146,7 +213,11 @@ def patch_shop_flow(raw, records):
         root = gate
         success = gate.data.cases[0].v
         for number, record in reversed(list(enumerate(records, 1))):
-            root = selected(PREFIX + f"Capacity_{gate.name}_{number}", record["actor"], success, root)
+            available = success
+            if bottle_refill(record):
+                available = editor.switch(PREFIX + f"Bottle_{gate.name}_{number}", "PouchSystemActor",
+                                          "EventQueryIsAnyBottleEmpty", None, success, bottle_refusal)
+            root = selected(PREFIX + f"Capacity_{gate.name}_{number}", record["actor"], available, root)
         replaced = sum(_retarget(event, gate, root) for event in original_events)
         for point in original_entries:
             if point.main_event.v is gate:
@@ -159,7 +230,8 @@ def patch_shop_flow(raw, records):
     # Existing OOTRR subflow preload lists retain their original prefix.
     for point in chart.entry_points:
         reached = set(reachable(point.main_event.v))
-        for call in calls:
+        for call in [event for event in chart.events if event.name.startswith(PREFIX)
+                     and isinstance(event.data, SubFlowEvent)]:
             index = chart.events.index(call)
             if call in reached and index not in point._sub_flow_event_indices:
                 point._sub_flow_event_indices.append(index)
@@ -195,7 +267,8 @@ def prepare_shop_events(romfs, mod, records):
 
     frame, table_frame = source(FLOW_PATH), source(REST)
     before = codec.decode(frame)
-    after = patch_shop_flow(before, records)
+    pouch_raw = codec.decode(source(POUCH_FLOW_PATH)) if any("local_item" in row for row in records) else None
+    after = patch_shop_flow(before, records, pouch_raw=pouch_raw)
     table, allocations = grow_resources(codec.decode(table_frame), {FLOW_PATH: max(0, len(after) - len(before))})
     encoded = {FLOW_PATH: codec.encode(after, frame), REST: codec.encode(table, table_frame)}
     for relative, compressed in encoded.items():

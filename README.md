@@ -1,6 +1,6 @@
 # Ocarina of Time Remake × Archipelago
 
-**0.4.0-alpha.1 — native integration for Triforce on Windows x64.** Manage Archipelago connections from Zelda's **Options → Archipelago** tab, or use the separate **Connect-Archipelago.pyw** desktop window. Automatic connection at startup remains enabled by default. This alpha uses OOTRR 0.8.1 and game version 1.1.1.
+**0.4.1-alpha.1 — native integration for Triforce on Windows x64.** Manage Archipelago connections from Zelda's **Options → Archipelago** tab, or use the separate **Connect-Archipelago.pyw** desktop window. Automatic connection at startup remains enabled by default. This alpha uses OOTRR 0.8.1 and game version 1.1.1.
 
 Title-screen connections, items received while the game was closed, local and remote chests, one Kokiri purchase, and DeathLink in both directions have been tested on **Triforce 0.6.0**. **Item presentation animations and some camera movements still need improvement.** All eight Kokiri purchases have automated coverage; they have not all been purchased in the game. Hookshot and Fritchii are not supported by this native integration.
 
@@ -36,7 +36,9 @@ Items from other worlds are delivered in order while a save is active, using the
 
 Major received items use the game's native turn toward the player camera and item presentation pose. Ordinary pickups retain their native central display and sounds.
 
-`kokiri_shop_checks: true` adds eight one-time Kokiri purchases. Each shelf sells another player's item at its OOTRR seed price, using the game's payment and sold-out state. `death_link: true` shares deaths with other DeathLink participants. A remote death waits for an active event, such as a purchase or item receipt, to finish.
+`shuffle_shops: shuffle` uses OOTRR's normal shop shuffle and adds eight one-time Kokiri purchases to the AP pool. Each can contain your own item or another player's item, at its OOTRR seed price. Your items use their native appearance and effects; remote items use the AP medal. Single-player rooms work too. `shuffle_shops: off` keeps shops outside the AP pool. The former `kokiri_shop_checks` test option has been removed; old generated rooms retain their existing placements.
+
+`death_link: true` shares deaths with other DeathLink participants. A remote death waits for an active event, such as a purchase or item receipt, to finish.
 
 The mod automatically follows Triforce's selected game language: French uses French text, and other languages fall back to English. There is no YAML language setting. Other players' names, chat, and item names from other games retain their server wording. Configuration tools default to English and may reuse the known game language. YAML descriptions and developer documentation use English.
 

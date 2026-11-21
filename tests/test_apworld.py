@@ -27,12 +27,14 @@ class Region:
 class Location:
     def __init__(self, player, name, address, region):
         self.name, self.address = name, address
+        self.player = player
         self.item_rule = lambda item: True
 
 
 class Item:
     def __init__(self, name, classification, address, player):
         self.name, self.classification, self.address = name, classification, address
+        self.player = player
 
 
 class State:
@@ -80,7 +82,7 @@ class AllChestRewardTests(unittest.TestCase):
         w.game, w.player, w.player_name = GAME, 1, "Zelda"
         w.random = SimpleNamespace(getrandbits=lambda bits: 17)
         values = default_options()
-        values.update(death_link=True, kokiri_shop_checks=shops)
+        values.update(death_link=True, shuffle_shops="shuffle" if shops else "off")
         values.update(option_changes or {})
         w.options = SimpleNamespace(**{
             spec["id"]: SimpleNamespace(value=(spec["choices"].index(values[spec["id"]])
@@ -109,6 +111,7 @@ class AllChestRewardTests(unittest.TestCase):
         self.assertEqual(w.fill_slot_data()["reward_mode"], LOCATION_REWARD_MODE)
         self.assertIs(w.fill_slot_data()["local_items"], True)
         self.assertIs(w.fill_slot_data()["kokiri_shop_checks"], False)
+        self.assertIs(w.fill_slot_data()["foreign_only_shops"], False)
         with tempfile.TemporaryDirectory() as folder:
             w.generate_output(folder)
             manifest = json.loads(next(Path(folder).glob("*.apootrr")).read_bytes())
@@ -148,13 +151,104 @@ class AllChestRewardTests(unittest.TestCase):
         state.counts[goods[0]] -= 1
         self.assertFalse(w.multiworld.completion_condition[1](state))
         self.assertIs(w.fill_slot_data()["kokiri_shop_checks"], True)
-        self.assertIs(w.fill_slot_data()["foreign_only_shops"], True)
+        self.assertIs(w.fill_slot_data()["foreign_only_shops"], False)
         self.assertEqual(sum(len(region.locations) for region in w.multiworld.regions), 12)
         locations = [location for region in w.multiworld.regions for location in region.locations]
         self.assertEqual(sum(location.name in SHOP_CHECKS for location in locations), 8)
         for location in locations:
             self.assertTrue(location.item_rule(SimpleNamespace(player=2)))
-            self.assertEqual(location.item_rule(SimpleNamespace(player=1)), location.name not in SHOP_CHECKS)
+            self.assertTrue(location.item_rule(SimpleNamespace(player=1)))
+        with tempfile.TemporaryDirectory() as folder:
+            w.generate_output(folder)
+            manifest = json.loads(next(Path(folder).glob("*.apootrr")).read_bytes())
+            self.assertIs(manifest["kokiri_shop_checks"], True)
+            self.assertIs(manifest["foreign_only_shops"], False)
+
+    def test_shuffled_shops_work_in_a_single_player_pool(self):
+        w, names, rewards = self.make_world(shops=True, players=1)
+        w.create_items()
+        w.create_regions()
+        locations = [location for region in w.multiworld.regions for location in region.locations]
+        shops = [location for location in locations if location.name in SHOP_CHECKS]
+        self.assertEqual(len(shops), 8)
+        self.assertEqual(len(w.multiworld.itempool), len(locations))
+        self.assertEqual(w.engine_calls[0][1]["settings"]["shuffle_shops"], "shuffle")
+        expected = Counter(rewards + [row["item"] for row in SHOP_CHECKS.values()])
+        self.assertEqual(Counter(item.name for item in w.multiworld.itempool), expected)
+        for location in shops:
+            self.assertTrue(all(location.item_rule(item) for item in w.multiworld.itempool))
+            self.assertTrue(location.item_rule(SimpleNamespace(player=2)))
+
+    def test_old_foreign_only_yaml_option_reports_its_replacement(self):
+        class Removed:
+            def __init__(self, value):
+                self.value = value
+        removed = next(node for node in option_tree.body
+                       if isinstance(node, ast.ClassDef) and node.name == "KokiriShopChecksRemoved")
+        scope = {"Removed": Removed}
+        exec(compile(ast.Module(body=[removed], type_ignores=[]),
+                     str(ROOT / "apworld/ootrr_remake/options.py"), "exec"), scope)
+        option = scope["KokiriShopChecksRemoved"]
+        for value in (False, "false", "False", "off", 0, "0", ""):
+            with self.subTest(disabled_legacy_value=value):
+                self.assertFalse(option(value).value)
+        for value in (True, "true", "True", "on", 1, "1"):
+            with self.subTest(enabled_legacy_value=value):
+                with self.assertRaisesRegex(ValueError, "shuffle_shops: shuffle"):
+                    option(value)
+        self.assertNotIn("kokiri_shop_checks", {spec["id"] for spec in OPTION_SPECS})
+        w, _, _ = self.make_world(shops=True)
+        w.options.kokiri_shop_checks = SimpleNamespace(value=False)
+        self.assertEqual(namespace["option_values"](w.options)["shuffle_shops"], "shuffle")
+
+    def test_reverse_fill_preserves_early_slots_needed_by_counted_rules(self):
+        w, names, rewards = self.make_world()
+        w.create_regions()
+        locations = [location for region in w.multiworld.regions for location in region.locations]
+
+        def fill(order):
+            # Reverse fill assumes every unplaced item is obtainable, then adds
+            # already placed rewards only when their locations can be reached.
+            remaining = [rewards[3], rewards[2], rewards[0], rewards[1]]
+            unfilled, placed = list(order), {}
+            while remaining:
+                item = remaining.pop(0)
+                counts = Counter(remaining)
+                collected = set()
+                changed = True
+                while changed:
+                    changed = False
+                    for name, reward in placed.items():
+                        if name not in collected and w.rules_at[w.waves[name]](State(**counts)):
+                            collected.add(name)
+                            counts[reward] += 1
+                            changed = True
+                location = next((location for location in unfilled
+                                 if w.rules_at[w.waves[location.name]](State(**counts))), None)
+                if location is None:
+                    return None
+                placed[location.name] = item
+                unfilled.remove(location)
+            return placed
+
+        self.assertIsNone(fill(locations), "Late rewards should consume both scarce early slots in this counterexample")
+        foreign = SimpleNamespace(player=2, name="Other player's location")
+        unknown = SimpleNamespace(player=1, name="Untracked event")
+        mixed = [foreign, locations[0], locations[2], unknown, locations[1], locations[3]]
+        early = [location for location in mixed if location in locations and w.waves[location.name] == 0]
+        late = [location for location in mixed if location in locations and w.waves[location.name] == 1]
+        pool = [w.create_item(reward) for reward in rewards]
+        before_pool = list(pool)
+        w.fill_hook(pool, [], [], mixed)
+        self.assertIs(mixed[0], foreign)
+        self.assertIs(mixed[3], unknown)
+        self.assertEqual(pool, before_pool)
+        ordered = [location for location in mixed if location in locations]
+        self.assertEqual(ordered, late + early)
+        placed = fill(ordered)
+        self.assertIsNotNone(placed)
+        self.assertEqual(Counter(placed.values()), Counter(rewards))
+        self.assertEqual([placed[name] for name in names[:2]], rewards[:2])
 
     def test_kokiri_requires_every_price_and_reachability_proof(self):
         def no_goods(generated):
@@ -180,9 +274,7 @@ class AllChestRewardTests(unittest.TestCase):
         self.assertNotIn("ootrr_settings", request["settings"])
         self.assertEqual(request["settings"]["shuffle_dungeon_rewards"], "vanilla")
 
-    def test_single_player_kokiri_and_incompatible_native_combinations_are_rejected(self):
-        with self.assertRaisesRegex(ValueError, "two players"):
-            self.make_world(shops=True, players=1)
+    def test_incompatible_native_combinations_are_rejected(self):
         with self.assertRaisesRegex(ValueError, "open_forest"):
             self.make_world(option_changes={"open_kakariko": "open"})
 

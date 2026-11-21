@@ -35,12 +35,10 @@ class RemakeWorld(World):
     def generate_early(self):
         values = option_values(self.options)
         settings = engine_settings(values)
-        if values["kokiri_shop_checks"] and getattr(self.multiworld, "players", 2) < 2:
-            raise ValueError("Kokiri purchases for other players require a room with at least two players.")
         local_seed = f"AP-{self.random.getrandbits(64):016X}"
         generated = json.loads(run_engine("generate", {"settings": settings, "seed": local_seed}))
         self.seed_file = generated["seed_file"]
-        self.kokiri_shop_checks = bool(self.options.kokiri_shop_checks.value)
+        self.kokiri_shop_checks = values["shuffle_shops"] == "shuffle"
         rewards = {name: prize for name, prize in self.seed_file["placements"].items() if name in CHESTS}
         if self.kokiri_shop_checks:
             shops = self.seed_file.get("shops", {})
@@ -89,8 +87,6 @@ class RemakeWorld(World):
             for name, depth in self.waves.items():
                 if depth == wave:
                     location = RemakeLocation(self.player, name, LOCATION_IDS[name], region)
-                    if name in SHOP_CHECKS:
-                        location.item_rule = lambda item, player=self.player: item.player != player
                     region.locations.append(location)
         self.multiworld.completion_condition[self.player] = self.rules_at[self.goal_wave]
 
@@ -104,11 +100,24 @@ class RemakeWorld(World):
     def create_items(self):
         self.multiworld.itempool.extend(self.create_item(self.moved[name]) for name in self.waves)
 
+    def fill_hook(self, progitempool, usefulitempool, filleritempool, fill_locations):
+        # Reverse fill should consume later reachable shelves/chests first. With
+        # counted sphere gates, filling scarce early slots with later rewards can
+        # otherwise strand the earlier rewards needed to unlock the rest.
+        # Keep AP's random order within each sphere and every other player's
+        # position; this changes neither item ownership nor the access proof.
+        indexes = [index for index, location in enumerate(fill_locations)
+                   if location.player == self.player and location.name in self.waves]
+        ordered = sorted((fill_locations[index] for index in indexes),
+                         key=lambda location: self.waves[location.name], reverse=True)
+        for index, location in zip(indexes, ordered):
+            fill_locations[index] = location
+
     def fill_slot_data(self):
         return {"protocol": PROTOCOL, "token": self.token, "checks": sorted(LOCATION_IDS[n] for n in self.waves),
                 "death_link": bool(self.options.death_link.value), "reward_mode": LOCATION_REWARD_MODE,
                 "local_items": True, "kokiri_shop_checks": self.kokiri_shop_checks,
-                "foreign_only_shops": self.kokiri_shop_checks}
+                "foreign_only_shops": False}
 
     def generate_output(self, output_directory):
         output = {"game": self.game, "protocol": PROTOCOL, "room": self.multiworld.seed_name, "slot": self.player_name,
@@ -116,6 +125,6 @@ class RemakeWorld(World):
                   "checks": sorted(self.waves), "moved": self.moved,
                   "death_link": bool(self.options.death_link.value), "reward_mode": LOCATION_REWARD_MODE,
                   "local_items": True, "kokiri_shop_checks": self.kokiri_shop_checks,
-                  "foreign_only_shops": self.kokiri_shop_checks}
+                  "foreign_only_shops": False}
         path = Path(output_directory) / (self.multiworld.get_out_file_name_base(self.player) + ".apootrr")
         path.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")

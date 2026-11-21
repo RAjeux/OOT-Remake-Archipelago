@@ -13,7 +13,7 @@ from ootrr_triforce.engine import run_engine
 from ootrr_triforce.settings import FIXED_SETTINGS, engine_settings
 
 
-CHANGED = {"kokiri_shop_checks": True, "open_forest": "open", "open_kakariko": "open",
+CHANGED = {"shuffle_shops": "shuffle", "open_forest": "open", "open_kakariko": "open",
            "door_of_time_condition": "open", "door_of_time_escape": "moat",
            "starting_hearts": 6, "starting_items": ["deku_shield", "big_bomb_bag"],
            "starting_songs": ["eponas_song"], "faster_blocks": True, "trials": 3, "enemy_health": 125}
@@ -27,8 +27,7 @@ class NativeSettingsTests(unittest.TestCase):
     def assert_applied(self, settings):
         expected = engine_settings(CHANGED)
         for name in CHANGED:
-            if name != "kokiri_shop_checks":
-                self.assertEqual(settings[name], expected[name], name)
+            self.assertEqual(settings[name], expected[name], name)
         self.assertEqual(settings["shuffle_shops"], "shuffle")
         for name, value in FIXED_SETTINGS.items():
             self.assertEqual(settings[name], value, name)

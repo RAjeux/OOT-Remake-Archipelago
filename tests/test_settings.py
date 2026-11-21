@@ -48,12 +48,13 @@ class DirectSettingsTests(unittest.TestCase):
                            re.findall(r"^  ([a-z_]+): (.+)$", text, flags=re.M)}
                 self.assertEqual(options, default_options())
                 self.assertIs(options["death_link"], False)
-                self.assertIs(options["kokiri_shop_checks"], False)
+                self.assertNotIn("kokiri_shop_checks", options)
+                self.assertEqual(options["shuffle_shops"], "off")
                 self.assertNotIn("OOTRR1-", text)
 
     def test_only_covered_shuffles_are_public_and_native_rewards_stay_local(self):
         shuffles = {name for name in SPEC_BY_ID if name.startswith("shuffle_")}
-        self.assertEqual(shuffles, {"shuffle_chests", "shuffle_smallkeys", "shuffle_bosskeys",
+        self.assertEqual(shuffles, {"shuffle_chests", "shuffle_shops", "shuffle_smallkeys", "shuffle_bosskeys",
                                     "shuffle_ganon_bosskey", "shuffle_mapcompass"})
         native = engine_settings({})
         self.assertEqual(native["shuffle_dungeon_rewards"], "vanilla")
@@ -109,14 +110,14 @@ class DirectSettingsTests(unittest.TestCase):
         given = {"open_forest": "open", "open_kakariko": "open", "door_of_time_condition": "open",
                  "starting_hearts": 6, "faster_blocks": True, "trials": 3, "enemy_health": 125,
                  "starting_items": ["bombchus", "big_bomb_bag", "deku_shield"],
-                 "starting_songs": ["eponas_song"], "death_link": True, "kokiri_shop_checks": True}
+                 "starting_songs": ["eponas_song"], "death_link": True, "shuffle_shops": "shuffle"}
         native = engine_settings(given)
         for name, value in given.items():
             if name not in AP_ONLY:
                 self.assertEqual(native[name], value if not isinstance(value, list) else
                                  [item for item in SPEC_BY_ID[name]["choices"] if item in value])
         self.assertEqual(native["shuffle_shops"], "shuffle")
-        self.assertEqual(engine_settings({"kokiri_shop_checks": False})["shuffle_shops"], "off")
+        self.assertEqual(engine_settings({"shuffle_shops": "off"})["shuffle_shops"], "off")
         self.assertEqual({name: native[name] for name in FIXED_SETTINGS}, FIXED_SETTINGS)
 
     def test_invalid_types_ranges_and_untracked_options_are_rejected(self):
@@ -127,6 +128,7 @@ class DirectSettingsTests(unittest.TestCase):
                        {"death_link": "false"}, {"faster_blocks": 2}, {"starting_items": "bow"},
                        {"starting_items": ["zeldas_letter"]}, {"starting_songs": ["unknown_song"]},
                        {"shuffle_dungeon_rewards": "anywhere"}, {"shuffle_boss_hearts": True},
+                       {"kokiri_shop_checks": True}, {"shuffle_shops": "deals_4"},
                        {"ootrr_settings": "OOTRR1-AAAA"}, {"unknown_setting": True}):
             with self.subTest(values=values), self.assertRaises(ValueError):
                 engine_settings(values)

@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
 from evfl import EventFlow
 from evfl.actor import Actor
-from evfl.common import ActorIdentifier
+from evfl.common import ActorIdentifier, Argument
 from evfl.container import Container
 from evfl.entry_point import EntryPoint
 from evfl.event import ActionEvent, SubFlowEvent, SwitchEvent
@@ -23,6 +23,10 @@ from oot_rando.patching.event_patch import _flow
 from oot_rando.patching.event_info import reachable
 from oot_rando.patching.progressive import FlowEditor, link
 from ootrr_triforce.shop_events import ENTRY, FLOW_PATH, PREFIX, SELECTED, patch_shop_flow, prepare_shop_events
+from ootrr_triforce.catalog import ITEM_DATA
+from ootrr_triforce.receipt_events import DUNGEONS, OWNERS
+from ootrr_triforce.native_presentations import is_cure
+from test_receipt_events import native_flow
 
 
 def records():
@@ -44,12 +48,19 @@ def native_shop():
         if index in (6, 170):
             editor.switch("Event77" if index == 6 else "Event303", "PouchSystemActor",
                           "EventQueryCanAddToPorchByGameData", {"GameDataForActorName": SELECTED}, None, None)
+        elif index == 186:
+            editor.switch("Event325", "PouchSystemActor", "EventQueryIsAnyBottleEmpty", None, None, None)
+        elif index == 187:
+            editor.action("Event240", "GameSystemActor", "EventWait", {"Frames": 0})
+        elif index == 188:
+            editor.action("Event333", "Npc_EventStarter", "EventTriggerShopItemSelect", None)
         elif index in (156, 461):
             editor.action("Event281" if index == 156 else "Event543", "Npc_EventStarter",
                           "EventTriggerGetItemAtShop", {"IsGetEvent": False})
         else:
             editor.action("Fixture" + str(index), "GameSystemActor", "EventWait", {"Frames": 0})
     events = editor.chart.events
+    events[186].data.cases = {0: make_index(events[187]), 1: make_index(events[188])}
     for gate_index, money_index, pay_index, sold_index, grant_index, call_index, finish_index in (
             (6, 20, 21, 22, 156, 157, 158), (170, 25, 26, 27, 461, 462, 463)):
         money = editor.switch("Money" + str(gate_index), "Npc_EventStarter", "EventQueryHasRuppe", None, events[pay_index], events[finish_index])
@@ -71,22 +82,27 @@ def native_shop():
 
 
 class Purchase:
-    def __init__(self, raw, selected, money=100, capacity=2):
+    def __init__(self, raw, selected, money=100, capacity=2, *, rewards=None, owned=None, empty_bottle=True):
         self.chart = _flow(raw).flowchart
         self.entries = {entry.name: entry.main_event.v for entry in self.chart.entry_points}
         self.selected, self.money, self.capacity = selected, money, capacity
         self.values, self.trace = {}, []
+        self.rewards = records() if rewards is None else rewards
+        self.owned = set() if owned is None else set(owned)
+        self.empty_bottle = empty_bottle
 
-    def run(self, entry):
+    def run(self, entry, arguments=None):
         node = self.entries[entry]
+        arguments = arguments or {}
         steps = 0
         while node is not None:
             steps += 1; assert steps < 2000, "Purchase hook loop"
             data = node.data
-            params = data.params.data if getattr(data, "params", None) else {}
+            params = {key: arguments[value] if isinstance(value, Argument) else value
+                      for key, value in (data.params.data.items() if getattr(data, "params", None) else ())}
             if isinstance(data, SubFlowEvent):
                 assert data.res_flowchart_name == "", "Unexpected external preload dependency"
-                self.run(data.entry_point_name)
+                self.run(data.entry_point_name, params)
                 node = data.nxt.v
             elif isinstance(data, SwitchEvent):
                 command = data.actor_query.v.v
@@ -97,6 +113,13 @@ class Purchase:
                     answer = self.capacity
                 elif command == "EventQueryHasRuppe":
                     answer = 0 if self.money >= self.price else 1
+                elif command == "EventQueryCheckIsGet":
+                    answer = 0 if params["ActorName"] in self.owned else 1
+                elif command == "EventQueryIsGameDataBool":
+                    value = self.values.get(params["GameDataName"], params["GameDataName"] == "Fixture.NativeHookEnabled")
+                    answer = 0 if value else 1
+                elif command == "EventQueryIsAnyBottleEmpty":
+                    answer = 0 if self.empty_bottle else 1
                 else:
                     raise AssertionError(command)
                 reference = data.cases.get(answer)
@@ -108,13 +131,19 @@ class Purchase:
                     self.money -= self.price
                 elif command in ("EventTriggerSetGameDataBool", "EventTriggerSetGameDataInt"):
                     self.values[params["GameDataName"]] = params["Value"]
+                elif command == "EventTriggerAddOrSubGameDataInt":
+                    key = params["GameDataName"]
+                    self.values[key] = self.values.get(key, 0) + params["Value"]
+                elif command == "EventTriggerAddOrRemovePouchContent":
+                    actor = params.get("Actor", params.get("ActorName"))
+                    self.owned.add(OWNERS.get(actor, actor))
                 node = data.nxt.v
             else:
                 raise AssertionError(type(data).__name__)
 
     @property
     def price(self):
-        return next((record["price"] for record in records() if record["actor"] == self.selected), 15)
+        return next((record["price"] for record in self.rewards if record["actor"] == self.selected), 15)
 
     @staticmethod
     def assert_selected(params):
@@ -201,6 +230,113 @@ class ShopEventTests(unittest.TestCase):
         flags = {event.data.params.data.get("GameDataName") for event in patched.events
                  if event.name.startswith(PREFIX + "Collected")}
         self.assertEqual(flags, {record["flag_name"] for record in SHOP_CHECKS.values()})
+
+    def test_every_local_item_uses_one_native_effect_without_a_network_ack(self):
+        from ootrr_triforce.catalog import SHOP_CHECKS
+        catalogue = list(ITEM_DATA)
+        for first in range(0, len(catalogue), 8):
+            names = catalogue[first:first + 8]
+            rewards = [dict(metadata, name=location, actor="Item_AP_local" + str(index), price=15,
+                            local_item=name, native_actor=ITEM_DATA[name]["actor"])
+                       for index, ((location, metadata), name) in enumerate(zip(SHOP_CHECKS.items(), names))]
+            raw = patch_shop_flow(self.before, rewards, pouch_raw=native_flow())
+            for row in rewards:
+                with self.subTest(item=row["local_item"]):
+                    run = Purchase(raw, row["actor"], rewards=rewards)
+                    run.run("FirstBuy")
+                    metadata = ITEM_DATA[row["local_item"]]
+                    pouch = [values for command, values in run.trace if command == "EventTriggerAddOrRemovePouchContent"]
+                    if metadata["mode"] == "generic" or metadata["kind"] == "TCGSmallKey" or is_cure(metadata):
+                        self.assertFalse(pouch)
+                    elif metadata.get("bottle_item") and metadata.get("pouch_special") == "NotPushToPouch":
+                        self.assertFalse(pouch)
+                        self.assertEqual(sum(command == "EventTriggerPushToEmptyBottle" for command, _ in run.trace), 1)
+                    else:
+                        self.assertEqual([values.get("Actor", values.get("ActorName")) for values in pouch], [metadata["actor"]])
+                        self.assertEqual(pouch[0]["Num"], 1)
+                    if is_cure(metadata):
+                        self.assertEqual([values["ActorName"] for command, values in run.trace
+                                          if command == "EventTriggerRecoverByCureItem"], [metadata["actor"]])
+                    if metadata["kind"] == "TCGSmallKey":
+                        self.assertEqual(run.values["MiniGame_SmallKeyNum"], 1)
+                        self.assertIs(run.values["UI_MiniGameGetSmallKeyOnce"], True)
+                    if metadata.get("dungeon"):
+                        dungeon = "DungeonInfo." + DUNGEONS[metadata["dungeon"]] + "."
+                        self.assertTrue(any(key.startswith(dungeon) for key in run.values))
+                        self.assertFalse(any(key.startswith("DungeonInfo.") and not key.startswith(dungeon) for key in run.values))
+                    self.assertTrue(run.values[row["flag_name"]])
+                    self.assertTrue(all(run.values[counter] == 1 for counter in row["counters"]))
+                    self.assertEqual(run.money, 85)
+                    self.assertFalse(any(key.startswith("Archipelago.ReceivedIndex.") for key in run.values))
+                    self.assertEqual(sum(command == "EventTriggerGetItemAtShop" for command, _ in run.trace), 1)
+                    save = next(index for index, (command, _) in enumerate(run.trace) if command == "EventTriggerRequestAutoSave")
+                    commit = next(index for index, (_, values) in enumerate(run.trace) if values.get("GameDataName") == row["flag_name"])
+                    self.assertLess(commit, save)
+                    # Repeating a callback after its saved flag repairs stock
+                    # counters without applying the local item again.
+                    before = len(run.trace)
+                    run.run(ENTRY)
+                    replay = run.trace[before:]
+                    self.assertFalse(any(command in {"EventTriggerAddOrRemovePouchContent", "EventTriggerRecoverByCureItem",
+                                                     "EventTriggerPushToEmptyBottle", "EventTriggerAddOrSubGameDataInt"}
+                                         for command, _ in replay))
+
+    def test_local_progressive_tiers_and_failed_purchases_keep_native_rules(self):
+        rewards = records()
+        rewards[0].update(local_item="Bow", native_actor=ITEM_DATA["Bow"]["actor"])
+        raw = patch_shop_flow(self.before, rewards, pouch_raw=native_flow())
+        for index, actor in enumerate(ITEM_DATA["Bow"]["tiers"]):
+            held = [OWNERS.get(tier, tier) for tier in ITEM_DATA["Bow"]["tiers"][:index]]
+            for entry in ("FirstBuy", "RepeatBuy"):
+                run = Purchase(raw, rewards[0]["actor"], rewards=rewards, owned=held)
+                run.run(entry)
+                self.assertEqual([values["Actor"] for command, values in run.trace
+                                  if command == "EventTriggerAddOrRemovePouchContent"], [actor])
+        poor = Purchase(raw, rewards[0]["actor"], money=0, rewards=rewards)
+        poor.run("FirstBuy")
+        self.assertFalse(poor.values)
+        self.assertFalse(any(command.startswith("EventTriggerGetItem") or command == "EventTriggerAddOrRemovePouchContent"
+                             for command, _ in poor.trace))
+        remote = Purchase(raw, rewards[1]["actor"], rewards=rewards)
+        remote.run("RepeatBuy")
+        self.assertFalse(any(command == "EventTriggerAddOrRemovePouchContent" for command, _ in remote.trace))
+        with self.assertRaises(ValueError):
+            patch_shop_flow(self.before, rewards)
+        invalid = copy.deepcopy(rewards)
+        invalid[0]["native_actor"] = "Item_AP_wrong"
+        with self.assertRaises(ValueError):
+            patch_shop_flow(self.before, invalid, pouch_raw=native_flow())
+
+    def test_local_bottle_refills_require_space_before_payment_or_check_commit(self):
+        item = next(name for name, metadata in ITEM_DATA.items()
+                    if metadata.get("bottle_item") == "BlueFire" and metadata.get("pouch_special") == "NotPushToPouch")
+        rewards = records()
+        rewards[0].update(local_item=item, native_actor=ITEM_DATA[item]["actor"])
+        raw = patch_shop_flow(self.before, rewards, pouch_raw=native_flow())
+        for entry in ("FirstBuy", "RepeatBuy"):
+            full = Purchase(raw, rewards[0]["actor"], rewards=rewards, empty_bottle=False)
+            full.run(entry)
+            self.assertEqual(full.money, 100)
+            self.assertFalse(full.values)
+            self.assertTrue(any(command == "EventTriggerShopItemSelect" for command, _ in full.trace))
+            self.assertFalse(any(command in {"EventTriggerPayItemPriceAtShop", "EventTriggerGetItemAtShop",
+                                             "EventTriggerPushToEmptyBottle", "EventTriggerRequestAutoSave"}
+                                 for command, _ in full.trace))
+            empty = Purchase(raw, rewards[0]["actor"], rewards=rewards, empty_bottle=True)
+            empty.run(entry)
+            self.assertEqual(empty.money, 100 - rewards[0]["price"])
+            self.assertEqual(sum(command == "EventTriggerPushToEmptyBottle" for command, _ in empty.trace), 1)
+            self.assertTrue(empty.values[rewards[0]["flag_name"]])
+            remote = Purchase(raw, rewards[1]["actor"], rewards=rewards, empty_bottle=False)
+            remote.run(entry)
+            self.assertEqual(remote.money, 100 - rewards[1]["price"])
+            self.assertTrue(remote.values[rewards[1]["flag_name"]])
+        broken = _flow(self.before)
+        broken.flowchart.events[186].data.params = Container()
+        broken.flowchart.events[186].data.params.data = {"Unexpected": 1}
+        stream = io.BytesIO(); self.assertTrue(broken.write(stream))
+        with self.assertRaises(ValueError):
+            patch_shop_flow(stream.getvalue(), rewards, pouch_raw=native_flow())
 
     def test_real_resources_only_write_flow_and_rest_in_temporary_stage(self):
         game = Path(os.environ.get("OOTRR_ROMFS", ""))

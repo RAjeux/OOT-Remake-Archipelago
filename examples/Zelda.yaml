@@ -9,6 +9,9 @@ game: "Ocarina of Time Remake"
   # become network checks.
   # Values: all, overworld, dungeons
   shuffle_chests: "all"
+  # Normal shop shuffle. Kokiri purchases can contain your own or remote items.
+  # Values: off, shuffle
+  shuffle_shops: "shuffle"
 
   # Dungeon items
   # Keep small keys vanilla, in their own dungeon, in any dungeon, or anywhere. The last two
@@ -187,6 +190,3 @@ game: "Ocarina of Time Remake"
 
   # Share deaths between Zelda and Ami.
   death_link: true
-
-  # Eight one-time Kokiri purchases for other players.
-  kokiri_shop_checks: true

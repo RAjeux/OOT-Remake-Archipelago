@@ -176,14 +176,17 @@ fn patch(j: &Json) -> Result<()> {
 
 // Build the AP shelf actors with OOTRR's own shop factory, using the staged
 // AP item packs as model/pouch inputs and preserving the seed's prices.
-fn shops(j: &Json) -> Result<()> {
-    use ootrr_core::shelf::{self, Job, What};
+fn shop_jobs(j: &Json) -> Result<Vec<ootrr_core::shelf::Job>> {
+    use std::collections::BTreeSet;
+    use ootrr_core::shelf::{Job, What};
     let records = j.get("shops").and_then(Json::as_arr).ok_or("missing shop jobs")?;
     let strings = |r: &Json, key: &str| -> Result<Vec<String>> {
         r.get(key).and_then(Json::as_arr).ok_or_else(|| format!("missing {key}").into())
             .and_then(|xs| xs.iter().map(|x| x.as_str().map(str::to_owned).ok_or_else(|| "invalid shop string".into())).collect())
     };
     let mut jobs = Vec::new();
+    let mut slots = BTreeSet::new();
+    let mut actors = BTreeSet::new();
     for r in records {
         let price = r.get("price").and_then(Json::as_i64).ok_or("missing shop price")?;
         let slot = r.get("slot").and_then(Json::as_i64).ok_or("missing shop slot")?;
@@ -191,12 +194,43 @@ fn shops(j: &Json) -> Result<()> {
             return Err("invalid AP shop price or slot".into());
         }
         let item = field(r, "actor")?;
-        if !item.starts_with("Item_AP_") { return Err("AP shelf must contain a presentation token".into()); }
+        if !item.starts_with("Item_AP_") || !ootrr_core::pickup_pack::is_actor_name(item) {
+            return Err("AP shelf must contain a presentation token".into());
+        }
+        if !slots.insert(slot) || !actors.insert(item) {
+            return Err("each AP shop slot needs a unique presentation token".into());
+        }
+        // All shelves use their own no-effect AP pouch identity. A local
+        // reward borrows the native item's display only; DisplayShop applies
+        // its complete, room-specific grant recipe after a successful sale.
+        let model = match (r.get("local_item"), r.get("native_actor")) {
+            (None, None) => None,
+            (Some(local), Some(native)) => {
+                let name = local.as_str().ok_or("invalid local shop reward")?;
+                let actor = native.as_str().ok_or("invalid local shop actor")?;
+                if name.is_empty() || name.len() > 256 || name.chars().any(char::is_control) ||
+                    !ootrr_core::pickup_pack::is_actor_name(actor) || actor.starts_with("Item_AP_") {
+                    return Err("invalid local shop reward".into());
+                }
+                Some(actor.to_string())
+            }
+            _ => return Err("a local shop reward needs its name and native actor".into()),
+        };
         jobs.push(Job { label: field(r,"name")?.to_string(), shop: "KF Shop".to_string(),
             slot: slot as usize, keepers: strings(r,"keepers")?, bancs: strings(r,"bancs")?,
             counters: strings(r,"counters")?,
-            what: What::Deal { item: item.to_string(), price: price as i32, model: None }, tiered: None });
+            what: What::Deal { item: item.to_string(), price: price as i32, model }, tiered: None });
     }
+    Ok(jobs)
+}
+
+fn shops(j: &Json) -> Result<()> {
+    use ootrr_core::shelf;
+    let jobs = shop_jobs(j)?;
+    let strings = |r: &Json, key: &str| -> Result<Vec<String>> {
+        r.get(key).and_then(Json::as_arr).ok_or_else(|| format!("missing {key}").into())
+            .and_then(|xs| xs.iter().map(|x| x.as_str().map(str::to_owned).ok_or_else(|| "invalid shop string".into())).collect())
+    };
     let messages = strings(j, "messages")?;
     let done = shelf::stage::run_with_messages(Path::new("/game"), Some(Path::new("/mod")),
         Path::new("/load"), "Archipelago", modpack::Host::Nx2navi, &jobs, Some(&messages))?;
@@ -233,6 +267,67 @@ mod tests {
             m.put_markup(label, text).unwrap();
         }
         m.write().unwrap()
+    }
+
+    fn shop_record(actor: &str, slot: i64) -> Json {
+        Json::obj().with("name", format!("KF Shop Item {}", slot + 1).into())
+            .with("actor", actor.into()).with("slot", slot.into()).with("price", 20_i64.into())
+            .with("keepers", Json::strs(["Npc_Kokiri_001_Shop_Child"]))
+            .with("bancs", Json::strs(["Banc/Kokiri.bcett.byml.zs"]))
+            .with("counters", Json::strs(["Shop_SoldNum.Test"]))
+    }
+
+    #[test]
+    fn local_and_remote_shelves_keep_distinct_no_effect_tokens() {
+        use ootrr_core::shelf::What;
+        let local = shop_record("Item_AP_1234", 0)
+            .with("local_item", "Bow".into()).with("native_actor", "Item_Range_Bow".into());
+        let remote = shop_record("Item_AP_5678", 1);
+        let jobs = shop_jobs(&Json::obj().with("shops", Json::Arr(vec![local.clone(), remote.clone()]))).unwrap();
+        assert!(matches!(&jobs[0].what, What::Deal { item, model: Some(model), .. }
+            if item == "Item_AP_1234" && model == "Item_Range_Bow"));
+        assert!(matches!(&jobs[1].what, What::Deal { item, model: None, .. }
+            if item == "Item_AP_5678"));
+        assert_ne!(jobs[0].shelf_actor(), jobs[1].shelf_actor());
+        for rows in [vec![local.clone(), local.clone()],
+                     vec![local.clone().with("native_actor", "../Pack/unsafe".into())],
+                     vec![remote.clone().with("local_item", "Bow".into())],
+                     vec![local.with("native_actor", "Item_AP_8765".into())]] {
+            assert!(shop_jobs(&Json::obj().with("shops", Json::Arr(rows))).is_err());
+        }
+    }
+
+    #[test]
+    fn local_shop_text_copies_native_controls_and_preserves_remote_text() {
+        use std::collections::BTreeMap;
+        use ootrr_core::shelf::text::{archive_with_aliases, POUCH_MSG};
+        let source = sarc::write(&[
+            sarc::Entry { name: POUCH_MSG.into(), data: book(&[
+                ("Weapon_Range_Bow_Name", "Native bow{5.1}"),
+                ("Weapon_Range_Bow_Caption", "Native item description"),
+                ("Item_AP_1234_Name", "Old AP name"),
+                ("Item_AP_1234_GetCaption", "Old AP recipient text"),
+                ("Item_AP_1234_GetMessage", "Old AP recipient message"),
+                ("Item_AP_5678_Name", "Foreign item for Ami"),
+                ("Item_AP_5678_Caption", "Keep this foreign description")]) },
+            sarc::Entry { name: "Unrelated.msbt".into(), data: vec![1, 2, 3] },
+        ]).unwrap();
+        let aliases = BTreeMap::from([("Item_AP_1234".into(), "Weapon_Range_Bow".into())]);
+        let ids = vec!["Item_AP_1234".into(), "Item_AP_5678".into()];
+        let (result, changed) = archive_with_aliases(&source, &ids, &aliases).unwrap();
+        assert!(changed > 0);
+        let entries = sarc::parse(&result).unwrap();
+        let after = msbt::parse(&sarc::get(&entries, POUCH_MSG).unwrap().data).unwrap();
+        assert_eq!(after.raw("Item_AP_1234_Name"), after.raw("Weapon_Range_Bow_Name"));
+        for suffix in ["_Caption", "_GetCaption", "_GetMessage", "_ShopCaption"] {
+            assert_eq!(after.raw(&format!("Item_AP_1234{suffix}")), after.raw("Weapon_Range_Bow_Caption"));
+        }
+        let original = sarc::parse(&source).unwrap();
+        let before = msbt::parse(&sarc::get(&original, POUCH_MSG).unwrap().data).unwrap();
+        assert_eq!(after.raw("Item_AP_5678_Name"), before.raw("Item_AP_5678_Name"));
+        assert_eq!(after.raw("Item_AP_5678_Caption"), before.raw("Item_AP_5678_Caption"));
+        assert_eq!(sarc::get(&entries, "Unrelated.msbt").unwrap().data, vec![1, 2, 3]);
+        assert_eq!(archive_with_aliases(&result, &ids, &aliases).unwrap(), (result, 0));
     }
 
     #[test]

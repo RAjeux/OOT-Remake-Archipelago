@@ -71,9 +71,22 @@ class OOTRRSettingsRemoved(Removed):
         super().__init__(value)
 
 
+class KokiriShopChecksRemoved(Removed):
+    """Use the native shop shuffle instead of the old foreign-only test option."""
+
+    def __init__(self, value):
+        # Removed.from_any stringifies YAML values before constructing us.
+        disabled = value is None or value is False or value == 0 or (
+            isinstance(value, str) and value.strip().casefold() in {"", "false", "off", "0", "none", "null"})
+        if not disabled:
+            raise ValueError("kokiri_shop_checks was a test option. Replace it with shuffle_shops: shuffle "
+                             "to randomize shops normally, or shuffle_shops: off to disable shop checks.")
+        super().__init__("")
+
+
 RemakeOptions = make_dataclass(
     "RemakeOptions", [(name, option) for name, option in OPTION_TYPES.items()]
-    + [("ootrr_settings", OOTRRSettingsRemoved)], bases=(PerGameCommonOptions,),
+    + [("ootrr_settings", OOTRRSettingsRemoved), ("kokiri_shop_checks", KokiriShopChecksRemoved)], bases=(PerGameCommonOptions,),
     namespace={"__module__": __name__})
 
 OPTION_GROUPS = [OptionGroup(group, [OPTION_TYPES[spec["id"]] for spec in OPTION_SPECS if spec["group"] == group],

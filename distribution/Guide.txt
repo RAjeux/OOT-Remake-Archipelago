@@ -1,4 +1,4 @@
-Archipelago · Ocarina of Time Remake · 0.4.0-alpha.1
+Archipelago · Ocarina of Time Remake · 0.4.1-alpha.1
 Alpha for Triforce on Windows x64.
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
@@ -19,7 +19,7 @@ Create a room
 2. Run Create-YAML.cmd to prepare Zelda's YAML. Supported OOTRR settings
    and their descriptions are written directly in the file. The repository's
    examples/ directory also provides examples. death_link and
-   kokiri_shop_checks are explained below.
+   shuffle_shops are explained below.
 3. Generate a room with this YAML and the other players' YAML files.
    Obtain your .apootrr player file, then start that room's server.
 
@@ -107,11 +107,15 @@ records the error. The chest notification can still show the item's name
 and recipient.
 
 The eight Kokiri purchases
-Set kokiri_shop_checks: true in Zelda's YAML before generating a new room.
-This prepares all eight native shop shelves and requires at least two
-players. Each shelf sells another player's item once, at its OOTRR seed
-price. Payment and the sold-out display use the game's mechanisms; a
-completed purchase reports its AP check.
+Set shuffle_shops: shuffle in Zelda's YAML before generating a new room.
+OOTRR shuffles shop goods normally. The eight Kokiri shelves become AP
+checks and can sell your own items or another player's items, at their
+OOTRR seed prices. Single-player rooms are supported. Your own rewards
+use native item models and effects; remote rewards use the AP medal.
+Payment and the sold-out display use the game's mechanisms; a completed
+purchase reports its AP check. shuffle_shops: off excludes shops from AP.
+The old kokiri_shop_checks test option was removed. Replace it in existing
+YAML files; already generated rooms keep their original placements.
 One purchase has been tested in the game, including the other player's
 receipt and the sold-out state after reloading. All eight shelves have
 automated coverage, but they have not all been purchased in the game.

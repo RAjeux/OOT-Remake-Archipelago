@@ -4,7 +4,7 @@ Ocarina of Time Remake:
   progression_balancing: 50
   accessibility: full
   death_link: true
-  kokiri_shop_checks: true
+  shuffle_shops: shuffle
   shuffle_chests: all
   shuffle_smallkeys: keysanity
   shuffle_bosskeys: keysanity

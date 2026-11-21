@@ -44,9 +44,7 @@ def export_yaml():
                "# Edit the values below before generating the room.\n"
                f"name: {json.dumps(name, ensure_ascii=False)}\ngame: {json.dumps(GAME)}\n"
                f"{json.dumps(GAME)}:\n" + yaml_options() +
-               "\n  # Share deaths with other DeathLink players.\n  death_link: false\n"
-               "\n  # Eight unique Kokiri purchases for other players' items.\n"
-               "  kokiri_shop_checks: false\n")
+               "\n  # Share deaths with other DeathLink players.\n  death_link: false\n")
     while True:
         try:
             with filename.open("x", encoding="utf-8") as out:
@@ -682,6 +680,7 @@ def main():
     runtime = dict(cfg, mods_dir=str(mods), exe=profile.get("exe"), install_only=bool(args.install_only or args.setup),
                    reward_mode=data.get("reward_mode","legacy_gear"),local_items=bool(data.get("local_items",False)),
                    player=data["player"],kokiri_shop_checks=bool(data.get("kokiri_shop_checks",False)),
+                   foreign_only_shops=bool(data.get("foreign_only_shops",False)),
                    shop_prices={name:row["price"] for name,row in data["seed_file"].get("shops",{}).items()
                                 if name in SHOP_CHECKS})
     if args.native_install:

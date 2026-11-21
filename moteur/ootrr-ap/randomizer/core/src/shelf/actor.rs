@@ -22,6 +22,12 @@ pub struct Shelf {
     pub fresh: Vec<(String, usize)>,
     pub peers: Vec<(String, usize)>,
     pub who: String,
+    /// Local AP shelves have a no-effect pouch identity but display the native
+    /// item's name and description, including its original language controls.
+    pub display_who: Option<String>,
+    /// The native reward whose name is shown, when its model comes from a
+    /// different actor (for example the authored harp used for song rewards).
+    pub display_actor: Option<String>,
     /// A song shelf with harp colours on: the coloured harp's model project for its actor row.
     pub project: Option<String>,
 }
@@ -75,6 +81,17 @@ fn load(rf: &mut Romfs, base: Option<&PB>, name: &str) -> Res<Vec<Entry>> {
     sarc::parse(&start(rf, base, &pack_of(name))?)
 }
 
+fn local_model(actor: &str) -> &str {
+    // These are OOTRR's existing shop model donors. Melody actors carry the
+    // song identity but use the authored harp for physical presentation.
+    if actor.starts_with("Item_Melody_") { return crate::song_models::DONOR; }
+    match actor {
+        "Item_Ocarina_Fairy" => "Dm_Item_Ocarina_Fairy",
+        "Item_Ocarina_Time" => "Obj_Ocarina_Time",
+        _ => actor,
+    }
+}
+
 pub fn make(rf: &mut Romfs, base: Option<&PB>, item: &str, model: Option<&str>, name: &str, price: i32) -> Res<Shelf> {
     if !crate::pickup_pack::is_actor_name(item) || !crate::pickup_pack::is_actor_name(name) {
         return Err(E::Msg(format!("{item} or {name} is not a plain actor name")));
@@ -82,25 +99,36 @@ pub fn make(rf: &mut Romfs, base: Option<&PB>, item: &str, model: Option<&str>, 
     if rf.root.join(pack_of(name)).is_file() {
         return Err(E::Msg(format!("the game already ships {name}")));
     }
+    let local_ap = item.starts_with("Item_AP_") && model.is_some();
+    let display_name = model.unwrap_or(item);
+    let look_name = if local_ap { local_model(display_name) } else { display_name };
     let mut p: Pool = Pool::default();
-    for n in [BASE, TEMPLATE, item].into_iter().chain(model) {
+    for n in [BASE, TEMPLATE, item, display_name, look_name] {
         let es: Vec<Entry> = load(rf, base, n)?;
         p.add_pack(&es)?;
     }
     let peers: Vec<(String, usize)> = p.files.iter().map(|e| (e.0.clone(), e.1.len())).collect();
     let it: Chain = chain(&p, item)?;
     let tpl: Chain = chain(&p, TEMPLATE)?;
-    let look_name: &str = model.unwrap_or(item);
     let look: Chain = chain(&p, look_name)?;
-    let tinted: Option<(String, String)> = tinted_harp(&p, item, look_name);
+    let display = chain(&p, display_name)?;
+    let tinted: Option<(String, String)> = tinted_harp(&p, if local_ap { display_name } else { item }, look_name);
     let item_pouch: String = norm(need(&it, item, "PouchContentRef")?).ok_or(E::Format("the item pouch reference is not a file"))?;
     let version: u16 = p.byml(&actor_file(TEMPLATE))?.version;
     let base_table: String = norm(need(&chain(&p, BASE)?, BASE, "GameParameterTableRef")?).ok_or(E::Format("the shelf base table reference is not a file"))?;
     let mut comps: Node = Node::Map(Vec::new());
     comps.set("ASInfoRef", s(need(&tpl, TEMPLATE, "ASInfoRef")?));
     comps.set("ASRef", s(need(&tpl, TEMPLATE, "ASRef")?));
-    comps.set("ActorNameRef", s(need(&it, item, "ActorNameRef")?));
-    comps.set("AnimationRef", s(need(&look, look_name, "AnimationRef")?));
+    comps.set("ActorNameRef", s(if local_ap {
+        need(&display, display_name, "ActorNameRef")?
+    } else {
+        need(&it, item, "ActorNameRef")?
+    }));
+    // Static native meshes, such as a Deku Stick, have no AnimationRef. The
+    // shelf base supplies its normal shop AS; no pickup spin is fabricated.
+    if let Some(animation) = look.comps.get("AnimationRef") {
+        comps.set("AnimationRef", s(animation));
+    }
     match &tinted {
         Some((info, _)) => comps.set("ModelInfoRef", s(info)),
         None => comps.set("ModelInfoRef", s(need(&look, look_name, "ModelInfoRef")?)),
@@ -126,6 +154,12 @@ pub fn make(rf: &mut Romfs, base: Option<&PB>, item: &str, model: Option<&str>, 
     actor.set(COMPONENTS, comps);
     let sp: Spec = Spec { item: item.to_string(), name: name.to_string(), style: Style::Touch, heap: None };
     let who: String = shelf_identity(&identity(&p, &sp, &it, &item_pouch)?).to_string();
+    let display_who = if local_ap {
+        let native_pouch = norm(need(&display, display_name, "PouchContentRef")?)
+            .ok_or(E::Format("the local shop display pouch is not a file"))?;
+        let source = Spec { item: display_name.to_string(), name: name.to_string(), style: Style::Touch, heap: None };
+        Some(shelf_identity(&identity(&p, &source, &display, &native_pouch)?).to_string())
+    } else { None };
     let mut pouch: Node = Node::Map(Vec::new());
     pouch.set(PARENT, s(&work(&item_pouch)));
     pouch.set(POUCH_ACTOR, s(&work(&actor_file(&who))));
@@ -152,7 +186,7 @@ pub fn make(rf: &mut Romfs, base: Option<&PB>, item: &str, model: Option<&str>, 
         }
     }
     let es: Vec<Entry> = files.iter().map(|f| Entry { name: f.clone(), data: p.get(f).unwrap_or(&[]).to_vec() }).collect();
-    Ok(Shelf { name: name.to_string(), item: item.to_string(), look: look_name.to_string(), price, pack: sarc::write(&es)?, fresh, peers, who, project: tinted.map(|t| t.1) })
+    Ok(Shelf { name: name.to_string(), item: item.to_string(), look: look_name.to_string(), price, pack: sarc::write(&es)?, fresh, peers, who, display_who, display_actor: local_ap.then(|| display_name.to_string()), project: tinted.map(|t| t.1) })
 }
 
 pub fn heap(t: &Byml, item: &str) -> Res<i32> {
@@ -173,7 +207,8 @@ pub fn add_rows(tables: &mut [Byml; 3], sh: &Shelf) -> Res<()> {
         a.set("ModelProjectName", Node::Str(project.clone()));
     }
     if sh.look != sh.item {
-        if let Some(n) = rows::find(&tables[0], &sh.item).and_then(|r| r.get("ActorName")).cloned() {
+        let named = sh.display_actor.as_deref().unwrap_or(&sh.item);
+        if let Some(n) = rows::find(&tables[0], named).and_then(|r| r.get("ActorName")).cloned() {
             a.set("ActorName", n);
         }
     }

@@ -48,10 +48,10 @@ MAP_COMPASS = ("remove", "startwith", "vanilla", "dungeon", "regional", "any_dun
 
 _BASE_SPECS = (
     _toggle("death_link", False, "Share deaths with other DeathLink players.", "Archipelago"),
-    _toggle("kokiri_shop_checks", False,
-            "Add the eight one-time Kokiri purchases as AP checks for other players only. Requires at least two players; prices use the native shop system.", "Archipelago"),
     _choice("shuffle_chests", "all", ("all", "overworld", "dungeons"),
             "Shuffle all chests, overworld chests, or dungeon chests. Only chests in the AP catalogue become network checks.", "Shuffle"),
+    _choice("shuffle_shops", "off", ("off", "shuffle"),
+            "Shuffle shop goods with OOTRR. The eight Kokiri purchases become Archipelago checks and can contain your own items or other players' items; prices and payment use the native shop system.", "Shuffle"),
     _choice("shuffle_smallkeys", "dungeon", SMALL_KEYS,
             "Keep small keys vanilla, in their own dungeon, in any dungeon, or anywhere. The last two choices require shuffled dungeon chests.", "Dungeon items"),
     _choice("shuffle_bosskeys", "dungeon", BOSS_KEYS,
@@ -141,7 +141,7 @@ _DIFFICULTY = (
 OPTION_SPECS = _BASE_SPECS + tuple(_toggle(name, False, description + " Experimental.", "Difficulty")
                                   for name, description in _DIFFICULTY)
 SPEC_BY_ID = {spec["id"]: spec for spec in OPTION_SPECS}
-AP_ONLY = frozenset({"death_link", "kokiri_shop_checks"})
+AP_ONLY = frozenset({"death_link"})
 
 # These are internal constraints, never free-form YAML options. In particular,
 # bosses, pots, NPCs and other untracked rewards retain their native sources.
@@ -227,14 +227,11 @@ def engine_settings(values):
     options = validate_options(values)
     result = copy.deepcopy(FIXED_SETTINGS)
     result.update({name: value for name, value in options.items() if name not in AP_ONLY})
-    # The native shop shuffle exports all eight Kokiri shelves and their actual
-    # goods/prices. No unrelated shopsanity/deal setting is exposed to AP players.
-    result["shuffle_shops"] = "shuffle" if options["kokiri_shop_checks"] else "off"
     return result
 
 
 def yaml_options(indent="  ", language="en"):
-    """OOTRR-only YAML block; the caller writes the two AP toggles separately."""
+    """OOTRR-only YAML block; the caller writes DeathLink separately."""
     french = str(language).lower().replace("_", "-").startswith("fr")
     descriptions = json.loads(resources.files(__package__).joinpath("settings_fr.json").read_text(encoding="utf-8")) if french else {}
     groups = {"Shuffle": "Mélange", "Dungeon items": "Objets de donjon", "World": "Monde", "Goal": "Objectif",

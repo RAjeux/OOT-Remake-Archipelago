@@ -3,7 +3,7 @@ from .i18n import tr
 import json
 from pathlib import Path
 
-from .catalog import SHOP_CHECKS
+from .catalog import ITEM_DATA, ITEM_IDS, SHOP_CHECKS
 from .engine import run_engine
 
 
@@ -13,9 +13,15 @@ def shop_records(roster, settings):
     records = []
     for name in sorted(set(roster).intersection(SHOP_CHECKS)):
         row = roster[name]
+        local_item = None
         if isinstance(row, dict):
             if row.get("local"):
-                raise ValueError(tr("This test room reserves Kokiri purchases for other players' items."))
+                if settings.get("foreign_only_shops"):
+                    raise ValueError(tr("This test room reserves Kokiri purchases for other players' items."))
+                local_item = row["item"]
+                if (not isinstance(local_item, str) or local_item not in ITEM_DATA
+                        or row.get("item_id", ITEM_IDS[local_item]) != ITEM_IDS[local_item]):
+                    raise ValueError(tr('Unknown local Archipelago item: ') + str(local_item))
             item, player = row["item"], row["player"]
         else:
             item, player = row
@@ -24,10 +30,13 @@ def shop_records(roster, settings):
             raise ValueError(tr('Missing or invalid OOTRR price for ') + name)
         metadata = SHOP_CHECKS[name]
         label = ap_item.ap_item(json.dumps([name, item, player], ensure_ascii=False))
-        records.append(dict(name=name, actor=ap_item.ap_actor(label), slot=metadata["slot"],
-                            price=price, flag_name=metadata["flag_name"],
-                            counters=list(metadata["counters"]), keepers=list(metadata["keepers"]),
-                            bancs=list(metadata["bancs"])))
+        record = dict(name=name, actor=ap_item.ap_actor(label), slot=metadata["slot"],
+                      price=price, flag_name=metadata["flag_name"],
+                      counters=list(metadata["counters"]), keepers=list(metadata["keepers"]),
+                      bancs=list(metadata["bancs"]))
+        if local_item is not None:
+            record.update(local_item=local_item, native_actor=ITEM_DATA[local_item]["actor"])
+        records.append(record)
     if settings.get("kokiri_shop_checks") and len(records) != len(SHOP_CHECKS):
         raise ValueError(tr('The room did not provide all eight Kokiri shop rewards.'))
     return records

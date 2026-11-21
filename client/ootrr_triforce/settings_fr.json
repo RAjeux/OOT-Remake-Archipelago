@@ -1,6 +1,6 @@
 {
   "death_link": "Partager les morts avec les autres joueurs DeathLink.",
-  "kokiri_shop_checks": "Ajouter les huit achats uniques de Kokiri aux checks AP, pour les autres joueurs uniquement. Nécessite une salle avec au moins deux joueurs ; les prix restent natifs.",
+  "shuffle_shops": "Mélanger les marchandises avec OOTRR. Les huit achats de Kokiri deviennent des checks Archipelago pouvant contenir tes objets ou ceux des autres joueurs ; prix et paiement restent natifs.",
   "shuffle_chests": "Coffres mélangés : partout, hors donjons ou dans les donjons. Seuls les coffres du catalogue AP deviennent des checks réseau.",
   "shuffle_smallkeys": "Petites clés : emplacement habituel, donjon d'origine, n'importe quel donjon ou partout. Les deux derniers choix exigent les coffres de donjon mélangés.",
   "shuffle_bosskeys": "Placement des clés de boss. remove donne leur accès dès le début. Les placements hors du donjon d'origine exigent les coffres de donjon mélangés.",

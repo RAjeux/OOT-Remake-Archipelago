@@ -252,6 +252,8 @@ fn text_files(c: &mut Ctx, made: &[Shelf], messages: Option<&[String]>) -> Res<V
     let mut ids: Vec<String> = made.iter().map(|s| s.who.clone()).collect();
     ids.sort();
     ids.dedup();
+    let aliases: BM<String, String> = made.iter().filter_map(|s|
+        s.display_who.as_ref().map(|native| (s.who.clone(), native.clone()))).collect();
     if ids.is_empty() {
         return Ok(Vec::new());
     }
@@ -275,7 +277,7 @@ fn text_files(c: &mut Ctx, made: &[Shelf], messages: Option<&[String]>) -> Res<V
     }
     let mut out: Vec<File> = Vec::new();
     for f in &langs {
-        out.push(c.file(f, |r: &[u8]| Ok(text::archive(r, &ids)?.0))?);
+        out.push(c.file(f, |r: &[u8]| Ok(text::archive_with_aliases(r, &ids, &aliases)?.0))?);
     }
     Ok(out)
 }
