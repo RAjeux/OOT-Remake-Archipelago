@@ -1,0 +1,2476 @@
+{
+  "source": "OOTRR portable 0.8.1 settings-dump --compact; vendored settings/list.rs and settings/menu.rs",
+  "schema_version": 1,
+  "settings": [
+    {
+      "id": "logic_rules",
+      "num": 1,
+      "label": "Logic",
+      "group": "world",
+      "kind": "choice",
+      "tag": "core",
+      "default": "glitchless",
+      "choices": [
+        {
+          "id": "glitchless",
+          "label": "Glitchless"
+        },
+        {
+          "id": "no_logic",
+          "label": "No logic"
+        }
+      ],
+      "deps": [],
+      "unsupported": true
+    },
+    {
+      "id": "starting_age",
+      "num": 2,
+      "label": "Starting age",
+      "group": "world",
+      "kind": "choice",
+      "tag": "core",
+      "default": "child",
+      "choices": [
+        {
+          "id": "child",
+          "label": "Child"
+        },
+        {
+          "id": "adult",
+          "label": "Adult"
+        },
+        {
+          "id": "random",
+          "label": "Random"
+        }
+      ],
+      "deps": [],
+      "unsupported": true
+    },
+    {
+      "id": "open_forest",
+      "num": 3,
+      "label": "Kokiri Forest",
+      "group": "world",
+      "kind": "choice",
+      "tag": "common",
+      "default": "closed",
+      "choices": [
+        {
+          "id": "open",
+          "label": "Open"
+        },
+        {
+          "id": "closed",
+          "label": "Closed"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "open_kakariko",
+      "num": 4,
+      "label": "Kakariko Gate",
+      "group": "world",
+      "kind": "choice",
+      "tag": "common",
+      "default": "closed",
+      "choices": [
+        {
+          "id": "open",
+          "label": "Open"
+        },
+        {
+          "id": "closed",
+          "label": "Closed"
+        }
+      ],
+      "deps": [
+        {
+          "on": "open_forest",
+          "is": "open"
+        }
+      ]
+    },
+    {
+      "id": "open_door_of_time",
+      "num": 5,
+      "label": "Open Door of Time",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": [],
+      "legacy": true
+    },
+    {
+      "id": "zora_fountain",
+      "num": 6,
+      "label": "Zora's Fountain",
+      "group": "world",
+      "kind": "choice",
+      "tag": "common",
+      "default": "closed",
+      "choices": [
+        {
+          "id": "closed",
+          "label": "Closed"
+        },
+        {
+          "id": "adult",
+          "label": "Open as adult"
+        },
+        {
+          "id": "open",
+          "label": "Open"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "gerudo_fortress",
+      "num": 7,
+      "label": "Gerudo Fortress",
+      "group": "world",
+      "kind": "choice",
+      "tag": "common",
+      "default": "normal",
+      "choices": [
+        {
+          "id": "normal",
+          "label": "Rescue all four"
+        },
+        {
+          "id": "fast",
+          "label": "Rescue one"
+        },
+        {
+          "id": "open",
+          "label": "Open"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "shuffle_chests",
+      "num": 8,
+      "label": "Chests",
+      "group": "shuffle",
+      "kind": "choice",
+      "tag": "core",
+      "default": "all",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Off"
+        },
+        {
+          "id": "overworld",
+          "label": "Overworld only"
+        },
+        {
+          "id": "dungeons",
+          "label": "Dungeons only"
+        },
+        {
+          "id": "all",
+          "label": "Everywhere"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "shuffle_pots",
+      "num": 9,
+      "label": "Pots",
+      "group": "shuffle",
+      "kind": "choice",
+      "tag": "common",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Off"
+        },
+        {
+          "id": "overworld",
+          "label": "Overworld only"
+        },
+        {
+          "id": "dungeons",
+          "label": "Dungeons only"
+        },
+        {
+          "id": "all",
+          "label": "Everywhere"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "shuffle_crates",
+      "num": 10,
+      "label": "Crates",
+      "group": "shuffle",
+      "kind": "choice",
+      "tag": "common",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Off"
+        },
+        {
+          "id": "overworld",
+          "label": "Overworld only"
+        },
+        {
+          "id": "dungeons",
+          "label": "Dungeons only"
+        },
+        {
+          "id": "all",
+          "label": "Everywhere"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "shuffle_scrubs",
+      "num": 11,
+      "label": "Business Scrubs",
+      "group": "shuffle",
+      "kind": "choice",
+      "tag": "common",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Vanilla"
+        },
+        {
+          "id": "low",
+          "label": "Affordable"
+        },
+        {
+          "id": "regular",
+          "label": "Expensive"
+        },
+        {
+          "id": "random",
+          "label": "Random prices"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "shuffle_freestanding_items",
+      "num": 12,
+      "label": "Freestanding items",
+      "group": "shuffle",
+      "kind": "choice",
+      "tag": "common",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Off"
+        },
+        {
+          "id": "pieces",
+          "label": "Only Pieces of Heart"
+        },
+        {
+          "id": "all",
+          "label": "All Items"
+        },
+        {
+          "id": "dungeons",
+          "label": "Dungeons"
+        },
+        {
+          "id": "overworld",
+          "label": "Overworld"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "disabled_locations",
+      "num": 13,
+      "label": "Excluded locations",
+      "group": "shuffle",
+      "kind": "list",
+      "tag": "core",
+      "default": [],
+      "deps": []
+    },
+    {
+      "id": "shuffle_smallkeys",
+      "num": 14,
+      "label": "Small Keys",
+      "group": "keys",
+      "kind": "choice",
+      "tag": "core",
+      "default": "dungeon",
+      "choices": [
+        {
+          "id": "remove",
+          "label": "Removed"
+        },
+        {
+          "id": "vanilla",
+          "label": "Vanilla spot"
+        },
+        {
+          "id": "dungeon",
+          "label": "Own dungeon"
+        },
+        {
+          "id": "regional",
+          "label": "Same region"
+        },
+        {
+          "id": "overworld",
+          "label": "Overworld only"
+        },
+        {
+          "id": "any_dungeon",
+          "label": "Any dungeon"
+        },
+        {
+          "id": "keysanity",
+          "label": "Anywhere"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "shuffle_bosskeys",
+      "num": 15,
+      "label": "Boss Keys",
+      "group": "keys",
+      "kind": "choice",
+      "tag": "core",
+      "default": "dungeon",
+      "choices": [
+        {
+          "id": "remove",
+          "label": "Removed"
+        },
+        {
+          "id": "vanilla",
+          "label": "Vanilla spot"
+        },
+        {
+          "id": "dungeon",
+          "label": "Own dungeon"
+        },
+        {
+          "id": "regional",
+          "label": "Same region"
+        },
+        {
+          "id": "overworld",
+          "label": "Overworld only"
+        },
+        {
+          "id": "any_dungeon",
+          "label": "Any dungeon"
+        },
+        {
+          "id": "keysanity",
+          "label": "Anywhere"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "shuffle_mapcompass",
+      "num": 16,
+      "label": "Maps and Compasses",
+      "group": "keys",
+      "kind": "choice",
+      "tag": "common",
+      "default": "dungeon",
+      "choices": [
+        {
+          "id": "remove",
+          "label": "Removed"
+        },
+        {
+          "id": "startwith",
+          "label": "Start with them"
+        },
+        {
+          "id": "vanilla",
+          "label": "Vanilla spot"
+        },
+        {
+          "id": "dungeon",
+          "label": "Own dungeon"
+        },
+        {
+          "id": "regional",
+          "label": "Same region"
+        },
+        {
+          "id": "overworld",
+          "label": "Overworld only"
+        },
+        {
+          "id": "any_dungeon",
+          "label": "Any dungeon"
+        },
+        {
+          "id": "keysanity",
+          "label": "Anywhere"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "shuffle_hideoutkeys",
+      "num": 17,
+      "label": "Thieves' Hideout keys",
+      "group": "keys",
+      "kind": "choice",
+      "tag": "niche",
+      "default": "vanilla",
+      "choices": [
+        {
+          "id": "vanilla",
+          "label": "Vanilla spot"
+        },
+        {
+          "id": "regional",
+          "label": "Same region"
+        },
+        {
+          "id": "overworld",
+          "label": "Overworld only"
+        },
+        {
+          "id": "any_dungeon",
+          "label": "Any dungeon"
+        },
+        {
+          "id": "keysanity",
+          "label": "Anywhere"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "shuffle_ganon_bosskey",
+      "num": 18,
+      "label": "Ganon's Boss Key",
+      "group": "keys",
+      "kind": "choice",
+      "tag": "core",
+      "default": "dungeon",
+      "choices": [
+        {
+          "id": "lacs_dungeons",
+          "label": "LACS - Dungeon Rewards"
+        },
+        {
+          "id": "remove",
+          "label": "Removed"
+        },
+        {
+          "id": "vanilla",
+          "label": "Vanilla spot"
+        },
+        {
+          "id": "dungeon",
+          "label": "Own dungeon"
+        },
+        {
+          "id": "regional",
+          "label": "Same region"
+        },
+        {
+          "id": "overworld",
+          "label": "Overworld only"
+        },
+        {
+          "id": "any_dungeon",
+          "label": "Any dungeon"
+        },
+        {
+          "id": "keysanity",
+          "label": "Anywhere"
+        },
+        {
+          "id": "stones",
+          "label": "Spiritual Stones"
+        },
+        {
+          "id": "medallions",
+          "label": "Medallions"
+        },
+        {
+          "id": "dungeons",
+          "label": "Dungeon rewards"
+        },
+        {
+          "id": "tokens",
+          "label": "Gold Skulltula Tokens"
+        },
+        {
+          "id": "hearts",
+          "label": "Hearts"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "ganon_bosskey_stones",
+      "num": 19,
+      "label": "Stones for the key",
+      "group": "keys",
+      "kind": "number",
+      "tag": "common",
+      "default": 3,
+      "min": 0,
+      "max": 3,
+      "deps": [
+        {
+          "on": "shuffle_ganon_bosskey",
+          "is": "stones"
+        }
+      ],
+      "unsupported": true
+    },
+    {
+      "id": "ganon_bosskey_medallions",
+      "num": 20,
+      "label": "Medallions for the key",
+      "group": "keys",
+      "kind": "number",
+      "tag": "common",
+      "default": 6,
+      "min": 0,
+      "max": 6,
+      "deps": [
+        {
+          "on": "shuffle_ganon_bosskey",
+          "is": "medallions"
+        }
+      ],
+      "unsupported": true
+    },
+    {
+      "id": "ganon_bosskey_rewards",
+      "num": 21,
+      "label": "Rewards for the key",
+      "group": "keys",
+      "kind": "number",
+      "tag": "common",
+      "default": 9,
+      "min": 0,
+      "max": 9,
+      "deps": [
+        {
+          "on": "shuffle_ganon_bosskey",
+          "is": "dungeons"
+        }
+      ],
+      "unsupported": true
+    },
+    {
+      "id": "ganon_bosskey_tokens",
+      "num": 22,
+      "label": "Tokens for the key",
+      "group": "keys",
+      "kind": "number",
+      "tag": "common",
+      "default": 100,
+      "min": 0,
+      "max": 100,
+      "deps": [
+        {
+          "on": "shuffle_ganon_bosskey",
+          "is": "tokens"
+        }
+      ],
+      "unsupported": true
+    },
+    {
+      "id": "ganon_bosskey_hearts",
+      "num": 23,
+      "label": "Hearts for the key",
+      "group": "keys",
+      "kind": "number",
+      "tag": "common",
+      "default": 20,
+      "min": 4,
+      "max": 20,
+      "deps": [
+        {
+          "on": "shuffle_ganon_bosskey",
+          "is": "hearts"
+        }
+      ],
+      "unsupported": true
+    },
+    {
+      "id": "bridge",
+      "num": 24,
+      "label": "Rainbow Bridge",
+      "group": "goal",
+      "kind": "choice",
+      "tag": "core",
+      "default": "vanilla",
+      "choices": [
+        {
+          "id": "open",
+          "label": "Always open"
+        },
+        {
+          "id": "vanilla",
+          "label": "Vanilla"
+        },
+        {
+          "id": "stones",
+          "label": "Spiritual Stones"
+        },
+        {
+          "id": "medallions",
+          "label": "Medallions"
+        },
+        {
+          "id": "dungeons",
+          "label": "Dungeon rewards"
+        },
+        {
+          "id": "tokens",
+          "label": "Gold Skulltula Tokens"
+        },
+        {
+          "id": "hearts",
+          "label": "Hearts"
+        },
+        {
+          "id": "random",
+          "label": "Random"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "bridge_stones",
+      "num": 25,
+      "label": "Stones for the bridge",
+      "group": "goal",
+      "kind": "number",
+      "tag": "common",
+      "default": 3,
+      "min": 0,
+      "max": 3,
+      "deps": [
+        {
+          "on": "bridge",
+          "is": "stones"
+        }
+      ],
+      "unsupported": true
+    },
+    {
+      "id": "bridge_medallions",
+      "num": 26,
+      "label": "Medallions for the bridge",
+      "group": "goal",
+      "kind": "number",
+      "tag": "common",
+      "default": 6,
+      "min": 0,
+      "max": 6,
+      "deps": [
+        {
+          "on": "bridge",
+          "is": "medallions"
+        }
+      ],
+      "unsupported": true
+    },
+    {
+      "id": "bridge_rewards",
+      "num": 27,
+      "label": "Rewards for the bridge",
+      "group": "goal",
+      "kind": "number",
+      "tag": "common",
+      "default": 9,
+      "min": 0,
+      "max": 9,
+      "deps": [
+        {
+          "on": "bridge",
+          "is": "dungeons"
+        }
+      ]
+    },
+    {
+      "id": "bridge_tokens",
+      "num": 28,
+      "label": "Tokens for the bridge",
+      "group": "goal",
+      "kind": "number",
+      "tag": "common",
+      "default": 100,
+      "min": 0,
+      "max": 100,
+      "deps": [
+        {
+          "on": "bridge",
+          "is": "tokens"
+        }
+      ],
+      "unsupported": true
+    },
+    {
+      "id": "bridge_hearts",
+      "num": 29,
+      "label": "Hearts for the bridge",
+      "group": "goal",
+      "kind": "number",
+      "tag": "common",
+      "default": 20,
+      "min": 4,
+      "max": 20,
+      "deps": [
+        {
+          "on": "bridge",
+          "is": "hearts"
+        }
+      ],
+      "unsupported": true
+    },
+    {
+      "id": "skip_ganon_trials",
+      "num": 30,
+      "label": "Skip Ganon's Trials",
+      "group": "goal",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "trials",
+      "num": 31,
+      "label": "Ganon's Trials",
+      "group": "goal",
+      "kind": "number",
+      "tag": "common",
+      "default": 6,
+      "min": 0,
+      "max": 6,
+      "deps": [
+        {
+          "on": "skip_ganon_trials",
+          "is": false
+        }
+      ]
+    },
+    {
+      "id": "triforce_hunt",
+      "num": 32,
+      "label": "Triforce Hunt",
+      "group": "goal",
+      "kind": "toggle",
+      "tag": "core",
+      "default": false,
+      "deps": [],
+      "unsupported": true
+    },
+    {
+      "id": "triforce_count_per_world",
+      "num": 33,
+      "label": "Triforce pieces in the pool",
+      "group": "goal",
+      "kind": "number",
+      "tag": "common",
+      "default": 30,
+      "min": 1,
+      "max": 999,
+      "deps": [
+        {
+          "on": "triforce_hunt",
+          "is": true
+        }
+      ],
+      "unsupported": true
+    },
+    {
+      "id": "triforce_goal_per_world",
+      "num": 34,
+      "label": "Triforce pieces needed",
+      "group": "goal",
+      "kind": "number",
+      "tag": "common",
+      "default": 20,
+      "min": 1,
+      "max": 999,
+      "deps": [
+        {
+          "on": "triforce_hunt",
+          "is": true
+        }
+      ],
+      "unsupported": true
+    },
+    {
+      "id": "starting_hearts",
+      "num": 35,
+      "label": "Starting hearts",
+      "group": "starting",
+      "kind": "number",
+      "tag": "common",
+      "default": 3,
+      "min": 1,
+      "max": 20,
+      "deps": []
+    },
+    {
+      "id": "starting_items",
+      "num": 36,
+      "label": "Starting items",
+      "group": "starting",
+      "kind": "multi",
+      "tag": "common",
+      "default": [],
+      "choices": [
+        {
+          "id": "ocarina",
+          "label": "Ocarina"
+        },
+        {
+          "id": "slingshot",
+          "label": "Slingshot"
+        },
+        {
+          "id": "boomerang",
+          "label": "Boomerang"
+        },
+        {
+          "id": "bow",
+          "label": "Bow"
+        },
+        {
+          "id": "bomb_bag",
+          "label": "Bomb Bag"
+        },
+        {
+          "id": "bombchus",
+          "label": "Bombchus"
+        },
+        {
+          "id": "hookshot",
+          "label": "Hookshot"
+        },
+        {
+          "id": "longshot",
+          "label": "Longshot"
+        },
+        {
+          "id": "megaton_hammer",
+          "label": "Megaton Hammer"
+        },
+        {
+          "id": "lens_of_truth",
+          "label": "Lens of Truth"
+        },
+        {
+          "id": "magic_meter",
+          "label": "Magic Meter"
+        },
+        {
+          "id": "dins_fire",
+          "label": "Din's Fire"
+        },
+        {
+          "id": "farores_wind",
+          "label": "Farore's Wind"
+        },
+        {
+          "id": "nayrus_love",
+          "label": "Nayru's Love"
+        },
+        {
+          "id": "fire_arrows",
+          "label": "Fire Arrows"
+        },
+        {
+          "id": "ice_arrows",
+          "label": "Ice Arrows"
+        },
+        {
+          "id": "light_arrows",
+          "label": "Light Arrows"
+        },
+        {
+          "id": "iron_boots",
+          "label": "Iron Boots"
+        },
+        {
+          "id": "hover_boots",
+          "label": "Hover Boots"
+        },
+        {
+          "id": "goron_tunic",
+          "label": "Goron Tunic"
+        },
+        {
+          "id": "zora_tunic",
+          "label": "Zora Tunic"
+        },
+        {
+          "id": "mirror_shield",
+          "label": "Mirror Shield"
+        },
+        {
+          "id": "bottle",
+          "label": "Empty Bottle"
+        },
+        {
+          "id": "magic_beans",
+          "label": "Magic Beans"
+        },
+        {
+          "id": "zeldas_letter",
+          "label": "Zelda's Letter"
+        },
+        {
+          "id": "stone_of_agony",
+          "label": "Echo Gem (Stone of Agony)"
+        },
+        {
+          "id": "gerudo_card",
+          "label": "Gerudo Card"
+        },
+        {
+          "id": "goron_bracelet",
+          "label": "Goron's Bracelet"
+        },
+        {
+          "id": "silver_scale",
+          "label": "Silver Scale"
+        },
+        {
+          "id": "adult_wallet",
+          "label": "Adult's Wallet"
+        },
+        {
+          "id": "kokiri_sword",
+          "label": "Kokiri Sword"
+        },
+        {
+          "id": "deku_shield",
+          "label": "Deku Shield"
+        },
+        {
+          "id": "big_bullet_bag",
+          "label": "Big Bullet Bag"
+        },
+        {
+          "id": "biggest_bullet_bag",
+          "label": "Biggest Bullet Bag"
+        },
+        {
+          "id": "big_quiver",
+          "label": "Big Quiver"
+        },
+        {
+          "id": "biggest_quiver",
+          "label": "Biggest Quiver"
+        },
+        {
+          "id": "big_bomb_bag",
+          "label": "Big Bomb Bag"
+        },
+        {
+          "id": "biggest_bomb_bag",
+          "label": "Biggest Bomb Bag"
+        },
+        {
+          "id": "deku_sticks",
+          "label": "Deku Sticks"
+        },
+        {
+          "id": "big_stick_bag",
+          "label": "Bigger Stick Capacity"
+        },
+        {
+          "id": "biggest_stick_bag",
+          "label": "Biggest Stick Capacity"
+        },
+        {
+          "id": "deku_nuts",
+          "label": "Deku Nuts"
+        },
+        {
+          "id": "big_nut_bag",
+          "label": "Bigger Nut Capacity"
+        },
+        {
+          "id": "biggest_nut_bag",
+          "label": "Biggest Nut Capacity"
+        },
+        {
+          "id": "silver_gauntlets",
+          "label": "Silver Gauntlets"
+        },
+        {
+          "id": "golden_gauntlets",
+          "label": "Golden Gauntlets"
+        },
+        {
+          "id": "golden_scale",
+          "label": "Golden Scale"
+        },
+        {
+          "id": "giant_wallet",
+          "label": "Giant's Wallet"
+        },
+        {
+          "id": "double_magic",
+          "label": "Double Magic"
+        },
+        {
+          "id": "ocarina_of_time",
+          "label": "Ocarina of Time"
+        },
+        {
+          "id": "two_bottles",
+          "label": "Two Empty Bottles"
+        },
+        {
+          "id": "three_bottles",
+          "label": "Three Empty Bottles"
+        },
+        {
+          "id": "four_bottles",
+          "label": "Four Empty Bottles"
+        },
+        {
+          "id": "hylian_shield",
+          "label": "Hylian Shield"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "starting_songs",
+      "num": 37,
+      "label": "Starting songs",
+      "group": "starting",
+      "kind": "multi",
+      "tag": "common",
+      "default": [],
+      "choices": [
+        {
+          "id": "zeldas_lullaby",
+          "label": "Zelda's Lullaby"
+        },
+        {
+          "id": "eponas_song",
+          "label": "Epona's Song"
+        },
+        {
+          "id": "sarias_song",
+          "label": "Saria's Song"
+        },
+        {
+          "id": "suns_song",
+          "label": "Sun's Song"
+        },
+        {
+          "id": "song_of_time",
+          "label": "Song of Time"
+        },
+        {
+          "id": "song_of_storms",
+          "label": "Song of Storms"
+        },
+        {
+          "id": "minuet_of_forest",
+          "label": "Minuet of Forest"
+        },
+        {
+          "id": "bolero_of_fire",
+          "label": "Bolero of Fire"
+        },
+        {
+          "id": "serenade_of_water",
+          "label": "Serenade of Water"
+        },
+        {
+          "id": "requiem_of_spirit",
+          "label": "Requiem of Spirit"
+        },
+        {
+          "id": "nocturne_of_shadow",
+          "label": "Nocturne of Shadow"
+        },
+        {
+          "id": "prelude_of_light",
+          "label": "Prelude of Light"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "shuffle_rewards",
+      "num": 38,
+      "label": "Story and NPC rewards",
+      "group": "shuffle",
+      "kind": "choice",
+      "tag": "common",
+      "default": "supported",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Vanilla"
+        },
+        {
+          "id": "supported",
+          "label": "Supported rewards"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "shuffle_boss_hearts",
+      "num": 39,
+      "label": "Boss Heart Containers",
+      "group": "shuffle",
+      "kind": "toggle",
+      "tag": "common",
+      "default": true,
+      "deps": []
+    },
+    {
+      "id": "shuffle_songs",
+      "num": 40,
+      "label": "Songs",
+      "group": "shuffle",
+      "kind": "choice",
+      "tag": "common",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Vanilla"
+        },
+        {
+          "id": "own",
+          "label": "Song locations"
+        },
+        {
+          "id": "anywhere",
+          "label": "Anywhere"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "gossip_hints",
+      "num": 41,
+      "label": "Gossip stone hints",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "faster_chests",
+      "num": 42,
+      "label": "Faster item pickups",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "start_reward",
+      "num": 43,
+      "label": "Start with a reward",
+      "group": "starting",
+      "kind": "choice",
+      "tag": "common",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "No reward"
+        },
+        {
+          "id": "stone",
+          "label": "A Spiritual Stone"
+        },
+        {
+          "id": "medal",
+          "label": "A Medallion"
+        },
+        {
+          "id": "any",
+          "label": "Either"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "skip_intro",
+      "num": 44,
+      "label": "Skip the opening cutscenes",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": true,
+      "deps": []
+    },
+    {
+      "id": "chests_match_contents",
+      "num": 45,
+      "label": "Chest size matches contents",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "shuffle_potion_shop",
+      "num": 46,
+      "label": "Market Potion Shop bottle and Red Potion",
+      "group": "shuffle",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ]
+    },
+    {
+      "id": "shuffle_rewards_extra",
+      "num": 51,
+      "label": "More NPC rewards",
+      "group": "shuffle",
+      "kind": "toggle",
+      "tag": "common",
+      "default": true,
+      "deps": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ]
+    },
+    {
+      "id": "shuffle_skulltulas",
+      "num": 52,
+      "label": "Gold Skulltulas",
+      "group": "shuffle",
+      "kind": "choice",
+      "tag": "common",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Vanilla"
+        },
+        {
+          "id": "pinned",
+          "label": "Confident matches"
+        },
+        {
+          "id": "matched",
+          "label": "Confident and pooled"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "shuffle_trade_checks",
+      "num": 53,
+      "label": "Adult trade quest checks",
+      "group": "shuffle",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ]
+    },
+    {
+      "id": "shuffle_scrubs_a",
+      "num": 54,
+      "label": "One time scrub sales",
+      "group": "shuffle",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ]
+    },
+    {
+      "id": "shuffle_scrubs_b",
+      "num": 56,
+      "label": "Menu scrubs as one time sales",
+      "group": "shuffle",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ]
+    },
+    {
+      "id": "bombchus_in_logic",
+      "num": 57,
+      "label": "Bombchus in logic (experimental)",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "shuffle_shops",
+      "num": 58,
+      "label": "Shopsanity",
+      "group": "shuffle",
+      "kind": "choice",
+      "tag": "common",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Off"
+        },
+        {
+          "id": "shuffle",
+          "label": "0 Items"
+        },
+        {
+          "id": "deals_1",
+          "label": "1 Item"
+        },
+        {
+          "id": "deals_2",
+          "label": "2 Items"
+        },
+        {
+          "id": "deals_3",
+          "label": "3 Items"
+        },
+        {
+          "id": "deals_4",
+          "label": "4 Items"
+        },
+        {
+          "id": "random",
+          "label": "Random"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "shuffle_cows",
+      "num": 65,
+      "label": "Link's House and Gerudo Valley cows",
+      "group": "shuffle",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ]
+    },
+    {
+      "id": "shuffle_cows_other",
+      "num": 66,
+      "label": "Other cows",
+      "group": "shuffle",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ]
+    },
+    {
+      "id": "shuffle_beehives",
+      "num": 67,
+      "label": "Beehives",
+      "group": "shuffle",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "skip_cutscenes",
+      "num": 70,
+      "label": "Skippable cutscenes",
+      "group": "world",
+      "kind": "choice",
+      "tag": "common",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Vanilla"
+        },
+        {
+          "id": "story",
+          "label": "Opening and credits"
+        },
+        {
+          "id": "all",
+          "label": "All locks"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "anju_one_cucco",
+      "num": 71,
+      "label": "Anju needs one cucco",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "big_poe_one",
+      "num": 72,
+      "label": "Big poe bottle at the first big poe",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "shuffle_treasure_reward",
+      "num": 73,
+      "label": "Treasure Chest Game reward",
+      "group": "shuffle",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "shuffle_dungeon_rewards",
+      "num": 74,
+      "label": "Dungeon Rewards",
+      "group": "shuffle",
+      "kind": "choice",
+      "tag": "common",
+      "default": "vanilla",
+      "choices": [
+        {
+          "id": "vanilla",
+          "label": "Vanilla"
+        },
+        {
+          "id": "anywhere",
+          "label": "Anywhere"
+        },
+        {
+          "id": "dungeons",
+          "label": "End of dungeons"
+        }
+      ],
+      "deps": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ]
+    },
+    {
+      "id": "jabu_open",
+      "num": 75,
+      "label": "Jabu Jabu's Belly open",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "time_always_passes",
+      "num": 76,
+      "label": "Time always passes",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": true,
+      "deps": []
+    },
+    {
+      "id": "early_beds",
+      "num": 77,
+      "label": "Beds before Zelda",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": [
+        {
+          "on": "time_always_passes",
+          "is": true
+        }
+      ]
+    },
+    {
+      "id": "navi_return",
+      "num": 78,
+      "label": "Return with Navi",
+      "group": "world",
+      "kind": "choice",
+      "tag": "common",
+      "default": "everywhere",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Off"
+        },
+        {
+          "id": "dungeons",
+          "label": "Dungeons"
+        },
+        {
+          "id": "everywhere",
+          "label": "Dungeons and overworld"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "bunny_hood",
+      "num": 79,
+      "label": "Bunny Hood effect",
+      "group": "world",
+      "kind": "choice",
+      "tag": "common",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "No effect"
+        },
+        {
+          "id": "speed",
+          "label": "Faster running"
+        },
+        {
+          "id": "jump",
+          "label": "Faster running and longer jumps"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "misc_hints",
+      "num": 80,
+      "label": "Character hints",
+      "group": "world",
+      "kind": "multi",
+      "tag": "common",
+      "default": [],
+      "choices": [
+        {
+          "id": "altar",
+          "label": "Temple of Time altar"
+        },
+        {
+          "id": "dampe_diary",
+          "label": "Dampé's diary"
+        },
+        {
+          "id": "skulltulas",
+          "label": "House of Skulltula"
+        },
+        {
+          "id": "frogs",
+          "label": "Zora's River frogs"
+        },
+        {
+          "id": "great_fairies",
+          "label": "Great Fairies"
+        },
+        {
+          "id": "sheik",
+          "label": "Sheik"
+        },
+        {
+          "id": "malon",
+          "label": "Malon"
+        },
+        {
+          "id": "mido",
+          "label": "Mido"
+        },
+        {
+          "id": "saria",
+          "label": "Saria"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "skip_epona_race",
+      "num": 81,
+      "label": "Skip Epona's race",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": true,
+      "deps": []
+    },
+    {
+      "id": "skip_mask_quest",
+      "num": 82,
+      "label": "Skip the mask trading quest",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "plant_beans",
+      "num": 83,
+      "label": "Magic beans planted",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "gerudo_bridge_open",
+      "num": 84,
+      "label": "Gerudo Valley bridge repaired",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "shuffle_entrances",
+      "num": 85,
+      "label": "Entrances",
+      "group": "shuffle",
+      "kind": "choice",
+      "tag": "common",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Vanilla"
+        },
+        {
+          "id": "dungeons",
+          "label": "Dungeons"
+        },
+        {
+          "id": "overworld",
+          "label": "Overworld"
+        },
+        {
+          "id": "everything",
+          "label": "Everything"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "shuffle_rocks",
+      "num": 86,
+      "label": "Small Rocks",
+      "group": "shuffle",
+      "kind": "choice",
+      "tag": "common",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Off"
+        },
+        {
+          "id": "overworld",
+          "label": "Overworld only"
+        },
+        {
+          "id": "dungeons",
+          "label": "Dungeons only"
+        },
+        {
+          "id": "all",
+          "label": "Everywhere"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "shuffle_grass",
+      "num": 87,
+      "label": "Grass",
+      "group": "shuffle",
+      "kind": "choice",
+      "tag": "common",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Off"
+        },
+        {
+          "id": "overworld",
+          "label": "Overworld only"
+        },
+        {
+          "id": "dungeons",
+          "label": "Dungeons only"
+        },
+        {
+          "id": "all",
+          "label": "Everywhere"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "shuffle_silver_rupees",
+      "num": 90,
+      "label": "Silver rupees",
+      "group": "shuffle",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": [
+        {
+          "on": "shuffle_chests",
+          "not": "off"
+        }
+      ]
+    },
+    {
+      "id": "shuffle_frog_songs",
+      "num": 93,
+      "label": "Zora's River frog songs",
+      "group": "shuffle",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ]
+    },
+    {
+      "id": "shuffle_frog_bug_heart",
+      "num": 94,
+      "label": "Zora's River frog bug game Heart Piece",
+      "group": "shuffle",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ]
+    },
+    {
+      "id": "shopsanity_prices",
+      "num": 95,
+      "label": "Shopsanity Prices",
+      "group": "shuffle",
+      "kind": "choice",
+      "tag": "common",
+      "default": "starting",
+      "choices": [
+        {
+          "id": "affordable",
+          "label": "Affordable"
+        },
+        {
+          "id": "starting",
+          "label": "Starting Wallet"
+        },
+        {
+          "id": "adult",
+          "label": "Adult Wallet"
+        },
+        {
+          "id": "giant",
+          "label": "Giant's Wallet"
+        }
+      ],
+      "deps": [
+        {
+          "on": "shuffle_shops",
+          "in": [
+            "deals_1",
+            "deals_2",
+            "deals_3",
+            "deals_4",
+            "random"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "deku_bridge_safe",
+      "num": 96,
+      "label": "Deku Tree bridge never breaks",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "shuffle_merchants",
+      "num": 97,
+      "label": "Shuffle Merchants",
+      "group": "shuffle",
+      "kind": "choice",
+      "tag": "common",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Off"
+        },
+        {
+          "id": "beans",
+          "label": "Bean Merchant Only"
+        },
+        {
+          "id": "no_beans",
+          "label": "All But Beans"
+        },
+        {
+          "id": "all",
+          "label": "All"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "scrub_prices",
+      "num": 98,
+      "label": "Scrubs Prices",
+      "group": "shuffle",
+      "kind": "choice",
+      "tag": "common",
+      "default": "vanilla",
+      "choices": [
+        {
+          "id": "vanilla",
+          "label": "Vanilla"
+        },
+        {
+          "id": "cheap",
+          "label": "Cheap Balanced"
+        },
+        {
+          "id": "fixed",
+          "label": "Fixed"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "scrub_price_fixed",
+      "num": 99,
+      "label": "Scrubs Fixed Price",
+      "group": "shuffle",
+      "kind": "number",
+      "tag": "common",
+      "default": 10,
+      "min": 0,
+      "max": 99,
+      "deps": [
+        {
+          "on": "scrub_prices",
+          "is": "fixed"
+        }
+      ]
+    },
+    {
+      "id": "scrub_hint_text",
+      "num": 100,
+      "label": "Scrub Hint Text",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "merchant_prices",
+      "num": 101,
+      "label": "Merchant Prices",
+      "group": "shuffle",
+      "kind": "choice",
+      "tag": "common",
+      "default": "vanilla",
+      "choices": [
+        {
+          "id": "vanilla",
+          "label": "Vanilla"
+        },
+        {
+          "id": "cheap",
+          "label": "Cheap Balanced"
+        },
+        {
+          "id": "fixed",
+          "label": "Fixed"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "merchant_price_fixed",
+      "num": 102,
+      "label": "Merchant Fixed Price",
+      "group": "shuffle",
+      "kind": "number",
+      "tag": "common",
+      "default": 10,
+      "min": 0,
+      "max": 99,
+      "deps": [
+        {
+          "on": "merchant_prices",
+          "is": "fixed"
+        }
+      ]
+    },
+    {
+      "id": "lacs_rewards",
+      "num": 103,
+      "label": "Rewards for the Light Arrows Cutscene",
+      "group": "keys",
+      "kind": "number",
+      "tag": "common",
+      "default": 9,
+      "min": 1,
+      "max": 9,
+      "deps": [
+        {
+          "on": "shuffle_ganon_bosskey",
+          "is": "lacs_dungeons"
+        }
+      ]
+    },
+    {
+      "id": "song_harp_colors",
+      "num": 104,
+      "label": "Harp colour by song",
+      "group": "shuffle",
+      "kind": "toggle",
+      "tag": "common",
+      "default": true,
+      "deps": [
+        {
+          "on": "shuffle_songs",
+          "is": "anywhere"
+        }
+      ]
+    },
+    {
+      "id": "shuffle_ocarinas",
+      "num": 105,
+      "label": "Ocarina Shuffle",
+      "group": "shuffle",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "fairy_prices",
+      "num": 107,
+      "label": "Great Fairy Prices",
+      "group": "shuffle",
+      "kind": "choice",
+      "tag": "common",
+      "default": "vanilla",
+      "choices": [
+        {
+          "id": "vanilla",
+          "label": "Vanilla"
+        },
+        {
+          "id": "cheap",
+          "label": "Cheap Balanced"
+        },
+        {
+          "id": "fixed",
+          "label": "Fixed"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "fairy_price_fixed",
+      "num": 108,
+      "label": "Great Fairy Fixed Price",
+      "group": "shuffle",
+      "kind": "number",
+      "tag": "common",
+      "default": 10,
+      "min": 0,
+      "max": 99,
+      "deps": [
+        {
+          "on": "fairy_prices",
+          "is": "fixed"
+        }
+      ]
+    },
+    {
+      "id": "door_of_time_condition",
+      "num": 109,
+      "label": "Door of Time",
+      "group": "world",
+      "kind": "choice",
+      "tag": "common",
+      "default": "vanilla",
+      "choices": [
+        {
+          "id": "vanilla",
+          "label": "Closed - Vanilla"
+        },
+        {
+          "id": "stones",
+          "label": "Closed - Classic"
+        },
+        {
+          "id": "song",
+          "label": "Closed - Song Only"
+        },
+        {
+          "id": "open",
+          "label": "Open"
+        }
+      ],
+      "deps": []
+    },
+    {
+      "id": "enemy_health",
+      "num": 110,
+      "label": "Enemy health",
+      "group": "difficulty",
+      "kind": "number",
+      "tag": "common",
+      "default": 100,
+      "min": 50,
+      "max": 500,
+      "step": 25,
+      "deps": []
+    },
+    {
+      "id": "enemy_damage",
+      "num": 111,
+      "label": "Enemy damage",
+      "group": "difficulty",
+      "kind": "number",
+      "tag": "common",
+      "default": 100,
+      "min": 50,
+      "max": 500,
+      "step": 25,
+      "deps": []
+    },
+    {
+      "id": "enemy_speed",
+      "num": 112,
+      "label": "Enemy speed",
+      "group": "difficulty",
+      "kind": "number",
+      "tag": "common",
+      "default": 100,
+      "min": 75,
+      "max": 200,
+      "step": 5,
+      "deps": []
+    },
+    {
+      "id": "no_heart_drops",
+      "num": 113,
+      "label": "No heart drops",
+      "group": "difficulty",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "no_gossip_fairies",
+      "num": 114,
+      "label": "No gossip fairies",
+      "group": "difficulty",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "no_ammo_drops",
+      "num": 115,
+      "label": "No ammo drops",
+      "group": "difficulty",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "lose_heart_on_death",
+      "num": 116,
+      "label": "Lose heart on death",
+      "group": "difficulty",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "no_bottles_in_combat",
+      "num": 117,
+      "label": "No bottles during combat",
+      "group": "difficulty",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "enemy_regen",
+      "num": 118,
+      "label": "Enemies regen health",
+      "group": "difficulty",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "more_enemies",
+      "num": 119,
+      "label": "More enemies",
+      "group": "difficulty",
+      "kind": "number",
+      "tag": "common",
+      "default": 100,
+      "min": 100,
+      "max": 1000,
+      "step": 50,
+      "deps": []
+    },
+    {
+      "id": "boss_minibosses",
+      "num": 120,
+      "label": "Bosses spawn minibosses",
+      "group": "difficulty",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "boss_minions",
+      "num": 121,
+      "label": "Bosses spawn minions",
+      "group": "difficulty",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "no_dupe_items",
+      "num": 122,
+      "label": "No dupe items",
+      "group": "difficulty",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "enemies_respawn_sooner",
+      "num": 123,
+      "label": "Enemies respawn sooner",
+      "group": "difficulty",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "no_z_targeting",
+      "num": 124,
+      "label": "No Z-targeting",
+      "group": "difficulty",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "fairy_helps_enemies",
+      "num": 125,
+      "label": "Fairies help enemies too",
+      "group": "difficulty",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "enemy_backup",
+      "num": 126,
+      "label": "Enemies call for backup",
+      "group": "difficulty",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "zora_ambush",
+      "num": 127,
+      "label": "Zora's Domain ambush",
+      "group": "difficulty",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "bean_pitch",
+      "num": 128,
+      "label": "Bean Seller's sales pitch",
+      "group": "difficulty",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "enemy_gates",
+      "num": 129,
+      "label": "Enemies block the way",
+      "group": "difficulty",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "cucco_revenge",
+      "num": 131,
+      "label": "Cuccos take revenge at once",
+      "group": "difficulty",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "enemy_spawn_combo",
+      "num": 132,
+      "label": "Spawn enemies with L + R + D-pad",
+      "group": "difficulty",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "door_of_time_escape",
+      "num": 133,
+      "label": "Zelda's Escape",
+      "group": "world",
+      "kind": "choice",
+      "tag": "common",
+      "default": "moat",
+      "choices": [
+        {
+          "id": "vanilla",
+          "label": "Vanilla"
+        },
+        {
+          "id": "stones",
+          "label": "Classic"
+        },
+        {
+          "id": "moat",
+          "label": "Not Required"
+        }
+      ],
+      "deps": [
+        {
+          "on": "door_of_time_condition",
+          "in": [
+            "open",
+            "song"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "door_of_time_song",
+      "num": 134,
+      "label": "Additionally requires Song of Time",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": true,
+      "deps": [
+        {
+          "on": "door_of_time_condition",
+          "not": "open"
+        },
+        {
+          "on": "door_of_time_condition",
+          "not": "song"
+        }
+      ]
+    },
+    {
+      "id": "shuffle_kokiri_sword",
+      "num": 135,
+      "label": "Kokiri Sword Shuffle",
+      "group": "shuffle",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "skip_first_pickup_text",
+      "num": 136,
+      "label": "Skip first pickup text",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    },
+    {
+      "id": "faster_blocks",
+      "num": 141,
+      "label": "Faster sliding blocks",
+      "group": "world",
+      "kind": "toggle",
+      "tag": "common",
+      "default": false,
+      "deps": []
+    }
+  ],
+  "menu_placeholders": [
+    {
+      "page": "win",
+      "section": "Logic",
+      "label": "Blue Fire Arrows"
+    },
+    {
+      "page": "win",
+      "section": "Logic",
+      "label": "Sunlight Arrows"
+    },
+    {
+      "page": "win",
+      "section": "Logic",
+      "label": "Full Wallets"
+    },
+    {
+      "page": "win",
+      "section": "Goal",
+      "label": "Triforce Hunt Total Pieces"
+    },
+    {
+      "page": "win",
+      "section": "Goal",
+      "label": "Triforce Hunt Pieces Location"
+    },
+    {
+      "page": "win",
+      "section": "Goal",
+      "label": "GBK Reward Options"
+    },
+    {
+      "page": "win",
+      "section": "Goal",
+      "label": "Ganon's Soul"
+    },
+    {
+      "page": "win",
+      "section": "Goal",
+      "label": "Win Condition"
+    },
+    {
+      "page": "world",
+      "section": "Area Access",
+      "label": "Sleeping Waterfall"
+    },
+    {
+      "page": "world",
+      "section": "Area Access",
+      "label": "Lock Overworld Doors"
+    },
+    {
+      "page": "dungeon",
+      "section": "Dungeon Items",
+      "label": "Shuffle Boss Souls"
+    },
+    {
+      "page": "dungeon",
+      "section": "Keyrings",
+      "label": "Keyrings"
+    }
+  ]
+}

@@ -238,6 +238,9 @@ fn shops(j: &Json) -> Result<()> {
     println!("Prepared {} AP shop shelves in {} files.", jobs.len(), done.files);
     Ok(())
 }
+#[path = "ootrr_ap/skulls.rs"]
+mod ap_skulls;
+
 fn run() -> Result<()> {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input)?;
@@ -248,7 +251,8 @@ fn run() -> Result<()> {
         Some("localize") => localize(&j),
         Some("patch") => patch(&j),
         Some("shops") => shops(&j),
-        _ => Err("expected generate, settings, localize, patch or shops".into()),
+        Some("skulls") => ap_skulls::run(&j),
+        _ => Err("expected generate, settings, localize, patch, shops or skulls".into()),
     }
 }
 fn main() {

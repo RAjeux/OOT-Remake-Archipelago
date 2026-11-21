@@ -54,8 +54,8 @@ def tables(folder):
 def build_cache(base, token, host, entries, romfs):
     stamp = [(str(key),p.stat().st_size,p.stat().st_mtime_ns) for key,p in entries.items()]
     digest = hashlib.sha256(json.dumps([token,host,str(romfs),stamp]).encode()).hexdigest()[:24]
-    # Rebuild shelves made before local and remote AP shop rewards shared a pool.
-    return base / "mods-v17" / digest
+    # Rebuild GameData and pickup resources predating the AP Skulltula markers.
+    return base / "mods-v18" / digest
 
 
 def state_dir(folder):

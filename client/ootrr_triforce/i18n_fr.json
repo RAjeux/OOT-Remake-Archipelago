@@ -298,5 +298,14 @@
   "Connection refused. Check the room and password.": "Connexion refusée. Vérifie la salle et le mot de passe.",
   "This room requires a newer client.": "Cette salle demande un client plus récent.",
   "Server unavailable. Check its address and connection.": "Serveur indisponible. Vérifie son adresse et la connexion.",
-  "The local connection controls are unavailable. Refresh and try again.": "Les commandes locales de connexion sont indisponibles. Actualise puis réessaie."
+  "The local connection controls are unavailable. Refresh and try again.": "Les commandes locales de connexion sont indisponibles. Actualise puis réessaie.",
+  "Preparing Archipelago Gold Skulltula rewards…": "Préparation des récompenses Archipelago des Skulltulas d'or…",
+  "Unknown native pickup flow.": "Séquence native de ramassage inconnue.",
+  "Archipelago Skulltula rewards are already prepared.": "Les récompenses Archipelago des Skulltulas sont déjà préparées.",
+  "Invalid Archipelago Skulltula metadata.": "Métadonnées Archipelago de Skulltula invalides.",
+  "Unknown Gold Skulltula shuffle mode.": "Mode de mélange des Skulltulas d'or inconnu.",
+  "Invalid local Skulltula list.": "Liste des Skulltulas locales invalide.",
+  "Unknown Archipelago location list.": "Liste des emplacements Archipelago inconnue.",
+  "An Archipelago location is missing from the OOTRR seed.": "Un emplacement Archipelago manque dans la seed OOTRR.",
+  "The Archipelago location list is incomplete.": "La liste des emplacements Archipelago est incomplète."
 }

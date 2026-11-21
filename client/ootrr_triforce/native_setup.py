@@ -12,7 +12,7 @@ import shutil
 import sys
 import uuid
 
-from .catalog import CHESTS, CHECK_FLAGS, SHOP_CHECKS, LEGACY_GAME, ITEM_IDS, LOCATION_IDS, PROTOCOL
+from .catalog import CHESTS, CHECK_FLAGS, SHOP_CHECKS, AP_SKULL_CHECKS, SKULL_CHECKS, LEGACY_GAME, ITEM_IDS, LOCATION_IDS, PROTOCOL
 from .medallions import REST
 from .mod_codec import Codec
 from .save_bridge import atomic, write_json
@@ -55,6 +55,15 @@ def bind_romfs(source, mod, data, baseline):
         from .cursor_resource import append_saved_bool
         for name in sorted(set(data["checks"]).intersection(SHOP_CHECKS)):
             after=append_saved_bool(after,SHOP_CHECKS[name]["flag"])
+    skulls=set(data.get("checks", ())).intersection(AP_SKULL_CHECKS)
+    if skulls:
+        from .ap_skulls import SCRATCH, NATIVE_SCRATCH
+        from .cursor_resource import append_saved_bool, append_transient_string64
+        from oot_rando.patching.soul_adapter import murmur3
+        for name in sorted(skulls):
+            after=append_saved_bool(after,SKULL_CHECKS[name]["flag"])
+        after=append_transient_string64(after,murmur3(SCRATCH))
+        after=append_transient_string64(after,murmur3(NATIVE_SCRATCH))
     table=read(REST)
     updated,_=grow_resources(codec.decode(table),{GAME_DATA:max(len(after)-len(before),0)})
     put(REST,codec.encode(updated,table))

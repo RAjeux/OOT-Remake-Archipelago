@@ -52,10 +52,11 @@ class DirectSettingsTests(unittest.TestCase):
                 self.assertEqual(options["shuffle_shops"], "off")
                 self.assertNotIn("OOTRR1-", text)
 
-    def test_only_covered_shuffles_are_public_and_native_rewards_stay_local(self):
+    def test_native_local_shuffles_keep_existing_defaults_and_unsupported_modes_hidden(self):
         shuffles = {name for name in SPEC_BY_ID if name.startswith("shuffle_")}
-        self.assertEqual(shuffles, {"shuffle_chests", "shuffle_shops", "shuffle_smallkeys", "shuffle_bosskeys",
-                                    "shuffle_ganon_bosskey", "shuffle_mapcompass"})
+        self.assertTrue({"shuffle_chests", "shuffle_shops", "shuffle_skulltulas", "shuffle_songs",
+                         "shuffle_rewards", "shuffle_entrances", "shuffle_cows", "shuffle_pots"} <= shuffles)
+        self.assertFalse({"shuffle_silver_rupees", "shuffle_hideoutkeys", "shuffle_scrubs"} & shuffles)
         native = engine_settings({})
         self.assertEqual(native["shuffle_dungeon_rewards"], "vanilla")
         for name in ("shuffle_boss_hearts", "shuffle_ocarinas", "shuffle_kokiri_sword", "shuffle_cows",
@@ -81,7 +82,8 @@ class DirectSettingsTests(unittest.TestCase):
         self.assertEqual(len(names), len(set(names)))
         self.assertNotIn("ootrr_settings:", rendered)
         self.assertNotIn("OOTRR1-", rendered)
-        self.assertNotIn("shuffle_dungeon_rewards:", rendered)
+        self.assertIn("shuffle_dungeon_rewards:", rendered)
+        self.assertNotIn("shuffle_silver_rupees:", rendered)
         first, second = default_options(), default_options()
         first["starting_items"].append("bow")
         first["starting_songs"].append("eponas_song")
@@ -94,7 +96,7 @@ class DirectSettingsTests(unittest.TestCase):
                          {"vanilla", "dungeon", "any_dungeon", "keysanity"})
         boss = {"remove", "vanilla", "dungeon", "regional", "overworld", "any_dungeon", "keysanity"}
         self.assertEqual(set(SPEC_BY_ID["shuffle_bosskeys"]["choices"]), boss)
-        self.assertEqual(set(SPEC_BY_ID["shuffle_ganon_bosskey"]["choices"]), boss)
+        self.assertEqual(set(SPEC_BY_ID["shuffle_ganon_bosskey"]["choices"]), boss | {"lacs_dungeons"})
         self.assertEqual(set(SPEC_BY_ID["shuffle_mapcompass"]["choices"]),
                          {"remove", "startwith", "vanilla", "dungeon", "regional", "any_dungeon", "keysanity"})
         self.assertEqual(set(SPEC_BY_ID["bridge"]["choices"]), {"vanilla", "dungeons"})
@@ -127,8 +129,8 @@ class DirectSettingsTests(unittest.TestCase):
                        {"starting_hearts": "6"}, {"enemy_speed": 201}, {"more_enemies": 99}, {"enemy_health": 101},
                        {"death_link": "false"}, {"faster_blocks": 2}, {"starting_items": "bow"},
                        {"starting_items": ["zeldas_letter"]}, {"starting_songs": ["unknown_song"]},
-                       {"shuffle_dungeon_rewards": "anywhere"}, {"shuffle_boss_hearts": True},
-                       {"kokiri_shop_checks": True}, {"shuffle_shops": "deals_4"},
+                       {"shuffle_dungeon_rewards": "anywhere"}, {"shuffle_boss_hearts": "true"},
+                       {"kokiri_shop_checks": True}, {"shuffle_shops": "deals_5"},
                        {"ootrr_settings": "OOTRR1-AAAA"}, {"unknown_setting": True}):
             with self.subTest(values=values), self.assertRaises(ValueError):
                 engine_settings(values)
@@ -148,6 +150,33 @@ class DirectSettingsTests(unittest.TestCase):
             self.assertIn("bombchus", engine_settings({"starting_items": [bag, "bombchus"]})["starting_items"])
         values = validate_options({"starting_items": ["bow", "bow", "bomb_bag"]})
         self.assertEqual(values["starting_items"].count("bow"), 1)
+
+    def test_native_local_families_prices_and_lacs_have_effective_dependencies(self):
+        changed = {"shuffle_rewards": "supported", "shuffle_cows": True, "shuffle_trade_checks": True,
+                   "shuffle_ocarinas": True, "shuffle_songs": "anywhere", "song_harp_colors": False,
+                   "shuffle_ganon_bosskey": "lacs_dungeons", "lacs_rewards": 3,
+                   "shuffle_scrubs_a": True, "scrub_prices": "fixed", "scrub_price_fixed": 0,
+                   "scrub_hint_text": True, "shuffle_merchants": "all", "plant_beans": True,
+                   "merchant_prices": "fixed", "merchant_price_fixed": 99,
+                   "fairy_prices": "fixed", "fairy_price_fixed": 0,
+                   "shuffle_shops": "deals_4", "shopsanity_prices": "giant",
+                   "shuffle_pots": "all", "shuffle_entrances": "dungeons"}
+        native = engine_settings(changed)
+        for key, expected in changed.items():
+            self.assertEqual(native[key], expected, key)
+        self.assertIs(native["bombchus_in_logic"], False)
+        self.assertEqual(native["shuffle_hideoutkeys"], "vanilla")
+        self.assertEqual(engine_settings({"shuffle_chests": "off", "shuffle_skulltulas": "matched"})["shuffle_chests"], "off")
+        for shop in ("shuffle", "deals_1", "deals_2", "deals_3", "deals_4", "random"):
+            self.assertEqual(engine_settings({"shuffle_chests": "off", "shuffle_shops": shop})["shuffle_shops"], shop)
+        for bad in ({"shuffle_cows": True}, {"shuffle_ocarinas": True}, {"shuffle_trade_checks": True},
+                    {"scrub_prices": "cheap"}, {"scrub_hint_text": True}, {"merchant_prices": "fixed"},
+                    {"fairy_price_fixed": 0}, {"lacs_rewards": 3}, {"song_harp_colors": False},
+                    {"shopsanity_prices": "giant"}, {"shuffle_rewards": "supported", "shuffle_merchants": "beans"},
+                    {"shuffle_chests": "dungeons", "shuffle_kokiri_sword": True},
+                    {"enemy_gates": True, "shuffle_entrances": "dungeons"}):
+            with self.subTest(settings=bad), self.assertRaises(ValueError):
+                validate_options(bad)
 
 
 if __name__ == "__main__":

@@ -9,14 +9,14 @@ from pathlib import Path
 import shutil
 import tempfile
 
-from .catalog import CHESTS, ITEM_DATA, ITEM_IDS, SHOP_CHECKS
+from .catalog import CHESTS, ITEM_DATA, ITEM_IDS, SHOP_CHECKS, AP_SKULL_CHECKS
 from .engine import run_engine
 from .mod_codec import Codec
 
 REST = "System/Resource/ResourceSizeTable.Product.111.Nin_Ounce_NVN2.rsizetable.zs"
 GET = ("Dm_SY_GetInEvent", "GetInEvent_NotTurn_NotNpc")
 CHEST_ENTRY = "Success_"
-REVISION = 6
+REVISION = 8
 
 
 def chest_flows(raw, records, *, native_pouch=None, small_raw=None):
@@ -235,7 +235,7 @@ def patch_mod(romfs, mod, roster, moved, *, full_rewards=False, local_items=Fals
         local = bool(local_items and isinstance(reward, dict) and reward.get("local"))
         # Shop shelves need a unique per-location actor even for local goods.
         # The shop pass replaces its display with the native item presentation.
-        if not local or name in SHOP_CHECKS:
+        if not local or name in SHOP_CHECKS or name in AP_SKULL_CHECKS:
             labels[key] = (item, player, reward.get("game")) if isinstance(reward, dict) else (item, player)
         if name in CHESTS:
             placements[name] = key
@@ -301,7 +301,7 @@ def prepare(root, settings, roster, moved):
     full_rewards = settings.get("reward_mode") in ("all_chest_rewards", "all_locations")
     local_items = bool(settings.get("local_items"))
     payload = json.dumps([REVISION, full_rewards, local_items, settings.get("kokiri_shop_checks", False),
-                          settings.get("shop_prices", {}), seed_settings, roster, effective],
+                          settings.get("shop_prices", {}), settings.get("shuffle_skulltulas", "off"), seed_settings, roster, effective],
                          ensure_ascii=False, sort_keys=True)
     digest = hashlib.sha256(payload.encode()).hexdigest()
     home = root / "v14"
@@ -320,6 +320,9 @@ def prepare(root, settings, roster, moved):
             if settings.get("kokiri_shop_checks"):
                 from .ap_shops import prepare_shops
                 prepare_shops(romfs, mod, roster, settings)
+            if settings.get("shuffle_skulltulas", "off")!="off":
+                from .ap_skulls import prepare_skulls
+                prepare_skulls(romfs, mod, roster, settings)
         if seed_settings is not None:
             localize_mod(romfs, mod, seed_settings)
         stage.rename(dest)

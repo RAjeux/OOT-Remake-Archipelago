@@ -1793,4 +1793,12 @@ for _name in SHOP_CHECKS:
     LOCATION_IDS[_name] = 0x6F7200 + len(LOCATION_IDS)
 CHECK_FLAGS = {name: [ref["flag"] for ref in refs] for name, refs in CHESTS.items()}
 CHECK_FLAGS.update({name: [metadata["flag"]] for name, metadata in SHOP_CHECKS.items()})
+
+# Keep the original 128 chest and eight shop IDs unchanged. Uncertain skull
+# identities reserve IDs too, but only AP_SKULL_CHECKS may enter a new room.
+from .skull_catalog import SKULL_CHECKS, AP_SKULL_CHECKS, PINNED_SKULL_CHECKS
+for _name in SKULL_CHECKS:
+    LOCATION_IDS[_name] = 0x6F7200 + len(LOCATION_IDS)
+CHECK_FLAGS.update({name: [metadata["flag"]] for name, metadata in SKULL_CHECKS.items()})
+
 del _name

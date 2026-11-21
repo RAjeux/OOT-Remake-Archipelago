@@ -10,7 +10,7 @@ from zipfile import ZipFile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "dist/Client-OOT-Remake.pyz"))
 sys.path.insert(0, str(ROOT / "client"))
-from ootrr_triforce.catalog import CHESTS, CHECK_FLAGS, GAME, GEAR, ITEM_IDS, LOCATION_IDS, SHOP_CHECKS
+from ootrr_triforce.catalog import CHESTS, CHECK_FLAGS, GAME, GEAR, ITEM_IDS, LOCATION_IDS, SHOP_CHECKS, SKULL_CHECKS, AP_SKULL_CHECKS
 from ootrr_triforce.native_setup import save_session
 from ootrr_triforce.player import patch_request, read_manifest
 from ootrr_triforce.presentation import Presentation
@@ -28,6 +28,49 @@ class FullChestTests(unittest.TestCase):
             path = Path(folder) / "player.apootrr"
             path.write_text(json.dumps(data), encoding="utf-8")
             return read_manifest(path)
+
+    def test_skull_manifest_preserves_native_only_rewards_and_uses_pickup_flags(self):
+        data = fixture("complet-v2")
+        name = sorted(AP_SKULL_CHECKS)[0]
+        bean = "ZR GS Near Raised Grottos"
+        data["shuffle_skulltulas"] = "matched"
+        data["local_skulltulas"] = {bean: "Native-only: bean access is not proved."}
+        for skull in SKULL_CHECKS:
+            data["seed_file"]["placements"].pop(skull, None)
+        data["seed_file"]["placements"].update({name: "Gold Skulltula Token", bean: "Rupees (5)"})
+        data["checks"].append(name)
+        data["moved"][name] = "Gold Skulltula Token"
+        validated = self.read(data)
+        self.assertIn(name, validated["checks"])
+        self.assertNotIn(bean, validated["checks"])
+        # The chest neutralizer must never turn the enemy's actor into a chest.
+        requests = patch_request(validated)
+        self.assertFalse(any(row["actor"] == SKULL_CHECKS[name]["actor"]
+                             for rows in requests["files"].values() for row in rows))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            save_session(root, dict(server="ws://127.0.0.1:38281", protected="", baseline=0),
+                         validated, {name: dict(item="Gold Skulltula Token", player="Zelda", local=True)})
+            session = json.loads((root / "native-session.json").read_bytes())
+            self.assertEqual(session["Checks"][str(LOCATION_IDS[name])]["Flags"], [SKULL_CHECKS[name]["flag"]])
+
+    def test_unknown_unproved_or_omitted_skull_checks_are_rejected(self):
+        data = fixture("complet-v2")
+        name = sorted(AP_SKULL_CHECKS)[0]
+        data["shuffle_skulltulas"] = "matched"
+        for skull in SKULL_CHECKS:
+            data["seed_file"]["placements"].pop(skull, None)
+        data["seed_file"]["placements"][name] = "Gold Skulltula Token"
+        # A reason string cannot silently exclude any ordinary supported check.
+        data["local_skulltulas"] = {name: "Skip this location"}
+        with self.assertRaises(ValueError):
+            self.read(data)
+        unknown = sorted(set(SKULL_CHECKS) - AP_SKULL_CHECKS)[0]
+        data["checks"].append(unknown)
+        data["moved"][unknown] = "Gold Skulltula Token"
+        data["seed_file"]["placements"][unknown] = "Gold Skulltula Token"
+        with self.assertRaises(ValueError):
+            self.read(data)
 
     def test_manifests_and_every_physical_drop(self):
         legacy = self.read(fixture("neutre"))

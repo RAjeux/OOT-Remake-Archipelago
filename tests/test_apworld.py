@@ -12,7 +12,9 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
-from ootrr_triforce.catalog import CHESTS, DEFAULT_SETTINGS, FILLER, GAME, ITEM_DATA, ITEM_IDS, LOCATION_IDS, PROTOCOL, LOCATION_REWARD_MODE, SHOP_CHECKS
+from ootrr_triforce.catalog import (AP_SKULL_CHECKS, CHESTS, DEFAULT_SETTINGS, FILLER, GAME,
+                                    ITEM_DATA, ITEM_IDS, LOCATION_IDS, PROTOCOL,
+                                    LOCATION_REWARD_MODE, PINNED_SKULL_CHECKS, SHOP_CHECKS, SKULL_CHECKS)
 from ootrr_triforce.settings import OPTION_SPECS, default_options, engine_settings, validate_options
 
 
@@ -124,6 +126,106 @@ class AllChestRewardTests(unittest.TestCase):
             generated["seed_file"]["placements"][next(iter(CHESTS))] = "No native reward"
         with self.assertRaisesRegex(ValueError, "no Archipelago delivery"):
             self.make_world(change)
+
+    def test_only_generated_safe_skulltulas_join_the_pool_and_keep_their_tokens(self):
+        active = sorted(AP_SKULL_CHECKS)
+        uncertain = sorted(set(SKULL_CHECKS) - AP_SKULL_CHECKS)
+        def add_skulls(generated):
+            generated["seed_file"]["placements"].update({name: "Gold Skulltula Token" for name in active})
+            generated["seed_file"]["placements"].update({name: "Rupees (5)" for name in uncertain})
+            generated["waves"][0].extend([*active, *uncertain])
+        w, names, rewards = self.make_world(add_skulls, option_changes={"shuffle_skulltulas": "matched"})
+        self.assertEqual(set(w.moved), set(names) | set(active))
+        w.create_items()
+        self.assertEqual(Counter(item.name for item in w.multiworld.itempool),
+                         Counter([*rewards, *(["Gold Skulltula Token"] * 77)]))
+        self.assertEqual(w.fill_slot_data()["shuffle_skulltulas"], "matched")
+        self.assertTrue(set(LOCATION_IDS[name] for name in active).issubset(w.fill_slot_data()["checks"]))
+        self.assertFalse(set(LOCATION_IDS[name] for name in uncertain).intersection(w.fill_slot_data()["checks"]))
+        with tempfile.TemporaryDirectory() as folder:
+            w.generate_output(folder)
+            manifest = json.loads(next(Path(folder).glob("*.apootrr")).read_bytes())
+        self.assertEqual(manifest["shuffle_skulltulas"], "matched")
+        self.assertEqual(set(manifest["checks"]), set(names) | set(active))
+
+    def test_skulltula_checks_need_a_reachable_proof_and_follow_the_setting(self):
+        first, second = sorted(AP_SKULL_CHECKS)[:2]
+        def omitted(generated):
+            generated["seed_file"]["placements"][first] = "Gold Skulltula Token"
+        with self.assertRaisesRegex(ValueError, "did not prove"):
+            self.make_world(omitted, option_changes={"shuffle_skulltulas": "matched"})
+        w, names, _ = self.make_world(omitted, option_changes={"shuffle_skulltulas": "off"})
+        self.assertEqual(set(w.moved), set(names))
+        def one(generated):
+            generated["seed_file"]["placements"][second] = "Gold Skulltula Token"
+            generated["waves"][0].append(second)
+        w, names, _ = self.make_world(one, option_changes={"shuffle_skulltulas": "matched"})
+        self.assertEqual(set(w.moved), {*names, second})
+
+    def test_skulltulas_accept_both_players_but_not_local_bottle_refills(self):
+        first = next(iter(sorted(AP_SKULL_CHECKS)))
+        def add_skull(generated):
+            generated["seed_file"]["placements"][first] = "Gold Skulltula Token"
+            generated["waves"][0].append(first)
+        w, _, _ = self.make_world(add_skull, option_changes={"shuffle_skulltulas": "matched"})
+        w.create_regions()
+        location = next(location for region in w.multiworld.regions for location in region.locations
+                        if location.name == first)
+        refills = [name for name, row in ITEM_DATA.items()
+                   if row.get("bottle_item") and row.get("pouch_special") == "NotPushToPouch"]
+        self.assertTrue(refills)
+        for name in ITEM_DATA:
+            with self.subTest(item=name):
+                self.assertEqual(bool(location.item_rule(SimpleNamespace(player=1, name=name))), name not in refills)
+                self.assertTrue(location.item_rule(SimpleNamespace(player=2, name=name)))
+
+    def test_only_the_known_optional_bean_ride_can_remain_native_without_a_proof(self):
+        bean_ride = "ZR GS Near Raised Grottos"
+        other = next(name for name in sorted(AP_SKULL_CHECKS) if name != bean_ride)
+        def skulls_without_bean_ride(generated):
+            generated["seed_file"]["placements"].update({name: "Gold Skulltula Token" for name in AP_SKULL_CHECKS})
+            generated["seed_file"]["placements"][bean_ride] = "Rupees (20)"
+            generated["waves"][0].extend(name for name in AP_SKULL_CHECKS if name != bean_ride)
+        w, names, rewards = self.make_world(skulls_without_bean_ride,
+                                            option_changes={"shuffle_skulltulas": "matched"})
+        self.assertEqual(set(w.moved), set(names) | (AP_SKULL_CHECKS - {bean_ride}))
+        self.assertNotIn(bean_ride, w.moved)
+        self.assertIn("bean ride", w.fill_slot_data()["local_skulltulas"][bean_ride])
+        self.assertEqual(w.seed_file["placements"][bean_ride], "Rupees (20)")
+        # Settings that should make the bean ride reachable do not turn a
+        # missing proof into an optimistic check; all other misses are fatal.
+        for changes in ({"plant_beans": True}, {"starting_items": ["magic_beans"]}):
+            with self.subTest(changes=changes), self.assertRaisesRegex(ValueError, "did not prove"):
+                self.make_world(skulls_without_bean_ride,
+                                option_changes={"shuffle_skulltulas": "matched", **changes})
+        def other_missing(generated):
+            skulls_without_bean_ride(generated)
+            generated["waves"][0].remove(other)
+        with self.assertRaisesRegex(ValueError, "did not prove"):
+            self.make_world(other_missing, option_changes={"shuffle_skulltulas": "matched"})
+
+    def test_proved_bean_ride_joins_with_preplanted_or_starting_beans(self):
+        def all_skulls(generated):
+            generated["seed_file"]["placements"].update({name: "Gold Skulltula Token" for name in AP_SKULL_CHECKS})
+            generated["waves"][0].extend(AP_SKULL_CHECKS)
+        for changes in ({"plant_beans": True}, {"starting_items": ["magic_beans"]}):
+            with self.subTest(changes=changes):
+                w, names, _ = self.make_world(all_skulls,
+                                             option_changes={"shuffle_skulltulas": "matched", **changes})
+                self.assertEqual(set(w.moved), set(names) | AP_SKULL_CHECKS)
+                self.assertFalse(w.local_skulltulas)
+
+    def test_pinned_mode_uses_only_the_44_native_confirmed_identities(self):
+        def all_skulls(generated):
+            generated["seed_file"]["placements"].update({name: "Gold Skulltula Token" for name in SKULL_CHECKS})
+            generated["waves"][0].extend(SKULL_CHECKS)
+        w, names, rewards = self.make_world(all_skulls, option_changes={"shuffle_skulltulas": "pinned"})
+        self.assertEqual(set(w.moved), set(names) | PINNED_SKULL_CHECKS)
+        self.assertEqual(w.fill_slot_data()["shuffle_skulltulas"], "pinned")
+        self.assertEqual(set(w.local_skulltulas), set(SKULL_CHECKS) - PINNED_SKULL_CHECKS)
+        w.create_items()
+        self.assertEqual(Counter(item.name for item in w.multiworld.itempool),
+                         Counter([*rewards, *(["Gold Skulltula Token"] * 44)]))
 
     def test_active_chest_without_reachability_proof_is_rejected(self):
         def change(generated):

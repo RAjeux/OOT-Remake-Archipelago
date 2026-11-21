@@ -48,16 +48,18 @@ MAP_COMPASS = ("remove", "startwith", "vanilla", "dungeon", "regional", "any_dun
 
 _BASE_SPECS = (
     _toggle("death_link", False, "Share deaths with other DeathLink players.", "Archipelago"),
-    _choice("shuffle_chests", "all", ("all", "overworld", "dungeons"),
-            "Shuffle all chests, overworld chests, or dungeon chests. Only chests in the AP catalogue become network checks.", "Shuffle"),
-    _choice("shuffle_shops", "off", ("off", "shuffle"),
-            "Shuffle shop goods with OOTRR. The eight Kokiri purchases become Archipelago checks and can contain your own items or other players' items; prices and payment use the native shop system.", "Shuffle"),
+    _choice("shuffle_chests", "all", ("off", "all", "overworld", "dungeons"),
+            "Shuffle all chests, overworld chests, or dungeon chests. off requires AP shops or Skulltulas. Only catalogued chests become network checks.", "Shuffle"),
+    _choice("shuffle_shops", "off", ("off", "shuffle", "deals_1", "deals_2", "deals_3", "deals_4", "random"),
+            "Use OOTRR's shop shuffle or add one to four special deals per shop. The eight Kokiri purchases become AP checks; other shops retain their native local rewards. Goods can belong to you or another player.", "Shuffle"),
+    _choice("shuffle_skulltulas", "off", ("off", "pinned", "matched"),
+            "Shuffle Gold Skulltula rewards: pinned uses 44 firmly identified locations; matched adds the supported researched matches, normally 76 checks or 77 with planted/starting beans. Uncertain matches stay local. A check is sent only after collecting the reward.", "Shuffle"),
     _choice("shuffle_smallkeys", "dungeon", SMALL_KEYS,
             "Keep small keys vanilla, in their own dungeon, in any dungeon, or anywhere. The last two choices require shuffled dungeon chests.", "Dungeon items"),
     _choice("shuffle_bosskeys", "dungeon", BOSS_KEYS,
             "Boss key placement. remove unlocks the doors from the start. Placements outside the original dungeon require shuffled dungeon chests.", "Dungeon items"),
-    _choice("shuffle_ganon_bosskey", "dungeon", BOSS_KEYS,
-            "Ganon boss key placement. remove unlocks access from the start. Reward-based and LACS cutscene variants are not supported.", "Dungeon items"),
+    _choice("shuffle_ganon_bosskey", "dungeon", (*BOSS_KEYS, "lacs_dungeons"),
+            "Ganon boss key placement. remove unlocks access from the start. lacs_dungeons grants it through the native Light Arrows scene after lacs_rewards; requires shuffled NPC rewards and dungeon chests.", "Dungeon items"),
     _choice("shuffle_mapcompass", "dungeon", MAP_COMPASS,
             "Map and compass placement. remove or startwith grants their effects from the start.",
             "Dungeon items"),
@@ -138,7 +140,77 @@ _DIFFICULTY = (
     ("enemy_spawn_combo", "Enable the native two-stick/D-pad shortcut to spawn practice enemies."),
     ("fairy_helps_enemies", "A fairy released from a bottle also heals awake enemies and bosses."),
 )
-OPTION_SPECS = _BASE_SPECS + tuple(_toggle(name, False, description + " Experimental.", "Difficulty")
+_LOCAL_PICKUP_WARNING = (" Native local rewards retain their seed assignments. Experimental: destroyed sources stay used; "
+                         "leaving a dropped reward behind can lose it. Save before breaking shuffled sources.")
+_ADDITIONAL_SPECS = (
+    _choice("shuffle_pots", "off", ("off", "overworld", "dungeons", "all"),
+            "Shuffle rewards in the supported pots, including flying pots." + _LOCAL_PICKUP_WARNING, "Shuffle"),
+    _choice("shuffle_crates", "off", ("off", "overworld", "dungeons", "all"),
+            "Shuffle rewards in the supported crates." + _LOCAL_PICKUP_WARNING, "Shuffle"),
+    _choice("shuffle_rocks", "off", ("off", "overworld", "dungeons", "all"),
+            "Shuffle rewards under the supported rocks." + _LOCAL_PICKUP_WARNING, "Shuffle"),
+    _choice("shuffle_grass", "off", ("off", "overworld", "dungeons", "all"),
+            "Shuffle supported grass drops; Lost Woods bug grass is preserved." + _LOCAL_PICKUP_WARNING, "Shuffle"),
+    _toggle("shuffle_beehives", False,
+            "Shuffle the supported beehive drops." + _LOCAL_PICKUP_WARNING, "Shuffle"),
+    _choice("shuffle_freestanding_items", "off", ("off", "pieces", "all", "dungeons", "overworld"),
+            "Shuffle supported ground pickups. pieces limits this to heart pieces. Non-AP pickups keep their native local rewards; sources shared between ages retain OOTRR's duplication restrictions.", "Shuffle"),
+    _choice("shuffle_rewards", "off", ("off", "supported"),
+            "Shuffle supported NPC, minigame, fairy and story rewards locally with OOTRR. Songs and dungeon rewards have separate controls. These sources do not become AP checks.", "Shuffle"),
+    _toggle("shuffle_rewards_extra", False,
+            "Also shuffle the supported 20-token reward, Biggoron and Medigoron locally. Requires shuffle_rewards: supported.", "Shuffle"),
+    _toggle("shuffle_boss_hearts", False,
+            "Shuffle boss heart-container pickups locally. The assigned reward appears after the boss falls.", "Shuffle"),
+    _choice("shuffle_songs", "off", ("off", "own", "anywhere"),
+            "Shuffle the native song lessons among themselves or into the wider pool. Native lessons remain local; songs placed at AP locations join AP. Scarecrow's Song is preserved. Experimental.", "Shuffle"),
+    _toggle("shuffle_potion_shop", False,
+            "Shuffle the Market Potion Shop's empty-bottle and bug-tutorial potion rewards locally. Requires shuffle_rewards: supported; both checks need an empty bottle.", "Shuffle"),
+    _toggle("shuffle_trade_checks", False,
+            "Each supported adult trade hand-in grants one extra shuffled local reward the first time. Requires shuffle_rewards: supported.", "Shuffle"),
+    _toggle("shuffle_scrubs_a", False,
+            "Shuffle the first supported set of Deku Scrub sales locally. Requires shuffle_rewards: supported.", "Shuffle"),
+    _toggle("shuffle_scrubs_b", False,
+            "Shuffle the second supported set of Deku Scrub sales locally. Requires shuffle_rewards: supported.", "Shuffle"),
+    _toggle("shuffle_cows", False,
+            "Shuffle supported cow rewards locally. Requires shuffle_rewards: supported; the native plan includes its other supported cows too.", "Shuffle"),
+    _toggle("shuffle_treasure_reward", False,
+            "Shuffle the Treasure Chest Game's first-win heart piece locally; later wins retain their native reward.", "Shuffle"),
+    _choice("shuffle_dungeon_rewards", "vanilla", ("vanilla", "anywhere", "dungeons"),
+            "Keep Spiritual Stones and Medallions vanilla, put them in the wider pool, or restrict them to dungeon rewards. Requires shuffled NPC rewards for non-vanilla modes; native reward events remain local.", "Shuffle"),
+    _toggle("shuffle_frog_songs", False,
+            "Shuffle the five supported first-time frog-song rewards locally. Requires shuffle_rewards: supported.", "Shuffle"),
+    _toggle("shuffle_frog_bug_heart", False,
+            "Shuffle the frog bug game's first-win heart piece locally. Requires shuffle_rewards: supported.", "Shuffle"),
+    _toggle("shuffle_ocarinas", False,
+            "Shuffle Saria's Fairy Ocarina and Zelda's moat Ocarina of Time into the native pool. Requires shuffle_rewards: supported; their source events remain local.", "Shuffle"),
+    _toggle("shuffle_kokiri_sword", False,
+            "Shuffle the Kokiri Sword when overworld chests are shuffled. Its catalogued chest participates in AP.", "Shuffle"),
+    _choice("shuffle_entrances", "off", ("off", "dungeons"),
+            "Shuffle the dungeon entrances supported by OOTRR. The native logic and mod use the same rolled entrances. Overworld and mixed entrance shuffles are not implemented.", "World"),
+    _choice("shuffle_merchants", "off", ("off", "beans", "no_beans", "all"),
+            "Shuffle the supported Bean Merchant and Medigoron sales locally. Requires shuffled NPC rewards; beans and all also require plant_beans.", "Shuffle"),
+    _choice("shopsanity_prices", "starting", ("affordable", "starting", "adult", "giant"),
+            "Set the native special-deal price range by wallet tier. Requires a deals or random shop mode for a non-default value. Kokiri deals remain within the starting wallet; ordinary goods keep their prices.", "Economy"),
+    _choice("scrub_prices", "vanilla", ("vanilla", "cheap", "fixed"),
+            "Set prices for the enabled native-local Scrub sales. A non-default price mode requires shuffle_scrubs_a or shuffle_scrubs_b.", "Economy"),
+    _range("scrub_price_fixed", 10, 0, 99,
+           "Price of each enabled shuffled Scrub sale with scrub_prices: fixed.", "Economy"),
+    _toggle("scrub_hint_text", False,
+            "Enabled shuffled Scrubs name the actual native-local item instead of a mystery item. Requires a supported Scrub shuffle.", "Economy"),
+    _choice("merchant_prices", "vanilla", ("vanilla", "cheap", "fixed"),
+            "Set prices for the enabled native-local merchant sales. A non-default value requires shuffle_merchants.", "Economy"),
+    _range("merchant_price_fixed", 10, 0, 99,
+           "Price of each enabled shuffled merchant sale with merchant_prices: fixed.", "Economy"),
+    _choice("fairy_prices", "vanilla", ("vanilla", "cheap", "fixed"),
+            "Set the offering requested by the six native Great Fairies. Works with their vanilla or shuffled local rewards.", "Economy"),
+    _range("fairy_price_fixed", 10, 0, 99,
+           "Offering requested by each Great Fairy with fairy_prices: fixed.", "Economy"),
+    _range("lacs_rewards", 9, 1, 9,
+           "Total Spiritual Stones and Medallions needed for the native Light Arrows scene to grant Ganon's Boss Key with shuffle_ganon_bosskey: lacs_dungeons.", "Goal"),
+    _toggle("song_harp_colors", True,
+            "Color native song pickup harps to match their song. Only applies to shuffle_songs: anywhere. Experimental.", "Quality of life"),
+)
+OPTION_SPECS = _BASE_SPECS + _ADDITIONAL_SPECS + tuple(_toggle(name, False, description + " Experimental.", "Difficulty")
                                   for name, description in _DIFFICULTY)
 SPEC_BY_ID = {spec["id"]: spec for spec in OPTION_SPECS}
 AP_ONLY = frozenset({"death_link"})
@@ -148,7 +220,7 @@ AP_ONLY = frozenset({"death_link"})
 FIXED_SETTINGS = {
     "logic_rules": "glitchless", "starting_age": "child", "triforce_hunt": False,
     "shuffle_pots": "off", "shuffle_crates": "off", "shuffle_rocks": "off", "shuffle_grass": "off",
-    "shuffle_beehives": False, "shuffle_freestanding_items": "off", "shuffle_skulltulas": "off",
+    "shuffle_beehives": False, "shuffle_freestanding_items": "off",
     "shuffle_scrubs": "off", "shuffle_hideoutkeys": "vanilla", "shuffle_rewards": "off",
     "shuffle_rewards_extra": False, "shuffle_dungeon_rewards": "vanilla", "shuffle_boss_hearts": False,
     "shuffle_songs": "off", "shuffle_ocarinas": False, "shuffle_kokiri_sword": False,
@@ -159,6 +231,11 @@ FIXED_SETTINGS = {
     "shuffle_treasure_reward": False, "shuffle_entrances": "off", "bombchus_in_logic": False,
     "gossip_hints": False, "misc_hints": [], "chests_match_contents": False,
 }
+# Native-local sources keep the complete OOTRR seed reward. Only the explicit
+# AP catalogue is moved a second time by Archipelago.
+for _specification in _ADDITIONAL_SPECS:
+    FIXED_SETTINGS.pop(_specification["id"],None)
+del _specification
 
 
 def default_options():
@@ -219,6 +296,47 @@ def validate_options(values):
             raise ValueError(name + " requires shuffle_chests: dungeons or all to move dungeon items.")
         if result[name] == "overworld" and result["shuffle_chests"] == "dungeons":
             raise ValueError(name + ": overworld requires shuffle_chests: all.")
+    if result["shuffle_chests"]=="off":
+        if result["shuffle_shops"]=="off" and result["shuffle_skulltulas"]=="off":
+            raise ValueError("shuffle_chests: off requires shuffled AP shops or Skulltulas.")
+        for name in ("shuffle_smallkeys", "shuffle_bosskeys", "shuffle_ganon_bosskey", "shuffle_mapcompass"):
+            if result[name] in {"regional", "overworld", "any_dungeon", "keysanity", "lacs_dungeons"}:
+                raise ValueError(name + " requires shuffled chests for this placement mode.")
+    npc_children=("shuffle_potion_shop", "shuffle_rewards_extra", "shuffle_trade_checks",
+                  "shuffle_scrubs_a", "shuffle_scrubs_b", "shuffle_cows", "shuffle_frog_songs",
+                  "shuffle_frog_bug_heart", "shuffle_ocarinas")
+    for name in npc_children:
+        if result[name] and result["shuffle_rewards"]!="supported":
+            raise ValueError(name + " requires shuffle_rewards: supported.")
+    if result["shuffle_dungeon_rewards"]!="vanilla" and result["shuffle_rewards"]!="supported":
+        raise ValueError("shuffle_dungeon_rewards requires shuffle_rewards: supported.")
+    if result["shuffle_kokiri_sword"] and result["shuffle_chests"] not in {"all", "overworld"}:
+        raise ValueError("shuffle_kokiri_sword requires shuffle_chests: all or overworld.")
+    if result["enemy_gates"] and result["shuffle_entrances"]!="off":
+        raise ValueError("enemy_gates requires shuffle_entrances: off.")
+    if result["shuffle_ganon_bosskey"]=="lacs_dungeons":
+        if result["shuffle_rewards"]!="supported" or result["shuffle_chests"] not in {"all", "dungeons"}:
+            raise ValueError("lacs_dungeons requires shuffle_rewards: supported and dungeon or all chests.")
+    elif result["lacs_rewards"]!=9:
+        raise ValueError("lacs_rewards is only used with shuffle_ganon_bosskey: lacs_dungeons.")
+    if result["shuffle_merchants"]!="off":
+        if result["shuffle_rewards"]!="supported":
+            raise ValueError("shuffle_merchants requires shuffle_rewards: supported.")
+        if result["shuffle_merchants"] in {"beans", "all"} and not result["plant_beans"]:
+            raise ValueError("Shuffling the Bean Merchant requires plant_beans: true.")
+    deals=result["shuffle_shops"] in {"deals_1", "deals_2", "deals_3", "deals_4", "random"}
+    if result["shopsanity_prices"]!="starting" and not deals:
+        raise ValueError("shopsanity_prices requires a deals or random shop mode.")
+    scrubs=result["shuffle_scrubs_a"] or result["shuffle_scrubs_b"]
+    if (result["scrub_prices"]!="vanilla" or result["scrub_hint_text"]) and not scrubs:
+        raise ValueError("Scrub prices and hints require shuffle_scrubs_a or shuffle_scrubs_b.")
+    for kind in ("scrub", "merchant", "fairy"):
+        if result[kind+"_price_fixed"]!=10 and result[kind+"_prices"]!="fixed":
+            raise ValueError(kind+"_price_fixed is only used with "+kind+"_prices: fixed.")
+    if result["merchant_prices"]!="vanilla" and result["shuffle_merchants"]=="off":
+        raise ValueError("merchant_prices requires shuffle_merchants.")
+    if not result["song_harp_colors"] and result["shuffle_songs"]!="anywhere":
+        raise ValueError("song_harp_colors is only used with shuffle_songs: anywhere.")
     return result
 
 
@@ -235,7 +353,8 @@ def yaml_options(indent="  ", language="en"):
     french = str(language).lower().replace("_", "-").startswith("fr")
     descriptions = json.loads(resources.files(__package__).joinpath("settings_fr.json").read_text(encoding="utf-8")) if french else {}
     groups = {"Shuffle": "Mélange", "Dungeon items": "Objets de donjon", "World": "Monde", "Goal": "Objectif",
-              "Starting inventory": "Inventaire initial", "Quality of life": "Confort", "Difficulty": "Difficulté"} if french else {}
+              "Starting inventory": "Inventaire initial", "Quality of life": "Confort", "Difficulty": "Difficulté",
+              "Economy": "Économie"} if french else {}
     heading = "Objectif fixe : vaincre Ganon. Réglages compatibles AP uniquement." if french else "Fixed goal: defeat Ganon. AP-compatible settings only."
     lines = [indent + "# " + heading]
     previous = None

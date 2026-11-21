@@ -1,4 +1,4 @@
-Archipelago · Ocarina of Time Remake · 0.4.1-alpha.1
+Archipelago · Ocarina of Time Remake · 0.5.0-alpha.1
 Alpha for Triforce on Windows x64.
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
@@ -64,9 +64,11 @@ run Configure-Archipelago.cmd again, and rebuild the game. A change to the
 mod's native library also requires rebuilding Triforce with its new digest.
 Do not configure the mod while the host is updating.
 Each new room requires its own .apootrr file and configuration.
-Upgrading to 0.4.0-alpha.1 requires running the configuration again and
-using Build again: the native network library has changed. Existing rooms
-and saves remain supported. Triforce's Options menu remains available.
+Upgrading from 0.4.1 to 0.5.0 does not itself require a host rebuild: the
+native network library is unchanged. Extract the complete updated client
+ZIP before preparing a new room. Older native library or host-tool changes
+still require Build again. Existing rooms and saves remain supported.
+Triforce's Options menu remains available.
 
 Language
 The mod automatically follows the game language selected in Triforce.
@@ -88,9 +90,10 @@ Chests and received items
 A chest containing your own item shows and grants the assigned native item.
 A chest containing another player's item shows an AP medal and recipient,
 then reports its AP location. The old local reward is not granted as well.
-Only catalogued chests and the eight optional Kokiri purchases are network
-locations. Some local rewards outside AP, including freestanding heart
-pieces, retain OOTRR's handling and may differ from the unmodified game.
+Network locations cover catalogued chests and, when enabled, eight Kokiri
+purchases and supported Gold Skulltula drops. Other sources, including
+freestanding heart pieces, retain OOTRR's local handling and may differ
+from the unmodified game.
 Items from other worlds are delivered in order while a save is active.
 Their effects are native; presentation and some camera movements remain
 imperfect in this alpha.
@@ -114,11 +117,33 @@ OOTRR seed prices. Single-player rooms are supported. Your own rewards
 use native item models and effects; remote rewards use the AP medal.
 Payment and the sold-out display use the game's mechanisms; a completed
 purchase reports its AP check. shuffle_shops: off excludes shops from AP.
+The native deals_1 through deals_4 and random modes are also available;
+shops outside the Kokiri catalogue retain their native local rewards.
 The old kokiri_shop_checks test option was removed. Replace it in existing
 YAML files; already generated rooms keep their original placements.
 One purchase has been tested in the game, including the other player's
 receipt and the sold-out state after reloading. All eight shelves have
 automated coverage, but they have not all been purchased in the game.
+
+Gold Skulltulas and the other OOTRR settings
+shuffle_skulltulas accepts off, pinned and matched. pinned adds 44 firmly
+identified native locations; matched adds the supported researched matches.
+The reward must be collected: killing a Skulltula or receiving a token does
+not check its location. matched normally has 76 checks, or 77 with
+plant_beans: true or native starting Magic Beans. The 23 uncertain matches
+keep their native local handling. Local bottle refills are not placed on
+AP Skulltulas because their pickup cannot wait for an empty bottle.
+Use the complete matching client ZIP and generate a new room for these IDs.
+
+The YAML now includes 94 native OOTRR settings and DeathLink. Supported
+NPCs, songs, cows, ground pickups, destructibles, dungeon entrances and
+prices can be randomized natively. Those sources stay local unless they
+belong to the explicit AP chest/shop/Skulltula catalogue. Experimental
+breakable sources stay broken; collect their drop before leaving or it
+can be lost. The repository's docs/SETTINGS-COMPATIBILITY.md compares all
+118 native settings and explains the 24 omitted options. Skulltula pickup
+integration is covered by native resource and event-flow checks; actual
+in-game pickup testing is still required for this experimental path.
 
 DeathLink
 Set death_link: true in Zelda's YAML and enable DeathLink in the other

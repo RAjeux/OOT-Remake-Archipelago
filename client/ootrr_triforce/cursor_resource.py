@@ -1,4 +1,4 @@
-"""Append one saved Int to the v1.1.1 GameData BYML without reserializing other types."""
+"""Append AP markers without reserializing the game's existing BYML values."""
 from .i18n import tr
 import struct
 
@@ -11,7 +11,12 @@ def append_saved_bool(raw, key, value=False):
     return _append_saved_value(raw,key,int(bool(value)),"Bool",0xd0)
 
 
-def _append_saved_value(raw, key, baseline, group, default_type):
+def append_transient_string64(raw, key):
+    """Add an empty, unsaved pickup argument without enlarging any save table."""
+    return _append_saved_value(raw,key,0,"String64",0xa0,save_file=-1)
+
+
+def _append_saved_value(raw, key, baseline, group, default_type, *, save_file=0):
     if raw[:2] not in (b'YB', b'BY') or not 0<=baseline<2**31:
         raise ValueError(tr('Invalid GameData or receipt index.'))
     out=bytearray(raw)
@@ -64,10 +69,18 @@ def _append_saved_value(raw, key, baseline, group, default_type):
             default=field(row,'DefaultValue',False)
             reset=field(row,'ResetTypeValue',False)
             save=field(row,'SaveFileIndex',False)
-            if default and save and reset and out[default-1]==default_type and read(default)==0 and read(save)==0 and read(reset)==8:template=row
+            empty = default is not None and read(default)==0
+            if default is not None and default_type==0xa0:
+                strings=read(8)
+                index=read(default)
+                empty=bool(strings and out[strings]==0xc2 and index<small(strings+1)
+                           and out[strings+read(strings+4+4*index)]==0)
+            if (default and save and reset and out[default-1]==default_type and empty
+                    and read(save)==(save_file&0xffffffff) and read(reset)==8):template=row
     if template is None:raise ValueError(tr('Unknown game saved-integer schema.'))
     new_row=append(out[template:template+4+8*small(template+1)])
-    put(field(new_row,'Hash'),key);put(field(new_row,'DefaultValue'),baseline)
+    put(field(new_row,'Hash'),key)
+    if default_type!=0xa0:put(field(new_row,'DefaultValue'),baseline)
     rows=[read(first+4*i) for i in range(count)]
     # Preserve the existing order; maintain it if it was hash-sorted.
     at=next((i for i,v in enumerate(ids) if v>key),count) if ids==sorted(ids) else count
@@ -75,6 +88,8 @@ def _append_saved_value(raw, key, baseline, group, default_type):
     payload=b'\xc0'+len(rows).to_bytes(3,order)+b'\xc1'*len(rows)
     payload+=bytes((-len(payload))%4)+b''.join(word.pack(v) for v in rows)
     put(field(data,group),append(payload))
+    if save_file<0:
+        return bytes(out)
     for name in ('SaveDataSize','SaveDataOffsetPos'):
         arr=get_node(meta,name,0xc0);n,first=array(arr)
         if not n or out[arr+4] not in (0xd1,0xd3):raise ValueError(tr('Invalid save size: ')+name)

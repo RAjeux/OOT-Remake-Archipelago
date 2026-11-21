@@ -47,4 +47,4 @@ A complete emulator backend must detect checks, request receipt events on the ga
 
 The legacy save bridge only supports a subset of equipment and currency. It does not implement the complete item catalogue, the eight shop checks, or DeathLink. Removing the `all_locations`/native-host guards would allow unsupported items to be consumed without their effects. Those guards remain in place.
 
-The common AP backend has separate server/DLL tests for all 204 item IDs, all 136 locations, offline history, reconnection and bidirectional DeathLink. Those tests exercise the protocol and simulated host callbacks; they must not be presented as gameplay validation for an emulator or a newly adapted port.
+The common AP backend has separate server/DLL tests for all 204 item IDs, the 136 existing chest/shop location IDs, offline history, reconnection and bidirectional DeathLink. Those tests exercise the protocol and simulated host callbacks; they must not be presented as gameplay validation for an emulator or a newly adapted port. The new 0.5.0 Gold Skulltula path has separate generation, resource and flow coverage and has not been tested in-game on these hosts.

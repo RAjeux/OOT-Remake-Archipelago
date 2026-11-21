@@ -56,6 +56,36 @@ class NativeSettingsTests(unittest.TestCase):
         self.assertTrue(set(SHOP_CHECKS).issubset(reached))
         self.assertTrue(set(SHOP_CHECKS).issubset(generated["seed_file"]["shops"]))
 
+    def test_broad_native_local_profile_preserves_ap_projection_and_supported_items(self):
+        from ootrr_triforce.catalog import CHESTS, ITEM_IDS, AP_SKULL_CHECKS
+        changes = dict(shuffle_rewards="supported", shuffle_rewards_extra=True,
+                       shuffle_songs="anywhere", shuffle_dungeon_rewards="anywhere",
+                       shuffle_trade_checks=True, shuffle_cows=True, shuffle_frog_songs=True,
+                       shuffle_frog_bug_heart=True, shuffle_potion_shop=True, shuffle_ocarinas=True,
+                       shuffle_kokiri_sword=True, shuffle_scrubs_a=True, shuffle_scrubs_b=True,
+                       shuffle_merchants="all", plant_beans=True, shuffle_boss_hearts=True,
+                       shuffle_treasure_reward=True, shuffle_freestanding_items="all",
+                       shuffle_pots="all", shuffle_crates="all", shuffle_rocks="all",
+                       shuffle_grass="all", shuffle_beehives=True, shuffle_entrances="dungeons",
+                       shuffle_shops="deals_4", shopsanity_prices="giant",
+                       shuffle_skulltulas="matched", shuffle_ganon_bosskey="lacs_dungeons",
+                       lacs_rewards=3, fairy_prices="cheap", scrub_prices="fixed",
+                       scrub_price_fixed=10, scrub_hint_text=True, merchant_prices="cheap")
+        generated = json.loads(run_engine("generate", {"settings": engine_settings(changes),
+                                                        "seed": "AP-HYBRID-SKULLS-VALIDATION"}))
+        seed = generated["seed_file"]
+        reached = {name for wave in generated["waves"] for name in wave}
+        self.assertIn("Ganon", reached)
+        network = {name: item for name, item in seed["placements"].items()
+                   if name in CHESTS or name in AP_SKULL_CHECKS}
+        self.assertTrue(network)
+        self.assertTrue(set(network) <= reached)
+        self.assertTrue(set(network.values()) <= ITEM_IDS.keys())
+        self.assertTrue(any(name in AP_SKULL_CHECKS for name in network))
+        self.assertTrue(any(name not in network and name not in SHOP_CHECKS for name in seed["placements"]))
+        self.assertTrue(set(SHOP_CHECKS) <= reached)
+        self.assertEqual(self.inspect(seed["settings"])["settings"]["shuffle_skulltulas"], "matched")
+
 
 if __name__ == "__main__":
     unittest.main()

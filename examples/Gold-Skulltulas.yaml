@@ -1,0 +1,14 @@
+# Example: supported Gold Skulltula drops participate in Archipelago.
+# Use a new room and prepare its mod with the matching client release.
+name: Zelda
+game: "Ocarina of Time Remake"
+"Ocarina of Time Remake":
+  shuffle_chests: all
+  # Values: off (native handling), pinned (44 checks), matched (76/77 checks).
+  shuffle_skulltulas: matched
+  # This also proves the Zora River bean route: up to 77 AP skull checks.
+  # Without planted/starting beans, that one reward remains native-local.
+  plant_beans: true
+  # The 23 uncertain native matches never become AP checks.
+  # Native resource/flow tests cover this new path; in-game pickup testing remains required.
+  death_link: false

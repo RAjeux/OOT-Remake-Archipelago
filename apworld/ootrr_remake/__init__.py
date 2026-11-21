@@ -5,7 +5,8 @@ from pathlib import Path
 
 from BaseClasses import Item, ItemClassification, Location, Region
 from worlds.AutoWorld import WebWorld, World
-from .catalog import CHESTS, FILLER, GAME, ITEM_DATA, ITEM_IDS, LOCATION_IDS, PROTOCOL, LOCATION_REWARD_MODE, SHOP_CHECKS
+from .catalog import (AP_SKULL_CHECKS, CHESTS, FILLER, GAME, ITEM_DATA, ITEM_IDS, LOCATION_IDS,
+                      PINNED_SKULL_CHECKS, PROTOCOL, LOCATION_REWARD_MODE, SHOP_CHECKS, SKULL_CHECKS)
 from .engine import run_engine
 from .options import OPTION_GROUPS, RemakeOptions, option_values
 from .settings import engine_settings
@@ -38,8 +39,28 @@ class RemakeWorld(World):
         local_seed = f"AP-{self.random.getrandbits(64):016X}"
         generated = json.loads(run_engine("generate", {"settings": settings, "seed": local_seed}))
         self.seed_file = generated["seed_file"]
-        self.kokiri_shop_checks = values["shuffle_shops"] == "shuffle"
-        rewards = {name: prize for name, prize in self.seed_file["placements"].items() if name in CHESTS}
+        self.kokiri_shop_checks = values["shuffle_shops"] != "off"
+        self.shuffle_skulltulas = values.get("shuffle_skulltulas", "off")
+        eligible_skulls = (PINNED_SKULL_CHECKS if self.shuffle_skulltulas == "pinned" else
+                           AP_SKULL_CHECKS if self.shuffle_skulltulas == "matched" else frozenset())
+        self.local_skulltulas = {}
+        if self.shuffle_skulltulas != "off":
+            self.local_skulltulas = {
+                name: ("Native-only: actor mapping is outside the pinned set; OOTRR's reward stays local."
+                       if self.shuffle_skulltulas == "pinned" else
+                       "Native-only: uncertain actor mapping; OOTRR's generated reward stays local.")
+                for name in self.seed_file["placements"] if name in SKULL_CHECKS and name not in eligible_skulls}
+            reachable = {name for wave in generated["waves"] for name in wave}
+            bean_ride = "ZR GS Near Raised Grottos"
+            # OOTRR explicitly marks this optional bean ride out of logic until
+            # beans are preplanted or the player starts with all ten beans.
+            # Keep its native reward rather than exporting an unproved AP check.
+            if (bean_ride in self.seed_file["placements"] and bean_ride not in reachable
+                    and not values.get("plant_beans") and "magic_beans" not in values.get("starting_items", ())):
+                self.local_skulltulas[bean_ride] = (
+                    "Native-only: OOTRR does not prove this bean ride without preplanted or starting beans.")
+        rewards = {name: prize for name, prize in self.seed_file["placements"].items()
+                   if name in CHESTS or (name in eligible_skulls and name not in self.local_skulltulas)}
         if self.kokiri_shop_checks:
             shops = self.seed_file.get("shops", {})
             if not all(name in shops for name in SHOP_CHECKS):
@@ -87,6 +108,15 @@ class RemakeWorld(World):
             for name, depth in self.waves.items():
                 if depth == wave:
                     location = RemakeLocation(self.player, name, LOCATION_IDS[name], region)
+                    if name in AP_SKULL_CHECKS:
+                        # The native drop commits collection after its get event.
+                        # A refill could fail without an empty bottle, so keep
+                        # those local rewards at sources that can refuse them.
+                        def skull_item_rule(item, player=self.player):
+                            metadata = ITEM_DATA.get(getattr(item, "name", ""), {})
+                            refill = metadata.get("bottle_item") and metadata.get("pouch_special") == "NotPushToPouch"
+                            return item.player != player or not refill
+                        location.item_rule = skull_item_rule
                     region.locations.append(location)
         self.multiworld.completion_condition[self.player] = self.rules_at[self.goal_wave]
 
@@ -117,7 +147,8 @@ class RemakeWorld(World):
         return {"protocol": PROTOCOL, "token": self.token, "checks": sorted(LOCATION_IDS[n] for n in self.waves),
                 "death_link": bool(self.options.death_link.value), "reward_mode": LOCATION_REWARD_MODE,
                 "local_items": True, "kokiri_shop_checks": self.kokiri_shop_checks,
-                "foreign_only_shops": False}
+                "foreign_only_shops": False, "shuffle_skulltulas": self.shuffle_skulltulas,
+                "local_skulltulas": self.local_skulltulas}
 
     def generate_output(self, output_directory):
         output = {"game": self.game, "protocol": PROTOCOL, "room": self.multiworld.seed_name, "slot": self.player_name,
@@ -125,6 +156,7 @@ class RemakeWorld(World):
                   "checks": sorted(self.waves), "moved": self.moved,
                   "death_link": bool(self.options.death_link.value), "reward_mode": LOCATION_REWARD_MODE,
                   "local_items": True, "kokiri_shop_checks": self.kokiri_shop_checks,
-                  "foreign_only_shops": False}
+                  "foreign_only_shops": False, "shuffle_skulltulas": self.shuffle_skulltulas,
+                  "local_skulltulas": self.local_skulltulas}
         path = Path(output_directory) / (self.multiworld.get_out_file_name_base(self.player) + ".apootrr")
         path.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")

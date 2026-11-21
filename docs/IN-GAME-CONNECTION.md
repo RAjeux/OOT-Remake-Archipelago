@@ -14,7 +14,9 @@ The prepared player is read-only. A server address does not select a new seed or
 
 ## Upgrade
 
-The connection menu changes the native DLL and Triforce renderer. Extract the complete release, run `Configure-Archipelago.cmd` for the existing player file, then use **Build again** in Triforce Setup. Both the executable and `triforce_vk.dll` must be rebuilt. The setup tool preserves source backups and reports incompatible host versions before changing their sources.
+Installing the connection menu for the first time, or changing its native DLL or Triforce host tools, requires a host rebuild. Extract the complete release, run `Configure-Archipelago.cmd` for the player file, then use **Build again** in Triforce Setup. Both the executable and `triforce_vk.dll` must be rebuilt. The setup tool preserves source backups and reports incompatible host versions before changing their sources.
+
+The 0.5.0 update from 0.4.1 keeps the same native DLL and connection menu, so it does not itself require another host build. Use the complete updated client ZIP when preparing a new room with the new settings or Skulltula checks.
 
 Initial room generation and mod preparation remain separate from connection controls. `Observe-Archipelago.cmd` remains available for diagnostics.
 

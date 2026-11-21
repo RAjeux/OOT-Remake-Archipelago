@@ -1,6 +1,6 @@
 # Ocarina of Time Remake × Archipelago
 
-**0.4.1-alpha.1 — native integration for Triforce on Windows x64.** Manage Archipelago connections from Zelda's **Options → Archipelago** tab, or use the separate **Connect-Archipelago.pyw** desktop window. Automatic connection at startup remains enabled by default. This alpha uses OOTRR 0.8.1 and game version 1.1.1.
+**0.5.0-alpha.1 — native integration for Triforce on Windows x64.** Manage Archipelago connections from Zelda's **Options → Archipelago** tab, or use the separate **Connect-Archipelago.pyw** desktop window. Automatic connection at startup remains enabled by default. This alpha uses OOTRR 0.8.1 and game version 1.1.1.
 
 Title-screen connections, items received while the game was closed, local and remote chests, one Kokiri purchase, and DeathLink in both directions have been tested on **Triforce 0.6.0**. **Item presentation animations and some camera movements still need improvement.** All eight Kokiri purchases have automated coverage; they have not all been purchased in the game. Hookshot and Fritchii are not supported by this native integration.
 
@@ -30,21 +30,25 @@ The [player guide](distribution/Guide.txt) covers installation, updates, and tro
 
 A chest containing an item for Zelda shows and grants the native item assigned by Archipelago. A chest containing another player's item shows an AP medal and sends the item to that player. The chest's previous local reward is not granted a second time.
 
-Network locations are limited to the catalogued chests and, when enabled, eight Kokiri purchases. Some local rewards outside AP, including freestanding heart pieces, retain OOTRR's handling. Their exclusion from the network does not imply unchanged vanilla behavior.
+Network locations cover the catalogued chests and, when enabled, eight Kokiri purchases and up to 77 supported Gold Skulltula drops. Other sources, including shuffled NPC rewards and freestanding items, retain OOTRR's local handling. Their exclusion from the network does not imply unchanged vanilla behavior.
 
 Items from other worlds are delivered in order while a save is active, using the game's effects. Items sent while Zelda is closed remain on the server and are recovered after reconnection. Each grant and its received-item index are committed together; save before quitting normally.
 
 Major received items use the game's native turn toward the player camera and item presentation pose. Ordinary pickups retain their native central display and sounds.
 
-`shuffle_shops: shuffle` uses OOTRR's normal shop shuffle and adds eight one-time Kokiri purchases to the AP pool. Each can contain your own item or another player's item, at its OOTRR seed price. Your items use their native appearance and effects; remote items use the AP medal. Single-player rooms work too. `shuffle_shops: off` keeps shops outside the AP pool. The former `kokiri_shop_checks` test option has been removed; old generated rooms retain their existing placements.
+`shuffle_shops: shuffle` uses OOTRR's normal shop shuffle and adds eight one-time Kokiri purchases to the AP pool. Each can contain your own item or another player's item, at its OOTRR seed price. Your items use their native appearance and effects; remote items use the AP medal. Single-player rooms work too. Native `deals_1` through `deals_4` and `random` shop modes are also available; shops outside the Kokiri catalogue keep their native local rewards. `shuffle_shops: off` keeps shops outside the AP pool. The former `kokiri_shop_checks` test option has been removed; old generated rooms retain their existing placements.
 
 `death_link: true` shares deaths with other DeathLink participants. A remote death waits for an active event, such as a purchase or item receipt, to finish.
+
+`shuffle_skulltulas` offers `off`, `pinned` for 44 firmly identified native locations, and `matched` for the supported researched matches. The AP check completes on collecting the reward, not on killing the enemy or receiving a token. `matched` normally has 76 eligible checks, or 77 with supported planted/starting beans; 23 uncertain matches remain native-local. This new path has generation, resource and event-flow coverage; in-game Skulltula pickup testing remains required. See the [Gold Skulltula guide](docs/GOLD-SKULLTULAS.md) and [example YAML](examples/Gold-Skulltulas.yaml).
 
 The mod automatically follows Triforce's selected game language: French uses French text, and other languages fall back to English. There is no YAML language setting. Other players' names, chat, and item names from other games retain their server wording. Configuration tools default to English and may reuse the known game language. YAML descriptions and developer documentation use English.
 
 Restart the game after changing Triforce's language. Both translations are installed together, so changing language does not require generating a new seed.
 
-The YAML lists the OOTRR settings supported by this APWorld, with descriptions and allowed values. Do not add omitted settings on the assumption that they work with AP: some local randomizer settings do not yet match the supported network locations or logic. Archipelago may ignore unknown YAML keys; their presence does not enable an unsupported feature.
+The YAML exposes **94 native OOTRR settings plus DeathLink**, with descriptions, allowed values and dependency checks. Native-local shuffles include supported NPC and song rewards, cows, ground pickups, destructibles, dungeon entrances, and prices. OOTRR builds those rewards from the same seed that proves the AP access rules; AP moves only its catalogued rewards. Experimental destructibles retain OOTRR's one-time break persistence: leaving their drop behind can lose it.
+
+The [complete comparison of all 118 native settings](docs/SETTINGS-COMPATIBILITY.md) explains the 24 remaining omissions, including unavailable native features, Silver Rupee delivery, AP-aware hints, chest sizes and location exclusions. Do not add omitted YAML keys expecting them to enable those features.
 
 New rooms use `reward_mode: all_locations`, `local_items: true`, and `items_handling=5`: personal items are granted physically, while the network supplies remote items and AP starting inventory. Older `all_chest_rewards` and `legacy_gear` rooms keep mode `7`. Generate a new room to change modes; do not edit an existing room's flags to convert it.
 
@@ -62,6 +66,7 @@ Python client code is in `client/`, the APWorld in `apworld/`, the native bridge
 | Desktop connection window | `client/ootrr_triforce/connection_window.py`, `connection_control.py`; `native/control.go` |
 | Language discovery and translations | `i18n.py`, `i18n_fr.json`, `item_names.py` in `client/ootrr_triforce/`; `native/localization.go` |
 | Chests, medals, item receipts, and shops | `medallions.py`, `receipt_events.py`, `shop_events.py`, `ap_shops.py` in `client/ootrr_triforce/` |
+| Gold Skulltula identities and pickup flows | `skull_catalog.py`, `ap_skulls.py` in `client/ootrr_triforce/`; `ootrr_ap/skulls.rs` in the adapted engine |
 | OOTRR engine and generation | `moteur/ootrr-ap/randomizer/core/src/bin/ootrr_ap.rs`, `slice/generate.rs` |
 | Game resources and formats | `client/oot_rando/` |
 | Validation | `tests/`, `tests/fixtures/`, `tools/test.py` |
@@ -74,10 +79,10 @@ From the repository root on Windows:
 
 ```powershell
 py -3 tools/build.py
-py -3 tools/verify_release.py --version 0.3.0-alpha.1
+py -3 tools/verify_release.py --version 0.5.0-alpha.1
 ```
 
-The output is `dist/Archipelago-OOT-Remake-0.3.0-alpha.1.zip`, including the `.pyz` client, APWorld, and their sources. `VERSION` declares the release version. The default assembly uses the supplied native DLL and WebAssembly engine without downloading dependencies. It does not rebuild Triforce.
+The output is `dist/Archipelago-OOT-Remake-0.5.0-alpha.1.zip`, including the `.pyz` client, APWorld, and their sources. `VERSION` declares the release version. The default assembly uses the supplied native DLL and WebAssembly engine without downloading dependencies. It does not rebuild Triforce.
 
 To rebuild the supplied components:
 

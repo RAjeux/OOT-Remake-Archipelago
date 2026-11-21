@@ -16,7 +16,7 @@ import tempfile
 import uuid
 from urllib.parse import urlsplit
 
-from .catalog import CHESTS, SHOP_CHECKS, EXPECTED, FILLER, GAME, LEGACY_GAME, GEAR, ITEM_IDS, LOCATION_IDS, PROTOCOL
+from .catalog import CHESTS, SHOP_CHECKS, AP_SKULL_CHECKS, PINNED_SKULL_CHECKS, EXPECTED, FILLER, GAME, LEGACY_GAME, GEAR, ITEM_IDS, LOCATION_IDS, PROTOCOL
 from .engine import run_engine
 from .settings import yaml_options
 from .live import LiveInventory
@@ -66,8 +66,21 @@ def read_manifest(path):
             or seed["generator"] != "ootrr-core 0.8.1" or seed["format"] != "ootrr-seed"):
         raise ValueError(tr('Incompatible player file or version.'))
     allowed=set(CHESTS) | (set(SHOP_CHECKS) if data.get("kokiri_shop_checks") else set())
+    skull_mode=data.get("shuffle_skulltulas", "off")
+    if skull_mode not in {"off", "pinned", "matched"}:
+        raise ValueError(tr('Unknown Gold Skulltula shuffle mode.'))
+    if skull_mode!="off":
+        local=data.get("local_skulltulas", {})
+        if not isinstance(local,dict):
+            raise ValueError(tr('Invalid local Skulltula list.'))
+        skulls=set(PINNED_SKULL_CHECKS if skull_mode=="pinned" else AP_SKULL_CHECKS)
+        # OOTRR explicitly leaves this bean route outside its access proof
+        # without planted/starting beans. Its canonical reward stays local.
+        if "ZR GS Near Raised Grottos" in local:
+            skulls.discard("ZR GS Near Raised Grottos")
+        allowed.update(skulls)
     if len(set(data["checks"])) != len(data["checks"]) or not set(data["checks"]) <= allowed:
-        raise ValueError(tr('Unknown chest list.'))
+        raise ValueError(tr('Unknown Archipelago location list.'))
     mode = data.get("reward_mode", "legacy_gear")
     if mode not in ("legacy_gear", "all_chest_rewards", "all_locations"):
         raise ValueError(tr('Unknown Archipelago reward mode.'))
@@ -78,13 +91,13 @@ def read_manifest(path):
             raise ValueError(tr('The seed does not contain all eight Kokiri purchases.'))
         rewards.update({name:shops[name]["item"] for name in SHOP_CHECKS})
     if not set(data["checks"]) <= rewards.keys():
-        raise ValueError(tr('An Archipelago chest is missing from the OOTRR seed.'))
+        raise ValueError(tr('An Archipelago location is missing from the OOTRR seed.'))
     if mode in ("all_chest_rewards", "all_locations"):
         if bool(data.get("local_items",False)) != (mode=="all_locations"):
             raise ValueError(tr("Local-item settings do not match this room's mode."))
         expected = {n: rewards[n] for n in data["checks"]}
         if set(data["checks"]) != set(rewards).intersection(allowed):
-            raise ValueError(tr('The Archipelago chest list is incomplete.'))
+            raise ValueError(tr('The Archipelago location list is incomplete.'))
         if not set(expected.values()) <= ITEM_IDS.keys():
             raise ValueError(tr('The seed contains an unsupported reward.'))
     else:
@@ -681,6 +694,7 @@ def main():
                    reward_mode=data.get("reward_mode","legacy_gear"),local_items=bool(data.get("local_items",False)),
                    player=data["player"],kokiri_shop_checks=bool(data.get("kokiri_shop_checks",False)),
                    foreign_only_shops=bool(data.get("foreign_only_shops",False)),
+                   shuffle_skulltulas=data.get("shuffle_skulltulas", "off"),
                    shop_prices={name:row["price"] for name,row in data["seed_file"].get("shops",{}).items()
                                 if name in SHOP_CHECKS})
     if args.native_install:

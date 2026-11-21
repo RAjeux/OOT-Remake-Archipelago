@@ -1,0 +1,2239 @@
+{
+  "basis": "OOTRR 0.8.1 native schema and the current AP settings catalogue",
+  "native_setting_count": 118,
+  "public_native_count": 94,
+  "ap_only": [
+    "death_link"
+  ],
+  "status_counts": {
+    "ap_mapping_missing": 3,
+    "delivery_missing": 1,
+    "derived_alias": 1,
+    "known_native_gameplay_gap": 1,
+    "legacy_alias": 1,
+    "native_rejected": 2,
+    "native_unavailable": 14,
+    "placement_adapter_missing": 1,
+    "public": 68,
+    "public_native_local": 23,
+    "public_network": 3
+  },
+  "menu_placeholders": [
+    {
+      "page": "win",
+      "section": "Logic",
+      "label": "Blue Fire Arrows"
+    },
+    {
+      "page": "win",
+      "section": "Logic",
+      "label": "Sunlight Arrows"
+    },
+    {
+      "page": "win",
+      "section": "Logic",
+      "label": "Full Wallets"
+    },
+    {
+      "page": "win",
+      "section": "Goal",
+      "label": "Triforce Hunt Total Pieces"
+    },
+    {
+      "page": "win",
+      "section": "Goal",
+      "label": "Triforce Hunt Pieces Location"
+    },
+    {
+      "page": "win",
+      "section": "Goal",
+      "label": "GBK Reward Options"
+    },
+    {
+      "page": "win",
+      "section": "Goal",
+      "label": "Ganon's Soul"
+    },
+    {
+      "page": "win",
+      "section": "Goal",
+      "label": "Win Condition"
+    },
+    {
+      "page": "world",
+      "section": "Area Access",
+      "label": "Sleeping Waterfall"
+    },
+    {
+      "page": "world",
+      "section": "Area Access",
+      "label": "Lock Overworld Doors"
+    },
+    {
+      "page": "dungeon",
+      "section": "Dungeon Items",
+      "label": "Shuffle Boss Souls"
+    },
+    {
+      "page": "dungeon",
+      "section": "Keyrings",
+      "label": "Keyrings"
+    }
+  ],
+  "settings": [
+    {
+      "id": "logic_rules",
+      "label": "Logic",
+      "native_kind": "choice",
+      "native_default": "glitchless",
+      "native_dependencies": [],
+      "native_choices": [
+        "glitchless",
+        "no_logic"
+      ],
+      "status": "native_unavailable",
+      "reason": "OOTRR's native planner accepts only the default; the schema marks alternate values unsupported.",
+      "ap_fixed_value": "glitchless"
+    },
+    {
+      "id": "starting_age",
+      "label": "Starting age",
+      "native_kind": "choice",
+      "native_default": "child",
+      "native_dependencies": [],
+      "native_choices": [
+        "child",
+        "adult",
+        "random"
+      ],
+      "status": "native_unavailable",
+      "reason": "OOTRR's native planner accepts only the default; the schema marks alternate values unsupported.",
+      "ap_fixed_value": "child"
+    },
+    {
+      "id": "open_forest",
+      "label": "Kokiri Forest",
+      "native_kind": "choice",
+      "native_default": "closed",
+      "native_dependencies": [],
+      "native_choices": [
+        "open",
+        "closed"
+      ],
+      "ap_default": "closed",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "closed",
+        "open"
+      ],
+      "omitted_native_choices": [],
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "open_kakariko",
+      "label": "Kakariko Gate",
+      "native_kind": "choice",
+      "native_default": "closed",
+      "native_dependencies": [
+        {
+          "on": "open_forest",
+          "is": "open"
+        }
+      ],
+      "native_choices": [
+        "open",
+        "closed"
+      ],
+      "ap_default": "closed",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "closed",
+        "open"
+      ],
+      "omitted_native_choices": [],
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "open_door_of_time",
+      "label": "Open Door of Time",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "status": "legacy_alias",
+      "reason": "The legacy boolean is superseded by door_of_time_condition and its related controls."
+    },
+    {
+      "id": "zora_fountain",
+      "label": "Zora's Fountain",
+      "native_kind": "choice",
+      "native_default": "closed",
+      "native_dependencies": [],
+      "native_choices": [
+        "closed",
+        "adult",
+        "open"
+      ],
+      "ap_default": "closed",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "closed",
+        "open"
+      ],
+      "omitted_native_choices": [
+        "adult"
+      ],
+      "omitted_native_reason": "The native world-opening code implements Closed and Open, not the advertised child-only blockage variant.",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "gerudo_fortress",
+      "label": "Gerudo Fortress",
+      "native_kind": "choice",
+      "native_default": "normal",
+      "native_dependencies": [],
+      "native_choices": [
+        "normal",
+        "fast",
+        "open"
+      ],
+      "ap_default": "normal",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "normal",
+        "fast",
+        "open"
+      ],
+      "omitted_native_choices": [],
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "shuffle_chests",
+      "label": "Chests",
+      "native_kind": "choice",
+      "native_default": "all",
+      "native_dependencies": [],
+      "native_choices": [
+        "off",
+        "overworld",
+        "dungeons",
+        "all"
+      ],
+      "ap_default": "all",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "off",
+        "all",
+        "overworld",
+        "dungeons"
+      ],
+      "omitted_native_choices": [],
+      "status": "public_network",
+      "reason": "The supported AP location family is connected to native checks and rewards; see the setting description for its exact scope."
+    },
+    {
+      "id": "shuffle_pots",
+      "label": "Pots",
+      "native_kind": "choice",
+      "native_default": "off",
+      "native_dependencies": [],
+      "native_choices": [
+        "off",
+        "overworld",
+        "dungeons",
+        "all"
+      ],
+      "ap_default": "off",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "off",
+        "overworld",
+        "dungeons",
+        "all"
+      ],
+      "omitted_native_choices": [],
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere.",
+      "native_caution": "These experimental native drops persist when their container is broken. Leaving before collecting a required drop can lose it; save before breaking containers."
+    },
+    {
+      "id": "shuffle_crates",
+      "label": "Crates",
+      "native_kind": "choice",
+      "native_default": "off",
+      "native_dependencies": [],
+      "native_choices": [
+        "off",
+        "overworld",
+        "dungeons",
+        "all"
+      ],
+      "ap_default": "off",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "off",
+        "overworld",
+        "dungeons",
+        "all"
+      ],
+      "omitted_native_choices": [],
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere.",
+      "native_caution": "These experimental native drops persist when their container is broken. Leaving before collecting a required drop can lose it; save before breaking containers."
+    },
+    {
+      "id": "shuffle_scrubs",
+      "label": "Business Scrubs",
+      "native_kind": "choice",
+      "native_default": "off",
+      "native_dependencies": [],
+      "native_choices": [
+        "off",
+        "low",
+        "regular",
+        "random"
+      ],
+      "status": "native_rejected",
+      "reason": "The native planner accepts only off for this old selector; shuffle_scrubs_a and shuffle_scrubs_b implement the available subsets.",
+      "ap_fixed_value": "off"
+    },
+    {
+      "id": "shuffle_freestanding_items",
+      "label": "Freestanding items",
+      "native_kind": "choice",
+      "native_default": "off",
+      "native_dependencies": [],
+      "native_choices": [
+        "off",
+        "pieces",
+        "all",
+        "dungeons",
+        "overworld"
+      ],
+      "ap_default": "off",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "off",
+        "pieces",
+        "all",
+        "dungeons",
+        "overworld"
+      ],
+      "omitted_native_choices": [],
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+    },
+    {
+      "id": "disabled_locations",
+      "label": "Excluded locations",
+      "native_kind": "list",
+      "native_default": [],
+      "native_dependencies": [],
+      "status": "placement_adapter_missing",
+      "reason": "Native disabled locations receive junk rather than disappearing. AP refill would have to preserve that constraint, including its filler pool and counted access rules."
+    },
+    {
+      "id": "shuffle_smallkeys",
+      "label": "Small Keys",
+      "native_kind": "choice",
+      "native_default": "dungeon",
+      "native_dependencies": [],
+      "native_choices": [
+        "remove",
+        "vanilla",
+        "dungeon",
+        "regional",
+        "overworld",
+        "any_dungeon",
+        "keysanity"
+      ],
+      "ap_default": "dungeon",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "vanilla",
+        "dungeon",
+        "any_dungeon",
+        "keysanity"
+      ],
+      "omitted_native_choices": [
+        "overworld",
+        "regional",
+        "remove"
+      ],
+      "omitted_native_reason": "The native dungeon-item planner implements only vanilla, dungeon, any_dungeon and keysanity for Small Keys.",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "shuffle_bosskeys",
+      "label": "Boss Keys",
+      "native_kind": "choice",
+      "native_default": "dungeon",
+      "native_dependencies": [],
+      "native_choices": [
+        "remove",
+        "vanilla",
+        "dungeon",
+        "regional",
+        "overworld",
+        "any_dungeon",
+        "keysanity"
+      ],
+      "ap_default": "dungeon",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "remove",
+        "vanilla",
+        "dungeon",
+        "regional",
+        "overworld",
+        "any_dungeon",
+        "keysanity"
+      ],
+      "omitted_native_choices": [],
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "shuffle_mapcompass",
+      "label": "Maps and Compasses",
+      "native_kind": "choice",
+      "native_default": "dungeon",
+      "native_dependencies": [],
+      "native_choices": [
+        "remove",
+        "startwith",
+        "vanilla",
+        "dungeon",
+        "regional",
+        "overworld",
+        "any_dungeon",
+        "keysanity"
+      ],
+      "ap_default": "dungeon",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "remove",
+        "startwith",
+        "vanilla",
+        "dungeon",
+        "regional",
+        "any_dungeon",
+        "keysanity"
+      ],
+      "omitted_native_choices": [
+        "overworld"
+      ],
+      "omitted_native_reason": "The native dungeon-item planner rejects Overworld-only Maps/Compasses; its other supported placement modes remain available.",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "shuffle_hideoutkeys",
+      "label": "Thieves' Hideout keys",
+      "native_kind": "choice",
+      "native_default": "vanilla",
+      "native_dependencies": [],
+      "native_choices": [
+        "vanilla",
+        "regional",
+        "overworld",
+        "any_dungeon",
+        "keysanity"
+      ],
+      "status": "native_rejected",
+      "reason": "The native planner accepts only vanilla; roaming hideout-key placement is not implemented.",
+      "ap_fixed_value": "vanilla"
+    },
+    {
+      "id": "shuffle_ganon_bosskey",
+      "label": "Ganon's Boss Key",
+      "native_kind": "choice",
+      "native_default": "dungeon",
+      "native_dependencies": [],
+      "native_choices": [
+        "lacs_dungeons",
+        "remove",
+        "vanilla",
+        "dungeon",
+        "regional",
+        "overworld",
+        "any_dungeon",
+        "keysanity",
+        "stones",
+        "medallions",
+        "dungeons",
+        "tokens",
+        "hearts"
+      ],
+      "ap_default": "dungeon",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "remove",
+        "vanilla",
+        "dungeon",
+        "regional",
+        "overworld",
+        "any_dungeon",
+        "keysanity",
+        "lacs_dungeons"
+      ],
+      "omitted_native_choices": [
+        "dungeons",
+        "hearts",
+        "medallions",
+        "stones",
+        "tokens"
+      ],
+      "omitted_native_reason": "The native planner supports the regular key-placement modes and lacs_dungeons, but not the other schema-advertised reward triggers.",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "ganon_bosskey_stones",
+      "label": "Stones for the key",
+      "native_kind": "number",
+      "native_default": 3,
+      "native_dependencies": [
+        {
+          "on": "shuffle_ganon_bosskey",
+          "is": "stones"
+        }
+      ],
+      "native_min": 0,
+      "native_max": 3,
+      "status": "native_unavailable",
+      "reason": "OOTRR's native planner accepts only the default; the schema marks alternate values unsupported."
+    },
+    {
+      "id": "ganon_bosskey_medallions",
+      "label": "Medallions for the key",
+      "native_kind": "number",
+      "native_default": 6,
+      "native_dependencies": [
+        {
+          "on": "shuffle_ganon_bosskey",
+          "is": "medallions"
+        }
+      ],
+      "native_min": 0,
+      "native_max": 6,
+      "status": "native_unavailable",
+      "reason": "OOTRR's native planner accepts only the default; the schema marks alternate values unsupported."
+    },
+    {
+      "id": "ganon_bosskey_rewards",
+      "label": "Rewards for the key",
+      "native_kind": "number",
+      "native_default": 9,
+      "native_dependencies": [
+        {
+          "on": "shuffle_ganon_bosskey",
+          "is": "dungeons"
+        }
+      ],
+      "native_min": 0,
+      "native_max": 9,
+      "status": "native_unavailable",
+      "reason": "OOTRR's native planner accepts only the default; the schema marks alternate values unsupported."
+    },
+    {
+      "id": "ganon_bosskey_tokens",
+      "label": "Tokens for the key",
+      "native_kind": "number",
+      "native_default": 100,
+      "native_dependencies": [
+        {
+          "on": "shuffle_ganon_bosskey",
+          "is": "tokens"
+        }
+      ],
+      "native_min": 0,
+      "native_max": 100,
+      "status": "native_unavailable",
+      "reason": "OOTRR's native planner accepts only the default; the schema marks alternate values unsupported."
+    },
+    {
+      "id": "ganon_bosskey_hearts",
+      "label": "Hearts for the key",
+      "native_kind": "number",
+      "native_default": 20,
+      "native_dependencies": [
+        {
+          "on": "shuffle_ganon_bosskey",
+          "is": "hearts"
+        }
+      ],
+      "native_min": 4,
+      "native_max": 20,
+      "status": "native_unavailable",
+      "reason": "OOTRR's native planner accepts only the default; the schema marks alternate values unsupported."
+    },
+    {
+      "id": "bridge",
+      "label": "Rainbow Bridge",
+      "native_kind": "choice",
+      "native_default": "vanilla",
+      "native_dependencies": [],
+      "native_choices": [
+        "open",
+        "vanilla",
+        "stones",
+        "medallions",
+        "dungeons",
+        "tokens",
+        "hearts",
+        "random"
+      ],
+      "ap_default": "vanilla",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "vanilla",
+        "dungeons"
+      ],
+      "omitted_native_choices": [
+        "hearts",
+        "medallions",
+        "open",
+        "random",
+        "stones",
+        "tokens"
+      ],
+      "omitted_native_reason": "The native bridge code implements Vanilla and the combined dungeon-reward threshold; the other schema goal variants are not implemented.",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "bridge_stones",
+      "label": "Stones for the bridge",
+      "native_kind": "number",
+      "native_default": 3,
+      "native_dependencies": [
+        {
+          "on": "bridge",
+          "is": "stones"
+        }
+      ],
+      "native_min": 0,
+      "native_max": 3,
+      "status": "native_unavailable",
+      "reason": "OOTRR's native planner accepts only the default; the schema marks alternate values unsupported."
+    },
+    {
+      "id": "bridge_medallions",
+      "label": "Medallions for the bridge",
+      "native_kind": "number",
+      "native_default": 6,
+      "native_dependencies": [
+        {
+          "on": "bridge",
+          "is": "medallions"
+        }
+      ],
+      "native_min": 0,
+      "native_max": 6,
+      "status": "native_unavailable",
+      "reason": "OOTRR's native planner accepts only the default; the schema marks alternate values unsupported."
+    },
+    {
+      "id": "bridge_rewards",
+      "label": "Rewards for the bridge",
+      "native_kind": "number",
+      "native_default": 9,
+      "native_dependencies": [
+        {
+          "on": "bridge",
+          "is": "dungeons"
+        }
+      ],
+      "native_min": 0,
+      "native_max": 9,
+      "ap_default": 9,
+      "ap_kind": "range",
+      "ap_min": 0,
+      "ap_max": 9,
+      "ap_step": 1,
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "bridge_tokens",
+      "label": "Tokens for the bridge",
+      "native_kind": "number",
+      "native_default": 100,
+      "native_dependencies": [
+        {
+          "on": "bridge",
+          "is": "tokens"
+        }
+      ],
+      "native_min": 0,
+      "native_max": 100,
+      "status": "native_unavailable",
+      "reason": "OOTRR's native planner accepts only the default; the schema marks alternate values unsupported."
+    },
+    {
+      "id": "bridge_hearts",
+      "label": "Hearts for the bridge",
+      "native_kind": "number",
+      "native_default": 20,
+      "native_dependencies": [
+        {
+          "on": "bridge",
+          "is": "hearts"
+        }
+      ],
+      "native_min": 4,
+      "native_max": 20,
+      "status": "native_unavailable",
+      "reason": "OOTRR's native planner accepts only the default; the schema marks alternate values unsupported."
+    },
+    {
+      "id": "skip_ganon_trials",
+      "label": "Skip Ganon's Trials",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "trials",
+      "label": "Ganon's Trials",
+      "native_kind": "number",
+      "native_default": 6,
+      "native_dependencies": [
+        {
+          "on": "skip_ganon_trials",
+          "is": false
+        }
+      ],
+      "native_min": 0,
+      "native_max": 6,
+      "ap_default": 6,
+      "ap_kind": "range",
+      "ap_min": 0,
+      "ap_max": 6,
+      "ap_step": 1,
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "triforce_hunt",
+      "label": "Triforce Hunt",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "status": "native_unavailable",
+      "reason": "OOTRR's native planner accepts only the default; the schema marks alternate values unsupported.",
+      "ap_fixed_value": false
+    },
+    {
+      "id": "triforce_count_per_world",
+      "label": "Triforce pieces in the pool",
+      "native_kind": "number",
+      "native_default": 30,
+      "native_dependencies": [
+        {
+          "on": "triforce_hunt",
+          "is": true
+        }
+      ],
+      "native_min": 1,
+      "native_max": 999,
+      "status": "native_unavailable",
+      "reason": "OOTRR's native planner accepts only the default; the schema marks alternate values unsupported."
+    },
+    {
+      "id": "triforce_goal_per_world",
+      "label": "Triforce pieces needed",
+      "native_kind": "number",
+      "native_default": 20,
+      "native_dependencies": [
+        {
+          "on": "triforce_hunt",
+          "is": true
+        }
+      ],
+      "native_min": 1,
+      "native_max": 999,
+      "status": "native_unavailable",
+      "reason": "OOTRR's native planner accepts only the default; the schema marks alternate values unsupported."
+    },
+    {
+      "id": "starting_hearts",
+      "label": "Starting hearts",
+      "native_kind": "number",
+      "native_default": 3,
+      "native_dependencies": [],
+      "native_min": 1,
+      "native_max": 20,
+      "ap_default": 3,
+      "ap_kind": "range",
+      "ap_min": 1,
+      "ap_max": 20,
+      "ap_step": 1,
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "starting_items",
+      "label": "Starting items",
+      "native_kind": "multi",
+      "native_default": [],
+      "native_dependencies": [],
+      "native_choices": [
+        "ocarina",
+        "slingshot",
+        "boomerang",
+        "bow",
+        "bomb_bag",
+        "bombchus",
+        "hookshot",
+        "longshot",
+        "megaton_hammer",
+        "lens_of_truth",
+        "magic_meter",
+        "dins_fire",
+        "farores_wind",
+        "nayrus_love",
+        "fire_arrows",
+        "ice_arrows",
+        "light_arrows",
+        "iron_boots",
+        "hover_boots",
+        "goron_tunic",
+        "zora_tunic",
+        "mirror_shield",
+        "bottle",
+        "magic_beans",
+        "zeldas_letter",
+        "stone_of_agony",
+        "gerudo_card",
+        "goron_bracelet",
+        "silver_scale",
+        "adult_wallet",
+        "kokiri_sword",
+        "deku_shield",
+        "big_bullet_bag",
+        "biggest_bullet_bag",
+        "big_quiver",
+        "biggest_quiver",
+        "big_bomb_bag",
+        "biggest_bomb_bag",
+        "deku_sticks",
+        "big_stick_bag",
+        "biggest_stick_bag",
+        "deku_nuts",
+        "big_nut_bag",
+        "biggest_nut_bag",
+        "silver_gauntlets",
+        "golden_gauntlets",
+        "golden_scale",
+        "giant_wallet",
+        "double_magic",
+        "ocarina_of_time",
+        "two_bottles",
+        "three_bottles",
+        "four_bottles",
+        "hylian_shield"
+      ],
+      "ap_default": [],
+      "ap_kind": "set",
+      "ap_choices": [
+        "ocarina",
+        "slingshot",
+        "boomerang",
+        "bow",
+        "bomb_bag",
+        "bombchus",
+        "hookshot",
+        "longshot",
+        "megaton_hammer",
+        "lens_of_truth",
+        "magic_meter",
+        "dins_fire",
+        "farores_wind",
+        "nayrus_love",
+        "fire_arrows",
+        "ice_arrows",
+        "light_arrows",
+        "iron_boots",
+        "hover_boots",
+        "goron_tunic",
+        "zora_tunic",
+        "mirror_shield",
+        "bottle",
+        "magic_beans",
+        "stone_of_agony",
+        "gerudo_card",
+        "goron_bracelet",
+        "silver_scale",
+        "adult_wallet",
+        "kokiri_sword",
+        "deku_shield",
+        "big_bullet_bag",
+        "biggest_bullet_bag",
+        "big_quiver",
+        "biggest_quiver",
+        "big_bomb_bag",
+        "biggest_bomb_bag",
+        "deku_sticks",
+        "big_stick_bag",
+        "biggest_stick_bag",
+        "deku_nuts",
+        "big_nut_bag",
+        "biggest_nut_bag",
+        "silver_gauntlets",
+        "golden_gauntlets",
+        "golden_scale",
+        "giant_wallet",
+        "double_magic",
+        "ocarina_of_time",
+        "two_bottles",
+        "three_bottles",
+        "four_bottles",
+        "hylian_shield"
+      ],
+      "omitted_native_choices": [
+        "zeldas_letter"
+      ],
+      "omitted_native_reason": "Zelda's Letter cannot be granted as an isolated starting pouch item; the supported open Kakariko story state grants it together with the corresponding quest progress.",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "starting_songs",
+      "label": "Starting songs",
+      "native_kind": "multi",
+      "native_default": [],
+      "native_dependencies": [],
+      "native_choices": [
+        "zeldas_lullaby",
+        "eponas_song",
+        "sarias_song",
+        "suns_song",
+        "song_of_time",
+        "song_of_storms",
+        "minuet_of_forest",
+        "bolero_of_fire",
+        "serenade_of_water",
+        "requiem_of_spirit",
+        "nocturne_of_shadow",
+        "prelude_of_light"
+      ],
+      "ap_default": [],
+      "ap_kind": "set",
+      "ap_choices": [
+        "zeldas_lullaby",
+        "eponas_song",
+        "sarias_song",
+        "suns_song",
+        "song_of_time",
+        "song_of_storms",
+        "minuet_of_forest",
+        "bolero_of_fire",
+        "serenade_of_water",
+        "requiem_of_spirit",
+        "nocturne_of_shadow",
+        "prelude_of_light"
+      ],
+      "omitted_native_choices": [],
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "shuffle_rewards",
+      "label": "Story and NPC rewards",
+      "native_kind": "choice",
+      "native_default": "supported",
+      "native_dependencies": [],
+      "native_choices": [
+        "off",
+        "supported"
+      ],
+      "ap_default": "off",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "off",
+        "supported"
+      ],
+      "omitted_native_choices": [],
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+    },
+    {
+      "id": "shuffle_boss_hearts",
+      "label": "Boss Heart Containers",
+      "native_kind": "toggle",
+      "native_default": true,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+    },
+    {
+      "id": "shuffle_songs",
+      "label": "Songs",
+      "native_kind": "choice",
+      "native_default": "off",
+      "native_dependencies": [],
+      "native_choices": [
+        "off",
+        "own",
+        "anywhere"
+      ],
+      "ap_default": "off",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "off",
+        "own",
+        "anywhere"
+      ],
+      "omitted_native_choices": [],
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+    },
+    {
+      "id": "gossip_hints",
+      "label": "Gossip stone hints",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "status": "ap_mapping_missing",
+      "reason": "Native hints describe OOTRR's pre-AP placements. They need the final AP item and owner mapping to avoid misleading hints.",
+      "ap_fixed_value": false
+    },
+    {
+      "id": "faster_chests",
+      "label": "Faster item pickups",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "start_reward",
+      "label": "Start with a reward",
+      "native_kind": "choice",
+      "native_default": "off",
+      "native_dependencies": [],
+      "native_choices": [
+        "off",
+        "stone",
+        "medal",
+        "any"
+      ],
+      "ap_default": "off",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "off",
+        "stone",
+        "medal",
+        "any"
+      ],
+      "omitted_native_choices": [],
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "skip_intro",
+      "label": "Skip the opening cutscenes",
+      "native_kind": "toggle",
+      "native_default": true,
+      "native_dependencies": [],
+      "ap_default": true,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "chests_match_contents",
+      "label": "Chest size matches contents",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "status": "ap_mapping_missing",
+      "reason": "Native chest size is selected before AP replaces chest contents. Sizes must be recalculated from the final AP reward.",
+      "ap_fixed_value": false
+    },
+    {
+      "id": "shuffle_potion_shop",
+      "label": "Market Potion Shop bottle and Red Potion",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+    },
+    {
+      "id": "shuffle_rewards_extra",
+      "label": "More NPC rewards",
+      "native_kind": "toggle",
+      "native_default": true,
+      "native_dependencies": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+    },
+    {
+      "id": "shuffle_skulltulas",
+      "label": "Gold Skulltulas",
+      "native_kind": "choice",
+      "native_default": "off",
+      "native_dependencies": [],
+      "native_choices": [
+        "off",
+        "pinned",
+        "matched"
+      ],
+      "ap_default": "off",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "off",
+        "pinned",
+        "matched"
+      ],
+      "omitted_native_choices": [],
+      "status": "public_network",
+      "reason": "The supported AP location family is connected to native checks and rewards; see the setting description for its exact scope."
+    },
+    {
+      "id": "shuffle_trade_checks",
+      "label": "Adult trade quest checks",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+    },
+    {
+      "id": "shuffle_scrubs_a",
+      "label": "One time scrub sales",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+    },
+    {
+      "id": "shuffle_scrubs_b",
+      "label": "Menu scrubs as one time sales",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+    },
+    {
+      "id": "bombchus_in_logic",
+      "label": "Bombchus in logic (experimental)",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "status": "known_native_gameplay_gap",
+      "reason": "The native source documents Bombchus being unusable without a Bomb Bag even though this option's logic assumes they work. A logic-only toggle can therefore produce an unusable required explosive.",
+      "ap_fixed_value": false
+    },
+    {
+      "id": "shuffle_shops",
+      "label": "Shopsanity",
+      "native_kind": "choice",
+      "native_default": "off",
+      "native_dependencies": [],
+      "native_choices": [
+        "off",
+        "shuffle",
+        "deals_1",
+        "deals_2",
+        "deals_3",
+        "deals_4",
+        "random"
+      ],
+      "ap_default": "off",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "off",
+        "shuffle",
+        "deals_1",
+        "deals_2",
+        "deals_3",
+        "deals_4",
+        "random"
+      ],
+      "omitted_native_choices": [],
+      "status": "public_network",
+      "reason": "The supported AP location family is connected to native checks and rewards; see the setting description for its exact scope."
+    },
+    {
+      "id": "shuffle_cows",
+      "label": "Link's House and Gerudo Valley cows",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+    },
+    {
+      "id": "shuffle_cows_other",
+      "label": "Other cows",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ],
+      "status": "derived_alias",
+      "reason": "The native reward plan derives cows_other from shuffle_cows and does not read this independent flag.",
+      "ap_fixed_value": false
+    },
+    {
+      "id": "shuffle_beehives",
+      "label": "Beehives",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere.",
+      "native_caution": "These experimental native drops persist when their container is broken. Leaving before collecting a required drop can lose it; save before breaking containers."
+    },
+    {
+      "id": "skip_cutscenes",
+      "label": "Skippable cutscenes",
+      "native_kind": "choice",
+      "native_default": "off",
+      "native_dependencies": [],
+      "native_choices": [
+        "off",
+        "story",
+        "all"
+      ],
+      "ap_default": "off",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "off",
+        "story",
+        "all"
+      ],
+      "omitted_native_choices": [],
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "anju_one_cucco",
+      "label": "Anju needs one cucco",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "big_poe_one",
+      "label": "Big poe bottle at the first big poe",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "shuffle_treasure_reward",
+      "label": "Treasure Chest Game reward",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+    },
+    {
+      "id": "shuffle_dungeon_rewards",
+      "label": "Dungeon Rewards",
+      "native_kind": "choice",
+      "native_default": "vanilla",
+      "native_dependencies": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ],
+      "native_choices": [
+        "vanilla",
+        "anywhere",
+        "dungeons"
+      ],
+      "ap_default": "vanilla",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "vanilla",
+        "anywhere",
+        "dungeons"
+      ],
+      "omitted_native_choices": [],
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+    },
+    {
+      "id": "jabu_open",
+      "label": "Jabu Jabu's Belly open",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "time_always_passes",
+      "label": "Time always passes",
+      "native_kind": "toggle",
+      "native_default": true,
+      "native_dependencies": [],
+      "ap_default": true,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "early_beds",
+      "label": "Beds before Zelda",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [
+        {
+          "on": "time_always_passes",
+          "is": true
+        }
+      ],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "navi_return",
+      "label": "Return with Navi",
+      "native_kind": "choice",
+      "native_default": "everywhere",
+      "native_dependencies": [],
+      "native_choices": [
+        "off",
+        "dungeons",
+        "everywhere"
+      ],
+      "ap_default": "everywhere",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "off",
+        "dungeons",
+        "everywhere"
+      ],
+      "omitted_native_choices": [],
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "bunny_hood",
+      "label": "Bunny Hood effect",
+      "native_kind": "choice",
+      "native_default": "off",
+      "native_dependencies": [],
+      "native_choices": [
+        "off",
+        "speed",
+        "jump"
+      ],
+      "ap_default": "off",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "off",
+        "speed",
+        "jump"
+      ],
+      "omitted_native_choices": [],
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "misc_hints",
+      "label": "Character hints",
+      "native_kind": "multi",
+      "native_default": [],
+      "native_dependencies": [],
+      "native_choices": [
+        "altar",
+        "dampe_diary",
+        "skulltulas",
+        "frogs",
+        "great_fairies",
+        "sheik",
+        "malon",
+        "mido",
+        "saria"
+      ],
+      "status": "ap_mapping_missing",
+      "reason": "Character hints may reference locations whose items AP moves later. An AP-aware hint pass is required.",
+      "ap_fixed_value": []
+    },
+    {
+      "id": "skip_epona_race",
+      "label": "Skip Epona's race",
+      "native_kind": "toggle",
+      "native_default": true,
+      "native_dependencies": [],
+      "ap_default": true,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "skip_mask_quest",
+      "label": "Skip the mask trading quest",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "plant_beans",
+      "label": "Magic beans planted",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "gerudo_bridge_open",
+      "label": "Gerudo Valley bridge repaired",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "shuffle_entrances",
+      "label": "Entrances",
+      "native_kind": "choice",
+      "native_default": "off",
+      "native_dependencies": [],
+      "native_choices": [
+        "off",
+        "dungeons",
+        "overworld",
+        "everything"
+      ],
+      "ap_default": "off",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "off",
+        "dungeons"
+      ],
+      "omitted_native_choices": [
+        "everything",
+        "overworld"
+      ],
+      "omitted_native_reason": "Only dungeon entrance pairing is implemented. Native overworld/everything modes are explicitly rejected because age/return/story transition handling is incomplete.",
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+    },
+    {
+      "id": "shuffle_rocks",
+      "label": "Small Rocks",
+      "native_kind": "choice",
+      "native_default": "off",
+      "native_dependencies": [],
+      "native_choices": [
+        "off",
+        "overworld",
+        "dungeons",
+        "all"
+      ],
+      "ap_default": "off",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "off",
+        "overworld",
+        "dungeons",
+        "all"
+      ],
+      "omitted_native_choices": [],
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere.",
+      "native_caution": "These experimental native drops persist when their container is broken. Leaving before collecting a required drop can lose it; save before breaking containers."
+    },
+    {
+      "id": "shuffle_grass",
+      "label": "Grass",
+      "native_kind": "choice",
+      "native_default": "off",
+      "native_dependencies": [],
+      "native_choices": [
+        "off",
+        "overworld",
+        "dungeons",
+        "all"
+      ],
+      "ap_default": "off",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "off",
+        "overworld",
+        "dungeons",
+        "all"
+      ],
+      "omitted_native_choices": [],
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere.",
+      "native_caution": "These experimental native drops persist when their container is broken. Leaving before collecting a required drop can lose it; save before breaking containers."
+    },
+    {
+      "id": "shuffle_silver_rupees",
+      "label": "Silver rupees",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [
+        {
+          "on": "shuffle_chests",
+          "not": "off"
+        }
+      ],
+      "status": "delivery_missing",
+      "reason": "The native shuffle introduces dungeon-specific Silver Rupee items which have no AP item IDs or native AP receipt recipes.",
+      "ap_fixed_value": false
+    },
+    {
+      "id": "shuffle_frog_songs",
+      "label": "Zora's River frog songs",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+    },
+    {
+      "id": "shuffle_frog_bug_heart",
+      "label": "Zora's River frog bug game Heart Piece",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [
+        {
+          "on": "shuffle_rewards",
+          "is": "supported"
+        }
+      ],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+    },
+    {
+      "id": "shopsanity_prices",
+      "label": "Shopsanity Prices",
+      "native_kind": "choice",
+      "native_default": "starting",
+      "native_dependencies": [
+        {
+          "on": "shuffle_shops",
+          "in": [
+            "deals_1",
+            "deals_2",
+            "deals_3",
+            "deals_4",
+            "random"
+          ]
+        }
+      ],
+      "native_choices": [
+        "affordable",
+        "starting",
+        "adult",
+        "giant"
+      ],
+      "ap_default": "starting",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "affordable",
+        "starting",
+        "adult",
+        "giant"
+      ],
+      "omitted_native_choices": [],
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "deku_bridge_safe",
+      "label": "Deku Tree bridge never breaks",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "shuffle_merchants",
+      "label": "Shuffle Merchants",
+      "native_kind": "choice",
+      "native_default": "off",
+      "native_dependencies": [],
+      "native_choices": [
+        "off",
+        "beans",
+        "no_beans",
+        "all"
+      ],
+      "ap_default": "off",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "off",
+        "beans",
+        "no_beans",
+        "all"
+      ],
+      "omitted_native_choices": [],
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+    },
+    {
+      "id": "scrub_prices",
+      "label": "Scrubs Prices",
+      "native_kind": "choice",
+      "native_default": "vanilla",
+      "native_dependencies": [],
+      "native_choices": [
+        "vanilla",
+        "cheap",
+        "fixed"
+      ],
+      "ap_default": "vanilla",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "vanilla",
+        "cheap",
+        "fixed"
+      ],
+      "omitted_native_choices": [],
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "scrub_price_fixed",
+      "label": "Scrubs Fixed Price",
+      "native_kind": "number",
+      "native_default": 10,
+      "native_dependencies": [
+        {
+          "on": "scrub_prices",
+          "is": "fixed"
+        }
+      ],
+      "native_min": 0,
+      "native_max": 99,
+      "ap_default": 10,
+      "ap_kind": "range",
+      "ap_min": 0,
+      "ap_max": 99,
+      "ap_step": 1,
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "scrub_hint_text",
+      "label": "Scrub Hint Text",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "merchant_prices",
+      "label": "Merchant Prices",
+      "native_kind": "choice",
+      "native_default": "vanilla",
+      "native_dependencies": [],
+      "native_choices": [
+        "vanilla",
+        "cheap",
+        "fixed"
+      ],
+      "ap_default": "vanilla",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "vanilla",
+        "cheap",
+        "fixed"
+      ],
+      "omitted_native_choices": [],
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "merchant_price_fixed",
+      "label": "Merchant Fixed Price",
+      "native_kind": "number",
+      "native_default": 10,
+      "native_dependencies": [
+        {
+          "on": "merchant_prices",
+          "is": "fixed"
+        }
+      ],
+      "native_min": 0,
+      "native_max": 99,
+      "ap_default": 10,
+      "ap_kind": "range",
+      "ap_min": 0,
+      "ap_max": 99,
+      "ap_step": 1,
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "lacs_rewards",
+      "label": "Rewards for the Light Arrows Cutscene",
+      "native_kind": "number",
+      "native_default": 9,
+      "native_dependencies": [
+        {
+          "on": "shuffle_ganon_bosskey",
+          "is": "lacs_dungeons"
+        }
+      ],
+      "native_min": 1,
+      "native_max": 9,
+      "ap_default": 9,
+      "ap_kind": "range",
+      "ap_min": 1,
+      "ap_max": 9,
+      "ap_step": 1,
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "song_harp_colors",
+      "label": "Harp colour by song",
+      "native_kind": "toggle",
+      "native_default": true,
+      "native_dependencies": [
+        {
+          "on": "shuffle_songs",
+          "is": "anywhere"
+        }
+      ],
+      "ap_default": true,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "shuffle_ocarinas",
+      "label": "Ocarina Shuffle",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+    },
+    {
+      "id": "fairy_prices",
+      "label": "Great Fairy Prices",
+      "native_kind": "choice",
+      "native_default": "vanilla",
+      "native_dependencies": [],
+      "native_choices": [
+        "vanilla",
+        "cheap",
+        "fixed"
+      ],
+      "ap_default": "vanilla",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "vanilla",
+        "cheap",
+        "fixed"
+      ],
+      "omitted_native_choices": [],
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "fairy_price_fixed",
+      "label": "Great Fairy Fixed Price",
+      "native_kind": "number",
+      "native_default": 10,
+      "native_dependencies": [
+        {
+          "on": "fairy_prices",
+          "is": "fixed"
+        }
+      ],
+      "native_min": 0,
+      "native_max": 99,
+      "ap_default": 10,
+      "ap_kind": "range",
+      "ap_min": 0,
+      "ap_max": 99,
+      "ap_step": 1,
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "door_of_time_condition",
+      "label": "Door of Time",
+      "native_kind": "choice",
+      "native_default": "vanilla",
+      "native_dependencies": [],
+      "native_choices": [
+        "vanilla",
+        "stones",
+        "song",
+        "open"
+      ],
+      "ap_default": "vanilla",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "vanilla",
+        "stones",
+        "song",
+        "open"
+      ],
+      "omitted_native_choices": [],
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "enemy_health",
+      "label": "Enemy health",
+      "native_kind": "number",
+      "native_default": 100,
+      "native_dependencies": [],
+      "native_min": 50,
+      "native_max": 500,
+      "native_step": 25,
+      "ap_default": 100,
+      "ap_kind": "range",
+      "ap_min": 50,
+      "ap_max": 500,
+      "ap_step": 25,
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "enemy_damage",
+      "label": "Enemy damage",
+      "native_kind": "number",
+      "native_default": 100,
+      "native_dependencies": [],
+      "native_min": 50,
+      "native_max": 500,
+      "native_step": 25,
+      "ap_default": 100,
+      "ap_kind": "range",
+      "ap_min": 50,
+      "ap_max": 500,
+      "ap_step": 25,
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "enemy_speed",
+      "label": "Enemy speed",
+      "native_kind": "number",
+      "native_default": 100,
+      "native_dependencies": [],
+      "native_min": 75,
+      "native_max": 200,
+      "native_step": 5,
+      "ap_default": 100,
+      "ap_kind": "range",
+      "ap_min": 75,
+      "ap_max": 200,
+      "ap_step": 5,
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "no_heart_drops",
+      "label": "No heart drops",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "no_gossip_fairies",
+      "label": "No gossip fairies",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "no_ammo_drops",
+      "label": "No ammo drops",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "lose_heart_on_death",
+      "label": "Lose heart on death",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "no_bottles_in_combat",
+      "label": "No bottles during combat",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "enemy_regen",
+      "label": "Enemies regen health",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "more_enemies",
+      "label": "More enemies",
+      "native_kind": "number",
+      "native_default": 100,
+      "native_dependencies": [],
+      "native_min": 100,
+      "native_max": 1000,
+      "native_step": 50,
+      "ap_default": 100,
+      "ap_kind": "range",
+      "ap_min": 100,
+      "ap_max": 1000,
+      "ap_step": 50,
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "boss_minibosses",
+      "label": "Bosses spawn minibosses",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "boss_minions",
+      "label": "Bosses spawn minions",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "no_dupe_items",
+      "label": "No dupe items",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "enemies_respawn_sooner",
+      "label": "Enemies respawn sooner",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "no_z_targeting",
+      "label": "No Z-targeting",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "fairy_helps_enemies",
+      "label": "Fairies help enemies too",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "enemy_backup",
+      "label": "Enemies call for backup",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "zora_ambush",
+      "label": "Zora's Domain ambush",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "bean_pitch",
+      "label": "Bean Seller's sales pitch",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "enemy_gates",
+      "label": "Enemies block the way",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "cucco_revenge",
+      "label": "Cuccos take revenge at once",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "enemy_spawn_combo",
+      "label": "Spawn enemies with L + R + D-pad",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "door_of_time_escape",
+      "label": "Zelda's Escape",
+      "native_kind": "choice",
+      "native_default": "moat",
+      "native_dependencies": [
+        {
+          "on": "door_of_time_condition",
+          "in": [
+            "open",
+            "song"
+          ]
+        }
+      ],
+      "native_choices": [
+        "vanilla",
+        "stones",
+        "moat"
+      ],
+      "ap_default": "moat",
+      "ap_kind": "choice",
+      "ap_choices": [
+        "vanilla",
+        "stones",
+        "moat"
+      ],
+      "omitted_native_choices": [],
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "door_of_time_song",
+      "label": "Additionally requires Song of Time",
+      "native_kind": "toggle",
+      "native_default": true,
+      "native_dependencies": [
+        {
+          "on": "door_of_time_condition",
+          "not": "open"
+        },
+        {
+          "on": "door_of_time_condition",
+          "not": "song"
+        }
+      ],
+      "ap_default": true,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "shuffle_kokiri_sword",
+      "label": "Kokiri Sword Shuffle",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public_native_local",
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+    },
+    {
+      "id": "skip_first_pickup_text",
+      "label": "Skip first pickup text",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    },
+    {
+      "id": "faster_blocks",
+      "label": "Faster sliding blocks",
+      "native_kind": "toggle",
+      "native_default": false,
+      "native_dependencies": [],
+      "ap_default": false,
+      "ap_kind": "toggle",
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+    }
+  ],
+  "errors": []
+}

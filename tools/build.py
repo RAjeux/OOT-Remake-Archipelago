@@ -16,7 +16,7 @@ CLIENT = ROOT / "client"
 NATIVE = ROOT / "native"
 ENGINE = ROOT / "moteur" / "ootrr-ap"
 DLL = ROOT / "prebuilt/windows-x64/archipelago.dll"
-WORLD_FILES = ("catalog.py", "settings.py", "settings_fr.json", "i18n.py", "i18n_fr.json",
+WORLD_FILES = ("catalog.py", "skull_catalog.py", "settings.py", "settings_fr.json", "i18n.py", "i18n_fr.json",
                "engine.py", "engine.cjs", "engine.wasm", "LICENSE", "NOTICE")
 HOST_FILES = ("ootrr_archipelago.inc", "ootrr_ap_items.inc", "ootrr_ap_digest.h", "ootrr_ap_menu.inc")
 VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()

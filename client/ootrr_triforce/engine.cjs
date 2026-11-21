@@ -2,7 +2,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { WASI } = require("node:wasi");
 const [modulePath, command, game, mod] = process.argv.slice(2);
-const preopens = ["patch", "shops", "localize"].includes(command)
+const preopens = ["patch", "shops", "skulls", "localize"].includes(command)
   ? { "/game": game, "/mod": mod, "/load": path.dirname(path.dirname(mod)) } : {};
 const wasi = new WASI({ version: "preview1", args: ["ootrr-ap", command], preopens, returnOnExit: true });
 (async () => {
