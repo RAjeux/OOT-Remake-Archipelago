@@ -17,7 +17,8 @@ from evfl.flowchart import Flowchart
 from evfl.util import make_index
 from oot_rando.patching.progressive import FlowEditor, link
 from ootrr_triforce.catalog import ITEM_DATA, ITEM_IDS
-from ootrr_triforce.native_presentations import PRESENTER_ENTRY, PRESENTER_NAME, is_cure
+from ootrr_triforce.native_presentations import (PRESENTER_ENTRY, PRESENTER_NAME, CAMERA_FACING_FLOW,
+                                                CAMERA_FACING_ENTRY, is_cure, receipt_style)
 from ootrr_triforce.receipt_events import CURSOR_PREFIX, OWNERS, build_presented_receipts, event_name
 from test_receipt_events import native_flow
 
@@ -30,7 +31,7 @@ def native_presenter():
     flow.name = PRESENTER_NAME
     flow.flowchart = Flowchart()
     flow.flowchart.name = flow.name
-    for name in ("GameSystemActor", "SoundSystemActor", "EventCamera"):
+    for name in ("GameSystemActor", "SoundSystemActor", "EventCamera", "Player_Event"):
         actor = Actor()
         actor.identifier = ActorIdentifier(name)
         flow.flowchart.actors.append(actor)
@@ -39,6 +40,10 @@ def native_presenter():
     editor = FlowEditor(stream.getvalue(), "authored native presenter")
     saved = editor.action("NativeCameraSave", "EventCamera", "EventTriggerCameraSavePoint", None)
     snap = editor.action("NativeNpcSnap", "EventCamera", "EventMoveToTargetPosCamera", {"MoveTime": 0, "IsWaitEnd": True})
+    animation = editor.subflow("NativeAnimation", "", "GetInEvent_Animation",
+                              {"ActorName": Argument("ActorName")})
+    loop = editor.action("NativeNoTurnLoop", "Player_Event", "EventPlayerPlayASForFlowchart",
+                         {"ASCommand": "DemoGetLoop", "IsWaitEnd": False})
     model = editor.action("NativeModel", "GameSystemActor", "FixtureNativeModel",
                           {"ActorName": Argument("ActorName")})
     major = editor.action("ImportantFanfare", "SoundSystemActor", "FixtureNativeSound", {"Sound": "native-important"})
@@ -50,11 +55,15 @@ def native_presenter():
     heart = editor.subflow("NativeHeart", "Dm_SY_Get", "CheckHeart", {"ActorName": Argument("ActorName")})
     clean = editor.action("NativeCleanup", "GameSystemActor", "FixtureCleanup", None)
     snap_back = editor.action("NativeNpcSnapBack", "EventCamera", "EventMoveCameraToSavePoint", {"MoveFrame": 0, "IsWaitEnd": True})
-    for current, following in ((saved, snap), (snap, model), (model, choose), (major, give), (minor, give),
+    for current, following in ((saved, animation), (animation, model), (snap, loop), (model, choose), (major, give), (minor, give),
                                (give, heart), (heart, snap_back), (snap_back, clean)):
         link(current, following)
     entry = EntryPoint(PRESENTER_ENTRY)
     entry.main_event = make_index(saved)
+    editor.chart.entry_points.append(entry)
+    # The real authored camera cuts live inside this local animation entry.
+    entry = EntryPoint("GetInEvent_Animation")
+    entry.main_event = make_index(snap)
     editor.chart.entry_points.append(entry)
     return editor.write("authored native presenter")[0]
 
@@ -82,6 +91,41 @@ def native_ground_camera():
         entry.main_event = make_index(node)
         editor.chart.entry_points.append(entry)
     return editor.write("authored native ground camera")[0]
+
+
+def native_facing_animation():
+    """The five-node native Small.GetAnimationAction used by ground gets."""
+    flow = EventFlow()
+    flow.name = CAMERA_FACING_FLOW
+    flow.flowchart = Flowchart()
+    flow.flowchart.name = flow.name
+    for name in ("Player_Event", "PouchSystemActor"):
+        actor = Actor()
+        actor.identifier = ActorIdentifier(name)
+        flow.flowchart.actors.append(actor)
+    stream = io.BytesIO()
+    assert flow.write(stream)
+    editor = FlowEditor(stream.getvalue(), "authored camera-facing item animation")
+    branches = []
+    for index, suffix in enumerate(("", "_Smile")):
+        turn = editor.action("NativeTurn" + str(index), "Player_Event", "EventPlayerTurnAndLook", {
+            "ActorName": "PlayerCamera", "Direction": 0.0, "IgnoreTargetPosMove": True,
+            "InstanceName": "", "IsDoNavi": False, "IsWaitEnd": True, "KeepTalkWait": True,
+            "OffsetBase": 0, "PosOffset": [0.0, 0.0, 0.0], "SlowTurn": False, "Target": 7,
+            "TurnFaceControlType": 2, "UpperASCommand": "DemoGet" + suffix, "UseNormalTurn": False,
+            "WorldPos": [0.0, 0.0, 0.0]})
+        loop = editor.action("NativeLoop" + str(index), "Player_Event", "EventPlayerPlayASForFlowchart", {
+            "ASCommand": "DemoGetLoop" + suffix, "ClothWarpMode": 0, "ForceFadeFrame": -1.0,
+            "IsAllSlot": True, "IsWaitEnd": False, "KeepOneTimeAnm": False, "UseAnmDriven": False})
+        link(turn, loop)
+        branches.append(turn)
+    choose = editor.switch("NativeGetType", "PouchSystemActor", "EventQueryPouchContentGetType",
+                           {"ActorName": Argument("ContentName"), "GameDataName": ""}, *branches)
+    choose.data.cases.update({2: make_index(branches[1]), 3: make_index(branches[1])})
+    entry = EntryPoint(CAMERA_FACING_ENTRY)
+    entry.main_event = make_index(choose)
+    editor.chart.entry_points.append(entry)
+    return editor.write("authored camera-facing item animation")[0]
 
 
 class SceneRun:
@@ -116,6 +160,11 @@ class SceneRun:
                 query = data.actor_query.v.v
                 if query == "FixtureIsImportant":
                     result = self.important
+                elif query == "EventQueryPouchContentGetType":
+                    # The native helper uses 0 for Small and 1/2/3 for Smile.
+                    case = data.cases.get(2 if self.important else 0)
+                    node = case.v if case else None
+                    continue
                 elif query == "EventQueryCheckIsGet":
                     result = params["ActorName"] in self.owned
                 elif query == "EventQueryIsGameDataBool":
@@ -154,7 +203,8 @@ class PresentedReceiptTests(unittest.TestCase):
         cls.presenter = native_presenter()
         pouch, presenter, cls.receipts = build_presented_receipts(cls.pouch, cls.presenter, TOKEN)
         cls.charts = {}
-        for name, raw in (("GetPouchContent", pouch), (PRESENTER_NAME, presenter)):
+        for name, raw in (("GetPouchContent", pouch), (PRESENTER_NAME, presenter),
+                          (CAMERA_FACING_FLOW, native_facing_animation())):
             flow = EventFlow()
             flow.read(raw)
             cls.charts[name] = flow.flowchart
@@ -228,7 +278,8 @@ class GroundStyleReceiptTests(unittest.TestCase):
             native_flow(), native_presenter(), TOKEN, cls.names,
             native_info=cls.native_info, ground_raw=cls.ground_raw)
         cls.charts = {}
-        for name, raw in (("GetPouchContent", pouch), (PRESENTER_NAME, presenter), ("Dm_SY_Get", cls.ground_raw)):
+        for name, raw in (("GetPouchContent", pouch), (PRESENTER_NAME, presenter), ("Dm_SY_Get", cls.ground_raw),
+                          (CAMERA_FACING_FLOW, native_facing_animation())):
             flow = EventFlow()
             flow.read(raw)
             cls.charts[name] = flow.flowchart
@@ -314,22 +365,34 @@ class GroundStyleReceiptTests(unittest.TestCase):
                 self.assertFalse(any(command == "EventTriggerRequestOpenPickUpWindow" for command, params in run.trace))
             self.assertFalse(any(actor == "SoundSystemActor" for actor, command, params in run.actions))
 
-    def test_major_item_uses_native_ground_camera_and_cleanup_without_snap(self):
+    def test_major_item_turns_to_camera_before_loop_and_keeps_camera_stable(self):
         for name in ("Mirror Shield", "Progressive Hookshot"):
-            with self.subTest(item=name):
-                run, ack = self.execute(name)
-                commands = [command for command, params in run.trace]
-                self.assertIn("FixtureNativeModel", commands)
-                self.assertIn("FixtureNativeSound", commands)
-                self.assertNotIn("EventMoveToTargetPosCamera", commands)
-                self.assertNotIn("EventMoveCameraToSavePoint", commands)
-                movements = [params for command, params in run.trace if command == "EventBasedOnLookAtCamera"]
-                self.assertEqual(movements, [{"MoveTime": 15, "IsWaitEnd": True}])
-                keep = [params for command, params in run.trace if command == "EventTriggerSendKeepStateMessageToPlayerCamera"]
-                self.assertEqual(keep, [{"AfterKeepEndInterpolateCountScale": 1.0, "ChangeToManualModeAfterEvent": False,
-                                         "KeepManualModeFrame": 120.0, "IsKeepWithRelativePos": True}])
-                self.assertLess(commands.index("EventBasedOnLookAtCamera"), commands.index("FixtureNativeModel"))
-                self.assertGreater(commands.index("EventTriggerSendKeepStateMessageToPlayerCamera"), ack)
+            for important in (False, True):
+                with self.subTest(item=name, important=important):
+                    run, ack = self.execute(name, important=important)
+                    commands = [command for command, params in run.trace]
+                    self.assertIn("FixtureNativeModel", commands)
+                    self.assertIn("FixtureNativeSound", commands)
+                    self.assertFalse(any(command in commands for command in (
+                        "EventMoveToTargetPosCamera", "EventMoveCameraToSavePoint", "EventBasedOnLookAtCamera")))
+                    turns = [params for command, params in run.trace if command == "EventPlayerTurnAndLook"]
+                    self.assertEqual(turns, [{
+                        "ActorName": "PlayerCamera", "Direction": 0.0, "IgnoreTargetPosMove": True,
+                        "InstanceName": "", "IsDoNavi": False, "IsWaitEnd": True, "KeepTalkWait": True,
+                        "OffsetBase": 0, "PosOffset": [0.0, 0.0, 0.0], "SlowTurn": False, "Target": 7,
+                        "TurnFaceControlType": 2, "UpperASCommand": "DemoGet_Smile" if important else "DemoGet",
+                        "UseNormalTurn": False, "WorldPos": [0.0, 0.0, 0.0]}])
+                    loops = [params for command, params in run.trace if command == "EventPlayerPlayASForFlowchart"]
+                    self.assertEqual([params["ASCommand"] for params in loops],
+                                     ["DemoGetLoop_Smile" if important else "DemoGetLoop"])
+                    self.assertLess(commands.index("EventPlayerTurnAndLook"), commands.index("EventPlayerPlayASForFlowchart"))
+                    self.assertLess(commands.index("EventPlayerPlayASForFlowchart"), commands.index("FixtureNativeModel"))
+                    self.assertGreater(ack, commands.index("FixtureItemWindow"))
+                    self.assertEqual(sum(command == "EventTriggerAddOrRemovePouchContent" for command in commands), 1)
+                    self.assertEqual(commands.count("EventTriggerRequestAutoSave"), 1)
+                    self.assertGreater(commands.index("EventTriggerSendKeepStateMessageToPlayerCamera"), ack)
+                    self.assertFalse(any("Warp" in command or "SetYaw" in command or "SetRotation" in command for command in commands))
+                    self.assertFalse(any("Locator" in str(params) for command, params in run.trace))
 
     def test_all_routes_avoid_shop_counter_and_native_key_specials_keep_presentation(self):
         for name in ITEM_DATA:
@@ -348,8 +411,18 @@ class GroundStyleReceiptTests(unittest.TestCase):
                 self.assertTrue(any(flow == PRESENTER_NAME for flow, entry, params in run.calls))
                 self.assertEqual(sum(command == "FixtureNativeModel" for command, params in run.trace), 1)
                 self.assertFalse(any("Camera" in command for command, params in run.trace))
+                self.assertFalse(any(command == "EventPlayerTurnAndLook" for command, params in run.trace))
                 sounds = [params["Sound"] for command, params in run.trace if command == "FixtureNativeSound"]
                 self.assertEqual(sounds, ["native-minor"])
+
+    def test_route_counts_and_facing_are_major_only_for_the_entire_catalogue(self):
+        self.assertEqual(Counter(receipt_style(row, self.native_info) for row in ITEM_DATA.values()),
+                         {"pickup": 44, "medium": 17, "large": 143})
+        for name, metadata in ITEM_DATA.items():
+            with self.subTest(item=name):
+                run, _ = self.execute(name)
+                count = sum(command == "EventPlayerTurnAndLook" for command, params in run.trace)
+                self.assertEqual(count, int(receipt_style(metadata, self.native_info) == "large"))
 
 
 if __name__ == "__main__":

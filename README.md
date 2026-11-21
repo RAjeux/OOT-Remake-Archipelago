@@ -1,6 +1,6 @@
 # Ocarina of Time Remake × Archipelago
 
-**0.2.1-alpha.1 — native integration for Triforce on Windows x64.** When the mod is enabled, the game connects to its Archipelago room from the title screen. This alpha uses OOTRR 0.8.1 and game version 1.1.1.
+**0.2.1-alpha.2 — native integration for Triforce on Windows x64.** When the mod is enabled, the game connects to its Archipelago room from the title screen. This alpha uses OOTRR 0.8.1 and game version 1.1.1.
 
 Title-screen connections, items received while the game was closed, local and remote chests, one Kokiri purchase, and DeathLink in both directions have been tested on **Triforce 0.6.0**. **Item presentation animations and some camera movements still need improvement.** All eight Kokiri purchases have automated coverage; they have not all been purchased in the game. Hookshot and Fritchii are not supported by this native integration.
 
@@ -29,6 +29,8 @@ A chest containing an item for Zelda shows and grants the native item assigned b
 Network locations are limited to the catalogued chests and, when enabled, eight Kokiri purchases. Some local rewards outside AP, including freestanding heart pieces, retain OOTRR's handling. Their exclusion from the network does not imply unchanged vanilla behavior.
 
 Items from other worlds are delivered in order while a save is active, using the game's effects. Items sent while Zelda is closed remain on the server and are recovered after reconnection. Each grant and its received-item index are committed together; save before quitting normally.
+
+Major received items use the game's native turn toward the player camera and item presentation pose. Ordinary pickups retain their native central display and sounds.
 
 `kokiri_shop_checks: true` adds eight one-time Kokiri purchases. Each shelf sells another player's item at its OOTRR seed price, using the game's payment and sold-out state. `death_link: true` shares deaths with other DeathLink participants. A remote death waits for an active event, such as a purchase or item receipt, to finish.
 
@@ -64,10 +66,10 @@ From the repository root on Windows:
 
 ```powershell
 py -3 tools/build.py
-py -3 tools/verify_release.py --version 0.2.1-alpha.1
+py -3 tools/verify_release.py --version 0.2.1-alpha.2
 ```
 
-The output is `dist/Archipelago-OOT-Remake-0.2.1-alpha.1.zip`, including the `.pyz` client, APWorld, and their sources. `VERSION` declares the release version. The default assembly uses the supplied native DLL and WebAssembly engine without downloading dependencies. It does not rebuild Triforce.
+The output is `dist/Archipelago-OOT-Remake-0.2.1-alpha.2.zip`, including the `.pyz` client, APWorld, and their sources. `VERSION` declares the release version. The default assembly uses the supplied native DLL and WebAssembly engine without downloading dependencies. It does not rebuild Triforce.
 
 To rebuild the supplied components:
 

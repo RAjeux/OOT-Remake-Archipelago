@@ -23,8 +23,8 @@ from oot_rando.patching import chest_flags, event_info
 from oot_rando.patching.progressive import FlowEditor
 from ootrr_triforce import receipt_events
 from ootrr_triforce.catalog import ITEM_IDS
-from ootrr_triforce.native_presentations import PRESENTER_PATH
-from test_presented_receipts import native_flow, native_ground_camera, native_presenter
+from ootrr_triforce.native_presentations import PRESENTER_PATH, CAMERA_FACING_FLOW
+from test_presented_receipts import native_flow, native_ground_camera, native_presenter, native_facing_animation
 
 PICKUP_SOUND = ("Work/Event/GameEventSoundSetting/IgnoreDuckingOnFlowchart."
                 "game__event__GameEventSoundSetting.gyml")
@@ -96,6 +96,7 @@ class ReceiptRegistrationTests(unittest.TestCase):
             "Pack/ZsDic.pack.zs": b"dictionary",
             receipt_events.FLOW_PATH: native_flow(),
             PRESENTER_PATH: native_presenter(),
+            event_info.flow_path(CAMERA_FACING_FLOW): native_facing_animation(),
             event_info.flow_path("Dm_SY_Get"): ground.write("ground registration fixture")[0],
             event_info.flow_path("ReceiptHealthFixture"): child_flow("ReceiptHealthFixture", "FixtureChild"),
             event_info.flow_path("ReceiptCameraFixture"): child_flow("ReceiptCameraFixture", "FixtureCameraChild"),
@@ -163,11 +164,11 @@ class ReceiptRegistrationTests(unittest.TestCase):
         self.assertEqual(settings["EventSoundSetting"], PICKUP_SOUND)
         self.assertIn("FellingInGameFlowchartEvent.", settings["EventSettingComponentList"])
 
-    def test_major_preserves_native_camera_analysis_without_first_frame_warp(self):
+    def test_major_loads_authored_facing_helper_without_unused_camera_branches(self):
         settings, analyzed = self.rows("Mirror Shield")
         self.assertEqual(set(analyzed["SubFlowList"]), {
-            "GetPouchContent", "Dm_SY_GetInEvent", "Dm_SY_Get", "ReceiptHealthFixture", "ReceiptCameraFixture"})
-        self.assertEqual(set(analyzed["ChildEventList"]), {"FixtureChild", "FixtureGrandchild", "FixtureCameraChild"})
+            "GetPouchContent", "Dm_SY_GetInEvent", "Dm_SY_Get", "ReceiptHealthFixture", CAMERA_FACING_FLOW})
+        self.assertEqual(set(analyzed["ChildEventList"]), {"FixtureChild", "FixtureGrandchild"})
         self.assertEqual(analyzed["RecordedCameraInfo"], self.camera)
         self.assertEqual(settings["EventSoundSetting"], MAJOR_SOUND)
         self.assertIn("FellingInGameFlowchartWithIgnoreDissentPlay.", settings["EventSettingComponentList"])

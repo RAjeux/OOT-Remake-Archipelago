@@ -54,7 +54,8 @@ def tables(folder):
 def build_cache(base, token, host, entries, romfs):
     stamp = [(str(key),p.stat().st_size,p.stat().st_mtime_ns) for key,p in entries.items()]
     digest = hashlib.sha256(json.dumps([token,host,str(romfs),stamp]).encode()).hexdigest()[:24]
-    return base / "mods-v15" / digest
+    # Rebuild receipts made before the native camera-facing major-item pose.
+    return base / "mods-v16" / digest
 
 
 def state_dir(folder):

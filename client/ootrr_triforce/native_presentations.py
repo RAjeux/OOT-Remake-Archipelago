@@ -5,6 +5,8 @@ import copy
 PRESENTER_NAME = "Dm_SY_GetInEvent"
 PRESENTER_PATH = "Event/EventFlow/Dm_SY_GetInEvent.bfevfl.zs"
 PRESENTER_ENTRY = "GetInEvent_NotTurn_NotNpc"
+CAMERA_FACING_FLOW = "Dm_SY_TreasureboxSmall"
+CAMERA_FACING_ENTRY = "GetAnimationAction"
 LOCAL_CHEST_PREFIX = "OOTRR_APChestLocal_"
 # Native BottleItem enum indices (the GameData enum has Empty at index 0).
 # Concrete event calls confirm RedPotion=0, BlueFire=3, Fish=4, Bug=8,
@@ -98,12 +100,14 @@ def append_recipe(editor, metadata, stem, grant_entry, commit, *, pickup=False):
 
 
 def copy_receipt_presenter(editor, metadata, item_id, core_name, *, style="large", ground_raw=None):
-    """Keep the native item model/pose; use ground pickup camera policies.
+    """Keep the native item model/pose and authored camera-facing turn.
 
     The NPC gift scene supplies a model without needing a physical pickup actor.
     Its four instantaneous locator-camera cuts are unsuitable for an unsolicited
-    receipt. Major gets use the ground-get camera and its native hand-back;
-    short gets keep the player's camera throughout.
+    receipt. Major gets use the ground item's native animation helper, which
+    turns Player_Event toward PlayerCamera before its get-item loop. It also
+    replaces the old animation's camera cuts; the existing hand-back remains.
+    Short gets keep their original pose without turning or moving the camera.
     """
     from evfl.common import Argument
     from evfl.container import Container
@@ -122,10 +126,17 @@ def copy_receipt_presenter(editor, metadata, item_id, core_name, *, style="large
                         if _action(event) == "EventTriggerSendKeepStateMessageToPlayerCamera"), None)
         if cleanup is None:
             raise ValueError(tr('Native return to the gameplay camera not found.'))
-    replaced = []
+    replaced, facing = [], []
 
     def callback(event, original):
         data = original.data
+        if (style == "large" and not data.res_flowchart_name
+                and data.entry_point_name == "GetInEvent_Animation"):
+            event.data.res_flowchart_name = CAMERA_FACING_FLOW
+            event.data.entry_point_name = CAMERA_FACING_ENTRY
+            event.data.params = Container()
+            event.data.params.data = {"ContentName": Argument("ActorName")}
+            facing.append(event.name)
         if (data.res_flowchart_name == FLOW_NAME
                 and data.entry_point_name == "GetPouchContentByActorName_ForGetInEvent"):
             event.data.entry_point_name = core_name
@@ -165,6 +176,8 @@ def copy_receipt_presenter(editor, metadata, item_id, core_name, *, style="large
                        local_closure=natural_camera, callback=callback, skip=skip, transform=transform)
     if len(replaced) != 1:
         raise ValueError(tr('Unrecognized native animation grant: ') + metadata["actor"])
+    if style == "large" and len(facing) != 1:
+        raise ValueError(tr('Native presentation not found: ') + "GetInEvent_Animation")
     return entry
 
 

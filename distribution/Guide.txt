@@ -1,4 +1,4 @@
-Archipelago · Ocarina of Time Remake · 0.2.1-alpha.1
+Archipelago · Ocarina of Time Remake · 0.2.1-alpha.2
 Alpha for Triforce on Windows x64.
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
@@ -76,6 +76,9 @@ pieces, retain OOTRR's handling and may differ from the unmodified game.
 Items from other worlds are delivered in order while a save is active.
 Their effects are native; presentation and some camera movements remain
 imperfect in this alpha.
+For major received items, Link uses the native turn toward the player
+camera before presenting the item. Ordinary pickups keep their central
+display and native sounds.
 Each grant and its received-item index are committed together. Items sent
 while Zelda is closed remain on the server and are recovered after
 reconnection and loading a save. Save before quitting normally.
