@@ -1,4 +1,5 @@
 """Build a room-specific visual RomFS from the effective OOTRR mod, before game launch."""
+from .i18n import tr
 import copy
 from collections import defaultdict
 from functools import lru_cache
@@ -9,12 +10,13 @@ import shutil
 import tempfile
 
 from .catalog import CHESTS, ITEM_DATA, ITEM_IDS
+from .engine import run_engine
 from .mod_codec import Codec
 
 REST = "System/Resource/ResourceSizeTable.Product.111.Nin_Ounce_NVN2.rsizetable.zs"
 GET = ("Dm_SY_GetInEvent", "GetInEvent_NotTurn_NotNpc")
 CHEST_ENTRY = "Success_"
-REVISION = 4
+REVISION = 5
 
 
 def chest_flows(raw, records, *, native_pouch=None, small_raw=None):
@@ -26,7 +28,7 @@ def chest_flows(raw, records, *, native_pouch=None, small_raw=None):
     local_rewards = {record["local_reward"] for record in records if record.get("local_reward")}
     if local_rewards:
         if native_pouch is None:
-            raise ValueError("Remise native des objets locaux introuvable.")
+            raise ValueError(tr('Native local-item grant not found.'))
         from .native_presentations import append_local_chests
         local_entries = append_local_chests(editor, native_pouch, local_rewards, small_raw=small_raw)
     names = {e.name for e in editor.chart.entry_points}
@@ -36,7 +38,7 @@ def chest_flows(raw, records, *, native_pouch=None, small_raw=None):
         target = (local_entries[r["local_reward"]] if r.get("local_reward")
                   else r["entry"] if r.get("legacy") else CHEST_ENTRY)
         if target not in names or name in names or {name, name + "_AP"} & events:
-            raise ValueError("Événement de coffre incompatible : " + r["base"])
+            raise ValueError(tr('Incompatible chest event: ') + r["base"])
         # Open the actual chest and present its AP token through the generic
         # chest path. Item-specific OOTRR entries also grant maps, keys or tiers;
         # never call them when the network owns the entire reward.
@@ -57,26 +59,26 @@ def chest_flows(raw, records, *, native_pouch=None, small_raw=None):
         editor.chart.entry_points.append(entry)
         names.add(name)
         events.update((name, name + "_AP"))
-    result, parsed = editor.write("La présentation du médaillon")
+    result, parsed = editor.write(tr('The medal presentation'))
     lookup = {e.name: e for e in parsed.flowchart.entry_points}
     for r in records:
         first = lookup[r["event"]].main_event.v
         if r.get("local_reward"):
             if (first.data.res_flowchart_name, first.data.entry_point_name,
                     first.data.params, first.data.nxt.v) != ("", local_entries[r["local_reward"]], None, None):
-                raise ValueError("Présentation de l’objet local invalide.")
+                raise ValueError(tr('Invalid local-item presentation.'))
             continue
         if r.get("legacy"):
             last = first.data.nxt.v
             if (first.data.res_flowchart_name, first.data.entry_point_name,
                     last.data.res_flowchart_name, last.data.entry_point_name,
                     last.data.params.data["ActorName"], last.data.nxt.v) != ("", r["entry"], *GET, r["actor"], None):
-                raise ValueError("Chaîne de récompenses historique invalide.")
+                raise ValueError(tr('Invalid legacy reward chain.'))
             continue
         if (first.data.res_flowchart_name, first.data.entry_point_name,
                 first.data.params.data, first.data.nxt.v) != ("", CHEST_ENTRY,
                 {"ContentName": r["actor"], "IsMiniGame": False}, None):
-            raise ValueError("Chaîne de récompenses invalide.")
+            raise ValueError(tr('Invalid reward chain.'))
     return result
 
 
@@ -93,7 +95,7 @@ def plan_maps(placements, moved, read, settings_rows, *, preserve_local=True, lo
             for path in ref["files"]:
                 key = int(ref["actor"])
                 if key in requests[path] and requests[path][key] != name:
-                    raise ValueError("Deux emplacements utilisent le même coffre.")
+                    raise ValueError(tr('Two locations use the same chest.'))
                 requests[path][key] = name
     @lru_cache(None)
     def default_entry(path):
@@ -110,7 +112,7 @@ def plan_maps(placements, moved, read, settings_rows, *, preserve_local=True, lo
             if name is None:
                 continue
             if not a.get("Gyaml", "").startswith("Obj_TBox"):
-                raise ValueError(f"Acteur inattendu pour {name}.")
+                raise ValueError(tr('Unexpected actor for {value0}.', value0=name))
             found.add(name)
             local_reward = local_rewards.get(name)
             actor = ITEM_DATA[local_reward]["actor"] if local_reward else ap_actor(placements[name])
@@ -119,7 +121,7 @@ def plan_maps(placements, moved, read, settings_rows, *, preserve_local=True, lo
                 edits.append({"path": ("Actors", i, "Dynamic", field), "before": dyn.get(field), "after": value})
             if preserve_local and name in moved:
                 if dyn.get("Drop__DropActor") != "TBox_Rupee_Green":
-                    raise ValueError("Le mod de base ne correspond plus à la seed : " + name)
+                    raise ValueError(tr('The base mod no longer matches the seed: ') + name)
                 change("Drop__DropActor", actor)
                 if dyn.get("Drop__DropActor_Substitute") == "TBox_Rupee_Green":
                     change("Drop__DropActor_Substitute", actor)
@@ -133,7 +135,7 @@ def plan_maps(placements, moved, read, settings_rows, *, preserve_local=True, lo
             row = settings_rows.get(base, {})
             flow = row.get("FlowchartFileName", "")
             if not flow.endswith(".evfc"):
-                raise ValueError("Événement de coffre inconnu : " + base)
+                raise ValueError(tr('Unknown chest event: ') + base)
             identity = base + "\0" + actor
             if local_reward:
                 identity += "\0local:" + str(ITEM_IDS[local_reward])
@@ -148,7 +150,7 @@ def plan_maps(placements, moved, read, settings_rows, *, preserve_local=True, lo
         if edits:
             maps[path] = patch_strings(raw, edits)
     if found != set(placements):
-        raise ValueError("Coffre absent du RomFS : " + ", ".join(sorted(set(placements) - found)))
+        raise ValueError(tr('Chest missing from RomFS: ') + ", ".join(sorted(set(placements) - found)))
     return maps, list(wrappers.values())
 
 
@@ -179,7 +181,7 @@ def event_resources(records, read):
             if record["event"] in rows:
                 continue
             if not record.get("legacy"):
-                raise ValueError("Dépendances de l’animation de coffre introuvables.")
+                raise ValueError(tr('Chest animation dependencies were not found.'))
             row = copy.deepcopy(rows.get(record["base"], {}))
             row["__RowId"] = record["event"]
             doc["root"].append(row)
@@ -191,10 +193,10 @@ def event_resources(records, read):
         def current(name):
             return read(info.flow_path(name))
         if GET[1] not in info.entry_names(current(GET[0])):
-            raise ValueError("Animation de récupération absente de cette version du jeu.")
+            raise ValueError(tr('Missing get-item animation in this game version.'))
         flows = info.closure({GET}, current)
         if info.SWITCH_CALL[0] in flows:
-            raise ValueError("Dépendance dynamique de l’animation inconnue.")
+            raise ValueError(tr('Unknown dynamic animation dependency.'))
         doc = byml_codec.load(analyzed)
         rows = {row["__RowId"]: row for row in doc["root"]}
         children = set(info.reachable_transitions(GET, current))
@@ -232,29 +234,29 @@ def patch_mod(romfs, mod, roster, moved, *, full_rewards=False, local_items=Fals
         key = ap_item.ap_item(json.dumps([name, item, player], ensure_ascii=False))
         local = bool(local_items and isinstance(reward, dict) and reward.get("local"))
         if not local:
-            labels[key] = (item, player)
+            labels[key] = (item, player, reward.get("game")) if isinstance(reward, dict) else (item, player)
         if name in CHESTS:
             placements[name] = key
             if local:
                 if item not in ITEM_DATA or reward.get("item_id", ITEM_IDS[item]) != ITEM_IDS[item]:
-                    raise ValueError("Objet local Archipelago inconnu : " + item)
+                    raise ValueError(tr('Unknown local Archipelago item: ') + item)
                 local_rewards[name] = item
     messages = sorted({p.relative_to(home).as_posix() for home in (romfs, mod)
                        for p in (home / "Mals").glob("*.Product.110.*.zs")})
     if not messages:
-        raise ValueError("Archives des textes du jeu introuvables dans Mals.")
+        raise ValueError(tr('Game text archives were not found in Mals.'))
     try:
-        phase = "Lecture des événements de coffre"
+        phase = tr('Reading chest events')
         rows = {row["__RowId"]: row for row in byml_codec.load(read(EVENT_SETTINGS))["root"]}
-        phase = "Modification des cartes de coffre"
+        phase = tr('Updating chest maps')
         changed, wrappers = plan_maps(placements, moved, read, rows, preserve_local=not full_rewards,
                                       local_rewards=local_rewards)
-        phase = "Création des animations de coffre"
+        phase = tr('Creating chest animations')
         changed.update(event_resources(wrappers, read))
-        phase = "Création des modèles et des textes"
+        phase = tr('Creating models and text')
         existing, new = ap_item.build_ap_files(read, labels, messages) if labels else ({}, {})
     except IndexError as exc:
-        raise ValueError(f"{phase} : index absent. Dernière ressource lue : {last_resource}") from exc
+        raise ValueError(tr('{value0} : missing index. Last resource read: {value1}', value0=phase, value1=last_resource)) from exc
     changed.update(existing)
     rest = read(REST)
     growths, sizes = {}, {}
@@ -268,7 +270,7 @@ def patch_mod(romfs, mod, roster, moved, *, full_rewards=False, local_items=Fals
         write(p, raw, origin)
     for p, (raw, template) in new.items():
         if (mod / p).exists() or (romfs / p).exists():
-            raise ValueError("Ressource de médaillon déjà présente : " + p)
+            raise ValueError(tr('Medal resource already exists: ') + p)
         sizes[p] = max((len(raw) + 8191) & ~4095, allocation(rest, template) or 0)
         write(p, raw, source(template))
     rest, _ = grow_resources(rest, growths)
@@ -276,32 +278,48 @@ def patch_mod(romfs, mod, roster, moved, *, full_rewards=False, local_items=Fals
     write(REST, rest, source(REST))
 
 
+def localize_mod(romfs, mod, seed_settings):
+    """Apply this engine's text patches over the external OOTRR base mod."""
+    messages = sorted({path.relative_to(home).as_posix() for home in (romfs, mod)
+                       for path in (home / "Mals").glob("*.Product.110.sarc.zs") if path.is_file()})
+    if not messages:
+        raise ValueError(tr('Game text archives were not found in Mals.'))
+    result = run_engine("localize", {"settings": seed_settings, "messages": messages}, romfs, mod).strip()
+    if result:
+        print(result, flush=True)
+
+
 def prepare(root, settings, roster, moved):
     base = root / "mods"
-    if not roster:
+    seed_settings = settings.get("_seed_settings")
+    if not roster and seed_settings is None:
         return base
     effective = sorted((p.relative_to(base).as_posix(), p.stat().st_size, p.stat().st_mtime_ns)
                        for p in base.rglob("*") if p.is_file())
     full_rewards = settings.get("reward_mode") in ("all_chest_rewards", "all_locations")
     local_items = bool(settings.get("local_items"))
     payload = json.dumps([REVISION, full_rewards, local_items, settings.get("kokiri_shop_checks", False),
-                          settings.get("shop_prices", {}), roster, effective], ensure_ascii=False, sort_keys=True)
+                          settings.get("shop_prices", {}), seed_settings, roster, effective],
+                         ensure_ascii=False, sort_keys=True)
     digest = hashlib.sha256(payload.encode()).hexdigest()
     home = root / "v14"
     home.mkdir(exist_ok=True)
     dest = home / digest[:16]
     if (dest / "mods" / "Archipelago" / "romfs").is_dir():
         return dest / "mods"
-    print("Préparation des médaillons et des textes de cette salle…", flush=True)
+    print(tr("Preparing this room's medals and text…"), flush=True)
     with tempfile.TemporaryDirectory(dir=home, prefix="construction-") as tmp:
         stage = Path(tmp) / "version"
         target = stage / "mods"
         shutil.copytree(base, target)
-        patch_mod(Path(settings["romfs"]), target / "Archipelago" / "romfs", roster, moved,
-                  full_rewards=full_rewards, local_items=local_items)
-        if settings.get("kokiri_shop_checks"):
-            from .ap_shops import prepare_shops
-            prepare_shops(Path(settings["romfs"]), target / "Archipelago" / "romfs", roster, settings)
+        romfs, mod = Path(settings["romfs"]), target / "Archipelago" / "romfs"
+        if roster:
+            patch_mod(romfs, mod, roster, moved, full_rewards=full_rewards, local_items=local_items)
+            if settings.get("kokiri_shop_checks"):
+                from .ap_shops import prepare_shops
+                prepare_shops(romfs, mod, roster, settings)
+        if seed_settings is not None:
+            localize_mod(romfs, mod, seed_settings)
         stage.rename(dest)
-    print("Médaillons prêts.", flush=True)
+    print(tr('Medals ready.'), flush=True)
     return dest / "mods"

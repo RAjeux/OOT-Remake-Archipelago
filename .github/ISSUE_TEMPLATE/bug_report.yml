@@ -1,21 +1,21 @@
-name: Signaler un bug
-description: Décrire un problème avec l'alpha Triforce.
+name: Bug report
+description: Report a problem with the Triforce alpha.
 body:
   - type: input
     id: version
     attributes:
-      label: Version du pack et de Triforce
+      label: Release and Triforce versions
     validations:
       required: true
   - type: textarea
     id: reproduce
     attributes:
-      label: Étapes et résultat observé
-      description: Préciser l'objet ou l'emplacement concerné et le résultat attendu.
+      label: Steps to reproduce and observed behavior
+      description: Include the affected item or location and the expected result.
     validations:
       required: true
   - type: textarea
     id: logs
     attributes:
-      label: Extraits utiles du diagnostic
-      description: Retirer les mots de passe, adresses privées et chemins personnels. Ne pas joindre de fichiers du jeu ou de sauvegarde.
+      label: Relevant diagnostic excerpts
+      description: Remove passwords, private addresses, and personal paths. Do not attach game files or saves.

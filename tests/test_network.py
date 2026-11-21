@@ -59,11 +59,11 @@ async def main(root):
             # Official server sends from Zelda world to the DS3 slot, including exact DS3 name.
             command('/send_location '+d['slot']+' '+loc)
             await until(lambda:any(m[-1]=='out' for m in notifications),task)
-            outgoing=[m for m in notifications if m[-1]=='out'];assert outgoing==[('Objet envoyé à Ami',item,loc,'out')]
+            outgoing=[m for m in notifications if m[-1]=='out'];assert outgoing==[('Item sent to Ami',item,loc,'out')]
             # Actual console transfer, distinct from replayed Sync items.
             command('/send_location Ami LC: Gotthard Twinswords - by Grand Archives door, after PC and AL bosses')
             await until(lambda:any(m[1]=='Mirror Shield' for m in notifications),task)
-            assert [m for m in notifications if m[1]=='Mirror Shield']==[('Objet reçu via Archipelago','Mirror Shield','De Ami','in')]
+            assert [m for m in notifications if m[1]=='Mirror Shield']==[('Item received via Archipelago','Mirror Shield','From Ami','in')]
             count=len(notifications)
             task.cancel(); await asyncio.gather(task,return_exceptions=True)
             task=await start()
@@ -71,7 +71,7 @@ async def main(root):
             assert len(notifications)==count
             command('/send '+d['slot']+' Blue Rupee (5)')
             await until(lambda:len(notifications)>count,task)
-            assert 'synchronisation' in notifications[-1][2] and notifications[-1][1]==FILLER
+            assert 'synchronized' in notifications[-1][2] and notifications[-1][1]==FILLER
             print(f'PASS real DS3 + Zelda AP server: {len(rosters[0])} foreign chests scouted silently, correct DS3 item/owner, server delivery popup, no replay on reconnect, separate currency state.')
     finally:
         if task: task.cancel();await asyncio.gather(task,return_exceptions=True)

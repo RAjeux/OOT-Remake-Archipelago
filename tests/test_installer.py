@@ -14,6 +14,7 @@ async def check(tmp):
     tools=tmp/'tools';host=tools/'host';host.mkdir(parents=True)
     orig=(triforce_root()/'host/hos_main.c').read_bytes()
     write(host/'hos_main.c',orig)
+    write(host/'nn_applet.c',b'const char *hos_desired_language(void) { return "en-US"; }\n')
     write(tools/'nx2/build.py',b'')
     write(tools/'gpu/vk/vk_api.h',(triforce_root()/'gpu/vk/vk_api.h').read_bytes())
     profile=tmp/'userdata'

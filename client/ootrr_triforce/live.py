@@ -1,4 +1,6 @@
 """Deliver unique equipment and songs through Triforce’s inventory commands."""
+from .i18n import tr, get_language
+from .item_names import item_name
 import re
 import time
 
@@ -64,13 +66,13 @@ class LiveInventory:
 
     def finish(self, success):
         if success:
-            print(f"Reçu en jeu : {self.item}", flush=True)
+            print(tr('Received in game: {value0}', value0=item_name(self.item,get_language())), flush=True)
             self.finished.add(self.item)
             self.deferred.pop(self.item, None)
         else:
             if self.item not in self.deferred:
-                print(f"Livraison différée pour {self.item}. Les autres objets passent devant. "
-                      "Nouvelle vérification dans une minute.", flush=True)
+                print(tr('Delivery deferred for {value0}. Other items can pass it. Retrying in one minute.',
+                         value0=item_name(self.item,get_language())), flush=True)
             self.deferred[self.item] = time.monotonic() + 60
         self.item = None
         self.phase = None

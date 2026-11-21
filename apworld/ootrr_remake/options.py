@@ -14,7 +14,7 @@ class SteppedRange(Range):
     def __init__(self, value):
         super().__init__(value)
         if (value - self.range_start) % self.step:
-            raise ValueError(f"{self.__class__.__name__} utilise des pas de {self.step} depuis {self.range_start}.")
+            raise ValueError(f"{self.__class__.__name__} uses steps of {self.step} from {self.range_start}.")
 
     @classmethod
     def weighted_range(cls, text):
@@ -24,15 +24,15 @@ class SteppedRange(Range):
             parts = text[len("random-range-"):].split("-")
             bias = parts.pop(0) if parts and parts[0] in {"low", "middle", "high"} else None
             if len(parts) != 2:
-                raise ValueError("Plage aléatoire invalide : " + text)
+                raise ValueError("Invalid random range: " + text)
             low, high = sorted(map(int, parts))
             if low < cls.range_start or high > cls.range_end:
-                raise ValueError("Plage aléatoire hors limites : " + text)
+                raise ValueError("Random range is out of bounds: " + text)
             style = "random-" + bias if bias else "random"
         first = (low - cls.range_start + cls.step - 1) // cls.step
         last = (high - cls.range_start) // cls.step
         if first > last:
-            raise ValueError("Cette plage ne contient aucun palier natif : " + text)
+            raise ValueError("This range contains no valid native step: " + text)
         return cls(cls.range_start + cls.step * random_weighted_range(style, first, last))
 
 
@@ -66,8 +66,8 @@ class OOTRRSettingsRemoved(Removed):
 
     def __init__(self, value):
         if value:
-            raise ValueError("ootrr_settings a été remplacé par les réglages YAML individuels. "
-                             "Recrée le YAML avec Creer-YAML.cmd ; les anciens .apootrr restent utilisables.")
+            raise ValueError("ootrr_settings was replaced by individual YAML settings. "
+                             "Create a new YAML with Create-YAML.cmd; existing .apootrr files still work.")
         super().__init__(value)
 
 

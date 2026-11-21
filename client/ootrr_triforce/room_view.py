@@ -1,4 +1,6 @@
 """Console names and spoiler-free views for the current AP room."""
+from .i18n import tr, get_language
+from .item_names import item_name
 from .catalog import GAME, LEGACY_GAME, ITEM_IDS, LOCATION_IDS
 
 
@@ -56,11 +58,21 @@ class RoomView:
         except (ValueError, TypeError):
             return printable(value)
         if kind == "player_id":
-            return self.players.get(value, f"Joueur {value}")
+            return self.players.get(value, tr('Player {value0}', value0=value))
         if kind == "location_id" and value < 0:
-            return {-1: "Cheat Console", -2: "Server"}.get(value, f"Emplacement {value}")
+            return {-1: "Cheat Console", -2: "Server"}.get(value, tr('Location {value0}', value0=value))
         names = self.names.get(self.games.get(player), {}).get(kind, {})
         return printable(names.get(value, f"#{value}"))
+
+    def display_name(self, kind, value, player):
+        canonical = self.name(kind, value, player)
+        if kind != "item_id":
+            return canonical
+        try:
+            game = self.games.get(int(player))
+        except (ValueError, TypeError):
+            return canonical
+        return item_name(canonical, get_language(), game=game) if game else canonical
 
     def show(self, packet):
         if self.waiting:
@@ -73,7 +85,7 @@ class RoomView:
             kind = part.get("type")
             value = part.get("text", "")
             if kind in ("player_id", "location_id", "item_id"):
-                value = self.name(kind, value, part.get("player", self.slot))
+                value = self.display_name(kind, value, part.get("player", self.slot))
             parts.append(printable(value))
         if parts:
             print("[AP] " + "".join(parts), flush=True)

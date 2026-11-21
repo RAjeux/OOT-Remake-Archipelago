@@ -1,0 +1,192 @@
+# Local two-player example: Zelda + Ami (Dark Souls III).
+name: Zelda
+game: "Ocarina of Time Remake"
+"Ocarina of Time Remake":
+  # Fixed goal: defeat Ganon. AP-compatible settings only.
+
+  # Shuffle
+  # Shuffle all chests, overworld chests, or dungeon chests. Only chests in the AP catalogue
+  # become network checks.
+  # Values: all, overworld, dungeons
+  shuffle_chests: "all"
+
+  # Dungeon items
+  # Keep small keys vanilla, in their own dungeon, in any dungeon, or anywhere. The last two
+  # choices require shuffled dungeon chests.
+  # Values: vanilla, dungeon, any_dungeon, keysanity
+  shuffle_smallkeys: "dungeon"
+  # Boss key placement. remove unlocks the doors from the start. Placements outside the original
+  # dungeon require shuffled dungeon chests.
+  # Values: remove, vanilla, dungeon, regional, overworld, any_dungeon, keysanity
+  shuffle_bosskeys: "dungeon"
+  # Ganon boss key placement. remove unlocks access from the start. Reward-based and LACS cutscene
+  # variants are not supported.
+  # Values: remove, vanilla, dungeon, regional, overworld, any_dungeon, keysanity
+  shuffle_ganon_bosskey: "dungeon"
+  # Map and compass placement. remove or startwith grants their effects from the start.
+  # Values: remove, startwith, vanilla, dungeon, regional, any_dungeon, keysanity
+  shuffle_mapcompass: "dungeon"
+
+  # World
+  # closed keeps Mido and the opening quest; open unlocks the forest exit and the Deku Tree.
+  # Values: closed, open
+  open_forest: "closed"
+  # open unlocks the Death Mountain gate and skips the Zelda visit. Requires open_forest: open;
+  # Zelda's Letter and Impa's song are granted at the start.
+  # Values: closed, open
+  open_kakariko: "closed"
+  # King Zora blocks the passage normally, or never blocks it.
+  # Values: closed, open
+  zora_fountain: "closed"
+  # Enter Jabu-Jabu without a fish once King Zora no longer blocks the passage.
+  jabu_open: false
+  # Enable the day/night cycle from the start of the game.
+  time_always_passes: true
+  # Sleep until morning or night before meeting Zelda; requires time_always_passes.
+  early_beds: false
+  # Rescue four carpenters, rescue one, or start with the fortress open.
+  # Values: normal, fast, open
+  gerudo_fortress: "normal"
+  # Door of Time: complete Dodongo and Jabu-Jabu, collect all three stones, play only the Song of
+  # Time, or start with the door open.
+  # Values: vanilla, stones, song, open
+  door_of_time_condition: "vanilla"
+  # With the open or song condition, Zelda's escape waits for the two dungeons or three stones, or
+  # is skipped with the Ocarina available in the moat from the start.
+  # Values: vanilla, stones, moat
+  door_of_time_escape: "moat"
+  # With the vanilla or stones condition, also require the Song of Time to open the door.
+  door_of_time_song: true
+
+  # Goal
+  # Ganon bridge: native condition, or a total number of stones and medallions set by
+  # bridge_rewards.
+  # Values: vanilla, dungeons
+  bridge: "vanilla"
+  # Number of stones and medallions required; only used with bridge: dungeons.
+  # Integer: 0 to 9.
+  bridge_rewards: 9
+  # Reach Ganon's Tower without completing the trials.
+  skip_ganon_trials: false
+  # Number of trials required when skip_ganon_trials is disabled.
+  # Integer: 0 to 6.
+  trials: 6
+
+  # Starting inventory
+  # Number of hearts at the start of the game.
+  # Integer: 1 to 20.
+  starting_hearts: 3
+  # Native starting equipment, removed from the local pool. The highest selected upgrade wins.
+  # Starting Bombchus also require a bomb bag; Zelda's Letter is not selectable.
+  # Values: ocarina, slingshot, boomerang, bow, bomb_bag, bombchus, hookshot, longshot,
+  # megaton_hammer, lens_of_truth, magic_meter, dins_fire, farores_wind, nayrus_love, fire_arrows,
+  # ice_arrows, light_arrows, iron_boots, hover_boots, goron_tunic, zora_tunic, mirror_shield,
+  # bottle, magic_beans, stone_of_agony, gerudo_card, goron_bracelet, silver_scale, adult_wallet,
+  # kokiri_sword, deku_shield, big_bullet_bag, biggest_bullet_bag, big_quiver, biggest_quiver,
+  # big_bomb_bag, biggest_bomb_bag, deku_sticks, big_stick_bag, biggest_stick_bag, deku_nuts,
+  # big_nut_bag, biggest_nut_bag, silver_gauntlets, golden_gauntlets, golden_scale, giant_wallet,
+  # double_magic, ocarina_of_time, two_bottles, three_bottles, four_bottles, hylian_shield
+  starting_items: []
+  # Songs known from the start; an ocarina is still needed to play them.
+  # Values: zeldas_lullaby, eponas_song, sarias_song, suns_song, song_of_time, song_of_storms,
+  # minuet_of_forest, bolero_of_fire, serenade_of_water, requiem_of_spirit, nocturne_of_shadow,
+  # prelude_of_light
+  starting_songs: []
+  # Start with a random native stone or medallion. The regular reward still exists.
+  # Values: off, stone, medal, any
+  start_reward: "off"
+
+  # Quality of life
+  # Shorten native chest-opening and item-receive scenes.
+  faster_chests: false
+  # Push and pull blocks twice as fast.
+  faster_blocks: false
+  # Skip the opening movie and Link's wake-up scene.
+  skip_intro: true
+  # Suppress the first pickup message for small consumables.
+  skip_first_pickup_text: false
+  # Allow skipping no cutscenes, the opening and ending, or also the title-screen demos.
+  # Values: off, story, all
+  skip_cutscenes: "off"
+  # One Cucco is enough for Anju's bottle; logic follows this setting.
+  anju_one_cucco: false
+  # One Big Poe is enough for the Poe Collector's bottle.
+  big_poe_one: false
+  # Navi offers to return to the dungeon entrance, or also to Kokiri Forest/the Temple of Time
+  # outside dungeons.
+  # Values: off, dungeons, everywhere
+  navi_return: "everywhere"
+  # Bunny Hood: normal effect, faster running, or faster running and enhanced jumps. Experimental.
+  # Values: off, speed, jump
+  bunny_hood: "off"
+
+  # World
+  # Epona's Song grants Epona without racing Ingo.
+  skip_epona_race: true
+  # All masks are available when the shop opens.
+  skip_mask_quest: false
+  # Magic beans are already planted; their adult platforms are available.
+  plant_beans: false
+  # The Gerudo Valley bridge is repaired from the start.
+  gerudo_bridge_open: false
+
+  # Quality of life
+  # The bridge in the Deku Tree slingshot room does not collapse.
+  deku_bridge_safe: false
+
+  # Difficulty
+  # Enemy and boss health as a percentage (100 = normal). Experimental.
+  # Integer: 50 to 500, step 25.
+  enemy_health: 100
+  # Enemy attack damage as a percentage; traps and falls are unchanged. Experimental.
+  # Integer: 50 to 500, step 25.
+  enemy_damage: 100
+  # Enemy speed as a percentage; some animations keep their original pace. Experimental.
+  # Integer: 75 to 200, step 5.
+  enemy_speed: 100
+  # Enemy density as a percentage (100 = normal), with native limits per area. Experimental.
+  # Integer: 100 to 1000, step 50.
+  more_enemies: 100
+  # Living enemies recover health after ten seconds without taking a hit. Experimental.
+  enemy_regen: false
+  # Some enemies call for reinforcements during a prolonged fight. Experimental.
+  enemy_backup: false
+  # Random drops no longer give recovery hearts. Experimental.
+  no_heart_drops: false
+  # Gossip stones no longer spawn fairies. Experimental.
+  no_gossip_fairies: false
+  # Random drops no longer give ammunition; shops and chests remain available. Experimental.
+  no_ammo_drops: false
+  # Lose one heart container after a Game Over, down to a minimum of three hearts. Experimental.
+  lose_heart_on_death: false
+  # Prevent bottle use while combat music is playing. Experimental.
+  no_bottles_in_combat: false
+  # Disable enemy targeting; interactions remain available. Experimental.
+  no_z_targeting: false
+  # Native captures and refills reject contents already held in another bottle. Experimental.
+  no_dupe_items: false
+  # Ordinary enemies return after leaving their room or area. Experimental.
+  enemies_respawn_sooner: false
+  # Add a miniboss to compatible native boss arenas. Experimental.
+  boss_minibosses: false
+  # Add lesser enemies to compatible boss arenas. Experimental.
+  boss_minions: false
+  # The Bean Seller occasionally mentions difficulty mods. Experimental.
+  bean_pitch: false
+  # Add a Skulltula ambush to the Zora's Domain caves. Experimental.
+  zora_ambush: false
+  # Block the Deku Tree passage until both Deku Babas are defeated; closed forest only.
+  # Experimental.
+  enemy_gates: false
+  # One hit on a Cucco triggers the Cucco attack. Experimental.
+  cucco_revenge: false
+  # Enable the native two-stick/D-pad shortcut to spawn practice enemies. Experimental.
+  enemy_spawn_combo: false
+  # A fairy released from a bottle also heals awake enemies and bosses. Experimental.
+  fairy_helps_enemies: false
+
+  # Share deaths between Zelda and Ami.
+  death_link: true
+
+  # Eight one-time Kokiri purchases for other players.
+  kokiri_shop_checks: true

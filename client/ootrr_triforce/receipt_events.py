@@ -5,6 +5,7 @@ bottles, heart pieces and bundles. The effective OOTRR bag hooks are copied too.
 V2 uses the native pickup, short-get or major-get presentation for each item;
 older rooms retain their silent receipts.
 """
+from .i18n import tr
 import copy
 from pathlib import Path
 import re
@@ -61,14 +62,14 @@ def _silent_grant(editor, acknowledgement, *, entry_name=SILENT_ENTRY, prefix="O
     source = next((entry for entry in editor.chart.entry_points
                    if entry.name == "GetPouchContent"), None)
     if source is None:
-        raise ValueError("Événement natif de remise d’objet introuvable.")
+        raise ValueError(tr('Native get-item event not found.'))
     ui = {"OpenGetWindow", "OpenRupeeUIIfNeed", "CloseRupeeUIIfNeed"}
 
     def resolve(event):
         seen = set()
         while event is not None:
             if event in seen:
-                raise ValueError("Boucle dans la préparation native d’objet.")
+                raise ValueError(tr('Loop in native item preparation.'))
             seen.add(event)
             data = event.data
             if (getattr(data, "res_flowchart_name", None) == ""
@@ -81,7 +82,7 @@ def _silent_grant(editor, acknowledgement, *, entry_name=SILENT_ENTRY, prefix="O
                 # after the AP cursor, so no save can commit just the item.
                 if any(node is not event and _action(node) != "EventTriggerRequestAutoSave"
                        for node in reachable(event)):
-                    raise ValueError("Suite native d’auto-sauvegarde inconnue.")
+                    raise ValueError(tr('Unknown native autosave sequence.'))
                 return None
             else:
                 return event
@@ -94,14 +95,14 @@ def _silent_grant(editor, acknowledgement, *, entry_name=SILENT_ENTRY, prefix="O
         if event is None or event in originals:
             continue
         if not isinstance(event.data, (ActionEvent, SwitchEvent)):
-            raise ValueError("Étape native de remise d’objet non reconnue : " + event.name)
+            raise ValueError(tr('Unrecognized native get-item step: ') + event.name)
         originals.append(event)
         if isinstance(event.data, ActionEvent):
             stack.append(resolve(event.data.nxt.v))
         else:
             stack.extend(resolve(case.v) for case in event.data.cases.values())
     if not any(_action(event) == "EventTriggerAddOrRemovePouchContent" for event in originals):
-        raise ValueError("Action native d’inventaire introuvable.")
+        raise ValueError(tr('Native inventory action not found.'))
     clones = {}
     for original in originals:
         event = Event()
@@ -140,14 +141,14 @@ def build_receipt_flow(raw, token, names=None):
     from evfl.util import make_index
     from oot_rando.patching.progressive import FlowEditor, link
     if not re.fullmatch("[a-f0-9]{64}", token):
-        raise ValueError("Identifiant de salle invalide pour les réceptions natives.")
+        raise ValueError(tr('Invalid room identifier for native receipts.'))
     names = sorted(ITEM_DATA if names is None else set(names))
     if not set(names) <= ITEM_DATA.keys():
-        raise ValueError("Objet Archipelago sans recette native.")
+        raise ValueError(tr('Archipelago item has no native recipe.'))
     editor = FlowEditor(raw, FLOW_PATH)
     if any(entry.name.startswith(PREFIX) or entry.name == SILENT_ENTRY
            for entry in editor.chart.entry_points):
-        raise ValueError("Les réceptions Archipelago sont déjà préparées.")
+        raise ValueError(tr('Archipelago receipts are already prepared.'))
     silent_acknowledgement = editor.action("OOTRR_APSilentAcknowledge", "GameDataActor",
                                           "EventTriggerAddOrSubGameDataInt",
                                           {"GameDataName": CURSOR_PREFIX + token, "Index": -1, "Value": 1})
@@ -241,7 +242,7 @@ def build_receipt_flow(raw, token, names=None):
         entry.main_event = make_index(root)
         editor.chart.entry_points.append(entry)
         entries[item_id] = stem
-    result, _ = editor.write("La réception native Archipelago")
+    result, _ = editor.write(tr('The native Archipelago receipt'))
     return result, entries
 
 
@@ -254,14 +255,14 @@ def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, nat
     from .native_presentations import (PRESENTER_NAME, PRESENTER_PATH,
                                        append_recipe, append_tier_choice, copy_receipt_presenter, receipt_style)
     if not re.fullmatch("[a-f0-9]{64}", token):
-        raise ValueError("Identifiant de salle invalide pour les réceptions natives.")
+        raise ValueError(tr('Invalid room identifier for native receipts.'))
     names = sorted(ITEM_DATA if names is None else set(names))
     if not set(names) <= ITEM_DATA.keys():
-        raise ValueError("Objet Archipelago sans recette native.")
+        raise ValueError(tr('Archipelago item has no native recipe.'))
     pouch = FlowEditor(pouch_raw, FLOW_PATH)
     presenter = FlowEditor(presenter_raw, PRESENTER_PATH)
     if any(entry.name.startswith(PREFIX) for entry in pouch.chart.entry_points):
-        raise ValueError("Les réceptions Archipelago sont déjà préparées.")
+        raise ValueError(tr('Archipelago receipts are already prepared.'))
     ack = pouch.action("OOTRR_APVisualAcknowledge", "GameDataActor", "EventTriggerAddOrSubGameDataInt",
                        {"GameDataName": CURSOR_PREFIX + token, "Index": -1, "Value": 1})
     _silent_grant(pouch, ack, entry_name="OOTRR_APVisualGrant", prefix="OOTRR_APVisualNative")
@@ -309,7 +310,7 @@ def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, nat
         entry.main_event = make_index(root)
         pouch.chart.entry_points.append(entry)
         entries[item_id] = stem
-    pouch_result, _ = pouch.write("Les réceptions Archipelago avec présentation native")
+    pouch_result, _ = pouch.write(tr('Archipelago receipts with native presentation'))
     presenter_result, _ = presenter.write("Les animations natives Archipelago")
     return pouch_result, presenter_result, entries
 
@@ -360,7 +361,7 @@ def prepare_receipts(romfs, mod, data):
     item_names = {item_id: name for name, item_id in ITEM_IDS.items()}
     for item_id, name in entries.items():
         if name in existing or name in analyzed_existing:
-            raise ValueError("Événement de réception déjà enregistré : " + name)
+            raise ValueError(tr('Receipt event already registered: ') + name)
         style = receipt_style(ITEM_DATA[item_names[item_id]], native_info) if native_presentations else None
         dependencies, children = {"Dm_SY_Get", FLOW_NAME}, set()
         if native_presentations:
@@ -374,7 +375,7 @@ def prepare_receipts(romfs, mod, data):
                 if call in seen:
                     continue
                 if call == event_info.SWITCH_CALL:
-                    raise ValueError("Dépendances dynamiques de la réception native inconnues.")
+                    raise ValueError(tr('Unknown native receipt dynamic dependencies.'))
                 seen.add(call)
                 dependencies.add(call[0])
                 pending.extend(walk_memo[call][0] - seen)

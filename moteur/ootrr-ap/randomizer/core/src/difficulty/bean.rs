@@ -20,6 +20,7 @@ pub const RANDOM: &str = "EventQueryRandomChoice5";
 pub const ODDS: u32 = 5;
 pub const CHEW: &str = "Act_Eat_Talk";
 pub const WORDS: &str = "Chomp Chomp...{5.1}\nwould you like some {0.3:0000}Difficulty Mods{0.3:ffff}?";
+const WORDS_FR: &str = "Miam miam...{5.1}\nÇa te dit des {0.3:0000}mods de difficulté{0.3:ffff} ?";
 const VOICE: &str = "{3.0:0f0100}{4.0:18004265616e4d65726368616e745f4d616d6554616c6b5f303000}";
 
 pub fn message_id() -> String {
@@ -82,12 +83,32 @@ pub fn pitch(raw: &[u8]) -> Res<Vec<u8>> {
     finish(&b)
 }
 
-pub fn text(raw: &[u8]) -> Res<Vec<u8>> {
+pub fn words(archive: &str) -> &'static str {
+    let name: &str = archive.rsplit(['/', '\\']).next().unwrap_or(archive);
+    if name.get(2..4).is_some_and(|code| code.eq_ignore_ascii_case("fr")) { WORDS_FR } else { WORDS }
+}
+
+pub fn text(raw: &[u8], archive: &str) -> Res<Vec<u8>> {
     let mut es: Vec<Entry> = sarc::parse(raw)?;
     let mut m: Msbt = msbt::parse(&sarc::get(&es, MSG).ok_or(Error::Format("difficulty: the language archive has no bean seller texts"))?.data)?;
-    if !m.put_markup(LABEL, &format!("{VOICE}{WORDS}"))? {
+    if !m.put_markup(LABEL, &format!("{VOICE}{}", words(archive)))? {
         return Err(Error::Format("difficulty: the bean seller's texts are already edited"));
     }
+    sarc::set(&mut es, MSG, m.write()?);
+    sarc::write(&es)
+}
+
+/// Translate a pitch already added by portable OOTRR without touching its flow.
+pub fn localize_text(raw: &[u8], archive: &str) -> Res<Vec<u8>> {
+    let mut es = sarc::parse(raw)?;
+    let mut m = msbt::parse(&sarc::get(&es, MSG)
+        .ok_or(Error::Format("difficulty: the generated archive has no bean seller texts"))?.data)?;
+    let old = msbt::to_markup(&m.text(LABEL).map_err(|_| Error::Format(
+        "difficulty: the portable builder did not generate the expected bean pitch"))?);
+    if old != format!("{VOICE}{WORDS}") && old != format!("{VOICE}{WORDS_FR}") {
+        return Err(Error::Format("difficulty: the generated bean pitch differs from the supported text"));
+    }
+    m.put_markup(LABEL, &format!("{VOICE}{}", words(archive)))?;
     sarc::set(&mut es, MSG, m.write()?);
     sarc::write(&es)
 }
@@ -198,9 +219,41 @@ mod tests {
 
     #[test]
     fn the_line_is_valid_markup_and_keeps_the_wording() {
-        let t: Vec<msbt::Tok> = msbt::from_markup(&format!("{VOICE}{WORDS}")).unwrap();
-        let plain: String = t.iter().filter_map(|k| if let msbt::Tok::Text(s) = k { Some(s.as_str()) } else { None }).collect();
-        assert_eq!(plain, "Chomp Chomp...\nwould you like some Difficulty Mods?");
-        assert!(plain.lines().all(|l| l.len() <= 50));
+        for (archive, expected) in [
+            ("Mals/EUfr.Product.110.sarc.zs", "Miam miam...\nÇa te dit des mods de difficulté ?"),
+            ("Mals/USfr.Product.110.sarc.zs", "Miam miam...\nÇa te dit des mods de difficulté ?"),
+            ("Mals/EUen.Product.110.sarc.zs", "Chomp Chomp...\nwould you like some Difficulty Mods?"),
+            ("Mals/USen.Product.110.sarc.zs", "Chomp Chomp...\nwould you like some Difficulty Mods?"),
+            ("Mals/JPja.Product.110.sarc.zs", "Chomp Chomp...\nwould you like some Difficulty Mods?"),
+        ] {
+            let t = msbt::from_markup(&format!("{VOICE}{}", words(archive))).unwrap();
+            let plain: String = t.iter().filter_map(|k| if let msbt::Tok::Text(s) = k { Some(s.as_str()) } else { None }).collect();
+            assert_eq!(plain, expected);
+            assert!(plain.lines().all(|l| l.chars().count() <= 50));
+        }
+    }
+
+    #[test]
+    fn language_changes_only_the_added_pitch_and_preserves_native_messages() {
+        let mut original = Msbt { be: false, unk_a: [0, 0], enc: 0, ver: 3, unk_b: [0, 0], pad: [0; 10],
+            secs: vec![msbt::Sec::Lbl(vec![Vec::new()]), msbt::Sec::Txt(Vec::new())] };
+        original.put_markup("Native", "{0.3:0000}Original{0.3:ffff}").unwrap();
+        let source = sarc::write(&[
+            Entry { name: MSG.to_string(), data: original.write().unwrap() },
+            Entry { name: "Unrelated.bin".to_string(), data: vec![1, 2, 3] },
+        ]).unwrap();
+        for archive in ["Mals/EUfr.Product.110.sarc.zs", "Mals/USfr.Product.110.sarc.zs",
+                        "Mals/USen.Product.110.sarc.zs", "Mals/EUde.Product.110.sarc.zs"] {
+            let generated = text(&source, "Mals/USen.Product.110.sarc.zs").unwrap();
+            let patched = localize_text(&generated, archive).unwrap();
+            assert_eq!(localize_text(&patched, archive).unwrap(), patched);
+            assert_eq!(patched, text(&source, archive).unwrap());
+            let entries = sarc::parse(&patched).unwrap();
+            assert_eq!(sarc::get(&entries, "Unrelated.bin").unwrap().data, vec![1, 2, 3]);
+            let m = msbt::parse(&sarc::get(&entries, MSG).unwrap().data).unwrap();
+            assert_eq!(m.raw("Native"), original.raw("Native"));
+            assert_eq!(msbt::to_markup(&m.text(LABEL).unwrap()), format!("{VOICE}{}", words(archive)));
+            assert!(text(&patched, archive).is_err());
+        }
     }
 }

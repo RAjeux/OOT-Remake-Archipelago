@@ -1,4 +1,5 @@
 """Copy native event presentation graphs without sharing their reward callbacks."""
+from .i18n import tr
 import copy
 
 PRESENTER_NAME = "Dm_SY_GetInEvent"
@@ -24,7 +25,7 @@ def receipt_style(metadata, native_info):
         return "large"
     actor = metadata["actor"]
     if actor not in native_info:
-        raise ValueError("Présentation native introuvable : " + actor)
+        raise ValueError(tr('Native presentation not found: ') + actor)
     info = native_info[actor]
     category, special = info.get("PouchCategory"), info.get("PouchSpecialDeal", "None")
     get_type = info.get("PouchGetType", "Small")
@@ -116,11 +117,11 @@ def copy_receipt_presenter(editor, metadata, item_id, core_name, *, style="large
     if natural_camera:
         ground = FlowEditor(ground_raw, "Native ground item presentation")
         if not any(entry.name == "Dm_SY_Get_Camera" for entry in ground.chart.entry_points):
-            raise ValueError("Caméra native de ramassage introuvable.")
+            raise ValueError(tr('Native ground-pickup camera not found.'))
         cleanup = next((event for event in ground.chart.events
                         if _action(event) == "EventTriggerSendKeepStateMessageToPlayerCamera"), None)
         if cleanup is None:
-            raise ValueError("Retour à la caméra de jeu natif introuvable.")
+            raise ValueError(tr('Native return to the gameplay camera not found.'))
     replaced = []
 
     def callback(event, original):
@@ -163,7 +164,7 @@ def copy_receipt_presenter(editor, metadata, item_id, core_name, *, style="large
     entry = copy_entry(editor.chart, editor, PRESENTER_ENTRY, "OOTRR_APShow_" + str(item_id),
                        local_closure=natural_camera, callback=callback, skip=skip, transform=transform)
     if len(replaced) != 1:
-        raise ValueError("Remise native de l’animation non reconnue : " + metadata["actor"])
+        raise ValueError(tr('Unrecognized native animation grant: ') + metadata["actor"])
     return entry
 
 
@@ -206,7 +207,7 @@ def append_local_chests(editor, pouch_raw, rewards, *, small_raw=None):
         # OOTRR's fast big-chest path lives in the small-chest chart, with the
         # lid animation changed to FrontOpen. Inline that exact path here.
         if small_raw is None:
-            raise ValueError("Animation native de gros coffre introuvable.")
+            raise ValueError(tr('Native large-chest animation not found.'))
         source = FlowEditor(small_raw, "Native fast big chest").chart
         source_entry = generic.data.entry_point_name
     result = {}
@@ -242,7 +243,7 @@ def append_local_chests(editor, pouch_raw, rewards, *, small_raw=None):
         cloned_entry = copy_entry(source, editor, source_entry, stem + "_Native",
                                   local_closure=True, callback=callback, skip=skip)
         if not replaced:
-            raise ValueError("Remise native du coffre non reconnue : " + name)
+            raise ValueError(tr('Unrecognized native chest grant: ') + name)
 
         def present(branch, actor):
             return editor.subflow(branch + "_Open", "", cloned_entry,
@@ -269,13 +270,13 @@ def copy_entry(source, editor, entry_name, prefix, *, local_closure=False,
 
     entries = {entry.name: entry for entry in source.entry_points}
     if entry_name not in entries:
-        raise ValueError("Présentation native introuvable : " + entry_name)
+        raise ValueError(tr('Native presentation not found: ') + entry_name)
 
     def resolve(event):
         visited = set()
         while event is not None and skip is not None and skip(event):
             if event in visited or not hasattr(event.data, "nxt"):
-                raise ValueError("Étape native non contournable : " + event.name)
+                raise ValueError(tr('Native step cannot be bypassed: ') + event.name)
             visited.add(event)
             event = event.data.nxt.v
         return event
@@ -307,7 +308,7 @@ def copy_entry(source, editor, entry_name, prefix, *, local_closure=False,
             if (local_closure and isinstance(data, (SubFlowEvent, SubFlowSwitchEvent))
                     and not data.res_flowchart_name):
                 if data.entry_point_name not in entries:
-                    raise ValueError("Sous-flux natif introuvable : " + data.entry_point_name)
+                    raise ValueError(tr('Native subflow not found: ') + data.entry_point_name)
                 pending_entries.append(data.entry_point_name)
 
     def actor_for(original):
@@ -315,7 +316,7 @@ def copy_entry(source, editor, entry_name, prefix, *, local_closure=False,
                       if actor.identifier == original.identifier), None)
         if owner is None:
             if original.argument_entry_point.v is not None:
-                raise ValueError("Acteur natif lié à une autre entrée : " + str(original.identifier))
+                raise ValueError(tr('Native actor belongs to another entry: ') + str(original.identifier))
             owner = copy.deepcopy(original)
             owner.argument_entry_point = make_index(None)
             editor.chart.actors.append(owner)
@@ -326,7 +327,7 @@ def copy_entry(source, editor, entry_name, prefix, *, local_closure=False,
         event = Event()
         event.name = prefix + "_" + original.name
         if event.name in occupied:
-            raise ValueError("Présentation native déjà copiée : " + event.name)
+            raise ValueError(tr('Native presentation already copied: ') + event.name)
         occupied.add(event.name)
         event.data = copy.copy(original.data)
         if hasattr(original.data, "params"):
@@ -357,7 +358,7 @@ def copy_entry(source, editor, entry_name, prefix, *, local_closure=False,
             data.forks = [make_rindex(target(fork.v)) for fork in original.data.forks
                           if resolve(fork.v) is not None]
             if not data.forks:
-                raise ValueError("Toutes les branches natives ont été retirées : " + original.name)
+                raise ValueError(tr('All native branches were removed: ') + original.name)
         if isinstance(data, (SubFlowEvent, SubFlowSwitchEvent)):
             if local_closure and not original.data.res_flowchart_name:
                 data.entry_point_name = prefix + "_" + original.data.entry_point_name

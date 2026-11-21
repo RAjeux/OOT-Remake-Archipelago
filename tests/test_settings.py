@@ -20,15 +20,16 @@ from ootrr_triforce.catalog import GAME
 
 class DirectSettingsTests(unittest.TestCase):
     def test_player_yaml_export_asks_only_name_quotes_it_and_never_overwrites(self):
+        from ootrr_triforce.i18n import tr
         tree = ast.parse((ROOT / "client/ootrr_triforce/player.py").read_text(encoding="utf-8"))
         function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "export_yaml")
         name = 'Zelda "E": test'
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory)
-            original = folder / ("Joueur-" + re.sub(r"[^\w -]", "_", name) + ".yaml")
+            original = folder / ("Player-" + re.sub(r"[^\w -]", "_", name) + ".yaml")
             original.write_bytes(b"previous player file\n")
             ask, choose = Mock(return_value=name), Mock(return_value=folder)
-            namespace = dict(input=ask, choose=choose, GAME=GAME, json=json, re=re, yaml_options=yaml_options)
+            namespace = dict(input=ask, choose=choose, GAME=GAME, json=json, re=re, yaml_options=yaml_options, tr=tr)
             exec(compile(ast.Module(body=[function], type_ignores=[]), "player.py", "exec"), namespace)
             with redirect_stdout(io.StringIO()):
                 namespace["export_yaml"]()

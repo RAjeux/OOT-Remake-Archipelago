@@ -19,6 +19,15 @@ import (
 var active *Client
 var tokenForm = regexp.MustCompile("^[a-f0-9]{64}$")
 
+//export AP_SetLanguage
+func AP_SetLanguage(code *C.char) {
+	if code == nil {
+		setHostLanguage("")
+		return
+	}
+	setHostLanguage(C.GoString(code))
+}
+
 //export AP_Start
 func AP_Start(rootText, tokenText *C.char) C.int {
 	root, token := C.GoString(rootText), C.GoString(tokenText)
@@ -36,6 +45,7 @@ func AP_Start(rootText, tokenText *C.char) C.int {
 		out.Close()
 		return 0
 	}
+	c.Language = runtimeLanguage(c.Language)
 	s, e := newClient(c, root, logbook)
 	if e != nil {
 		logbook.Print(e)
@@ -44,17 +54,20 @@ func AP_Start(rootText, tokenText *C.char) C.int {
 	}
 	pw, e := password(c.ProtectedPassword)
 	if e != nil {
-		logbook.Print("Mot de passe local illisible, relance la configuration.")
+		logbook.Print("Cannot read the local password; run the mod configuration again.")
 		out.Close()
 		return 0
 	}
 	if e = lockProfile(root); e != nil {
-		logbook.Print("Un client utilise déjà cette salle.")
+		logbook.Print("Another client is already using this room.")
 		out.Close()
 		return 0
 	}
 	active = s
-	s.notice("Mod Archipelago actif · " + c.Slot)
+	if e = saveLanguage(root, s.cfg.Language); e != nil {
+		logbook.Print("Cannot publish the display language: ", e)
+	}
+	s.notice("active", c.Slot)
 	go s.run(pw)
 	go s.readSaves()
 	return 1
@@ -126,7 +139,7 @@ func AP_Applied(index C.int) {
 		who = "Archipelago"
 	}
 	s.mu.Unlock()
-	s.notice(s.cfg.Items[it.Item] + " reçu de " + who)
+	s.noticeReceived(it.Item, who)
 }
 
 //export AP_Cursor

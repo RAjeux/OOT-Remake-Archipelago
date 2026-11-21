@@ -75,7 +75,7 @@ def worker(root, token, library):
         logfile = root / "archipelago-jeu.log"
         log = logfile.read_text(encoding="utf-8", errors="replace") if logfile.exists() else ""
         return {**state, "history": history, "next_item": dll.AP_Next(len(history)),
-                "connected_count": log.count("Archipelago connecté"), "pid": os.getpid()}
+                "connected_count": log.count("Archipelago connected"), "pid": os.getpid()}
 
     threading.Thread(target=ticking, daemon=True).start()
     print(json.dumps({"started": True, "pid": os.getpid()}), flush=True)

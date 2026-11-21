@@ -221,7 +221,7 @@ impl Opts {
             out.push(minions::NOTE.to_string());
         }
         if self.bean_pitch {
-            out.push("One talk in five, the Bean Seller by Zora's River offers you some Difficulty Mods between bites before he gets to his usual business. The line is in English in every language. Experimental, untested in the game.".to_string());
+            out.push("One talk in five, the Bean Seller by Zora's River offers you some Difficulty Mods between bites before he gets to his usual business. The line uses French in French game archives and English otherwise. Experimental, untested in the game.".to_string());
         }
         if self.zora_ambush {
             out.push("The empty hole in Zora's Domain has a wall Skulltula on the far wall of each of its three side caves, and a Skulltula appears at the mouth of a side cave once you have walked into it. They come back when the area is loaded again. Experimental, untested in the game.".to_string());
@@ -452,7 +452,7 @@ pub fn stage(rf: &mut Romfs, o: &Opts, have: Have, seed: &str) -> Res<Vec<Out>> 
     if o.bean_pitch {
         step(rf, &mut outs, have, |rf, have| Ok(vec![edit_zs(rf, have, bean::FILE, bean::pitch)?]))?;
         for l in crate::hints::languages(rf)? {
-            step(rf, &mut outs, have, |rf, have| Ok(vec![edit_zs(rf, have, &l, bean::text)?]))?;
+            step(rf, &mut outs, have, |rf, have| Ok(vec![edit_zs(rf, have, &l, |raw| bean::text(raw, &l))?]))?;
         }
     }
     if o.respawn {
@@ -1183,12 +1183,16 @@ mod tests {
             let m: crate::msbt::Msbt = crate::msbt::parse(&sarc::get(&es, bean::MSG).unwrap().data).unwrap();
             let w: crate::msbt::Msbt = crate::msbt::parse(&sarc::get(&old, bean::MSG).unwrap().data).unwrap();
             let said: String = crate::msbt::to_markup(&m.text(bean::LABEL).unwrap());
-            assert!(said.ends_with(bean::WORDS), "{} {said}", x.path);
+            assert!(said.ends_with(bean::words(&x.path)), "{} {said}", x.path);
+            let portable = bean::text(&rf.read_zs(&x.path).unwrap(), "Mals/USen.Product.110.sarc.zs").unwrap();
+            let localized = bean::localize_text(&portable, &x.path).unwrap();
+            assert_eq!(localized, rf.zs.decompress(&x.z).unwrap());
+            assert_eq!(bean::localize_text(&localized, &x.path).unwrap(), localized);
             assert_eq!(m.names().len(), w.names().len() + 1);
             for (l, _) in w.names() {
                 assert_eq!(m.raw(l), w.raw(l), "{} {l}", x.path);
             }
-            assert!(bean::text(&rf.zs.decompress(&x.z).unwrap()).is_err());
+            assert!(bean::text(&rf.zs.decompress(&x.z).unwrap(), &x.path).is_err());
         }
     }
 

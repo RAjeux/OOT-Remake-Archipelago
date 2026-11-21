@@ -1,25 +1,25 @@
-# Origine du code et des ressources
+# Code and resource provenance
 
-Le code d’intégration et ses modifications sont sous **GPL-3.0-or-later** ; le texte complet est dans [LICENSE](LICENSE). Les composants tiers et les visuels conservent les licences décrites ci-dessous et leurs notices d’origine. Le [NOTICE](NOTICE) racine résume cette répartition.
+Integration code and its modifications are licensed under **GPL-3.0-or-later**; the full text is in [LICENSE](LICENSE). Third-party components and artwork retain the licenses below and their original notices. The root [NOTICE](NOTICE) summarizes these distinctions.
 
 ## Code
 
-| Composant | Référence et emplacement | Licence et crédits conservés |
+| Component | Reference and location | Retained license and credits |
 | --- | --- | --- |
-| [OOTRR 0.8.1](https://github.com/ootrando/ootrr/releases/tag/v0.8.1) | Révision `3ee77a632fb7c5ed2ccdc33db129f659bc23419f`, moteur adapté dans `moteur/ootrr-ap/`, export partagé dans `client/ootrr_triforce/` | GPL-3.0-or-later ; `moteur/ootrr-ap/LICENSE`, `NOTICE` et `LICENSE-MIT`. Les contributions et composants MIT en amont restent crédités dans ces notices. |
-| [Mozencaz/OotrR](https://github.com/Mozencaz/OotrR/tree/e291a1b103bd52d8878207ba7800bf670418144c) | Révision `e291a1b103bd52d8878207ba7800bf670418144c`, outils de ressources et adaptations dans `client/oot_rando/` | MIT ; `client/credits/OotrR-MIT.txt`, `ARCHIPELAGO.txt` et `Visuels.txt`. |
-| [Archipelago](https://github.com/ArchipelagoMW/Archipelago/tree/debe4cf035c7c15efe6fb95f72343af0d420c68c) | Révision de référence `debe4cf035c7c15efe6fb95f72343af0d420c68c` ; serveur 0.6.7 utilisé pour les tests de développement | Projet amont et protocole de référence ; ses visuels ont des conditions distinctes du code. |
-| [Archipelago-SoH 1.4.2](https://github.com/HarbourMasters/Archipelago-SoH/releases/tag/Soh_1.4.2) | Révision consultée `cd9179cb4f5890f8a977e6cac59c54cda48a9df6` | Exemple étudié pour l’intégration multiworld ; ce dépôt ne redistribue pas le jeu SoH. |
-| [Triforce](https://git.triforceproject.com/triforce/source) | Révision de référence `b0e46adb484681a34ece82bbace9ec085a4eae1f`, extraits pour les tests dans `references/triforce/` | Notices GPL et provenance amont conservées, notamment `references/triforce/host/PROVENANCE.md`. La liaison propre au mod se trouve dans `native/` et son installation dans `native_setup.py`. |
+| [OOTRR 0.8.1](https://github.com/ootrando/ootrr/releases/tag/v0.8.1) | Revision `3ee77a632fb7c5ed2ccdc33db129f659bc23419f`; adapted engine in `moteur/ootrr-ap/`, shared export in `client/ootrr_triforce/` | GPL-3.0-or-later; `moteur/ootrr-ap/LICENSE`, `NOTICE`, and `LICENSE-MIT`. Upstream MIT components and contributions remain credited in these notices. |
+| [Mozencaz/OotrR](https://github.com/Mozencaz/OotrR/tree/e291a1b103bd52d8878207ba7800bf670418144c) | Revision `e291a1b103bd52d8878207ba7800bf670418144c`; resource tools and adaptations in `client/oot_rando/` | MIT; `client/credits/OotrR-MIT.txt`, `ARCHIPELAGO.txt`, and `Visuels.txt`. |
+| [Archipelago](https://github.com/ArchipelagoMW/Archipelago/tree/debe4cf035c7c15efe6fb95f72343af0d420c68c) | Reference revision `debe4cf035c7c15efe6fb95f72343af0d420c68c`; protocol/server baseline 0.6.7, direct YAML generation tested with 0.6.8 | Upstream project and reference protocol; its artwork has terms separate from its code. |
+| [Archipelago-SoH 1.4.2](https://github.com/HarbourMasters/Archipelago-SoH/releases/tag/Soh_1.4.2) | Consulted revision `cd9179cb4f5890f8a977e6cac59c54cda48a9df6` | Multiworld integration reference; this repository does not redistribute the SoH game. |
+| [Triforce](https://git.triforceproject.com/triforce/source) | Reference revision `b0e46adb484681a34ece82bbace9ec085a4eae1f`; test excerpts in `references/triforce/` | Original GPL notices and provenance are retained, including `references/triforce/host/PROVENANCE.md`. The mod's bridge is in `native/`, with its installer in `native_setup.py`. |
 
-Les dépendances Python gardent leurs licences dans `client/credits/` et `client/websockets/`, dont les notices ainb, evfl et Zstandard. Les dépendances Rust et leurs licences sont fournies dans `moteur/ootrr-ap/vendor/`. Les licences Go et les sources tierces de la DLL se trouvent dans `distribution/sources/` et `native/vendor/`. La bibliothèque Zstandard x64 de l’installateur est accompagnée de `distribution/runtime/LICENSE.txt`.
+Python dependencies retain their licenses in `client/credits/` and `client/websockets/`, including the ainb, evfl, and Zstandard notices. Rust dependencies and licenses are vendored in `moteur/ootrr-ap/vendor/`. Go licenses and third-party DLL sources are in `distribution/sources/` and `native/vendor/`. The installer's x64 Zstandard library is accompanied by `distribution/runtime/LICENSE.txt`.
 
-La licence racine ne remplace aucune licence tierce. Les changements de cette intégration ne doivent pas être attribués aux auteurs des versions amont.
+The root license does not replace any third-party license. Changes made for this integration must not be attributed to the authors of upstream versions.
 
-## Visuels
+## Artwork
 
-- **Icône Archipelago colorée**, Krista Corkos et Christopher Wilson, 2022 : [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/). `assets/icon.png`, son intégration au titre et le médaillon AP conservent cette attribution. Les adaptations comprennent le redimensionnement, la conversion des textures et la présentation dans le jeu.
-- **Lettrage du titre** : rendu typographique réalisé pour ce projet dans `tools/generate_art.py`, avec **Cinzel**, Copyright 2020 The Cinzel Project Authors. La police est sous **SIL Open Font License 1.1**, dont le texte est conservé dans `moteur/ootrr-ap/web/assets/fonts/OFL-Cinzel.txt`. Le lettrage réservé du site Archipelago a été remplacé ; il n’est pas distribué avec cette alpha.
-- Les recettes de conversion de texture dérivées de Mozencaz/OotrR conservent leur notice MIT. Les attributions embarquées sont dans `client/credits/Titre-Archipelago.txt` et `Visuels.txt`.
+- **Colored Archipelago icon**, Krista Corkos and Christopher Wilson, 2022: [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/). `assets/icon.png`, its title integration, and the in-game AP medal retain this attribution. Adaptations include resizing, texture conversion, and in-game presentation.
+- **Title lettering**: rendered for this project by `tools/generate_art.py` using **Cinzel**, Copyright 2020 The Cinzel Project Authors. The font is licensed under **SIL Open Font License 1.1**, with its notice in `moteur/ootrr-ap/web/assets/fonts/OFL-Cinzel.txt`. The restricted Archipelago website wordmark has been replaced and is not distributed with this alpha.
+- Texture conversion routines derived from Mozencaz/OotrR retain their MIT notice. Bundled attributions are in `client/credits/Titre-Archipelago.txt` and `Visuels.txt`.
 
-Les visuels ne reçoivent pas une licence GPL uniforme du seul fait d’accompagner le code. Le pack ne contient aucun fichier extrait du jeu Nintendo ; ces fichiers sont fournis localement par le joueur pour générer son mod.
+Artwork does not acquire a uniform GPL license merely by accompanying the code. The release contains no files extracted from the Nintendo game; players provide those files locally when generating their mods.

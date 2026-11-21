@@ -1,4 +1,5 @@
 """An unintrusive Windows HUD pinned to the Triforce game window."""
+from .i18n import tr
 from collections import deque
 import json
 import os
@@ -24,7 +25,7 @@ class Hud:
             self.child = subprocess.Popen([sys.executable, str(Path(sys.argv[0]).resolve()), "--hud", str(pid)],
                                           stdin=subprocess.PIPE, encoding="utf-8", text=True)
         except OSError as err:
-            print("Affichage des notifications indisponible :", err, flush=True)
+            print(tr('Notification display unavailable:'), err, flush=True)
         self.flush()
 
     def flush(self):

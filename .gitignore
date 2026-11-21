@@ -5,7 +5,7 @@
 __pycache__/
 *.pyc
 
-# Notes et réglages privés conservés sur le poste de développement.
+# Private notes and settings kept on the development machine.
 /CONTEXTE-CODEX.md
 .codex/
 .claude/
@@ -22,7 +22,7 @@ native-session.json
 derniere-salle-native.json
 sauvegarde-*.json
 
-# Données de jeu et de session ; les sources et ZIP de tests restent suivis.
+# Game and session data; source files and test ZIPs remain tracked.
 /romfs/
 /exefs/
 /mods/

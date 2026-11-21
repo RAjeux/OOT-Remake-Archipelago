@@ -87,8 +87,11 @@ def is_ap_actor(actor):
     return actor.startswith(ACTOR_PREFIX)
 
 
-def ap_messages(item, player, language):
+def ap_messages(item, player, language, game=None):
     """Get-item texts naming the network reward and its owner."""
+    if game is not None:
+        from ootrr_triforce.item_names import item_name
+        item = item_name(item, language, game=game)
     if language.endswith('fr'):
         return {'Name': f'{item} ({player})',
                 'Caption': f'« {item} » appartient à {player}.',
@@ -470,18 +473,21 @@ def spin_parts(read_raw):
 
 
 def build_ap_files(read_raw, items, message_archives=()):
-    """``(modified, new)`` resources for routed items: {planner item: (item name, player)}."""
+    """Resources for routed items: planner item -> (name, player[, owning game])."""
     from oot_rando.patching.soul_adapter import build_item_files, soul_event_ain, soul_event_member, \
         soul_event_name
     spin_files, spin_components, spin_info = spin_parts(read_raw)
     specs = []
-    for item, (name, player) in sorted(items.items()):
+    for item, value in sorted(items.items()):
+        name, player = value[:2]
+        game = value[2] if len(value) > 2 else None
         actor = ap_actor(item)
         specs.append({'actor': actor, 'model': MODEL_ACTOR, 'model_info': MODEL_INFO,
                       'files': spin_files, 'components': spin_components, 'actor_info': spin_info,
                       'event_name': soul_event_name(actor), 'event_member': soul_event_member(actor),
                       'event_ain': soul_event_ain(actor),
-                      'texts': (lambda lang, name=name, player=player: ap_messages(name, player, lang))})
+                      'texts': (lambda lang, name=name, player=player, game=game:
+                                ap_messages(name, player, lang, game))})
     modified, new = build_item_files(read_raw, specs, message_archives)
     new.update(build_model_files(read_raw))
     return modified, new

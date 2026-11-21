@@ -23,15 +23,18 @@ type Location struct {
 	Flags []uint32
 	Item  string
 	Owner string
+	Game  string
 }
 type Config struct {
 	Room, Slot, Game, Token, Server, ProtectedPassword, UUID string
+	Language                                                 string
 	Player, Protocol                                         int
 	CursorHash                                               uint32
 	DeathLink                                                bool
 	RewardMode                                               string
 	LocalItems                                               bool
 	Items                                                    map[int]string
+	ItemNames                                                map[int]map[string]string
 	Checks                                                   map[int]Location
 }
 type Client struct {
@@ -82,7 +85,7 @@ func (n *networkItem) UnmarshalJSON(b []byte) error {
 			return err
 		}
 		if len(a) < 3 {
-			return errors.New("objet AP incomplet")
+			return errors.New("incomplete AP item")
 		}
 		n.Item, n.Location, n.Player = a[0], a[1], a[2]
 		return nil
@@ -98,15 +101,16 @@ type journal struct {
 
 func newClient(c Config, root string, logger *log.Logger) (*Client, error) {
 	if c.RewardMode != "" && c.RewardMode != "legacy_gear" && c.RewardMode != "all_chest_rewards" && c.RewardMode != "all_locations" {
-		return nil, errors.New("mode de récompenses inconnu")
+		return nil, errors.New("unknown reward mode")
 	}
 	if c.LocalItems != (c.RewardMode == "all_locations") {
-		return nil, errors.New("récompenses locales incompatibles avec le mode de cette salle")
+		return nil, errors.New("local rewards do not match the room reward mode")
 	}
 	uri, e := url.Parse(c.Server)
 	if e != nil || (uri.Scheme != "ws" && uri.Scheme != "wss") || uri.Hostname() == "" || uri.User != nil || c.Room == "" || c.Slot == "" || c.Player < 1 || c.Protocol != 1 || c.CursorHash == 0 || len(c.Checks) > 2000 || len(c.Checks) == 0 {
-		return nil, errors.New("configuration de salle invalide")
+		return nil, errors.New("invalid room configuration")
 	}
+	c.Language = normalizeLanguage(c.Language)
 	s := &Client{cfg: c, root: root, logger: logger, byFlag: map[uint32][]int{}, seen: map[int]bool{}, checked: map[int]bool{}, death: deathLink{state: -1}}
 	for id, loc := range c.Checks {
 		for _, flag := range loc.Flags {
@@ -117,7 +121,7 @@ func newClient(c Config, root string, logger *log.Logger) (*Client, error) {
 		}
 	}
 	if len(s.flags) > 4096 {
-		return nil, errors.New("trop de drapeaux de coffres")
+		return nil, errors.New("too many location flags")
 	}
 	sort.Slice(s.flags, func(i, j int) bool { return s.flags[i] < s.flags[j] })
 	raw, e := os.ReadFile(filepath.Join(root, "native-checks.json"))
@@ -136,14 +140,6 @@ func newClient(c Config, root string, logger *log.Logger) (*Client, error) {
 		return nil, e
 	}
 	return s, nil
-}
-func (s *Client) notice(t string) {
-	s.logger.Print(t)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if len(s.notices) < 512 {
-		s.notices = append(s.notices, t)
-	}
 }
 func (s *Client) opened(flags []uint32, goal bool) {
 	s.mu.Lock()
@@ -263,7 +259,7 @@ func (s *Client) session(conn *websocket.Conn, password string) error {
 			switch m.Cmd {
 			case "RoomInfo":
 				if m.Seed != s.cfg.Room {
-					return errors.New("mauvaise salle pour ce mod")
+					return errors.New("wrong room for this mod")
 				}
 				tags := []string{"AP"}
 				if s.cfg.DeathLink {
@@ -277,10 +273,10 @@ func (s *Client) session(conn *websocket.Conn, password string) error {
 					return e
 				}
 			case "ConnectionRefused":
-				return fmt.Errorf("connexion refusée : %s", strings.Join(m.Errors, ", "))
+				return fmt.Errorf("connection refused: %s", strings.Join(m.Errors, ", "))
 			case "Connected":
 				if auth || !s.valid(m) {
-					return errors.New("ce mod ne correspond pas au slot de la salle")
+					return errors.New("this mod does not match the room slot")
 				}
 				auth = true
 				for _, p := range m.Players {
@@ -297,7 +293,7 @@ func (s *Client) session(conn *websocket.Conn, password string) error {
 				}
 				s.goalConfirmed = false
 				s.mu.Unlock()
-				s.notice("Archipelago connecté · " + s.cfg.Slot)
+				s.notice("connected", s.cfg.Slot)
 				if e := synchronize(); e != nil {
 					return e
 				}
@@ -307,7 +303,7 @@ func (s *Client) session(conn *websocket.Conn, password string) error {
 				}
 				for _, it := range m.Items {
 					if _, ok := s.cfg.Items[it.Item]; !ok {
-						return errors.New("objet inconnu pour cette version du mod")
+						return errors.New("unknown item for this mod version")
 					}
 				}
 				if syncing && m.Index == 0 {
@@ -339,7 +335,7 @@ func (s *Client) session(conn *websocket.Conn, password string) error {
 					s.history = append([]networkItem(nil), history...)
 					s.mu.Unlock()
 					for _, it := range history[old:] {
-						s.logger.Print("Objet en attente dans Zelda · " + s.cfg.Items[it.Item])
+						s.logger.Print("Item queued in Zelda · " + s.cfg.Items[it.Item])
 					}
 				}
 			case "Retrieved":
@@ -406,7 +402,7 @@ func (s *Client) session(conn *websocket.Conn, password string) error {
 										return
 									}
 									if ready && death != nil {
-										s.logger.Print("DeathLink envoyé · " + death.Cause)
+										s.logger.Print("DeathLink sent · " + death.Source)
 									}
 									if goal {
 										s.mu.Lock()
@@ -434,9 +430,9 @@ func (s *Client) session(conn *websocket.Conn, password string) error {
 					s.mu.Unlock()
 					if loc, ok := s.cfg.Checks[id]; ok && first {
 						if loc.Owner != "" && (!s.cfg.LocalItems || (loc.Owner != s.cfg.Slot && loc.Owner != ownName)) {
-							s.notice(loc.Item + " envoyé à " + loc.Owner)
+							s.noticeLocation(loc)
 						} else {
-							s.logger.Print("Emplacement validé · " + loc.Name)
+							s.logger.Print("Location checked · " + loc.Name)
 						}
 					}
 				}
@@ -459,7 +455,7 @@ func (s *Client) run(password string) {
 			e = s.session(conn, password)
 		}
 		if e != nil {
-			s.logger.Print("Connexion interrompue · ", e)
+			s.logger.Print("Connection interrupted · ", e)
 		}
 		if time.Since(start) > 30*time.Second {
 			delay = time.Second
@@ -479,7 +475,7 @@ func loadConfig(root, token string) (Config, error) {
 	d := json.NewDecoder(bytes.NewReader(raw))
 	e = d.Decode(&c)
 	if c.Token != token {
-		return c, errors.New("identifiant de salle différent")
+		return c, errors.New("room token mismatch")
 	}
 	return c, e
 }

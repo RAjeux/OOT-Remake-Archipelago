@@ -16,7 +16,8 @@ CLIENT = ROOT / "client"
 NATIVE = ROOT / "native"
 ENGINE = ROOT / "moteur" / "ootrr-ap"
 DLL = ROOT / "prebuilt/windows-x64/archipelago.dll"
-WORLD_FILES = ("catalog.py", "settings.py", "engine.py", "engine.cjs", "engine.wasm", "LICENSE", "NOTICE")
+WORLD_FILES = ("catalog.py", "settings.py", "settings_fr.json", "i18n.py", "i18n_fr.json",
+               "engine.py", "engine.cjs", "engine.wasm", "LICENSE", "NOTICE")
 HOST_FILES = ("ootrr_archipelago.inc", "ootrr_ap_items.inc", "ootrr_ap_digest.h")
 VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
 RELEASE = f"Archipelago-OOT-Remake-{VERSION}.zip"
@@ -49,9 +50,9 @@ def copy_file(path, dest):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--native", action="store_true", help="Recompile la DLL Windows x64 avec Go et un compilateur C.")
-    ap.add_argument("--engine", action="store_true", help="Recompile le moteur Rust pour wasm32-wasip1.")
-    ap.add_argument("--linux-test-lib", action="store_true", help="Compile la bibliothèque de test Linux avec Go et C.")
+    ap.add_argument("--native", action="store_true", help="Rebuild the Windows x64 DLL with Go and a C compiler.")
+    ap.add_argument("--engine", action="store_true", help="Rebuild the Rust engine for wasm32-wasip1.")
+    ap.add_argument("--linux-test-lib", action="store_true", help="Build the Linux test library with Go and C.")
     args = ap.parse_args()
     BUILD.mkdir(exist_ok=True)
     if args.native:
@@ -62,7 +63,7 @@ def main():
         subprocess.run([sys.executable, str(NATIVE/"write_digest.py"), str(DLL)], check=True)
     if args.linux_test_lib:
         if not sys.platform.startswith("linux"):
-            ap.error("--linux-test-lib nécessite Linux. Sous Windows le test utilise la DLL du pack.")
+            ap.error("--linux-test-lib requires Linux. Windows tests use the packaged DLL.")
         subprocess.run(["go", "build", "-mod=vendor", "-buildvcs=false", "-trimpath", "-buildmode=c-shared",
                         "-o", str(BUILD/"archipelago.so"), "."], cwd=NATIVE, env=dict(os.environ,CGO_ENABLED="1"), check=True)
     if args.engine:
@@ -78,7 +79,7 @@ def main():
     digest = ",".join(map(str, hashlib.sha256(DLL.read_bytes()).digest()))
     expected = ("static const unsigned char ap_dll_sha16[32] = {" + digest + "};\n").encode("ascii")
     if (NATIVE/"ootrr_ap_digest.h").read_bytes() != expected:
-        raise SystemExit("La DLL et l’en-tête de vérification diffèrent. Relance la compilation avec --native.")
+        raise SystemExit("The DLL does not match its verification header. Rebuild with --native.")
 
     world = OUT/"ootrr_remake.apworld"
     app = OUT/"Client-OOT-Remake.pyz"
@@ -92,7 +93,7 @@ def main():
     entries = [(p.relative_to(OUT).as_posix(),p) for p in (world,app,src)]
     install = [*tree(ROOT/"distribution"), ("native/archipelago.dll", DLL)]
     install.extend((name, ROOT/name) for name in ("LICENSE", "NOTICE", "VERSION"))
-    install.extend(("exemples/"+name, path) for name, path in tree(ROOT/"exemples"))
+    install.extend(("examples/"+name, path) for name, path in tree(ROOT/"examples"))
     install.extend(("native/"+n,NATIVE/n) for n in HOST_FILES)
     install.extend(("sources/native/"+n,p) for n,p in tree(NATIVE))
     for name,path in install:

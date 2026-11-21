@@ -4,6 +4,7 @@ Native prices, payment, item presentation and sold-out checks stay in DisplaySho
 AP dummy actors have no Zelda inventory effect. Only their capacity question is
 bypassed, because NotPushToPouch actors otherwise reach the native error branch.
 """
+from .i18n import tr
 from pathlib import Path
 import re
 
@@ -38,9 +39,9 @@ def _records(records):
                 or any(not isinstance(name, str) or not name or "\0" in name for name in counts)
                 or len(set(counts)) != 3
                 or type(record.get("price")) is not int or record["price"] < 0):
-            raise ValueError("Métadonnées de vente Archipelago invalides.")
+            raise ValueError(tr('Invalid Archipelago shop metadata.'))
         if actor in actors or flag in flags or set(counts) & counters:
-            raise ValueError("Chaque vente Archipelago doit avoir son acteur, son drapeau et ses compteurs uniques.")
+            raise ValueError(tr('Each Archipelago purchase must have its own actor, flag and unique counters.'))
         actors.add(actor); flags.add(flag); counters.update(counts)
         result.append({**record, "counters": list(counts)})
     return sorted(result, key=lambda record: record["flag_name"])
@@ -85,9 +86,9 @@ def patch_shop_flow(raw, records):
     editor = FlowEditor(raw, FLOW_PATH)
     chart = editor.chart
     if chart.name != "DisplayShop":
-        raise ValueError("Le flow de boutique attendu est absent.")
+        raise ValueError(tr('The expected shop flow is missing.'))
     if any(entry.name == ENTRY for entry in chart.entry_points) or any(event.name.startswith(PREFIX) for event in chart.events):
-        raise ValueError("Le suivi des achats Archipelago est déjà préparé.")
+        raise ValueError(tr('Archipelago purchase tracking is already prepared.'))
     original_events = list(chart.events)
     original_entries = list(chart.entry_points)
     continuations = {}
@@ -97,7 +98,7 @@ def patch_shop_flow(raw, records):
                 or str(event.data.actor.v.identifier) != "Npc_EventStarter"
                 or _command(event, "action") != "EventTriggerGetItemAtShop"
                 or event.data.params is None or event.data.params.data != {"IsGetEvent": False}):
-            raise ValueError("Action d’achat natif inconnue : " + name)
+            raise ValueError(tr('Unknown native purchase action: ') + name)
         continuations[name] = event.data.nxt.v
     gates = []
     for index, name in CAPACITY:
@@ -108,7 +109,7 @@ def patch_shop_flow(raw, records):
                 or event.data.params is None
                 or event.data.params.data != {"GameDataForActorName": SELECTED}
                 or set(event.data.cases) != {0, 1, 2} or event.data.cases[0].v is None):
-            raise ValueError("Condition de capacité de boutique inconnue : " + name)
+            raise ValueError(tr('Unknown shop capacity condition: ') + name)
         gates.append(event)
 
     def selected(name, actor, yes, no):
@@ -152,7 +153,7 @@ def patch_shop_flow(raw, records):
                 point.main_event = make_index(root)
                 replaced += 1
         if not replaced:
-            raise ValueError("Aucun accès à la condition de capacité : " + gate.name)
+            raise ValueError(tr('No access to the capacity condition: ') + gate.name)
 
     # Local subflow calls must be preloaded by every entry that can reach them.
     # Existing OOTRR subflow preload lists retain their original prefix.
@@ -170,12 +171,12 @@ def patch_shop_flow(raw, records):
         if (not isinstance(call.data, SubFlowEvent) or call.data.res_flowchart_name != ""
                 or call.data.entry_point_name != ENTRY
                 or (call.data.nxt.v.name if call.data.nxt.v else None) != (original_next.name if original_next else None)):
-            raise ValueError("La suite native de l’achat a été modifiée.")
+            raise ValueError(tr('The native purchase sequence was modified.'))
     for point in parsed.flowchart.entry_points:
         for event in reachable(point.main_event.v):
             if event.name.startswith(PREFIX) and isinstance(event.data, SubFlowEvent):
                 if parsed.flowchart.events.index(event) not in point._sub_flow_event_indices:
-                    raise ValueError("Préchargement local d’achat manquant : " + point.name)
+                    raise ValueError(tr('Missing local purchase preload: ') + point.name)
     return result
 
 

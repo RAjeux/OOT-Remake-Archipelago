@@ -1,3 +1,5 @@
+from .i18n import tr, get_language, set_language, detect_language
+from .item_names import item_name
 import argparse
 from collections import Counter
 import asyncio
@@ -30,20 +32,20 @@ BY_ID = {v: k for k, v in ITEM_IDS.items()}
 
 
 def export_yaml():
-    name = input("Nom de ton joueur Archipelago : ").strip()
+    name = input(tr('Your Archipelago player name: ')).strip()
     if not name or name == "Archipelago" or len(name) > 16:
-        raise ValueError("Choisis un nom de 1 à 16 caractères différent d’Archipelago.")
-    folder = choose("Choisis le dossier où enregistrer le YAML", folder=True)
+        raise ValueError(tr('Choose a name of 1 to 16 characters other than Archipelago.'))
+    folder = choose(tr('Choose the folder in which to save the YAML'), folder=True)
     # Prefix keeps Windows device names (such as CON) usable as slot names.
-    basename = "Joueur-" + re.sub(r"[^\w -]", "_", name)
+    basename = "Player-" + re.sub(r"[^\w -]", "_", name)
     filename = folder / (basename + ".yaml")
     index = 1
-    content = ("# Réglages pris en charge par OOT Remake Archipelago pour Triforce.\n"
-               "# Modifie les valeurs ci-dessous avant la génération de la salle.\n"
+    content = ("# Supported OOT Remake Archipelago settings for Triforce.\n"
+               "# Edit the values below before generating the room.\n"
                f"name: {json.dumps(name, ensure_ascii=False)}\ngame: {json.dumps(GAME)}\n"
                f"{json.dumps(GAME)}:\n" + yaml_options() +
-               "\n  # Partager les morts avec les autres joueurs DeathLink.\n  death_link: false\n"
-               "\n  # Huit achats Kokiri uniques, réservés aux objets des autres joueurs.\n"
+               "\n  # Share deaths with other DeathLink players.\n  death_link: false\n"
+               "\n  # Eight unique Kokiri purchases for other players' items.\n"
                "  kokiri_shop_checks: false\n")
     while True:
         try:
@@ -53,44 +55,44 @@ def export_yaml():
         except FileExistsError:
             index += 1
             filename = folder / f"{basename}-{index}.yaml"
-    print(f"Fichier joueur créé : {filename}", flush=True)
+    print(tr('Player file created: {value0}', value0=filename), flush=True)
 
 
 def read_manifest(path):
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     if data.get("game", LEGACY_GAME) not in (GAME, LEGACY_GAME):
-        raise ValueError("Ce fichier appartient à un autre jeu Archipelago.")
+        raise ValueError(tr('This file belongs to another Archipelago game.'))
     seed = data["seed_file"]
     token = hashlib.sha256(f"{data['room']}/{data['player']}/{seed['checksum']}".encode()).hexdigest()
     if (data["protocol"] != PROTOCOL or data["token"] != token
             or seed["generator"] != "ootrr-core 0.8.1" or seed["format"] != "ootrr-seed"):
-        raise ValueError("Fichier de joueur ou version incompatible.")
+        raise ValueError(tr('Incompatible player file or version.'))
     allowed=set(CHESTS) | (set(SHOP_CHECKS) if data.get("kokiri_shop_checks") else set())
     if len(set(data["checks"])) != len(data["checks"]) or not set(data["checks"]) <= allowed:
-        raise ValueError("Liste de coffres inconnue.")
+        raise ValueError(tr('Unknown chest list.'))
     mode = data.get("reward_mode", "legacy_gear")
     if mode not in ("legacy_gear", "all_chest_rewards", "all_locations"):
-        raise ValueError("Mode de récompenses Archipelago inconnu.")
+        raise ValueError(tr('Unknown Archipelago reward mode.'))
     rewards=dict(seed["placements"])
     if data.get("kokiri_shop_checks"):
         shops=seed.get("shops",{})
         if not all(name in shops for name in SHOP_CHECKS):
-            raise ValueError("La seed ne contient pas les huit achats Kokiri.")
+            raise ValueError(tr('The seed does not contain all eight Kokiri purchases.'))
         rewards.update({name:shops[name]["item"] for name in SHOP_CHECKS})
     if not set(data["checks"]) <= rewards.keys():
-        raise ValueError("Un coffre Archipelago est absent de la seed OOTRR.")
+        raise ValueError(tr('An Archipelago chest is missing from the OOTRR seed.'))
     if mode in ("all_chest_rewards", "all_locations"):
         if bool(data.get("local_items",False)) != (mode=="all_locations"):
-            raise ValueError("Le mode des objets locaux ne correspond pas à la salle.")
+            raise ValueError(tr("Local-item settings do not match this room's mode."))
         expected = {n: rewards[n] for n in data["checks"]}
         if set(data["checks"]) != set(rewards).intersection(allowed):
-            raise ValueError("La liste des coffres Archipelago est incomplète.")
+            raise ValueError(tr('The Archipelago chest list is incomplete.'))
         if not set(expected.values()) <= ITEM_IDS.keys():
-            raise ValueError("La seed contient une récompense non prise en charge.")
+            raise ValueError(tr('The seed contains an unsupported reward.'))
     else:
         expected = {n: seed["placements"][n] for n in data["checks"] if seed["placements"][n] in GEAR}
     if expected != data["moved"]:
-        raise ValueError("Liste de récompenses incompatible avec la seed.")
+        raise ValueError(tr('The reward list does not match the seed.'))
     return data
 
 
@@ -101,18 +103,18 @@ def choose(label, suffix=None, folder=False):
             import tkinter as tk
             from tkinter import filedialog
         except ImportError:
-            return Path(input("Chemin complet : ").strip().strip(chr(34))).resolve()
+            return Path(input(tr('Full path: ')).strip().strip(chr(34))).resolve()
         root = tk.Tk()
         root.withdraw()
         try:
             result = (filedialog.askdirectory(title=label) if folder else
-                      filedialog.askopenfilename(title=label, filetypes=[(label, suffix or "*"), ("Tous", "*")]))
+                      filedialog.askopenfilename(title=label, filetypes=[(label, suffix or "*"), (tr('All files'), "*")]))
         finally:
             root.destroy()
     else:
         result = input("> ").strip().strip('"')
     if not result:
-        raise ValueError("Sélection annulée.")
+        raise ValueError(tr('Selection cancelled.'))
     return Path(result).resolve()
 
 
@@ -128,13 +130,24 @@ def patch_request(data):
     return {"files": files}
 
 
+def preparation_settings(settings, data):
+    """Bind text localization to the player's canonical seed, never UI defaults."""
+    result = dict(settings)
+    seed = data.get("seed_file", {})
+    if "settings" in seed:
+        result["_seed_settings"] = seed["settings"]
+    else:
+        result.pop("_seed_settings", None)
+    return result
+
+
 def build(root, settings, data):
     root.mkdir(parents=True,exist_ok=True)
     dest = root / "mods"
     if dest.is_dir() and (dest / "Archipelago" / "romfs").is_dir():
         return
     if dest.exists():
-        raise ValueError(f"Dossier de mod incomplet. Déplace-le pour réessayer : {dest}")
+        raise ValueError(tr('Incomplete mod folder. Move it aside to retry: {value0}', value0=dest))
     with tempfile.TemporaryDirectory(dir=root, prefix="build-") as tmp:
         scratch = Path(tmp)
         native = scratch / "room.ootrr"
@@ -142,7 +155,7 @@ def build(root, settings, data):
         stage = scratch / "mods"
         romfs = Path(settings["romfs"])
         if not (romfs / "Pack" / "ZsDic.pack.zs").is_file():
-            raise ValueError("Sélectionne le dossier romfs qui contient Pack et Model.")
+            raise ValueError(tr('Select the romfs folder containing Pack and Model.'))
         for name, original in settings.get("other_tables", {}).items():
             table = stage / name / "romfs" / install_mod.REST
             table.parent.mkdir(parents=True,exist_ok=True)
@@ -183,7 +196,7 @@ def spawn_game(root, settings, live):
     args = [str(game), *([str(image)] if image else []), "--romfs", settings["romfs"], "--user", str(root / "user")]
     if os.name != "nt" or game.name.lower() not in ("triforce.exe", "hookshot.exe") or image is None:
         live.enabled = False
-        print("Livraison sur sauvegarde. Le mode en jeu nécessite un port Windows compatible avec les commandes d’inventaire.", flush=True)
+        print(tr('Save-based delivery. Live delivery requires a Windows port supporting inventory commands.'), flush=True)
         return subprocess.Popen(args, cwd=game.parent, env=env)
     live.input.write_bytes(b"")
     env["HOS_INPUT_LIVE"] = str(live.input)
@@ -230,7 +243,7 @@ class Session:
         if (slot_data.get("protocol") != PROTOCOL or slot_data.get("token") != self.data["token"]
                 or msg.get("slot") != self.data["player"] or
                 set(slot_data.get("checks", [])) != {LOCATION_IDS[n] for n in self.data["checks"]}):
-            raise ValueError("Le fichier joueur et le slot du serveur appartiennent à deux générations différentes.")
+            raise ValueError(tr('The player file and server slot belong to different generations.'))
         self.checked = set(msg["checked_locations"])
         self.reported = set(self.checked)
         self.auth = True
@@ -241,7 +254,7 @@ class Session:
         origins = [(entry["player"], entry["location"]) if isinstance(entry, dict) else (entry[2], entry[1])
                    for entry in entries]
         if any(v not in BY_ID for v in ids):
-            raise ValueError("Objet reçu inconnu. Vérifie la version de l’APWorld.")
+            raise ValueError(tr('Unknown received item. Check the APWorld version.'))
         if index < 0 or index > len(self.history) or (not self.synced and index != 0):
             return False
         end = index + len(ids)
@@ -253,51 +266,54 @@ class Session:
             self.history.extend(ids[max(0, old-index):])
             self.origins.extend(origins[max(0, old-index):])
             counts = Counter(BY_ID[v] for v in self.history[old:])
-            print("Reçu pour ton monde : " + ", ".join(f"{n} ×{count}" if count > 1 else n for n,count in counts.items()), flush=True)
+            print(tr('Received for your world: ') + ", ".join(
+                f"{item_name(n, get_language())} ×{count}" if count > 1 else item_name(n, get_language())
+                for n,count in counts.items()), flush=True)
             if FILLER in counts:
-                print("Les rubis bleus seront crédités à la synchronisation de la sauvegarde.", flush=True)
+                print(tr('Blue rupees will be credited when the save is synchronized.'), flush=True)
         self.synced = True
         return True
 
     def show_items(self, query):
         if not self.synced:
-            print("L’historique des objets est en cours de synchronisation.", flush=True)
+            print(tr('Item history is being synchronized.'), flush=True)
             return
         cursor = history_cursor(self.ledger)
         found = False
         for i, (code, (player, location)) in enumerate(zip(self.history, self.origins)):
             name = BY_ID[code]
+            display = item_name(name, get_language())
             origin = self.room.origin(player, location)
-            if query.casefold() not in (name + " " + origin).casefold():
+            if query.casefold() not in (name + " " + display + " " + origin).casefold():
                 continue
             if name == FILLER:
-                state = "traité sur sauvegarde" if i < cursor else "à créditer à la fermeture"
+                state = tr('applied to save') if i < cursor else tr('to credit after closing')
             elif name in self.saved_gear:
-                state = "présent dans la sauvegarde"
+                state = tr('present in save')
             elif self.live and name in self.live.finished:
-                state = "confirmé en jeu"
+                state = tr('confirmed in game')
             elif self.live and name in self.live.deferred:
-                state = "livraison différée"
+                state = tr('delivery deferred')
             else:
-                state = "en attente"
-            print(f"{name} | {origin} | {state}", flush=True)
+                state = tr('pending')
+            print(f"{display} | {origin} | {state}", flush=True)
             found = True
         if not found:
-            print("Aucun objet reçu correspondant.", flush=True)
+            print(tr('No matching received item.'), flush=True)
 
     def show_chests(self, query):
         checks = self.data["checks"]
         count = sum(LOCATION_IDS[name] in self.checked for name in checks)
-        print(f"{count}/{len(checks)} coffres validés par le serveur.", flush=True)
+        print(tr('{value0}/{value1} chests checked by the server.', value0=count, value1=len(checks)), flush=True)
         if self.slot == "auto" and self.stamp is None:
-            print("En attente d’une sauvegarde identifiable. Sauvegarde dans Zelda pour actualiser la date interne.", flush=True)
+            print(tr('Waiting for an identifiable save. Save in Zelda to update its internal timestamp.'), flush=True)
         if query:
             matches = [name for name in checks if query.casefold() in name.casefold()]
             for name in matches:
-                status = "validé" if LOCATION_IDS[name] in self.checked else "à faire"
+                status = tr('checked') if LOCATION_IDS[name] in self.checked else tr('unchecked')
                 print(f"{name} | {status}", flush=True)
             if not matches:
-                print("Aucun coffre correspondant.", flush=True)
+                print(tr('No matching chest.'), flush=True)
 
     def observe(self):
         p = save_path(self.root / "user", self.slot, self.slots_dir)
@@ -315,7 +331,7 @@ class Session:
         if self.resolved_slot != p.parent.name:
             self.resolved_slot = p.parent.name
             if self.slot == "auto":
-                print("Sauvegarde suivie : " + self.resolved_slot, flush=True)
+                print(tr('Tracked save: ') + self.resolved_slot, flush=True)
             if self.live:
                 self.live.finished.clear()
         self.opend = snap.checks(self.data["checks"])
@@ -337,20 +353,20 @@ class Session:
             def publish():
                 assets = config.get("assets", self.root)
                 try:
-                    source = prepare(assets, config, roster, self.data["moved"])
+                    source = prepare(assets, preparation_settings(config, self.data), roster, self.data["moved"])
                 except Exception as exc:
                     import traceback
                     diagnostic=self.root/"medaillons-diagnostic.txt"
                     diagnostic.write_text(traceback.format_exc(),encoding="utf-8")
                     if self.data.get("reward_mode") in ("all_chest_rewards", "all_locations"):
-                        raise ValueError(f"Préparation Archipelago impossible ; le mod installé est conservé. Détails : {diagnostic}") from exc
-                    print(f"Médaillons 3D indisponibles ({exc}). Détails : {diagnostic}",flush=True)
+                        raise ValueError(tr('Archipelago preparation failed; the installed mod is preserved. Details: {value0}', value0=diagnostic)) from exc
+                    print(tr('3D medals unavailable ({value0}). Details: {value1}', value0=exc, value1=diagnostic),flush=True)
                     source = assets / "mods"
                 if config.get("mods_dir"):
                     if config.get("native"):
                         native_setup.save_session(self.root,config,self.data,roster)
                     dest = install_mod.install(source, Path(config["mods_dir"]), self.data["token"])
-                    print(f"Mod installé : {dest}",flush=True)
+                    print(tr('Mod installed: {value0}', value0=dest),flush=True)
                     return dest.parent
                 return source
             self.visual.build_task = asyncio.create_task(asyncio.to_thread(publish))
@@ -359,7 +375,7 @@ class Session:
         try:
             self.visual.mods = self.visual.build_task.result()
         except OSError as exc:
-            raise ValueError(f"Installation du mod impossible : {exc}") from exc
+            raise ValueError(tr('Unable to install the mod: {value0}', value0=exc)) from exc
         return True
 
     async def tick(self, send, config):
@@ -377,7 +393,7 @@ class Session:
             if not self.slots_dir:
                 raise
             if str(exc) != getattr(self, "last_save_error", None):
-                print(f"Sauvegarde du port non lisible : {exc}", flush=True)
+                print(tr("Unable to read the port's save: {value0}", value0=exc), flush=True)
                 self.last_save_error = str(exc)
             self.manual_sync = False
             return
@@ -386,11 +402,11 @@ class Session:
             if new:
                 await send({"cmd":"LocationChecks", "locations": sorted(new)})
                 self.reported.update(new)
-                print("Coffres envoyés : " + ", ".join(n for n in self.data["checks"] if LOCATION_IDS[n] in new), flush=True)
+                print(tr('Chests sent: ') + ", ".join(n for n in self.data["checks"] if LOCATION_IDS[n] in new), flush=True)
             if (self.local_goal or self.manual_goal) and not self.sent_goal:
                 await send({"cmd":"StatusUpdate", "status":30})
                 self.sent_goal = True
-                print("Victoire envoyée à Archipelago.", flush=True)
+                print(tr('Victory sent to Archipelago.'), flush=True)
         running = self.process is not None and self.process.poll() is None
         if not self.auth or not self.synced:
             return
@@ -399,16 +415,15 @@ class Session:
         if self.slots_dir is not None:
             if self.pending_launch:
                 self.pending_launch = False
-                print("Ouvre la partie dans ton launcher. Les coffres sont lus à chaque sauvegarde. "
-                      "Pour recevoir les objets, ferme le jeu puis tape sync ferme.",flush=True)
+                print(tr('Open the game in your launcher. Chests are read on each save. To receive items, close the game and enter sync closed.'),flush=True)
             if self.manual_sync:
                 self.manual_sync = False
                 try:
                     applied = apply_history(self.ledger, self.slot, self.history, self.slots_dir)
                 except (PermissionError, BlockingIOError):
                     applied = False
-                print("Inventaire synchronisé. Tu peux relancer le jeu." if applied else
-                      "Aucune sauvegarde disponible pour cette synchronisation.",flush=True)
+                print(tr('Inventory synchronized. You can restart the game.') if applied else
+                      tr('No save is available for this synchronization.'),flush=True)
             return
         if running:
             if self.live and self.live.enabled and self.stamp:
@@ -420,12 +435,12 @@ class Session:
                         self.live.tick(wanted)
                     elif not self.ambiguous_slot:
                         self.ambiguous_slot = True
-                        print("Plusieurs fichiers Zelda dans ce profil. Livraison à la fermeture pour respecter le fichier choisi.", flush=True)
+                        print(tr('Multiple Zelda files in this profile. Items will be delivered after closing to respect the selected file.'), flush=True)
             return
         if self.process is not None:
             self.process = None
             self.visual.hud.close()
-            print("Le jeu est fermé. Tape jouer pour reprendre.", flush=True)
+            print(tr('The game is closed. Enter play to resume.'), flush=True)
         marker = (self.stamp, len(self.history))
         needs_delivery = self.history and self.cache != marker
         if needs_delivery:
@@ -436,17 +451,17 @@ class Session:
             if applied:
                 self.observe()
                 self.cache = (self.stamp, len(self.history))
-                print("Inventaire synchronisé.", flush=True)
+                print(tr('Inventory synchronized.'), flush=True)
             elif save_path(self.root / "user", self.slot):
                 if self.pending_launch:
-                    print("Le jeu doit terminer une sauvegarde en attente au prochain démarrage.", flush=True)
+                    print(tr('The game must finish a pending save on its next start.'), flush=True)
         if self.pending_launch:
             try:
                 with exclusive(self.root / "user" / "save.lock"):
                     pass
             except BlockingIOError:
                 self.pending_launch = False
-                print("La partie de cette salle est déjà ouverte.", flush=True)
+                print(tr("This room's game is already running."), flush=True)
                 return
             self.pending_launch = False
             self.live = LiveInventory(self.root)
@@ -455,16 +470,16 @@ class Session:
             if self.visual.active:
                 self.visual.hud.start(self.process.pid)
             if self.slot == "auto":
-                print("Jeu lancé. Continue ta partie la plus récente. Le suivi utilise la date enregistrée par Zelda.", flush=True)
+                print(tr("Game started. Continue your most recent file. Tracking uses Zelda's recorded timestamp."), flush=True)
             else:
-                print(f"Jeu lancé. Crée ou charge le fichier de jeu correspondant à {self.slot}.", flush=True)
-            print("Équipements et chants reçus en direct sur les versions compatibles. "
-                  "Sur une nouvelle partie, sauvegarde une première fois.", flush=True)
+                print(tr('Game started. Create or load the game file for {value0}.', value0=self.slot), flush=True)
+            print(tr('Equipment and songs are received live on compatible versions. Save once in a new game.'), flush=True)
 
 
 async def play(root, slot, data, config, uri, password, headless=False):
     from websockets.legacy.client import connect
     from websockets.exceptions import ConnectionClosed
+    set_language(detect_language(root, config))
     s = Session(root, slot, data)
     s.configure_save(config)
     if config.get("install_only") or s.slots_dir:
@@ -481,7 +496,7 @@ async def play(root, slot, data, config, uri, password, headless=False):
             except (OSError, RuntimeError):
                 pass
         threading.Thread(target=read_commands, daemon=True).start()
-        print("Tape aide pour les commandes. Par exemple : objets, coffres Mido, !hint ou dire Salut.", flush=True)
+        print(tr('Enter help for commands. Examples: items, chests Mido, !hint or say Hello.'), flush=True)
         s.pending_launch = True
     while not s.want_exit:
         try:
@@ -502,13 +517,13 @@ async def play(root, slot, data, config, uri, password, headless=False):
                         cmd = m["cmd"]
                         if cmd == "RoomInfo":
                             if m.get("seed_name") != data["room"]:
-                                raise ValueError("Mauvaise salle Archipelago pour ce fichier.")
+                                raise ValueError(tr('Wrong Archipelago room for this player file.'))
                             await send({"cmd":"Connect", "name":data["slot"], "game":data.get("game", LEGACY_GAME), "uuid":str(uuid.uuid4()),
                                         "password":password or None, "items_handling":5 if data.get("local_items") else 7,
                                         "tags":["AP"], "slot_data":True,
                                         "version":{"major":0,"minor":6,"build":7,"class":"Version"}})
                         elif cmd == "ConnectionRefused":
-                            raise ValueError("Connexion refusée : " + ", ".join(m["errors"]))
+                            raise ValueError(tr('Connection refused: ') + ", ".join(m["errors"]))
                         elif cmd == "Connected":
                             s.connected(m)
                             needed = s.room.connected(m)
@@ -516,7 +531,7 @@ async def play(root, slot, data, config, uri, password, headless=False):
                                 await send({"cmd": "LocationScouts", "locations": sorted(s.visual.checks), "create_as_hint": 0})
                             if needed:
                                 await send({"cmd": "GetDataPackage", "games": needed})
-                            print(f"Connecté au slot {data['slot']} ({len(data['checks'])} coffres).", flush=True)
+                            print(tr('Connected to slot {value0} ({value1} chests).', value0=data['slot'], value1=len(data['checks'])), flush=True)
                             # Core sends no ReceivedItems for an empty queue. Get is an ordered fence.
                             await send({"cmd":"Sync"}, {"cmd":"Get", "keys":[fence]})
                         elif cmd == "ReceivedItems" and s.auth:
@@ -538,47 +553,46 @@ async def play(root, slot, data, config, uri, password, headless=False):
                         elif cmd == "PrintJSON":
                             s.room.show(m)
                         elif cmd == "InvalidPacket":
-                            s.room.show({"data": [{"text": m.get("text", "Requête refusée par le serveur.")}]})
+                            s.room.show({"data": [{"text": m.get("text", tr('The server refused the request.'))}]})
                     while not queue.empty():
                         line = queue.get_nowait()
                         action, _, query = line.partition(" ")
                         query = query.strip()
-                        if line.casefold() == "quitter":
+                        if line.casefold() in {"quit", "quitter"}:
                             s.want_exit = True
-                        elif line.casefold() == "jouer":
+                        elif line.casefold() in {"play", "jouer"}:
                             s.pending_launch = s.process is None or s.process.poll() is not None
-                        elif line.casefold() == "sync ferme" and s.slots_dir:
+                        elif line.casefold() in {"sync closed", "sync ferme"} and s.slots_dir:
                             s.manual_sync = True
                         elif line.casefold() == "notif" and s.slots_dir:
-                            print("Les notifications de ce port sont dans cette console.",flush=True)
+                            print(tr('Notifications for this port are shown in this console.'),flush=True)
                         elif line.casefold() == "notif":
-                            s.visual.hud.notify("Test de la notification", "Médaillon Archipelago",
-                                                "Reviens dans la fenêtre de Zelda pour voir ce message.", "out")
-                            print("Notification de test préparée pour Zelda.", flush=True)
+                            s.visual.hud.notify(tr('Notification test'), tr('Archipelago medal'),
+                                                tr('Return to the Zelda window to see this message.'), "out")
+                            print(tr('Test notification prepared for Zelda.'), flush=True)
                         elif line.casefold() == "ganon":
-                            print("Après avoir vaincu Ganon, tape confirmer ganon.", flush=True)
-                        elif line.casefold() == "confirmer ganon":
+                            print(tr('After defeating Ganon, enter confirm ganon.'), flush=True)
+                        elif line.casefold() in {"confirm ganon", "confirmer ganon"}:
                             s.manual_goal = True
-                        elif action.casefold() == "objets":
+                        elif action.casefold() in {"items", "objets"}:
                             s.show_items(query)
-                        elif action.casefold() == "coffres" and s.auth:
+                        elif action.casefold() in {"chests", "coffres"} and s.auth:
                             s.show_chests(query)
-                        elif action.startswith("!") or (action.casefold() == "dire" and query):
+                        elif action.startswith("!") or (action.casefold() in {"say", "dire"} and query):
                             if s.auth:
                                 await send({"cmd": "Say", "text": line if action.startswith("!") else query})
                             else:
-                                print("Attends la connexion au serveur puis réessaie.", flush=True)
+                                print(tr('Wait for the server connection, then retry.'), flush=True)
                         elif line:
-                            print("Commandes locales : jouer, quitter, objets [filtre], coffres [filtre], notif, sync ferme, ganon. "
-                                  "Pour la salle : dire <message>, !help, !hint.", flush=True)
+                            print(tr('Local commands: play, quit, items [filter], chests [filter], notif, sync closed, ganon. Room commands: say <message>, !help, !hint.'), flush=True)
                     await s.tick(send, config)
         except (ConnectionClosed, OSError, asyncio.TimeoutError) as exc:
-            print(f"Connexion interrompue ({exc}). Nouvel essai dans cinq secondes. Ctrl+C pour sortir.", flush=True)
+            print(tr('Connection interrupted ({value0}). Retrying in five seconds. Ctrl+C to exit.', value0=exc), flush=True)
             await asyncio.sleep(5)
 
 
 def launch_setup(mods):
-    setup = choose("Choisis l’exécutable de recompilation de ton port", "*.exe")
+    setup = choose(tr("Choose your port's build executable"), "*.exe")
     subprocess.run([str(setup)],cwd=setup.parent,env=dict(os.environ,HOS_MODS=str(mods)),check=True)
 
 
@@ -593,62 +607,63 @@ def main():
     p.add_argument("--ootrr")
     p.add_argument("--game")
     p.add_argument("--romfs")
-    p.add_argument("--save-slot", default="auto", help="Suit la dernière sauvegarde de la salle, ou fixe un slot_NN.")
+    p.add_argument("--save-slot", default="auto", help=tr("Track the room's latest save, or select a slot_NN."))
     p.add_argument("--build-only", action="store_true")
-    p.add_argument("--export-yaml", action="store_true", help="Prépare un YAML de joueur pour une nouvelle salle.")
-    p.add_argument("--setup", action="store_true", help="Ouvre l’outil de compilation du port avec le dossier de mods de cette salle.")
-    p.add_argument("--mods", help="Dossier Mod folder utilisé dans OOTRR.")
+    p.add_argument("--export-yaml", action="store_true", help=tr('Create a player YAML for a new room.'))
+    p.add_argument("--setup", action="store_true", help=tr("Open the port's build tool with this room's mod folder."))
+    p.add_argument("--mods", help=tr('Mod folder used by OOTRR.'))
     p.add_argument("--choose-mods", action="store_true")
     p.add_argument("--choose-port", action="store_true")
     p.add_argument("--host", choices=install_mod.HOSTS)
-    p.add_argument("--install-only", action="store_true", help="Installe le mod complet de la salle sans lancer le jeu.")
-    p.add_argument("--native-install", action="store_true", help="Prépare le mod avec la connexion intégrée au jeu.")
-    p.add_argument("--external", action="store_true", help="Lance le jeu toi-même et suis sa sauvegarde.")
-    p.add_argument("--saves", help="Dossier contenant les slot_00, slot_01… du port externe.")
+    p.add_argument("--install-only", action="store_true", help=tr("Install the room's complete mod without starting the game."))
+    p.add_argument("--native-install", action="store_true", help=tr('Prepare the mod with the in-game Archipelago connection.'))
+    p.add_argument("--external", action="store_true", help=tr('Start the game yourself and track its save.'))
+    p.add_argument("--saves", help=tr('External port folder containing slot_00, slot_01 and so on.'))
     args = p.parse_args()
     if args.native_install:
         args.install_only=True
         if os.name!="nt":
-            p.error("La configuration du port natif s’effectue sur le PC Windows du jeu.")
+            p.error(tr('Configure the native port on the Windows game PC.'))
     if args.export_yaml:
         export_yaml()
         return
     if args.save_slot != "auto" and not re.fullmatch(r"slot_[0-9]{2}", args.save_slot):
-        p.error("--save-slot accepte auto ou un nom comme slot_04")
-    manifest = args.manifest or choose("Choisis ton fichier joueur Archipelago", "*.apootrr")
+        p.error(tr('--save-slot accepts auto or a name such as slot_04'))
+    manifest = args.manifest or choose(tr('Choose your Archipelago player file'), "*.apootrr")
     data = read_manifest(manifest)
     if data.get("reward_mode") in ("all_chest_rewards", "all_locations") and not (args.native_install or args.build_only):
-        raise ValueError("Cette salle utilise tous les objets de coffre. Configure son mod natif avec Configurer-le-mod-Archipelago.cmd, puis lance Triforce.")
+        raise ValueError(tr('This room uses all chest rewards. Configure its native mod, then start Triforce.'))
     base = Path(os.getenv("LOCALAPPDATA") or (Path.home() / ".local/share")) / "OOTRR-Archipelago"
     root = base / data["token"]
     (root / "user").mkdir(parents=True, exist_ok=True)
     config_path = base / "outils.json"
     cfg = json.loads(config_path.read_text(encoding="utf-8")) if config_path.exists() else {}
+    set_language(detect_language(root, cfg))
     host = args.host or ("nx2navi" if args.native_install else cfg.get("host", "nx2navi"))
     if args.choose_port:
-        print("1. Triforce ou NX2Navi   2. Hookshot   3. Longshot")
+        print(tr('1. Triforce or NX2Navi   2. Hookshot   3. Longshot'))
         choices = {"1":"nx2navi","2":"hookshot","3":"longshot"}
         while True:
-            selected = input("Numéro du port : ").strip()
+            selected = input(tr('Port number: ')).strip()
             if selected in choices:
                 host = choices[selected]
                 break
-            print("Entre 1, 2 ou 3.")
+            print(tr('Enter 1, 2 or 3.'))
     cfg["host"] = host
     if args.native_install and host != "nx2navi":
-        raise ValueError("Cette intégration native nécessite les outils du port Triforce Windows. Utilise sa configuration de mods.")
+        raise ValueError(tr('This native integration requires Triforce Windows tools. Use its mod setup.'))
     profiles = cfg.setdefault("ports",{})
     profile = profiles.setdefault(host,{})
     mods = args.mods or profile.get("mods")
     if args.choose_mods or (args.choose_port and not args.mods):
-        mods = choose("Choisis le même dossier que Mod folder dans OOTRR", folder=True)
+        mods = choose(tr('Choose the same folder as Mod folder in OOTRR'), folder=True)
     if not mods and host == "nx2navi" and not args.native_install:
         mods = install_mod.known_folder(base.parent)
     if not mods:
-        mods = choose("Choisis le même dossier que Mod folder dans OOTRR", folder=True)
+        mods = choose(tr('Choose the same folder as Mod folder in OOTRR'), folder=True)
     for key, value, label, folder in (
-            ("ootrr", args.ootrr, "Choisis ootrr.exe dans la version portable 0.8.1", False),
-            ("romfs", args.romfs, "Choisis le dossier romfs du jeu en 1.1.1", True)):
+            ("ootrr", args.ootrr, tr('Choose ootrr.exe from portable version 0.8.1'), False),
+            ("romfs", args.romfs, tr("Choose the game's romfs folder, version 1.1.1"), True)):
         old = value or cfg.get(key)
         target = Path(old).resolve() if old else None
         if not target or not (target.is_dir() if folder else target.is_file()):
@@ -660,7 +675,7 @@ def main():
     if not (args.install_only or args.build_only or args.setup or external):
         exe = args.game or profile.get("exe") or (cfg.get("exe") if host == "nx2navi" else None)
         if not exe or not Path(exe).is_file():
-            exe = choose("Choisis l’exécutable de ton port ou son launcher", "*.exe")
+            exe = choose(tr("Choose your port's executable or launcher"), "*.exe")
         profile["exe"] = str(Path(exe).resolve())
         external = Path(exe).name.lower() not in ("triforce.exe","hookshot.exe","triforcesetup.exe","hookshotsetup.exe")
     write_json(config_path,cfg)
@@ -677,10 +692,10 @@ def main():
         selection = root / ("sauvegarde-" + host + ".json")
         slots = args.saves or (json.loads(selection.read_text()) if selection.exists() else None)
         if not slots or not Path(slots).is_dir():
-            slots = choose("Choisis le dossier de cette partie contenant slot_00, slot_01…", folder=True)
+            slots = choose(tr("Choose this game's folder containing slot_00, slot_01 and so on"), folder=True)
         slots = Path(slots).resolve()
         if not any(slots.glob("slot_[0-9][0-9]/progress.sav")):
-            raise ValueError("Choisis le dossier contenant les slot_XX de Zelda. Pour une nouvelle partie, installe d’abord le mod, lance le jeu et sauvegarde.")
+            raise ValueError(tr("Choose the folder containing Zelda's slot_XX files. For a new game, install the mod, start the game and save first."))
         write_json(selection,str(slots))
         runtime["slots_dir"] = str(slots)
     lockdir = install_mod.state_dir(mods)
@@ -694,20 +709,20 @@ def main():
         runtime.update(assets=assets,other_tables=inputs)
         build(assets,runtime,data)
         if args.build_only:
-            if install_mod.marker(mods/"Archipelago").get("room") != data["token"]:
-                install_mod.install(assets/"mods",mods,data["token"])
-            print("Mod de base disponible dans",mods/"Archipelago",flush=True)
+            source=prepare(assets,preparation_settings(runtime,data),{},data["moved"])
+            install_mod.install(source,mods,data["token"])
+            print(tr('Base mod available in'),mods/"Archipelago",flush=True)
             return
         if args.setup and install_mod.marker(mods/"Archipelago").get("room")==data["token"]:
             launch_setup(mods)
             return
         default=previous.get("Server","127.0.0.1:38281") if args.native_install else ""
-        uri = args.server or input(f"Adresse du serveur{(' ['+default+']') if default else ''} : ").strip() or default
+        uri = args.server or input(tr('Server address{value0} : ', value0=' [' + default + ']' if default else '')).strip() or default
         if "://" not in uri:
             uri = "ws://" + uri
         if urlsplit(uri).scheme not in ("ws","wss") or not urlsplit(uri).hostname:
-            raise ValueError("Adresse WebSocket invalide.")
-        password = getpass.getpass("Mot de passe de la salle (Entrée si aucun) : ")
+            raise ValueError(tr('Invalid WebSocket address.'))
+        password = getpass.getpass(tr('Room password (Enter if none): '))
         if args.native_install:
             runtime.update(server=uri,protected=native_setup.protect_password(password))
             cfg["native_tools"]=str(native_setup.install_tools(base,choose,cfg.get("native_tools")))
@@ -715,11 +730,11 @@ def main():
         asyncio.run(play(root, args.save_slot, data, runtime, uri, password))
         if args.native_install:
             write_json(base/"derniere-salle-native.json",data["token"])
-            print("Configuration terminée. Le client de préparation se déconnecte.",flush=True)
+            print(tr('Setup complete. The preparation client is disconnecting.'),flush=True)
             if not native_setup.compiled_game(Path(cfg["romfs"]),cfg.get("native_tools")):
-                print("Dans Triforce Setup, recompile le jeu une fois avec ces outils, puis clique sur Lancer.",flush=True)
+                print(tr('Rebuild the game once in Triforce Setup with these tools, then click Launch.'),flush=True)
             else:
-                print("Le jeu contient déjà le module Archipelago. Tu peux cliquer sur Lancer.",flush=True)
+                print(tr('The game already contains the Archipelago module. You can click Launch.'),flush=True)
         if args.setup:
             launch_setup(mods)
 
@@ -730,5 +745,5 @@ def cli():
     except KeyboardInterrupt:
         return
     except Exception as exc:
-        print("Erreur :", exc, file=sys.stderr)
+        print(tr('Error:'), exc, file=sys.stderr)
         sys.exit(1)

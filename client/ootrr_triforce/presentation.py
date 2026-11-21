@@ -1,4 +1,6 @@
 """Room-scoped visible AP events. Scouts never announce an unopened chest."""
+from .i18n import tr, get_language
+from .item_names import item_name
 import json
 from .catalog import ITEM_IDS, FILLER, LOCATION_IDS
 from .hud import Hud
@@ -46,10 +48,11 @@ class Presentation:
                 continue
             names = self.room.names.get(self.room.games.get(owner), {}).get("item_id", {})
             if item not in names or owner not in self.stable_names:
-                raise ValueError("Le serveur n’a pas fourni le nom d’un objet ou de son destinataire.")
+                raise ValueError(tr('The server did not provide an item or recipient name.'))
             name,player=self.room.name("item_id",item,owner),self.stable_names[owner]
             result[self.checks[loc]] = ({"item":name,"player":player,"owner":owner,"item_id":item,
-                                        "local":owner==self.room.slot} if self.local_items else (name,player))
+                                        "local":owner==self.room.slot,"game":self.room.games.get(owner)}
+                                       if self.local_items else (name,player))
         return result
 
     def receipts(self, history, origins):
@@ -65,10 +68,10 @@ class Presentation:
         for i in range(self.cursor,len(history)):
             name = ITEMS[history[i]]
             sender = self.room.name("player_id",origins[i][0],self.room.slot)
-            detail = "De " + sender
+            detail = tr('From ') + sender
             if name == FILLER:
-                detail += " · Rubis crédités à la synchronisation de la sauvegarde"
-            self.hud.notify("Objet reçu via Archipelago",name,detail,"in")
+                detail += tr(' · Rupees credited when the save is synchronized')
+            self.hud.notify(tr('Item received via Archipelago'),item_name(name,get_language()),detail,"in")
         self.cursor = len(history)
         write_json(self.path,self.cursor)
 
@@ -80,5 +83,5 @@ class Presentation:
         if finder != self.room.slot or owner == finder or loc in self.sent or loc not in self.checks:
             return
         self.sent.add(loc)
-        self.hud.notify("Objet envoyé à " + self.room.name("player_id",owner,finder),
-                        self.room.name("item_id",item,owner),self.checks[loc],"out")
+        self.hud.notify(tr('Item sent to ') + self.room.name("player_id",owner,finder),
+                        self.room.display_name("item_id",item,owner),self.checks[loc],"out")

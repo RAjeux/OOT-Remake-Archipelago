@@ -43,12 +43,12 @@ class ReleaseVerificationTests(unittest.TestCase):
     def test_original_and_nested_tampering(self):
         self.run_verify()
         self.write_release(nested=b"tampered")
-        with self.assertRaisesRegex(SystemExit, "member.py.*contenu"):
+        with self.assertRaisesRegex(SystemExit, "member.py.*content"):
             self.run_verify()
 
     def test_external_tampering(self):
         self.write_release(guide=b"tampered")
-        with self.assertRaisesRegex(SystemExit, "Guide.txt.*contenu"):
+        with self.assertRaisesRegex(SystemExit, "Guide.txt.*content"):
             self.run_verify()
 
     def test_reference_cannot_be_overwritten(self):
@@ -62,7 +62,7 @@ class ReleaseVerificationTests(unittest.TestCase):
         with warnings.catch_warnings(), ZipFile(self.archive, "a") as archive:
             warnings.simplefilter("ignore", UserWarning)
             archive.writestr("Guide.txt", b"duplicate")
-        with self.assertRaisesRegex(ValueError, "double"):
+        with self.assertRaisesRegex(ValueError, "Duplicate"):
             self.run_verify()
 
 

@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Assembler le pack Windows",
+      "label": "Build the Windows release",
       "type": "process",
       "command": "python3",
       "args": [
@@ -25,7 +25,7 @@
       }
     },
     {
-      "label": "Vérifier la distribution courante",
+      "label": "Verify the current release",
       "type": "process",
       "command": "python3",
       "args": [
@@ -44,7 +44,7 @@
       "problemMatcher": []
     },
     {
-      "label": "Exécuter les tests locaux",
+      "label": "Run portable tests",
       "type": "process",
       "command": "python3",
       "args": [
@@ -63,7 +63,7 @@
       "problemMatcher": []
     },
     {
-      "label": "Recompiler le client natif Windows",
+      "label": "Rebuild the Windows native client",
       "type": "process",
       "command": "python3",
       "args": [
@@ -84,7 +84,7 @@
       "problemMatcher": []
     },
     {
-      "label": "Exécuter les tests réseau",
+      "label": "Run network tests",
       "type": "process",
       "command": "python3",
       "args": [

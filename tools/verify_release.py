@@ -15,7 +15,7 @@ CONTAINERS = ("ootrr_remake.apworld", "Client-OOT-Remake.pyz", "sources/Sources-
 def digests(archive):
     names = archive.namelist()
     if len(names) != len(set(names)):
-        raise ValueError("Membres ZIP en double.")
+        raise ValueError("Duplicate ZIP members.")
     return {name: hashlib.sha256(archive.read(name)).hexdigest() for name in sorted(names)}
 
 
@@ -32,20 +32,20 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--version", default=(ROOT / "VERSION").read_text(encoding="utf-8").strip())
     parser.add_argument("--record-reference", action="store_true",
-                        help="Enregistre une nouvelle référence sans remplacer une référence existante.")
+                        help="Record a new reference without overwriting an existing one.")
     args = parser.parse_args()
     if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.]+)?", args.version):
-        parser.error("Version invalide.")
+        parser.error("Invalid version.")
     reference = ROOT / f"tests/reference-{args.version}.json"
     current = inspect(ROOT / f"dist/Archipelago-OOT-Remake-{args.version}.zip")
     if args.record_reference:
         with reference.open("x", encoding="utf-8", newline="\n") as output:
             json.dump(current, output, indent=1, ensure_ascii=False)
             output.write("\n")
-        print(f"Nouvelle référence enregistrée : {reference.name}")
+        print(f"New reference recorded: {reference.name}")
         return
     if not reference.is_file():
-        sys.exit(f"Référence absente : {reference.name}. Utilise --record-reference après validation de cette version.")
+        sys.exit(f"Missing reference: {reference.name}. Use --record-reference after validating this version.")
     expected = json.loads(reference.read_bytes())
     errors = []
     for context in sorted(set(current) | set(expected)):
@@ -55,12 +55,12 @@ def main():
             if context == "fichiers" and name in CONTAINERS:
                 continue
             if name not in actual or name not in original:
-                errors.append(f"{context} / {name} (présence)")
+                errors.append(f"{context} / {name} (presence)")
             elif actual[name] != original[name]:
-                errors.append(f"{context} / {name} (contenu)")
+                errors.append(f"{context} / {name} (content)")
     if errors:
         sys.exit("\n".join(errors))
-    print(f"Distribution {args.version} conforme à sa référence, archives internes comprises.")
+    print(f"Release {args.version} matches its reference, including nested archives.")
 
 
 if __name__ == "__main__":

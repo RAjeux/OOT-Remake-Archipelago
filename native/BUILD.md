@@ -8,3 +8,5 @@ For a Windows x64 build, use Go with cgo enabled and a compatible x64 C compiler
     python write_digest.py archipelago.dll
 
 Ship the DLL and its corresponding digest header together. Changes to the digest or the bridge require a new local game build. The compiled game and its assets are produced on the player's PC.
+
+The host must provide `hos_desired_language()`. The bridge uses the selected Triforce game language for automatic French or English runtime text; unsupported languages fall back to English. This does not change AP item IDs, slot names, or chat messages.

@@ -8,7 +8,7 @@ from ootrr_triforce.catalog import FILLER, ITEM_IDS, ITEM_DATA
 from ootrr_triforce.live import POUCH
 
 if not POUCH.keys() <= ITEM_IDS.keys() or ITEM_IDS.keys() != ITEM_DATA.keys():
-    raise ValueError("Les recettes et identifiants Archipelago ne couvrent pas les mêmes objets.")
+    raise ValueError("Delivery recipes and Archipelago IDs do not cover the same items.")
 rows = [f"#define AP_RUPEE_ID {ITEM_IDS[FILLER]}", "static const char *ap_item_name16(int item) {", "    switch (item) {"]
 rows.extend(f'    case {ITEM_IDS[name]}: return "{actor}";' for name, actor in POUCH.items())
 rows.extend(["    default: return NULL;", "    }", "}", ""])

@@ -1,4 +1,6 @@
 """Install the opt-in runtime for a local Windows build, and bind one mod to one room."""
+from .i18n import tr, detect_language
+from .item_names import item_names
 import base64
 import ctypes
 import json
@@ -19,6 +21,9 @@ GAME_DATA = "GameData/GameDataList.Product.110.byml.zs"
 MARKER = "Archipelago/room-v1.txt"
 BUILD_MARK = b"OOTRR-AP native ABI 1"
 RT_FILES = ("ootrr_archipelago.inc", "ootrr_ap_items.inc", "ootrr_ap_digest.h")
+BOOTSTRAP = '    hos_mods_init(image);\n#ifdef _WIN32\n    if (!ap_boot16()) {\n        ap_boot_error16();\n        return 3;\n    }\n#endif\n'
+# Retain the exact old hook only to upgrade existing installations safely.
+LEGACY_BOOTSTRAP = '    hos_mods_init(image);\n#ifdef _WIN32\n    if (!ap_boot16()) {\n        hos_log("OOTRR-AP native ABI 1: activation impossible. Voir archipelago-jeu.log ou relancer la configuration.");\n        MessageBoxW(NULL,L"Le mod Archipelago est actif, mais sa salle ou son module est indisponible. Ferme l’ancien client et relance la configuration du mod.", L"Archipelago", MB_OK | MB_ICONERROR);\n        return 3;\n    }\n#endif\n'
 
 
 def cursor_hash(token):
@@ -59,21 +64,23 @@ def patch_source(original):
     text=original.decode("utf-8")
     nl="\r\n" if "\r\n" in text else "\n"
     text=text.replace("\r\n","\n")
+    normalized=text
+    text=text.replace(LEGACY_BOOTSTRAP,BOOTSTRAP)
     anchors=[
         ("static void oot_update_player_cheats(Ctx *c, uint64_t actor, uint64_t components) {",
          '#include "ootrr_archipelago.inc"\n\nstatic void oot_update_player_cheats(Ctx *c, uint64_t actor, uint64_t components) {'),
         ("    oot_inventory_refresh(c, now);","    oot_inventory_refresh(c, now);\n    if (ap_player16(c, actor, components, now)) ap_tick16(c, now);"),
-        ("    hos_mods_init(image);","    hos_mods_init(image);\n#ifdef _WIN32\n    if (!ap_boot16()) {\n        hos_log(\"OOTRR-AP native ABI 1: activation impossible. Voir archipelago-jeu.log ou relancer la configuration.\");\n        MessageBoxW(NULL,L\"Le mod Archipelago est actif, mais sa salle ou son module est indisponible. Ferme l’ancien client et relance la configuration du mod.\", L\"Archipelago\", MB_OK | MB_ICONERROR);\n        return 3;\n    }\n#endif\n")]
+        ("    hos_mods_init(image);",BOOTSTRAP)]
     prior=[new in text for _,new in anchors]
     if all(prior) and text.count("ap_tick16(")==1 and text.count("ap_player16(")==1 and text.count("ap_boot16(")==1:
-        return original
+        return original if text==normalized else text.replace("\n",nl).encode("utf-8")
     required=("oot_gd_int(", "oot_gd_set(", "oot_flag_state(", "oot_item_give(", "oot_item_get(", "oot_gamedata_bool(", "oot_capacity(", "oot_singleton(", "oot_pouch_count(", "hos_oot_is_player(", "hos_user_dir")
     # Upgrade the exact installed 0.1.6 hook without duplicating the bootstrap.
     previous="    oot_inventory_refresh(c, now);\n    ap_tick16(c, now);"
     if prior[0] and prior[2] and text.count(previous)==1 and text.count("ap_tick16(")==1 and text.count("ap_boot16(")==1 and all(name in text for name in required) and "ap_player16(" not in text:
         return text.replace(previous,anchors[1][1],1).replace("\n",nl).encode("utf-8")
     if any(prior) or "ap_boot16(" in text or not all(name in text for name in required) or any(text.count(old)!=1 for old,_ in anchors):
-        raise ValueError("Les sources de ce port n’exposent pas les fonctions attendues. Le port n’a pas été modifié.")
+        raise ValueError(tr("This port's sources do not expose the required functions. The port was not modified."))
     for old,new in anchors:
         text=text.replace(old,new,1)
     return text.replace("\n",nl).encode("utf-8")
@@ -104,18 +111,21 @@ def install_tools(base, chooser, configured=None):
     bundle=Path(sys.argv[0]).resolve().parent/"native"
     guess=Path(configured) if configured else base.parent/"Programs/Triforce/tools"
     if not (guess/"host/hos_main.c").is_file():
-        guess=chooser("Choisis le dossier tools de Triforce qui contient host et nx2",folder=True)
+        guess=chooser(tr('Choose the Triforce tools folder containing host and nx2'),folder=True)
     host=guess/"host"
     source=host/"hos_main.c"
     orig=source.read_bytes()
     new=patch_source(orig)
     if not (guess/"nx2/build.py").is_file() or "HOS_SHARE_NOTICE" not in (guess/"gpu/vk/vk_api.h").read_text(encoding="utf-8"):
-        raise ValueError("Outils Triforce incompatibles avec le client natif.")
+        raise ValueError(tr('Triforce tools are incompatible with the native client.'))
+    applet=host/"nn_applet.c"
+    if not applet.is_file() or "const char *hos_desired_language(void)" not in applet.read_text(encoding="utf-8"):
+        raise ValueError(tr('Triforce tools are incompatible with the native client.'))
     helpers={n:(bundle/n).read_bytes() for n in RT_FILES}
     digest=hashlib.sha256((bundle/"archipelago.dll").read_bytes()).digest()
     expected=("static const unsigned char ap_dll_sha16[32] = {"+",".join(map(str,digest))+"};\n").encode()
     if helpers["ootrr_ap_digest.h"]!=expected:
-        raise ValueError("Le module natif du ZIP est incomplet ou ne correspond pas à cette version.")
+        raise ValueError(tr("The ZIP's native module is incomplete or does not match this version."))
     if new!=orig:
         backup=source.with_name("hos_main.before-archipelago-"+hashlib.sha256(orig).hexdigest()[:12]+".bak")
         if not backup.exists():
@@ -137,11 +147,15 @@ def save_session(root, config, data, roster):
         row=roster.get(n,("",""))
         item,owner=(row["item"],row["player"]) if isinstance(row,dict) else row
         checks[LOCATION_IDS[n]]=dict(Name=n,Flags=CHECK_FLAGS[n],Item=item,Owner=owner)
+        if isinstance(row,dict) and row.get("game"):
+            checks[LOCATION_IDS[n]]["Game"]=row["game"]
     doc=dict(Room=data["room"],Slot=data["slot"],Game=data.get("game",LEGACY_GAME),Token=data["token"],Player=data["player"],Protocol=PROTOCOL,
              RewardMode=data.get("reward_mode","legacy_gear"),
              LocalItems=bool(data.get("local_items",False)),
              Server=config["server"],ProtectedPassword=config["protected"],UUID=previous.get("UUID") or str(uuid.uuid4()),
              CursorHash=cursor_hash(data["token"]),Baseline=config["baseline"],DeathLink=bool(data.get("death_link",False)),
+             Language=detect_language(root,config),
+             ItemNames={ITEM_IDS[n]:names for n,names in item_names().items() if n in ITEM_IDS},
              Items={i:n for n,i in ITEM_IDS.items()},Checks=checks)
     write_json(old,doc)
 

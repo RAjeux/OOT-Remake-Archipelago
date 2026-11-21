@@ -39,6 +39,26 @@ static HANDLE ap_verify16(const wchar_t *path) {
     return file;
 }
 
+static void ap_boot_error16(void) {
+    extern const char *hos_desired_language(void);
+    const char *language=hos_desired_language();
+    const int french=language && (!strcmp(language,"fr") || !strcmp(language,"fr-CA"));
+    hos_log("OOTRR-AP native ABI 1: activation failed. See archipelago-jeu.log or run the mod configuration again.");
+    MessageBoxW(NULL,french
+        ? L"Le mod Archipelago est actif, mais sa salle ou son module est indisponible. Ferme l'ancien client et relance la configuration du mod."
+        : L"The Archipelago mod is active, but its room or module is unavailable. Close any previous client and run the mod configuration again.",
+        L"Archipelago",MB_OK|MB_ICONERROR);
+}
+
+static int ap_start_client16(int (*start)(char*,char*),void (*set_language)(char*),char *root,char *token) {
+    if (!start || !set_language) return 0;
+    /* This is the same cached language used by nn::oe and the game's Mals.
+       HOS_LANGUAGE overrides language.txt; unsupported codes fall back to English. */
+    extern const char *hos_desired_language(void);
+    set_language((char*)hos_desired_language());
+    return start(root,token);
+}
+
 static int ap_boot16(void) {
     extern int hos_mods_romfs(const char *, char *, size_t);
     char marker[1024],token[80];
@@ -67,12 +87,13 @@ static int ap_boot16(void) {
     if (!WideCharToMultiByte(CP_UTF8,0,room,-1,utf8,sizeof utf8,NULL,NULL)) return 0;
     HANDLE verified=ap_verify16(dll);
     if (verified==INVALID_HANDLE_VALUE) {
-        hos_log("OOTRR-AP native ABI 1: archipelago.dll absente ou incompatible dans le mod actif");
+        hos_log("OOTRR-AP native ABI 1: archipelago.dll is missing or incompatible in the active mod");
         return 0;
     }
     HMODULE lib=LoadLibraryExW(dll,NULL,LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR|LOAD_LIBRARY_SEARCH_SYSTEM32);
     CloseHandle(verified);
-    if (!lib) { hos_log("OOTRR-AP native ABI 1: module absent, Windows error %lu",(unsigned long)GetLastError()); return 0; }
+    if (!lib) { hos_log("OOTRR-AP native ABI 1: module missing, Windows error %lu",(unsigned long)GetLastError()); return 0; }
+    void (*set_language)(char*)=(void(*)(char*))GetProcAddress(lib,"AP_SetLanguage");
     int (*start)(char*,char*)=(int(*)(char*,char*))GetProcAddress(lib,"AP_Start");
     int (*flags)(uint32_t*,int)=(int(*)(uint32_t*,int))GetProcAddress(lib,"AP_Flags");
     uint32_t (*cursor)(void)=(uint32_t(*)(void))GetProcAddress(lib,"AP_Cursor");
@@ -82,12 +103,13 @@ static int ap_boot16(void) {
     ap_opened16=(void(*)(uint32_t*,int,int))GetProcAddress(lib,"AP_Opened");
     ap_death16=(int(*)(int))GetProcAddress(lib,"AP_DeathLink");
     int (*event_delivery)(void)=(int(*)(void))GetProcAddress(lib,"AP_EventDelivery");
-    if (!start||!flags||!cursor||!ap_next16||!ap_applied16||!ap_note16||!ap_opened16||!ap_death16||!event_delivery||!start(utf8,token)) return 0;
+    if (!flags||!cursor||!ap_next16||!ap_applied16||!ap_note16||!ap_opened16||!ap_death16||!event_delivery) return 0;
+    if (!ap_start_client16(start,set_language,utf8,token)) return 0;
     snprintf(ap_profile16,sizeof ap_profile16,"%s\\user",utf8);
     hos_user_dir=ap_profile16;
     ap_flag_count16=flags(ap_flags16,4096);ap_cursor16=cursor();
     ap_event_mode16=event_delivery();
-    hos_log("OOTRR-AP native ABI 1: mod actif, profil Archipelago charge");
+    hos_log("OOTRR-AP native ABI 1: mod active, Archipelago profile loaded");
     return 1;
 }
 
@@ -122,7 +144,7 @@ static int ap_request_item16(Ctx *c,uint64_t actor,const char *name) {
     *c=saved;
     if (result) {
         if (ap_death16) ap_death16(2); /* hold a death arriving before the event becomes visible */
-        hos_log("OOTRR-AP reception: event %s accepte",name);
+        hos_log("OOTRR-AP receipt: event %s accepted",name);
     }
     return ok && result!=0;
 }
@@ -165,7 +187,7 @@ static int ap_player16(Ctx *c,uint64_t actor,uint64_t components,int64_t now) {
         A64_MARK(life+8,4);
         oot_gd_set(c,mgr,0x31ab5580u,0,0); /* PlayerStatus.Life, never MaxLife */
         ap_death16(1); /* acknowledge the received death without bouncing it back */
-        hos_log("OOTRR-AP DeathLink: vie de Link %d -> 0",current);
+        hos_log("OOTRR-AP DeathLink: Link's life %d -> 0",current);
         return 0;
     }
     if (ap_delivery_actor16 && ap_delivery_actor16!=actor) ap_delivery_epoch16++;

@@ -1,4 +1,5 @@
 """Publish one complete Archipelago mod in the loader root selected by the player."""
+from .i18n import tr
 import hashlib
 import json
 import os
@@ -25,9 +26,9 @@ def known_folder(base):
 def validate_root(folder, romfs, cache):
     at = folder.resolve()
     if at.name.casefold() in {"romfs","exefs"} or (at / "romfs").is_dir() or (at / "exefs").is_dir():
-        raise ValueError("Choisis le dossier qui contient les mods (par exemple mods), un niveau au-dessus de My Seed.")
+        raise ValueError(tr('Choose the folder containing mods (for example mods), one level above My Seed.'))
     if at == Path(at.anchor) or at.is_relative_to(romfs) or romfs.is_relative_to(at) or at.is_relative_to(cache) or cache.is_relative_to(at):
-        raise ValueError("Le dossier de mods doit être distinct des fichiers du jeu et des données du client.")
+        raise ValueError(tr('The mod folder must be separate from game files and client data.'))
     at.mkdir(parents=True,exist_ok=True)
     return at
 
@@ -64,15 +65,14 @@ def offer_old_seed(folder):
     old = folder/"My Seed"
     if not (old/"romfs"/REST).is_file() and not (old/"romfs/UI/Layout2Archive").is_dir():
         return
-    print(f"L’ancien mod {old} utilise les mêmes fichiers que la salle. "
-          "Tu peux le mettre de côté, ou le désactiver dans ton launcher.",flush=True)
-    if input("Mettre My Seed de côté maintenant ? [o/N] ").strip().casefold() in {"o","oui","y","yes"}:
+    print(tr('The old mod {value0} uses the same files as this room. You can move it aside or disable it in your launcher.', value0=old),flush=True)
+    if input(tr('Move My Seed aside now? [y/N] ')).strip().casefold() in {"o","oui","y","yes"}:
         backup = state_dir(folder)/"mods-en-pause"/"My Seed"
         backup.parent.mkdir(parents=True,exist_ok=True)
         if backup.exists():
             backup = backup.with_name("My Seed-"+uuid.uuid4().hex[:8])
         old.rename(backup)
-        print(f"Ancien mod conservé dans {backup}.",flush=True)
+        print(tr('Old mod preserved in {value0}.', value0=backup),flush=True)
 
 
 def marker(path):
@@ -95,7 +95,7 @@ def tree_stamp(root):
 def install(source, folder, token):
     src = source/MOD
     if not (src/"romfs").is_dir():
-        raise ValueError("RomFS Archipelago incomplet.")
+        raise ValueError(tr('Incomplete Archipelago RomFS.'))
     working = state_dir(folder)
     working.mkdir(exist_ok=True)
     dest, old = folder/MOD, working/"previous"
@@ -104,7 +104,7 @@ def install(source, folder, token):
         if old.exists() and not dest.exists():
             old.rename(dest)
         if dest.is_symlink() or (hasattr(dest,"is_junction") and dest.is_junction()) or (dest.exists() and not marker(dest)):
-            raise ValueError(f"{dest} existe et appartient à un autre mod. Renomme-le avant d’installer cette salle.")
+            raise ValueError(tr('{value0} already exists and belongs to another mod. Rename it before installing this room.', value0=dest))
         installed = marker(dest)
         if installed.get("room") == token and installed.get("build") == key and installed.get("installed") == tree_stamp(dest):
             return dest

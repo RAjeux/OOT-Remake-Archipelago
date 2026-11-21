@@ -27,12 +27,12 @@ for l in load('locations.json')['locations']:
   refs.append({'actor':ref['hash'],'flag':flags[n],'files':ref['files']})
  else:
   if refs:all_locs[l['name']]=refs
-assert all_locs==CHESTS and recipes==GEAR, "Le catalogue diffère des données OOTRR."
+assert all_locs==CHESTS and recipes==GEAR, "The catalogue differs from OOTRR data."
 shops=load('shops.json')
 kokiri={row['name']:row for row in shops['slots'] if row['shop']=='KF Shop'}
-assert list(SHOP_CHECKS)==sorted(kokiri) and len(SHOP_CHECKS)==8, "Emplacements Kokiri différents du moteur."
+assert list(SHOP_CHECKS)==sorted(kokiri) and len(SHOP_CHECKS)==8, "Kokiri locations differ from the engine."
 location_order=[*sorted(all_locs),*sorted(kokiri)]
-assert LOCATION_IDS=={n:0x6F7200+i for i,n in enumerate(location_order)}, "IDs d’emplacement modifiés."
+assert LOCATION_IDS=={n:0x6F7200+i for i,n in enumerate(location_order)}, "Location IDs changed."
 legacy=[*sorted(recipes),FILLER]
 rewards={}
 for item in sorted(load('items.json')['items'],key=lambda row:row['name']):
@@ -43,22 +43,22 @@ for item in sorted(load('items.json')['items'],key=lambda row:row['name']):
 rewards[FILLER]=dict(rewards['Rupees (5)'])
 native_order=[*legacy,*sorted(set(rewards).difference(legacy))]
 goods={row['item']:row['actor'] for row in shops['slots']}
-assert set(goods)==set(SHOP_ITEMS), "Marchandises différentes des données OOTRR."
+assert set(goods)==set(SHOP_ITEMS), "Shop goods differ from OOTRR data."
 for name,actor in goods.items():
  row=SHOP_ITEMS[name]
- assert row['actor']==actor and row['mode']=='shop' and row['kind']=='Shop', f"Marchandise incorrecte : {name}"
- assert row['quantity']>=1, f"Quantité de boutique incorrecte : {name}"
+ assert row['actor']==actor and row['mode']=='shop' and row['kind']=='Shop', f"Incorrect shop goods: {name}"
+ assert row['quantity']>=1, f"Incorrect shop quantity: {name}"
 rewards.update(SHOP_ITEMS)
-assert rewards==ITEM_DATA, "Récompenses natives ou quantités différentes des données OOTRR."
+assert rewards==ITEM_DATA, "Native rewards or quantities differ from OOTRR data."
 order=[*native_order,*sorted(SHOP_ITEMS)]
-assert ITEM_IDS=={n:0x6F7100+i for i,n in enumerate(order)}, "IDs d’objet modifiés."
+assert ITEM_IDS=={n:0x6F7100+i for i,n in enumerate(order)}, "Item IDs changed."
 for name,item in rewards.items():
  expected={item['actor'],*item.get('tiers',()),*item.get('world',())}
- assert expected<=set(EXPECTED[name]), f"Acteurs de coffre incomplets : {name}"
+ assert expected<=set(EXPECTED[name]), f"Incomplete chest actors: {name}"
 for name,row in kokiri.items():
  ref=SHOP_CHECKS[name]
- assert all(ref[key]==row[key] for key in ('shop','slot','actor','item','price','counters','target')), f"Slot Kokiri incorrect : {name}"
- assert ref['flag_name']=='Archipelago.Shop.KF.'+str(row['slot']) and ref['flag']==murmur3(ref['flag_name']), f"Drapeau Kokiri incorrect : {name}"
+ assert all(ref[key]==row[key] for key in ('shop','slot','actor','item','price','counters','target')), f"Incorrect Kokiri slot: {name}"
+ assert ref['flag_name']=='Archipelago.Shop.KF.'+str(row['slot']) and ref['flag']==murmur3(ref['flag_name']), f"Incorrect Kokiri flag: {name}"
 assert CHECK_FLAGS=={**{name:[ref['flag'] for ref in refs] for name,refs in CHESTS.items()},
-                     **{name:[row['flag']] for name,row in SHOP_CHECKS.items()}}, "Drapeaux de checks incomplets."
-print(f"{len(all_locs)} coffres et {len(kokiri)} achats Kokiri, {len(ITEM_IDS)} objets ; les 128 emplacements et 168 objets antérieurs gardent leurs IDs.")
+                     **{name:[row['flag']] for name,row in SHOP_CHECKS.items()}}, "Incomplete check flags."
+print(f"{len(all_locs)} chests and {len(kokiri)} Kokiri purchases, {len(ITEM_IDS)} items; the original 128 locations and 168 items keep their IDs.")

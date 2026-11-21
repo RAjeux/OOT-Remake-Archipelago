@@ -1,4 +1,5 @@
 """Save IO for the private Triforce profile. No game or process memory access."""
+from .i18n import tr
 import hashlib
 import json
 import os
@@ -25,27 +26,27 @@ ITEM_NAMES = {v: k for k, v in ITEM_IDS.items()}
 class Snapshot:
     def __init__(self, data):
         if len(data) < 56 or WORD.unpack_from(data)[0] != 0x01020304:
-            raise ValueError("Format de progress.sav inconnu.")
+            raise ValueError(tr('Unknown progress.sav format.'))
         start = WORD.unpack_from(data, 8)[0]
         if start < 48 or start > len(data) - 8 or (start - 40) % 8:
-            raise ValueError("Table des données de sauvegarde invalide.")
+            raise ValueError(tr('Invalid save-data table.'))
         sentinel, keyed = PAIR.unpack_from(data, start - 8)
         if sentinel != SENTINEL or not start <= keyed <= len(data) - 8:
-            raise ValueError("Fin de table de sauvegarde invalide.")
+            raise ValueError(tr('Invalid end of save table.'))
         if not any(data[i:i+8] == bytes(8) for i in range(keyed, len(data) - 7, 8)):
-            raise ValueError("Liste de données incomplète.")
+            raise ValueError(tr('Incomplete data list.'))
         self.data = bytearray(data)
         self.offsets = {}
         for at in range(40, start - 8, 8):
             h = WORD.unpack_from(data, at)[0]
             if h == SENTINEL or (h and h in self.offsets):
-                raise ValueError("Clé de sauvegarde répétée.")
+                raise ValueError(tr('Duplicate save key.'))
             if h:
                 self.offsets[h] = at + 4
 
     def get(self, flag):
         if flag not in self.offsets:
-            raise ValueError(f"Le champ attendu 0x{flag:08x} est absent de cette sauvegarde.")
+            raise ValueError(tr('Expected field 0x{value0:08x} is missing from this save.', value0=flag))
         return WORD.unpack_from(self.data, self.offsets[flag])[0]
 
     def set(self, flag, value):
@@ -109,7 +110,7 @@ def exclusive(path):
         if handle == ctypes.c_void_p(-1).value:
             error = ctypes.get_last_error()
             if error in (32, 33):
-                raise BlockingIOError("Triforce utilise la sauvegarde.")
+                raise BlockingIOError(tr('Triforce is using the save.'))
             raise ctypes.WinError(error)
         try:
             yield
@@ -159,7 +160,7 @@ def save_path(user, slot, slots_dir=None):
         matches = [p for p in (user / "save").glob(f"*/{pattern}/progress.sav")
                    if re.fullmatch(r"[0-9a-fA-F]{32}", p.parents[1].name)]
     if len({p.parents[1] for p in matches}) > 1:
-        raise ValueError("Plusieurs profils Triforce dans le dossier de cette salle.")
+        raise ValueError(tr("Multiple Triforce profiles in this room's folder."))
     if len(matches) < 2:
         return matches[0] if matches else None
     dated = []
@@ -201,7 +202,7 @@ def apply_history(root, slot, history, slots_dir=None):
             if digest == entry["after"]:
                 write_json(root / ("cursor-" + pending_slot + ".json"), entry["cursor"])
             elif digest != entry["before"]:
-                raise ValueError("Sauvegarde modifiée pendant une livraison interrompue. Conserve le dossier de session pour récupération.")
+                raise ValueError(tr('The save changed during an interrupted delivery. Keep the session folder for recovery.'))
             journal.unlink()
         slot = path.parent.name
         journal = root / ("delivery-" + slot + ".json")
@@ -210,7 +211,7 @@ def apply_history(root, slot, history, slots_dir=None):
         digest = hashlib.sha256(data).hexdigest()
         cursor = history_cursor(root)
         if cursor > len(history):
-            raise ValueError("Le serveur fournit un historique plus court que celui de cette sauvegarde.")
+            raise ValueError(tr('The server provided a shorter history than this save.'))
         snap = Snapshot(data)
         snap.deliver(history, cursor)
         if data != snap.data:

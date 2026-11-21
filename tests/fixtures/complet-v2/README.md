@@ -1,11 +1,10 @@
-Salle locale de régression générée avec `2026112103`, deux joueurs : `Ami`
-(Dark Souls III) et `Zelda` (Ocarina of Time Remake). DeathLink est activé.
+Local regression room generated with seed `2026112103` for two players:
+`Ami` (Dark Souls III) and `Zelda` (Ocarina of Time Remake). DeathLink is enabled.
 
-Cette salle utilise `all_locations`, `local_items=true`, 128 coffres et huit
-achats Kokiri réservés aux objets du joueur Ami. La chaîne OOTRR demandée est
-conservée dans le fichier joueur de l’archive. Les identifiants historiques
-restent compatibles ; le curseur de réception de cette nouvelle salle suit
-uniquement le flux AP `items_handling=5`.
+This room uses `all_locations`, `local_items=true`, 128 chests, and eight
+Kokiri purchases containing Ami's items. The requested OOTRR configuration
+is preserved in the archive's player file. Historical IDs remain compatible;
+this room's received-item cursor follows only the AP `items_handling=5` stream.
 
-Les tests copient le multidata dans un dossier temporaire et ne chargent aucune
-sauvegarde serveur existante. Aucun fichier de jeu commercial n’est inclus.
+Tests copy the multidata to a temporary directory and do not load an existing
+server save. No commercial game files are included.

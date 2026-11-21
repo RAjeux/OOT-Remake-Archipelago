@@ -1,4 +1,5 @@
 """Zstandard frames used by the v1.1.1 RomFS. Match each resource's dictionary."""
+from .i18n import tr
 import ctypes as C
 from ctypes.util import find_library
 import os
@@ -12,7 +13,7 @@ class Codec:
         name = (str(Path(sys.argv[0]).resolve().parent / "runtime" / "libzstd.dll")
                 if os.name == "nt" else find_library("zstd"))
         if not name:
-            raise RuntimeError("Bibliothèque Zstandard introuvable.")
+            raise RuntimeError(tr('Zstandard library not found.'))
         self.lib = C.CDLL(name)
         ptr, size, uint = C.c_void_p, C.c_size_t, C.c_uint
         signatures = {
@@ -39,17 +40,17 @@ class Codec:
     def dictionary(self, frame):
         key = self.getDictID_fromFrame(frame, len(frame))
         if key not in self.dicts:
-            raise ValueError(f"Dictionnaire Zstandard absent ({key}).")
+            raise ValueError(tr('Missing Zstandard dictionary ({value0}).', value0=key))
         return self.dicts[key]
 
     def run(self, encode, raw, dictionary, capacity):
         if not 0 <= capacity <= 768 * 1024**2:
-            raise ValueError("Taille de ressource Zelda invalide.")
+            raise ValueError(tr('Invalid resource size.'))
         dest = C.create_string_buffer(capacity)
         create, free = (self.createCCtx, self.freeCCtx) if encode else (self.createDCtx, self.freeDCtx)
         ctx = create()
         if not ctx:
-            raise MemoryError("Mémoire insuffisante pour la compression.")
+            raise MemoryError(tr('Not enough memory for compression.'))
         try:
             args = (ctx, dest, capacity, raw, len(raw), dictionary, len(dictionary))
             count = self.compress_usingDict(*args, 8) if encode else self.decompress_usingDict(*args)
@@ -68,5 +69,5 @@ class Codec:
     def encode(self, raw, template):
         frame = self.run(True, raw, self.dictionary(template), self.compressBound(len(raw)))
         if self.decode(frame) != raw:
-            raise ValueError("Échec de vérification de la ressource recompressée.")
+            raise ValueError(tr('Resource verification failed after recompression.'))
         return frame

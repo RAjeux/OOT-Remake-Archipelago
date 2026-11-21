@@ -119,13 +119,13 @@ class AllChestRewardTests(unittest.TestCase):
     def test_unsupported_reward_is_rejected(self):
         def change(generated):
             generated["seed_file"]["placements"][next(iter(CHESTS))] = "No native reward"
-        with self.assertRaisesRegex(ValueError, "sans livraison Archipelago"):
+        with self.assertRaisesRegex(ValueError, "no Archipelago delivery"):
             self.make_world(change)
 
     def test_active_chest_without_reachability_proof_is_rejected(self):
         def change(generated):
             generated["waves"][0].remove(next(iter(CHESTS)))
-        with self.assertRaisesRegex(ValueError, "pas démontré"):
+        with self.assertRaisesRegex(ValueError, "did not prove"):
             self.make_world(change)
 
     def test_dungeon_reward_without_destination_is_rejected(self):
@@ -133,7 +133,7 @@ class AllChestRewardTests(unittest.TestCase):
             with self.subTest(reward=reward):
                 def change(generated):
                     generated["seed_file"]["placements"][next(iter(CHESTS))] = reward
-                with self.assertRaisesRegex(ValueError, "sans destination Archipelago"):
+                with self.assertRaisesRegex(ValueError, "no Archipelago destination"):
                     self.make_world(change)
 
     def test_all_kokiri_goods_join_the_pool_and_counted_rules(self):
@@ -159,11 +159,11 @@ class AllChestRewardTests(unittest.TestCase):
     def test_kokiri_requires_every_price_and_reachability_proof(self):
         def no_goods(generated):
             generated["seed_file"]["shops"].pop(next(iter(SHOP_CHECKS)))
-        with self.assertRaisesRegex(ValueError, "huit boutiques"):
+        with self.assertRaisesRegex(ValueError, "eight shop slots"):
             self.make_world(no_goods, shops=True)
         def no_reach(generated):
             generated["waves"][0].remove(next(iter(SHOP_CHECKS)))
-        with self.assertRaisesRegex(ValueError, "pas démontré"):
+        with self.assertRaisesRegex(ValueError, "did not prove"):
             self.make_world(no_reach, shops=True)
 
 
@@ -181,7 +181,7 @@ class AllChestRewardTests(unittest.TestCase):
         self.assertEqual(request["settings"]["shuffle_dungeon_rewards"], "vanilla")
 
     def test_single_player_kokiri_and_incompatible_native_combinations_are_rejected(self):
-        with self.assertRaisesRegex(ValueError, "deux joueurs"):
+        with self.assertRaisesRegex(ValueError, "two players"):
             self.make_world(shops=True, players=1)
         with self.assertRaisesRegex(ValueError, "open_forest"):
             self.make_world(option_changes={"open_kakariko": "open"})

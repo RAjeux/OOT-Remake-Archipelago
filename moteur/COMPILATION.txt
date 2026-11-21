@@ -1,17 +1,21 @@
-Moteur adapté pour Archipelago. Base GPL-3.0-or-later OOTRR v0.8.1,
-commit 3ee77a632fb7c5ed2ccdc33db129f659bc23419f. Licences et attributions
-conservées dans ootrr-ap/LICENSE, LICENSE-MIT et NOTICE.
+Engine adapted for Archipelago from GPL-3.0-or-later OOTRR 0.8.1,
+commit 3ee77a632fb7c5ed2ccdc33db129f659bc23419f. Original licenses and
+attributions are preserved in ootrr-ap/LICENSE, LICENSE-MIT, and NOTICE.
 
-Cette copie a été compilée avec Rust 1.99.0 et la cible wasm32-wasip1.
-Depuis ootrr-ap, exécuter :
+This copy was built with Rust 1.99.0 and the wasm32-wasip1 target.
+From ootrr-ap, run:
   cargo build --offline --release --locked --target wasm32-wasip1 -p ootrr-core --bin ootrr_ap
-Copier target/wasm32-wasip1/release/ootrr_ap.wasm sous le nom engine.wasm
-dans client/ootrr_triforce/ à la racine du projet d'intégration. La commande
-py -3 tools/build.py --engine effectue cette compilation et cette copie,
-puis reconstruit l'APWorld et le client. Voir le README du projet pour
-les prérequis et les autres commandes de construction.
-Le binaire ajouté est randomizer/core/src/bin/ootrr_ap.rs. La recherche des sphères complètes se trouve dans
-randomizer/core/src/slice/generate.rs. Les fichiers Python et engine.cjs sont dans le .apworld et le .pyz.
-L’APWorld est un ZIP portant l’extension .apworld et contenant le répertoire ootrr_remake. Le .pyz est un zipapp
-Python. Le transport websockets 13.1 y est fourni sous sa licence BSD (websockets/LICENSE).
-Les salles de régression sont fournies séparément sous tests/fixtures/.
+Copy target/wasm32-wasip1/release/ootrr_ap.wasm to
+client/ootrr_triforce/engine.wasm in the integration repository.
+Running py -3 tools/build.py --engine from the integration root performs
+the build and copy, then reassembles the APWorld and client. See the root
+README for prerequisites and other build commands.
+
+The added binary is randomizer/core/src/bin/ootrr_ap.rs. Full reachability
+sphere generation is in randomizer/core/src/slice/generate.rs.
+Python modules, engine.cjs, and engine.wasm are included in the .apworld
+and .pyz packages. The APWorld is a ZIP with the .apworld extension and
+an ootrr_remake directory; the .pyz is a Python zipapp.
+The bundled websockets 13.1 transport retains its BSD license in
+websockets/LICENSE. Regression rooms are provided separately in
+tests/fixtures/. Game files are supplied locally by the player.

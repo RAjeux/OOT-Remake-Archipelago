@@ -85,7 +85,7 @@ func (s *Client) deathState(state int, now time.Time) bool {
 	if state == 1 {
 		s.death.pending = nil
 		if (previous == 0 || previous == 2) && !s.death.suppress && s.ready {
-			d := deathData{Time: float64(now.UnixNano()) / 1e9, Source: s.cfg.Slot, Cause: s.cfg.Slot + " est mort dans Zelda."}
+			d := deathData{Time: float64(now.UnixNano()) / 1e9, Source: s.cfg.Slot, Cause: s.text("death_local", s.cfg.Slot)}
 			s.rememberDeath(d)
 			s.death.outgoing = &d
 		}
@@ -108,10 +108,11 @@ func (s *Client) deathState(state int, now time.Time) bool {
 	}
 	s.death.suppress = true
 	s.mu.Unlock()
-	text := d.Cause
-	if text == "" {
-		text = "Mort partagée de " + d.Source
+	if d.Cause == "" {
+		s.notice("death_received", d.Source)
+	} else {
+		// A cause supplied by another game is player content; preserve it.
+		s.queueNotice("DeathLink received · "+d.Source, "DeathLink · "+d.Cause)
 	}
-	s.notice("DeathLink · " + text)
 	return true
 }

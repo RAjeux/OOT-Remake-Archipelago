@@ -35,6 +35,93 @@ fn generate(j: &Json) -> Result<()> {
     Ok(())
 }
 
+fn message_paths(j: &Json) -> Result<Vec<String>> {
+    let paths = j.get("messages").and_then(Json::as_arr).ok_or("missing language archive list")?;
+    let mut result = Vec::new();
+    for value in paths {
+        let path = value.as_str().ok_or("invalid language archive path")?;
+        modpack::rel(path)?;
+        let filename = path.strip_prefix("Mals/").ok_or("language archive must be under Mals/")?;
+        if filename.contains(['/', '\\']) || !filename.ends_with(".Product.110.sarc.zs") {
+            return Err(format!("unexpected language archive {path}").into());
+        }
+        result.push(path.to_string());
+    }
+    result.sort();
+    result.dedup();
+    if result.is_empty() {
+        return Err("no language archives supplied for native message localization".into());
+    }
+    Ok(result)
+}
+
+fn localized_archive(raw: &[u8], archive: &str, navi: ootrr_core::qol::navi_return::Mode,
+                     bean: bool) -> Result<Vec<u8>> {
+    let mut result = raw.to_vec();
+    if navi != ootrr_core::qol::navi_return::Mode::Off {
+        result = ootrr_core::qol::navi_return::localize_text(&result, navi, archive)?;
+    }
+    if bean {
+        result = ootrr_core::difficulty::bean::localize_text(&result, archive)?;
+    }
+    Ok(result)
+}
+
+fn read_overlay(game: &mut Romfs, overlay: &Path, relative: &str) -> Result<(Vec<u8>, Option<u32>)> {
+    let path = overlay.join(modpack::rel(relative)?);
+    let frame = if path.is_file() { fs::read(path)? } else { game.read(relative)? };
+    let dictionary = zs::dict_of(&frame);
+    Ok((game.zs.decompress(&frame)?, dictionary))
+}
+
+// Portable OOTRR builds the gameplay mod. This pass only translates its existing
+// generated messages, using an explicit file list for Windows WASI hosts.
+fn localize(j: &Json) -> Result<()> {
+    use ootrr_core::qol::navi_return::Mode;
+    let settings = read_settings(j)?;
+    let navi = match settings.text("navi_return")? {
+        "off" => Mode::Off,
+        "dungeons" => Mode::Dungeons,
+        "everywhere" => Mode::Everywhere,
+        _ => return Err("unsupported Navi return setting".into()),
+    };
+    let bean = settings.flag("bean_pitch")?;
+    if navi == Mode::Off && !bean {
+        println!("No native messages require localization.");
+        return Ok(());
+    }
+    let paths = message_paths(j)?;
+    let mut game = Romfs::open(Path::new("/game"))?;
+    let overlay = Path::new("/mod");
+    let mut changed = Vec::new();
+    for path in paths {
+        let (before, dictionary) = read_overlay(&mut game, overlay, &path)?;
+        let after = localized_archive(&before, &path, navi, bean)?;
+        if after != before {
+            changed.push((path, before.len(), after, dictionary));
+        }
+    }
+    if !changed.is_empty() {
+        let (raw_table, dictionary) = read_overlay(&mut game, overlay, rsizetable::TABLE_PATH)?;
+        let mut table = Rst::parse(&raw_table)?;
+        for (path, old, raw, _) in &changed {
+            table.grow(path, *old as u64, raw.len() as u64, slice::edit::MARGIN)?;
+        }
+        let table_frame = zs::compress_raw(&table.write()?, dictionary)?;
+        // Validate every archive and its allocation before writing the staged mod.
+        for (path, _, raw, dictionary) in &changed {
+            let target = overlay.join(modpack::rel(path)?);
+            fs::create_dir_all(target.parent().ok_or("invalid language archive destination")?)?;
+            fs::write(target, zs::compress_raw(raw, *dictionary)?)?;
+        }
+        let target = overlay.join(rsizetable::TABLE_PATH);
+        fs::create_dir_all(target.parent().ok_or("invalid resource table destination")?)?;
+        fs::write(target, table_frame)?;
+    }
+    println!("Localized {} native message archives without changing gameplay flows.", changed.len());
+    Ok(())
+}
+
 // Replace the physical reward of network gear only. Native OOTRR has already generated
 // the complete mod, including its original tier ordering, shops and resource sizes.
 fn patch(j: &Json) -> Result<()> {
@@ -124,11 +211,111 @@ fn run() -> Result<()> {
     match env::args().nth(1).as_deref() {
         Some("generate") => generate(&j),
         Some("settings") => inspect_settings(&j),
+        Some("localize") => localize(&j),
         Some("patch") => patch(&j),
         Some("shops") => shops(&j),
-        _ => Err("expected generate, settings, patch or shops".into()),
+        _ => Err("expected generate, settings, localize, patch or shops".into()),
     }
 }
 fn main() {
     if let Err(e) = run() { eprintln!("{e}"); std::process::exit(1); }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ootrr_core::{difficulty::bean, msbt::{self, Msbt, Sec}, qol::navi_return::{self, Mode}, sarc};
+
+    fn book(pairs: &[(&str, &str)]) -> Vec<u8> {
+        let mut m = Msbt { be: false, unk_a: [0, 0], enc: 0, ver: 3, unk_b: [0, 0], pad: [0; 10],
+            secs: vec![Sec::Lbl(vec![Vec::new()]), Sec::Txt(Vec::new())] };
+        for (label, text) in pairs {
+            m.put_markup(label, text).unwrap();
+        }
+        m.write().unwrap()
+    }
+
+    #[test]
+    fn combined_localization_is_idempotent_and_preserves_native_entries() {
+        let source = sarc::write(&[
+            sarc::Entry { name: navi_return::CHOICES_FROM.into(), data: book(&[
+                (navi_return::YES, "Native yes{5.1}"), (navi_return::NO, "Native no")]) },
+            sarc::Entry { name: navi_return::MSG.into(), data: book(&[("Keep", "Native Navi text")]) },
+            sarc::Entry { name: bean::MSG.into(), data: book(&[("Keep", "Native merchant text")]) },
+            sarc::Entry { name: "Unrelated.bfevfl".into(), data: vec![3, 2, 1] },
+        ]).unwrap();
+        let base = navi_return::apply_text(&source, Mode::Everywhere, "Mals/USen.Product.110.sarc.zs").unwrap();
+        let base = bean::text(&base, "Mals/USen.Product.110.sarc.zs").unwrap();
+        let original = sarc::parse(&base).unwrap();
+        for archive in ["Mals/EUfr.Product.110.sarc.zs", "Mals/USfr.Product.110.sarc.zs",
+                        "Mals/USen.Product.110.sarc.zs", "Mals/JPja.Product.110.sarc.zs"] {
+            let result = localized_archive(&base, archive, Mode::Everywhere, true).unwrap();
+            assert_eq!(localized_archive(&result, archive, Mode::Everywhere, true).unwrap(), result);
+            let entries = sarc::parse(&result).unwrap();
+            assert_eq!(entries.len(), original.len());
+            for entry in &original {
+                if entry.name != navi_return::MSG && entry.name != bean::MSG {
+                    assert_eq!(sarc::get(&entries, &entry.name).unwrap().data, entry.data);
+                }
+            }
+            for file in [navi_return::MSG, bean::MSG] {
+                let before = msbt::parse(&sarc::get(&original, file).unwrap().data).unwrap();
+                let after = msbt::parse(&sarc::get(&entries, file).unwrap().data).unwrap();
+                assert_eq!(before.names().len(), after.names().len());
+                assert_eq!(before.raw("Keep"), after.raw("Keep"));
+                if file == navi_return::MSG {
+                    for answer in [navi_return::YES, navi_return::NO] {
+                        assert_eq!(before.raw(answer), after.raw(answer));
+                    }
+                }
+            }
+            if !archive.contains("fr.") {
+                assert_eq!(result, base);
+            }
+        }
+        assert_eq!(localized_archive(b"unchanged", "Mals/EUfr.Product.110.sarc.zs", Mode::Off, false).unwrap(), b"unchanged");
+        assert!(localized_archive(&source, "Mals/EUfr.Product.110.sarc.zs", Mode::Everywhere, true).is_err());
+    }
+
+    #[test]
+    fn explicit_archive_paths_are_deduplicated_and_other_resources_are_refused() {
+        let make = |paths: &[&str]| Json::obj().with("messages", Json::strs(paths.iter().copied()));
+        assert_eq!(message_paths(&make(&["Mals/USen.Product.110.sarc.zs", "Mals/EUfr.Product.110.sarc.zs",
+                                        "Mals/USen.Product.110.sarc.zs"])).unwrap(),
+                   vec!["Mals/EUfr.Product.110.sarc.zs", "Mals/USen.Product.110.sarc.zs"]);
+        for path in ["Event/EventFlow/NaviHint.bfevfl.zs", "Mals/../NaviHint.Product.110.sarc.zs",
+                     "/Mals/EUfr.Product.110.sarc.zs", "Mals/EUfr.Product.110.sarc",
+                     "Mals/..\\Event\\EUfr.Product.110.sarc.zs", "Mals/nested/EUfr.Product.110.sarc.zs"] {
+            assert!(message_paths(&make(&[path])).is_err());
+        }
+        assert!(message_paths(&make(&[])).is_err());
+    }
+
+    #[test]
+    fn overlay_reads_dictionary_ids_after_optional_window_descriptors() {
+        let unique = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
+        let root = env::temp_dir().join(format!("ootrr-localize-frame-{}-{unique}", std::process::id()));
+        let original = root.join("game");
+        let overlay = root.join("mod");
+        let path = "Mals/EUfr.Product.110.sarc.zs";
+        fs::create_dir_all(original.join("Mals")).unwrap();
+        fs::create_dir_all(overlay.join("Mals")).unwrap();
+        let raw = b"synthetic localized message archive";
+        // ID zero is legal and needs no trained dictionary. A windowed frame
+        // puts its descriptor before the ID, unlike a single-segment frame.
+        let single = zs::compress_raw(raw, Some(0)).unwrap();
+        let mut windowed = single.clone();
+        windowed[4] &= !0x20;
+        windowed.insert(5, 0x58);
+        fs::write(original.join(path), &single).unwrap();
+        fs::write(overlay.join(path), &windowed).unwrap();
+        let mut game = Romfs { root: original, zs: zs::Zs::new() };
+        assert_eq!(read_overlay(&mut game, &overlay, path).unwrap(), (raw.to_vec(), Some(0)));
+        fs::remove_file(overlay.join(path)).unwrap();
+        assert_eq!(read_overlay(&mut game, &overlay, path).unwrap(), (raw.to_vec(), Some(0)));
+        let cleanup_root = root.canonicalize().unwrap();
+        let cleanup_parent = env::temp_dir().canonicalize().unwrap();
+        assert_eq!(cleanup_root.parent(), Some(cleanup_parent.as_path()));
+        fs::remove_dir_all(cleanup_root).unwrap();
+    }
 }
