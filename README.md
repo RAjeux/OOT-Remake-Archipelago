@@ -4,6 +4,8 @@
 
 Title-screen connections, items received while the game was closed, local and remote chests, one Kokiri purchase, and DeathLink in both directions have been tested on **Triforce 0.6.0**. **Item presentation animations and some camera movements still need improvement.** All eight Kokiri purchases have automated coverage; they have not all been purchased in the game. Hookshot and Fritchii are not supported by this native integration.
 
+[Port compatibility tests](docs/PORT-COMPATIBILITY.md) cover an experimental Hookshot 3.0.1 host and Fritchii 5.8.4 RomFS loading. These results do not add either host to the published installer.
+
 ## Play
 
 Download the Windows ZIP from the [project releases](https://github.com/RAjeux/OOT-Remake-Archipelago/releases) and extract the entire archive. You need:
