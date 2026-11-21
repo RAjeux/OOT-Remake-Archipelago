@@ -19,6 +19,8 @@ __pycache__/
 *.local.json
 outils.json
 native-session.json
+connection-control.json
+last-profile.json
 derniere-salle-native.json
 sauvegarde-*.json
 

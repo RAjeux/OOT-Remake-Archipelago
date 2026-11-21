@@ -39,6 +39,19 @@ func AP_Start(rootText, tokenText *C.char) C.int {
 		return 0
 	}
 	logbook := log.New(out, "", log.LstdFlags)
+	// Settings must be read under the same exclusion used by setup and the
+	// desktop controller, so a startup never retains a pre-edit configuration.
+	if e = lockProfile(root); e != nil {
+		logbook.Print("Another client is already using this room.")
+		out.Close()
+		return 0
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			unlockProfile()
+		}
+	}()
 	c, e := loadConfig(root, token)
 	if e != nil {
 		logbook.Print(e)
@@ -57,12 +70,11 @@ func AP_Start(rootText, tokenText *C.char) C.int {
 		logbook.Print("Cannot read the local password; update it in the Archipelago menu.")
 	}
 	s.initializePassword(pw, e)
-	if e = lockProfile(root); e != nil {
-		logbook.Print("Another client is already using this room.")
-		out.Close()
-		return 0
-	}
 	active = s
+	committed = true
+	if _, e = startConnectionService(s); e != nil {
+		logbook.Print("Local connection control is unavailable.")
+	}
 	if e = saveLanguage(root, s.cfg.Language); e != nil {
 		logbook.Print("Cannot publish the display language: ", e)
 	}

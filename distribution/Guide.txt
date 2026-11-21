@@ -1,4 +1,4 @@
-Archipelago · Ocarina of Time Remake · 0.3.0-alpha.1
+Archipelago · Ocarina of Time Remake · 0.4.0-alpha.1
 Alpha for Triforce on Windows x64.
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
@@ -41,6 +41,14 @@ First installation on the Zelda player's PC
    The game connects to Archipelago from the title screen.
 
 Later sessions and updates
+Double-click Connect-Archipelago.pyw for a separate connection window without
+a console. Select a prepared room, enter the server and password, and choose
+Save while the game is closed or Connect while its updated AP mod is running.
+Closing this window leaves the game's connection running. The window needs
+Python with Tkinter (included with the standard Windows Python installer).
+It follows the profile's game language and never opens a second AP session.
+Other hosts still require a compatible AP gameplay bridge.
+
 Launch Zelda normally from Triforce; the configuration console does not
 need to stay open. Open the game's Options screen from the title screen
 or the pause menu, then select the Archipelago tab. Enter the server,
@@ -56,9 +64,9 @@ run Configure-Archipelago.cmd again, and rebuild the game. A change to the
 mod's native library also requires rebuilding Triforce with its new digest.
 Do not configure the mod while the host is updating.
 Each new room requires its own .apootrr file and configuration.
-Upgrading to 0.3.0-alpha.1 requires running the configuration again and
-using Build again: both the native network library and the Options renderer
-have changed. Existing rooms and saves remain supported.
+Upgrading to 0.4.0-alpha.1 requires running the configuration again and
+using Build again: the native network library has changed. Existing rooms
+and saves remain supported. Triforce's Options menu remains available.
 
 Language
 The mod automatically follows the game language selected in Triforce.

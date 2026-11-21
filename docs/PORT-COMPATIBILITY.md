@@ -18,6 +18,15 @@ The unmodified Hookshot installation does not expose all the helper names and no
 
 The prototype uses the same AP DLL and registered receipt events as the released client. AP item IDs, canonical names, room token, and save cursor are preserved. Host notifications currently go to the log rather than an in-game host toast. The experimental host changes, automatic setup, upgrade handling, and notification integration are not part of the published package.
 
+The separate **Connect-Archipelago.pyw** window was also tested with Hookshot
+3.0.1 and the 0.4.0-alpha.1 native bridge in an isolated build. At Zelda's title
+screen it displayed the running client's status, handled a wrong then corrected
+room password, disconnected, and reconnected through the actual desktop buttons.
+Closing the window left the game connected. Socket ownership confirmed that
+Hookshot owned Zelda's only AP connection. This interface needs no Hookshot menu
+patch; it still requires the experimental gameplay bridge and its matching host
+build. It does not extend the published installer's host support.
+
 The gameplay test used a new private save and a copied local room with a second test player. It does not establish that every physical chest, all eight shop purchases, or every item presentation has been replayed on Hookshot. A natural outgoing DeathLink has not been tested in this host.
 
 The first remote check granted five rupees and saved received index 1. An incoming DeathLink then changed Link's life from 12 to 0 without an outgoing echo. A second five-rupee item was sent while no Hookshot game process was running. After restarting and loading the same private save, the game reached ten rupees and saved received index 2, with exactly one new receipt event. The first item and the previous DeathLink were not replayed.

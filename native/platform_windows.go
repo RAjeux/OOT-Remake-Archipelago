@@ -30,6 +30,18 @@ func lockProfile(root string) error {
 	}
 	return e
 }
+
+func unlockProfile() {
+	if presence != 0 {
+		windows.CloseHandle(presence)
+		presence = 0
+	}
+	if held != 0 {
+		windows.CloseHandle(held)
+		held = 0
+	}
+}
+
 func password(protected string) (string, error) {
 	if protected == "" {
 		return "", nil

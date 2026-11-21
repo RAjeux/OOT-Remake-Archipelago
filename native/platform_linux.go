@@ -21,6 +21,14 @@ func lockProfile(root string) error {
 	held = f
 	return nil
 }
+
+func unlockProfile() {
+	if held != nil {
+		held.Close()
+		held = nil
+	}
+}
+
 func password(p string) (string, error) {
 	if p != "" {
 		return "", fmt.Errorf("Windows credential on Linux")

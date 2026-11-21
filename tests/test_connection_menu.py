@@ -172,7 +172,8 @@ async def exercise(temporary, source, library):
             await asyncio.sleep(0.3)
             assert (await native.request())["snapshot"]["state"] == "disconnected", "AutoConnect=false retried"
             invalid = await native.request(action="connect", server="ws://user:secret@localhost", mode=0)
-            assert invalid["result"] == -1 and invalid["snapshot"]["error_code"] == "invalid_server"
+            assert invalid["result"] == -1
+            assert invalid.get("control_error", invalid["snapshot"]["error_code"]) == "invalid_server"
 
             async def status(expected):
                 async def probe():

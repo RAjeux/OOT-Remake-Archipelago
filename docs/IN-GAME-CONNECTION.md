@@ -18,6 +18,10 @@ The connection menu changes the native DLL and Triforce renderer. Extract the co
 
 Initial room generation and mod preparation remain separate from connection controls. `Observe-Archipelago.cmd` remains available for diagnostics.
 
+The separate [desktop connection window](CONNECTION-WINDOW.md) controls the same
+client and settings. Triforce's embedded menu remains available with its existing
+keyboard, mouse, and controller navigation.
+
 ## Implementation references
 
 The implementation uses Triforce's existing embedded Options screen, text-input queue, game fonts, and controller navigation. It adds an original UI helper and an asynchronous connection manager while retaining the client and its room/save binding.

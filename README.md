@@ -1,6 +1,6 @@
 # Ocarina of Time Remake × Archipelago
 
-**0.3.0-alpha.1 — native integration for Triforce on Windows x64.** Manage Archipelago connections from Zelda's **Options → Archipelago** tab, at the title screen or in the pause menu. Automatic connection at startup remains enabled by default. This alpha uses OOTRR 0.8.1 and game version 1.1.1.
+**0.4.0-alpha.1 — native integration for Triforce on Windows x64.** Manage Archipelago connections from Zelda's **Options → Archipelago** tab, or use the separate **Connect-Archipelago.pyw** desktop window. Automatic connection at startup remains enabled by default. This alpha uses OOTRR 0.8.1 and game version 1.1.1.
 
 Title-screen connections, items received while the game was closed, local and remote chests, one Kokiri purchase, and DeathLink in both directions have been tested on **Triforce 0.6.0**. **Item presentation animations and some camera movements still need improvement.** All eight Kokiri purchases have automated coverage; they have not all been purchased in the game. Hookshot and Fritchii are not supported by this native integration.
 
@@ -21,6 +21,8 @@ Download the Windows ZIP from the [project releases](https://github.com/RAjeux/O
 4. Launch Zelda normally from Triforce. Open **Options → Archipelago** to change the server, enter a password, connect or disconnect, and view connection errors. The tab supports keyboard, mouse, and controller, including an on-screen keyboard. You can close the configuration console; `Observe-Archipelago.cmd` remains an optional diagnostic tool.
 
 The initial mod preparation is still required for each room. The menu changes the connection to that prepared room; its player and save binding stay fixed. See the [in-game connection guide](docs/IN-GAME-CONNECTION.md).
+
+**Connect-Archipelago.pyw** provides the same connection controls outside the game, without a console. With Zelda closed, it saves settings for the next startup. With the updated AP mod running, it controls the existing connection. Triforce's menu remains available. The window is independent of the host's menu renderer; other ports still require a compatible AP gameplay bridge. See the [desktop connection guide](docs/CONNECTION-WINDOW.md).
 
 The [player guide](distribution/Guide.txt) covers installation, updates, and troubleshooting. The older French command filenames remain available for compatibility. No Nintendo game files are included in the repository or release.
 
@@ -55,6 +57,7 @@ Python client code is in `client/`, the APWorld in `apworld/`, the native bridge
 | Connections, items, checks, and DeathLink | `native/client.go`, `connection.go`, `game.go`, `deathlink.go` |
 | Triforce gameplay bridge | `native/ootrr_archipelago.inc`, `ootrr_ap_items.inc` |
 | Embedded connection menu | `native/ootrr_ap_menu.inc`, `client/ootrr_triforce/menu_setup.py` |
+| Desktop connection window | `client/ootrr_triforce/connection_window.py`, `connection_control.py`; `native/control.go` |
 | Language discovery and translations | `i18n.py`, `i18n_fr.json`, `item_names.py` in `client/ootrr_triforce/`; `native/localization.go` |
 | Chests, medals, item receipts, and shops | `medallions.py`, `receipt_events.py`, `shop_events.py`, `ap_shops.py` in `client/ootrr_triforce/` |
 | OOTRR engine and generation | `moteur/ootrr-ap/randomizer/core/src/bin/ootrr_ap.rs`, `slice/generate.rs` |
