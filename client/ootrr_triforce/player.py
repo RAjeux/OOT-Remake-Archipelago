@@ -1,4 +1,5 @@
 from .i18n import tr, get_language, set_language, detect_language
+from .app_runtime import resource_root, run_process
 from .item_names import item_name
 import argparse
 from collections import Counter
@@ -186,7 +187,7 @@ def build(root, settings, data):
             table = stage / name / "romfs" / install_mod.REST
             table.parent.mkdir(parents=True,exist_ok=True)
             shutil.copy2(original,table)
-        subprocess.run([settings["ootrr"], "build", str(native), str(romfs), str(stage),
+        run_process([settings["ootrr"], "build", str(native), str(romfs), str(stage),
                         "Archipelago", "--host", settings.get("host","nx2navi"), "--no-title-logo"], check=True)
         mod = stage / "Archipelago" / "romfs"
         print(run_engine("patch", patch_request(data), romfs, mod).strip(), flush=True)
@@ -205,7 +206,7 @@ def build(root, settings, data):
             prepare_receipts(romfs,mod,data)
         if settings.get("native"):
             native_setup.bind_romfs(romfs,mod,data,settings["baseline"])
-            shutil.copy2(Path(sys.argv[0]).resolve().parent/"native/archipelago.dll",mod.parent/"archipelago.dll")
+            shutil.copy2(resource_root()/"native/archipelago.dll",mod.parent/"archipelago.dll")
         # Only the generated mod leaves the build directory. Sibling table inputs are temporary.
         completed = scratch / "completed"
         completed.mkdir()

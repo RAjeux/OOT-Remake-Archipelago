@@ -30,7 +30,7 @@ ERRORS = {
     "empty_password": "Enter a replacement password, or choose Keep or Clear.",
     "credential_error": "The saved password cannot be used on this PC. Replace or clear it.",
     "settings_error": "Connection settings could not be saved.",
-    "no_profile": "This profile is unavailable. Run Configure-Archipelago.cmd first.",
+    "no_profile": "This profile is unavailable. Choose Set up a room in the Archipelago app first.",
     "profile_changed": "The profile changed. Refresh the profile list before trying again.",
     "native_update_required": "Update the installed mod to control its connection from this window.",
     "rpc_unavailable": "The game's local controls are unavailable. Try again in a moment.",
@@ -382,7 +382,7 @@ class ConnectionWindow:
             "A password is saved on this PC." if self.info.get("has_password") else "No password is saved."))
         if not available:
             status = "Searching for profiles…" if self.refreshing else "No configured profile"
-            detail = "Run Configure-Archipelago.cmd to prepare a room, then click Refresh."
+            detail = "Choose Set up a room in the Archipelago app, then click Refresh."
         else:
             status = STATES.get(self.info.get("state"), "Waiting for the game")
             detail = ("Game detected. These controls use the in-game client." if live else

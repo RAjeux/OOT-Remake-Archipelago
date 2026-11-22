@@ -1,12 +1,13 @@
 # Desktop connection window
 
-Run **Connect-Archipelago.pyw** from the extracted release. This opens a separate
-desktop window without a console. Python 3.11 or later with Tkinter is required
-(included with the standard Windows Python installer).
+Open **OOT-Remake-Archipelago-0.7.0-alpha.1.exe** and choose **Connection** from
+the home screen. The controls open inside the same application, without a
+console or a separate Python installation.
 
 Choose an already prepared room, enter the server address and, if needed, its
 password. The player and room are fixed by that room's mod. Preparing a new
-`.apootrr` file with `Configure-Archipelago.cmd` is still required for a new room.
+`.apootrr` file through the application's **Set up a room** action is required
+for a new room. That action prepares the mod and rebuilds Triforce when needed.
 
 With Zelda closed, **Save** stores the connection settings for the next startup.
 With the AP mod running, **Connect** and **Disconnect** control its existing
@@ -31,15 +32,17 @@ inside the game through an authenticated service on the local PC. It never
 opens a second Archipelago session or writes game saves.
 
 The published native installer supports **Triforce on Windows x64**. An updated
-AP bridge is required for live desktop controls; an older bridge requires a
-mod update and host rebuild. Offline settings can be saved after closing the
-game. The Hookshot prototype can use this same interface when built with the
+AP bridge is required for live desktop controls; use **Set up a room** in the
+updated application to install it and perform any required game build. Offline
+settings can be saved after closing the game. The Hookshot prototype can use
+this same interface when built with the
 updated bridge. Other ports and emulators still need their own gameplay bridge;
 this window alone does not add real-time item or DeathLink support to Fritchii.
 
 ## Development
 
-Run the window from source with:
+The legacy standalone window remains available to developers using Python with
+Tkinter. Run it from the source checkout with:
 
 ```powershell
 pythonw distribution/Connect-Archipelago.pyw

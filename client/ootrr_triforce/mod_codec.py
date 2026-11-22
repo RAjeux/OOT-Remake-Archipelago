@@ -1,5 +1,6 @@
 """Zstandard frames used by the v1.1.1 RomFS. Match each resource's dictionary."""
 from .i18n import tr
+from .app_runtime import resource_root
 import ctypes as C
 from ctypes.util import find_library
 import os
@@ -10,7 +11,7 @@ import sys
 class Codec:
     def __init__(self, pack):
         from oot_rando.formats.inspect_resources import sarc
-        name = (str(Path(sys.argv[0]).resolve().parent / "runtime" / "libzstd.dll")
+        name = (str(resource_root() / "runtime" / "libzstd.dll")
                 if os.name == "nt" else find_library("zstd"))
         if not name:
             raise RuntimeError(tr('Zstandard library not found.'))

@@ -18,6 +18,11 @@ def run(*args):
 run("tools/build.py")
 run("tests/test_release.py")
 run("tests/test_builder.py")
+run("tests/test_app_runtime.py")
+run("tests/test_engine_paths.py")
+run("tests/test_app_packaging.py")
+run("tests/test_app_window.py")
+run("tests/test_install_service.py")
 run("tools/check_catalog.py")
 run("tests/test_localization_catalog.py")
 run("tests/test_i18n.py")
@@ -52,6 +57,7 @@ if options.network:
     if sys.platform.startswith("linux") and not (ROOT/"build/archipelago.so").is_file():
         run("tools/build.py","--linux-test-lib")
     run("tests/test_installer.py")
+    run("tests/test_install_service_network.py")
     for name in ("neutre","ancienne"):
         room=f"tests/fixtures/{name}"
         run("tests/test_network.py",room)

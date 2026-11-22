@@ -109,7 +109,7 @@ class ConnectionWindowTests(unittest.TestCase):
     def test_no_profiles_explains_setup_and_disables_actions(self):
         window = self.open([])
         self.assertEqual(window.status_label.cget("text"), "No configured profile")
-        self.assertIn("Configure-Archipelago.cmd", window.detail_label.cget("text"))
+        self.assertIn("Set up a room", window.detail_label.cget("text"))
         self.assertEqual(str(window.primary_button.cget("state")), "disabled")
 
     def test_profile_identity_is_readonly_and_language_follows_selection(self):

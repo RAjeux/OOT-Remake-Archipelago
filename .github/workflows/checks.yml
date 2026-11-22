@@ -26,6 +26,27 @@ jobs:
       - run: python -m pip install -r requirements-dev.txt
       - run: python -X utf8 tools/test.py
       - run: python -X utf8 tools/verify_release.py
+      - run: python -m pip install -r requirements-app.txt
+      - run: python tools/build_app.py --output build/ci-application --work build/application-ci
+      - name: Inspect and run the standalone application
+        shell: pwsh
+        run: |
+          $version = (Get-Content VERSION -Raw).Trim()
+          $application = (Resolve-Path "build/ci-application/OOT-Remake-Archipelago-$version.exe").Path
+          python tools/verify_app.py $application --output build/ci-application/inspection.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $checkRoot = Join-Path $env:RUNNER_TEMP 'ootrr-standalone-smoke'
+          New-Item -ItemType Directory -Path $checkRoot -Force | Out-Null
+          $result = Join-Path $checkRoot 'result.json'
+          $env:LOCALAPPDATA = Join-Path $checkRoot 'local'
+          $env:APPDATA = Join-Path $checkRoot 'roaming'
+          $env:PATH = "$env:SystemRoot\System32"
+          Remove-Item Env:OOTRR_NODE -ErrorAction SilentlyContinue
+          $process = Start-Process -FilePath $application -ArgumentList @('--self-test', ('"{0}"' -f $result)) -Wait -PassThru -WindowStyle Hidden
+          if ($process.ExitCode -ne 0) { exit $process.ExitCode }
+          $report = Get-Content -LiteralPath $result -Raw | ConvertFrom-Json
+          if ($report.result -ne 'PASS' -or !$report.frozen -or !$report.persistent_node_engine) { exit 1 }
+          Get-Content -LiteralPath $result
   native:
     runs-on: ubuntu-latest
     steps:

@@ -4,6 +4,7 @@ import json
 import subprocess
 
 from .i18n import tr
+from .app_runtime import run_process
 
 # Semantic fields from the official portable 0.8.1 settings-dump. Labels and
 # tooltip wording do not change the wire format and are deliberately excluded.
@@ -31,7 +32,7 @@ def validate_builder(executable):
     """Run a read-only probe before giving a portable builder a bound seed."""
     message = tr("Use the OOTRR portable 0.8.1 builder. Other versions can change native location identities.")
     try:
-        result = subprocess.run([str(executable), "settings-dump", "--compact"],
+        result = run_process([str(executable), "settings-dump", "--compact"],
                                 capture_output=True, text=True, encoding="utf-8", timeout=20, check=True)
         schema = json.loads(result.stdout)
     except (OSError, subprocess.SubprocessError, ValueError) as exc:

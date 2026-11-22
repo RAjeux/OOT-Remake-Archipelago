@@ -1,6 +1,6 @@
 # Ocarina of Time Remake × Archipelago
 
-**0.6.1-alpha.1 — native integration for Triforce on Windows x64.** Manage Archipelago connections from Zelda's **Options → Archipelago** tab, or use the separate **Connect-Archipelago.pyw** desktop window. Automatic connection at startup remains enabled by default. This alpha uses the portable OOTRR 0.8.1 builder and game version 1.1.1, with selected stability and dungeon-logic fixes adapted from OOTRR 0.8.2.
+**0.7.0-alpha.1 — one Windows application for Triforce.** Download `OOT-Remake-Archipelago-0.7.0-alpha.1.exe` to prepare the mod, configure your room and launch the game. The application includes Python and Node.js, downloads the compatible OOTRR 0.8.1 builder when needed, and rebuilds Triforce automatically during setup.
 
 Title-screen connections, items received while the game was closed, local and remote chests, one Kokiri purchase, and DeathLink in both directions have been tested on **Triforce 0.6.0**. **Item presentation animations and some camera movements still need improvement.** All eight Kokiri purchases have automated coverage; they have not all been purchased in the game. Hookshot and Fritchii are not supported by this native integration.
 
@@ -8,27 +8,23 @@ Title-screen connections, items received while the game was closed, local and re
 
 ## Play
 
-Download the Windows ZIP from the [project releases](https://github.com/RAjeux/OOT-Remake-Archipelago/releases) and extract the entire archive. You need:
+Download **`OOT-Remake-Archipelago-0.7.0-alpha.1.exe`** from the [project releases](https://github.com/RAjeux/OOT-Remake-Archipelago/releases). Keep this one file wherever you prefer; no archive extraction or separate Python, Node.js or OOTRR installation is required.
 
-- Windows x64 and Triforce, including compatible build tools;
-- your own **1.1.1** game dump, including its `romfs` directory, and **OOTRR portable 0.8.1**;
-- **Python 3.11 or later** and **Node.js 22 or 24**;
-- an Archipelago room generated with the included APWorld. The APWorld requires **Archipelago 0.6.7 or later**; direct YAML generation has been tested with **0.6.8**.
+You need Windows x64, a working **Triforce installation with its build tools**, your own **version 1.1.1 game files**, and an active Archipelago room with your `.apootrr` player file. An internet connection is needed for the first download of the compatible builder. No Nintendo game files are supplied.
 
-1. On the machine generating the room, install `ootrr_remake.apworld` in Archipelago. Use `Create-YAML.cmd` or the [examples](examples/) to prepare your YAML, then generate the room with the other players' YAML files.
-2. On the Zelda player's PC, run `Configure-Archipelago.cmd`. Select your `.apootrr` player file, the requested directories, and the server address. The program prepares the mod and its room profile.
-3. Enable **Archipelago** in Triforce Setup, then rebuild the game with **Build again**. This is required on first installation and when the native library or host tools change.
-4. Launch Zelda normally from Triforce. Open **Options → Archipelago** to change the server, enter a password, connect or disconnect, and view connection errors. The tab supports keyboard, mouse, and controller, including an on-screen keyboard. You can close the configuration console; `Observe-Archipelago.cmd` remains an optional diagnostic tool.
+1. Open the application and choose **Set up a room**. Select your `.apootrr` file. The application finds your Triforce installation when possible; choose its game folder if it is not found.
+2. Enter the **room address** and its password if required, then choose **Install and prepare**. Preparation and any necessary game build run in the same window.
+3. When setup finishes, choose **Play**. Zelda connects from the title screen. Use a save dedicated to this room.
 
-The native client negotiates compressed WebSocket messages when the server supports them. Addresses on `archipelago.gg` use TLS automatically, including older saved `ws://archipelago.gg:<port>` addresses. Local servers retain their selected transport.
+After setup, open the same application and choose **Play** for later sessions. You can close the application while playing. **Connection** changes the prepared room's server and password without a console. Zelda's **Options → Archipelago** menu remains available and controls the same connection. See the [connection guide](docs/CONNECTION-WINDOW.md).
 
-Version 0.6.1-alpha.1 changes the native DLL. Prepare the mod again and use **Build again** when upgrading. Existing player files and saves remain supported. Generate a new room to use the corrected dungeon access rules; an existing room retains its original placements. Enabling the full adult trade shuffle also requires a new room and a fresh save.
+On the computer generating the room, choose **Create YAML** in the same application. **Install APWorld** installs the world into an existing Archipelago installation; **Save YAML** writes your player configuration with all supported settings. Edit that YAML, then generate and host the room with Archipelago and the other players' YAML files as usual. The application does not generate or host rooms. The APWorld requires **Archipelago 0.6.7 or later**; generation has been tested with **0.6.8**.
 
-The initial mod preparation is still required for each room. The menu changes the connection to that prepared room; its player and save binding stay fixed. See the [in-game connection guide](docs/IN-GAME-CONNECTION.md).
+Room profiles, connection settings, downloaded tools and saves are kept in `%LOCALAPPDATA%\OOTRR-Archipelago`, outside the executable's temporary files. Moving or replacing the downloaded application keeps this data. Existing saves are preserved during setup. To update, close Zelda, let any Triforce update finish, then prepare the same `.apootrr` file again in the new application. A different room needs its own player file and dedicated save.
 
-**Connect-Archipelago.pyw** provides the same connection controls outside the game, without a console. With Zelda closed, it saves settings for the next startup. With the updated AP mod running, it controls the existing connection. Triforce's menu remains available. The window is independent of the host's menu renderer; other ports still require a compatible AP gameplay bridge. See the [desktop connection guide](docs/CONNECTION-WINDOW.md).
+Existing rooms retain their placements. Generate a new room to use the corrected dungeon access rules described in the [stability notes](docs/STABILITY.md); an existing room's placement proof cannot be changed by reconnecting. Enabling the full adult trade shuffle also requires a new room and a fresh save.
 
-The [player guide](distribution/Guide.txt) covers installation, updates, and troubleshooting. The older French command filenames remain available for compatibility. No Nintendo game files are included in the repository or release.
+The [player guide](distribution/Guide.txt) covers setup, updates and troubleshooting. Optional logs and embedded licenses are available under **Help**. Source code and advanced command-line tools remain available for developers in this repository.
 
 ## What the mod does
 
@@ -71,6 +67,7 @@ Python client code is in `client/`, the APWorld in `apworld/`, the native bridge
 | Area | Main files |
 | --- | --- |
 | Options, AP logic, and player files | `apworld/ootrr_remake/`, `client/ootrr_triforce/settings.py`, `catalog.py` |
+| Windows application | `client/app.py`, `app_window.py`, `app_runtime.py`, `install_service.py`; `tools/build_app.py` |
 | Mod preparation and installation | `player.py`, `native_setup.py`, `install_mod.py` in `client/ootrr_triforce/` |
 | Connections, items, checks, and DeathLink | `native/client.go`, `connection.go`, `game.go`, `deathlink.go` |
 | Triforce gameplay bridge | `native/ootrr_archipelago.inc`, `ootrr_ap_items.inc` |
@@ -86,23 +83,26 @@ Python client code is in `client/`, the APWorld in `apworld/`, the native bridge
 
 Use English source messages with `tr()` and add the matching French entry to `i18n_fr.json`, preserving format placeholders. AP item names and IDs are protocol identifiers: translate display labels only, and retain the owning game's namespace. The engine's `localize` pass updates existing OOTRR-generated text inside the staged mod; it does not rebuild gameplay flows. Localization tests check catalogue coverage, language selection, legacy profiles, and cache upgrades.
 
-### Build a release
+### Build the Windows application
 
-From the repository root on Windows:
+Use Windows x64 Python with Tcl/Tk support and install the packaging dependencies:
 
 ```powershell
-py -3 tools/build.py
-py -3 tools/verify_release.py --version 0.6.1-alpha.1
+py -3 -m pip install -r requirements-app.txt
+py -3 tools/build_app.py
+py -3 tools/verify_app.py dist/OOT-Remake-Archipelago-0.7.0-alpha.1.exe
 ```
 
-The output is `dist/Archipelago-OOT-Remake-0.6.1-alpha.1.zip`, including the `.pyz` client, APWorld, and their sources. `VERSION` declares the release version. The default assembly uses the supplied native DLL and WebAssembly engine without downloading dependencies. It does not rebuild Triforce.
+`tools/build_app.py` creates the single windowed executable in `dist/`. It bundles the Python runtime, Tk, the pinned Node.js runtime, the APWorld, native bridge and notices. The compatible OOTRR builder is downloaded by the application on first use; game files and Triforce are supplied by the player. `VERSION` declares the release version. The build uses the supplied native DLL and WebAssembly engine and does not build a user's game.
+
+For advanced CLI development, `py -3 tools/build.py` still assembles `dist/Archipelago-OOT-Remake-0.7.0-alpha.1.zip`, including `Client-OOT-Remake.pyz`, command wrappers, APWorld and engine sources. This is separate from the normal player download. After validating a legacy ZIP, record a new reference with `tools/verify_release.py --version <version> --record-reference`; retain older manifests unchanged.
 
 To rebuild the supplied components:
 
 - `py -3 tools/build.py --native` requires Go and an x64 C compiler compatible with cgo. The script enables `CGO_ENABLED=1`; set `CC` to select a compiler. Reinstall the mod and rebuild Triforce with the new DLL digest afterward.
 - `py -3 tools/build.py --engine` requires Rust with the `wasm32-wasip1` target installed. This copy was built with **Rust 1.99.0**. Dependencies are vendored in `moteur/ootrr-ap/vendor/`.
 
-Use `tools/check_catalog.py` to check the protocol tables and `tools/generate_item_header.py` to regenerate the native item table. `tools/generate_art.py` regenerates title artwork data from repository assets. After validating a new release, record its reference manifest with `tools/verify_release.py --version <version> --record-reference`; retain older manifests as historical references.
+Use `tools/check_catalog.py` to check the protocol tables and `tools/generate_item_header.py` to regenerate the native item table. `tools/generate_art.py` regenerates title artwork data from repository assets. Application logs and corresponding-source notices can be opened through **Help** in the executable.
 
 ### Run tests
 

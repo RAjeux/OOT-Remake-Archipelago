@@ -1,0 +1,357 @@
+"""Actual-widget coverage for the app's normal setup and launch workflow."""
+import json
+from pathlib import Path
+import sys
+import tempfile
+import threading
+import time
+import tkinter as tk
+import types
+import unittest
+from unittest.mock import patch
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "client"))
+from ootrr_triforce.app_window import AppWindow, TEXT, yaml_content
+from ootrr_triforce.i18n import tr
+
+
+class Cancelled(InterruptedError):
+    cancelled = True
+    public_message = "Setup cancelled."
+
+
+class FakeService:
+    def __init__(self, base):
+        self.base = base
+        self.discovery = dict(game=str(base / "Triforce"), romfs=str(base / "Triforce/romfs"),
+                              tools=str(base / "tools"), mods=str(base / "Triforce/mods"),
+                              server="127.0.0.1:38281", language="en",
+                              profile="", ready=False, manifest="")
+        self.calls = []
+        self.discover_gate = self.inspect_gate = self.install_gate = None
+        self.discover_started = threading.Event()
+        self.inspect_started = threading.Event()
+        self.install_started = threading.Event()
+        self.install_error = None
+
+    def discover(self, base=None):
+        self.discover_started.set()
+        if self.discover_gate:
+            self.discover_gate.wait(4)
+        return dict(self.discovery)
+
+    def inspect_manifest(self, path):
+        self.inspect_started.set()
+        if self.inspect_gate:
+            self.inspect_gate.wait(4)
+        if "invalid" in path:
+            raise ValueError("private details must not appear in the window")
+        return dict(room=Path(path).stem, slot="Link", player=2, token="a" * 64, checks=224)
+
+    def install(self, request, progress, cancel):
+        self.calls.append(("install", dict(request), threading.get_ident()))
+        self.install_started.set()
+        progress(20, "Preparing test room")
+        while self.install_gate and not self.install_gate.wait(.02):
+            if cancel.is_set():
+                raise Cancelled()
+        if cancel.is_set():
+            raise Cancelled()
+        if self.install_error:
+            raise self.install_error
+        return dict(ready=True, build_required=False, game=request["game"],
+                    profile=str(self.base / "profile"), room="Test Room", slot="Link", token="a" * 64)
+
+    def launch(self, result):
+        self.calls.append(("launch", dict(result), threading.get_ident()))
+
+
+class FakeDialogs:
+    def __init__(self):
+        self.open = self.directory = self.save = ""
+        self.calls = []
+
+    def askopenfilename(self, **kwargs):
+        self.calls.append(("open", kwargs))
+        return self.open
+
+    def askdirectory(self, **kwargs):
+        self.calls.append(("directory", kwargs))
+        return self.directory
+
+    def asksaveasfilename(self, **kwargs):
+        self.calls.append(("save", kwargs))
+        return self.save
+
+
+class AppWindowTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.base = Path(self.temp.name)
+        self.service = FakeService(self.base)
+        self.dialogs = FakeDialogs()
+        try:
+            self.root = tk.Tk()
+            self.root.withdraw()
+        except tk.TclError as error:
+            self.temp.cleanup()
+            self.skipTest(f"Tk display unavailable: {error}")
+        self.window = None
+
+    def tearDown(self):
+        for gate in (self.service.discover_gate, self.service.inspect_gate, self.service.install_gate):
+            if gate:
+                gate.set()
+        if self.window and not self.window.closed:
+            if self.window.busy:
+                self.window.cancel_event.set()
+                self.pump(lambda: not self.window.busy)
+            self.window.close()
+        elif not self.window:
+            self.root.destroy()
+        self.temp.cleanup()
+
+    def pump(self, condition, timeout=3):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if self.window and self.window.closed:
+                if condition():
+                    return
+                break
+            self.root.update()
+            if condition():
+                return
+            time.sleep(.005)
+        self.fail("The application worker did not finish in time")
+
+    def open(self, wait=True, **kwargs):
+        self.window = AppWindow(self.root, service=self.service, base=self.base, dialogs=self.dialogs, **kwargs)
+        if wait:
+            self.pump(lambda: self.window.status_key != "finding")
+        return self.window
+
+    def prepare_form(self, window):
+        window.show_page("setup")
+        window.fields["manifest"].set(str(self.base / "player.apootrr"))
+        self.pump(lambda: window.manifest_info is not None)
+
+    def test_home_has_one_play_path_and_setup_hides_internal_controls(self):
+        window = self.open()
+        self.assertEqual(str(window.play_button.cget("state")), "disabled")
+        self.assertEqual(window.home_status.cget("text"), tr(TEXT["not_prepared"]))
+        self.assertEqual(window.page, "home")
+        self.assertFalse(window.folder_details.winfo_manager())
+        self.assertEqual(set(window.fields), {"manifest", "game", "romfs", "tools", "server", "password"})
+        self.assertFalse(any(key in window.fields for key in ("baseline", "builder", "node", "protocol", "host")))
+        window.setup_button.invoke()
+        self.assertEqual(window.page, "setup")
+
+    def test_discovery_preserves_text_entered_while_it_is_running(self):
+        self.service.discover_gate = threading.Event()
+        window = self.open(wait=False)
+        self.pump(self.service.discover_started.is_set)
+        window.fields["game"].set(str(self.base / "My Triforce"))
+        window.fields["server"].set("archipelago.gg:45678")
+        ticks = []
+        self.root.after(20, lambda: ticks.append(True))
+        self.pump(lambda: bool(ticks), timeout=.5)
+        self.service.discover_gate.set()
+        self.pump(lambda: window.status_key != "finding")
+        self.assertEqual(window.fields["game"].get(), str(self.base / "My Triforce"))
+        self.assertEqual(window.fields["romfs"].get(), str(self.base / "My Triforce/romfs"))
+        self.assertEqual(window.target_mods, str(self.base / "My Triforce/mods"))
+        self.assertEqual(window.fields["tools"].get(), str(self.base / "tools"))
+        self.assertEqual(window.fields["server"].get(), "archipelago.gg:45678")
+
+    def test_selecting_another_game_retargets_setup_and_preserves_shared_tools(self):
+        game_a, game_b = self.base / "Game A", self.base / "Game B"
+        shared_tools = self.base / "Shared tools"
+        old_mods = self.base / "Existing mods A"
+        self.service.discovery.update(game=str(game_a), romfs=str(game_a / "romfs"),
+                                      tools=str(shared_tools), mods=str(old_mods))
+        for folder in (game_a / "romfs", game_b / "romfs", old_mods, game_b / "mods"):
+            folder.mkdir(parents=True)
+            (folder / "untouched.bin").write_bytes(str(folder).encode())
+        before = {path.relative_to(self.base): path.read_bytes() for path in self.base.rglob("*") if path.is_file()}
+        window = self.open()
+        self.assertEqual(window.target_mods, str(old_mods))
+        window.fields["romfs"].set(str(game_a / "custom romfs"))
+        self.dialogs.directory = str(game_b)
+        window.browse_folder("game", "choose_game")
+        self.prepare_form(window)
+        window.install_button.invoke()
+        self.pump(lambda: not window.busy)
+        request = self.service.calls[-1][1]
+        self.assertEqual(request["game"], str(game_b))
+        self.assertEqual(request["romfs"], str(game_b / "romfs"))
+        self.assertEqual(request["mods"], str(game_b / "mods"))
+        self.assertEqual(request["tools"], str(shared_tools))
+        after = {path.relative_to(self.base): path.read_bytes() for path in self.base.rglob("*") if path.is_file()}
+        self.assertEqual(after, before)
+
+    def test_install_erases_password_and_runs_service_outside_tk_thread(self):
+        window = self.open()
+        self.prepare_form(window)
+        self.service.install_gate = threading.Event()
+        window.fields["password"].set("temporary-password-123")
+        window.install_button.invoke()
+        self.assertEqual(window.fields["password"].get(), "")
+        self.pump(self.service.install_started.is_set)
+        self.assertTrue(window.busy)
+        self.assertEqual(str(window.install_button.cget("state")), "disabled")
+        self.assertEqual(str(window.help_button.cget("state")), "normal")
+        self.assertEqual(self.service.calls[0][1]["password"], "temporary-password-123")
+        self.assertNotEqual(self.service.calls[0][2], threading.get_ident())
+        self.assertTrue(self.service.calls[0][1]["rebuild"])
+        self.service.install_gate.set()
+        self.pump(lambda: not window.busy)
+        self.assertEqual(window.page, "home")
+        self.assertEqual(str(window.play_button.cget("state")), "normal")
+        self.assertIn("Test Room", window.home_room.cget("text"))
+        window.play_button.invoke()
+        self.pump(lambda: not window.busy)
+        self.assertEqual(self.service.calls[-1][0], "launch")
+
+    def test_close_waits_for_safe_worker_cancellation(self):
+        window = self.open()
+        self.prepare_form(window)
+        self.service.install_gate = threading.Event()
+        window.install_button.invoke()
+        self.pump(self.service.install_started.is_set)
+        window.close()
+        self.assertTrue(window.cancel_event.is_set())
+        self.assertFalse(window.closed)
+        self.pump(lambda: window.closed)
+        self.assertFalse(window.current.get("ready"))
+
+    def test_stale_manifest_result_cannot_enable_install_for_another_file(self):
+        window = self.open()
+        self.service.inspect_gate = threading.Event()
+        window.fields["manifest"].set(str(self.base / "old.apootrr"))
+        self.pump(self.service.inspect_started.is_set)
+        window.fields["manifest"].set(str(self.base / "invalid.apootrr"))
+        self.service.inspect_gate.set()
+        self.pump(lambda: window.manifest_message == "invalid_player")
+        self.assertIsNone(window.manifest_info)
+        self.assertEqual(str(window.install_button.cget("state")), "disabled")
+        self.assertNotIn("private details", window.manifest_label.cget("text"))
+
+    def test_arbitrary_worker_exception_is_not_shown_as_a_password_or_traceback(self):
+        window = self.open()
+        self.prepare_form(window)
+        self.service.install_error = RuntimeError("secret-password-in-the-lower-level-error")
+        window.install_button.invoke()
+        self.pump(lambda: not window.busy)
+        self.assertEqual(window.status.cget("text"), tr(TEXT["setup_failed"]))
+        self.assertNotIn("secret-password", window.status.cget("text"))
+
+    def test_saved_yaml_preserves_quoted_player_name_and_leaves_other_files_untouched(self):
+        window = self.open()
+        window.show_page("yaml")
+        window.player_name.set('Link: "A"')
+        self.dialogs.save = str(self.base / "Player.yaml")
+        untouched = self.base / "Other.yaml"
+        untouched.write_bytes(b"unchanged")
+        window.save_yaml_button.invoke()
+        self.pump(lambda: not window.busy)
+        text = Path(self.dialogs.save).read_text(encoding="utf-8")
+        self.assertEqual(json.loads(next(line[6:] for line in text.splitlines() if line.startswith("name: "))), 'Link: "A"')
+        self.assertIn("  death_link: false\n", text)
+        self.assertEqual(untouched.read_bytes(), b"unchanged")
+        window.player_name.set("Archipelago")
+        count = len(self.dialogs.calls)
+        window.save_yaml_button.invoke()
+        self.assertEqual(len(self.dialogs.calls), count)
+        self.assertEqual(window.status_key, "yaml_name_error")
+
+    def test_cancelled_save_dialog_writes_nothing(self):
+        window = self.open()
+        window.save_yaml()
+        self.assertFalse(window.busy)
+        self.assertFalse(list(self.base.iterdir()))
+
+    def test_apworld_install_uses_the_selected_folder_and_no_game_setup(self):
+        window = self.open()
+        self.dialogs.directory = str(self.base)
+        calls = []
+        runtime = types.SimpleNamespace(install_apworld=lambda target: calls.append(target))
+        with patch.dict(sys.modules, {"ootrr_triforce.app_runtime": runtime}):
+            window.install_world()
+            self.pump(lambda: not window.busy)
+        self.assertEqual(calls, [self.base])
+        self.assertFalse(self.service.calls)
+        self.assertEqual(window.status_key, "world_installed")
+
+    def test_connection_controls_are_in_process_and_do_not_close_the_main_app(self):
+        created = []
+        class Child:
+            def __init__(self, master, **kwargs):
+                self.master, self.closed = master, False
+                created.append(kwargs)
+            def close(self):
+                self.closed = True
+                self.master.destroy()
+        self.service.discovery.update(ready=True, profile=str(self.base / "profile"), slot="Link", room="Room A")
+        window = self.open(connection_factory=Child)
+        window.connection_button.invoke()
+        child = window.connection_window
+        window.connection_button.invoke()
+        self.assertEqual(len(created), 1)
+        self.assertEqual(created[0]["explicit"], self.base / "profile")
+        child.close()
+        self.assertTrue(window.master.winfo_exists())
+        self.assertFalse(window.closed)
+
+    def test_game_language_translates_the_actual_widgets(self):
+        self.service.discovery["language"] = "fr"
+        window = self.open()
+        self.assertEqual(window.language, "fr")
+        self.assertNotEqual(window.play_button.cget("text"), TEXT["play"])
+        for widget, key in window.translated_widgets:
+            self.assertEqual(widget.cget("text"), tr(TEXT[key], language="fr"))
+        self.assertEqual(window.master.title(), tr(TEXT["title"], language="fr"))
+
+    def test_licenses_are_exported_on_the_worker_and_opened_afterwards(self):
+        opened, exported = [], []
+        window = self.open(open_path=lambda path: opened.append((path, threading.get_ident())))
+        def export(base):
+            exported.append((base, threading.get_ident()))
+            return base / "licenses"
+        runtime = types.SimpleNamespace(export_licenses=export)
+        with patch.dict(sys.modules, {"ootrr_triforce.app_runtime": runtime}):
+            window.open_licenses()
+            self.pump(lambda: not window.busy)
+        self.assertEqual(exported[0][0], self.base)
+        self.assertNotEqual(exported[0][1], threading.get_ident())
+        self.assertEqual(opened, [(self.base / "licenses", threading.get_ident())])
+
+    def test_about_has_the_packaged_version_and_an_interactive_project_link(self):
+        (self.base / "VERSION").write_text("0.7.0-alpha.1\n", encoding="utf-8")
+        window = self.open()
+        runtime = types.SimpleNamespace(resource_root=lambda: self.base)
+        with patch.dict(sys.modules, {"ootrr_triforce.app_runtime": runtime}):
+            window.about()
+        window.about()
+        self.root.update()
+        children = window.about_window.winfo_children()[0].winfo_children()
+        texts = [child.cget("text") for child in children]
+        self.assertIn("0.7.0-alpha.1", texts)
+        link, = [child for child in children if child.cget("text").startswith("https://github.com/")]
+        self.assertTrue(link.bind("<Button-1>"))
+        self.assertTrue(link.bind("<Return>"))
+
+
+class YamlTests(unittest.TestCase):
+    def test_every_app_message_has_a_french_translation(self):
+        catalogue = json.loads((ROOT / "client/ootrr_triforce/i18n_fr.json").read_bytes())
+        self.assertEqual(set(TEXT.values()) - set(catalogue), set())
+
+    def test_invalid_player_names_fail_without_any_file_operation(self):
+        for name in ("", " ", "Archipelago", "a" * 17, "Link\nOther"):
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                yaml_content(name)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,5 +1,6 @@
 """Install the opt-in runtime for a local Windows build, and bind one mod to one room."""
 from .i18n import tr, detect_language
+from .app_runtime import resource_root
 from .item_names import item_names
 import base64
 import ctypes
@@ -120,7 +121,7 @@ def protect_password(value):
 
 def install_tools(base, chooser, configured=None):
     from .menu_setup import patch_renderer
-    bundle=Path(sys.argv[0]).resolve().parent/"native"
+    bundle=resource_root()/"native"
     guess=Path(configured) if configured else base.parent/"Programs/Triforce/tools"
     if not (guess/"host/hos_main.c").is_file():
         guess=chooser(tr('Choose the Triforce tools folder containing host and nx2'),folder=True)
@@ -216,28 +217,31 @@ def save_session(root, config, data, roster, *, prepared=None):
 
 def runtime_cache_name(baseline):
     from importlib import resources
-    bundle=Path(sys.argv[0]).resolve().parent/"native/archipelago.dll"
+    bundle=resource_root()/"native/archipelago.dll"
     digest=hashlib.sha256(bundle.read_bytes())
+    version=resource_root()/"VERSION"
+    if getattr(sys, "frozen", False) and version.is_file():
+        digest.update(version.read_bytes())
     for source in sorted(resources.files(__package__).iterdir(), key=lambda path:path.name):
         if source.is_file() and source.name.endswith((".py", ".cjs", ".wasm")):
             digest.update(source.name.encode("utf-8")); digest.update(source.read_bytes())
     return "jeu-016-mod-"+str(baseline)+"-"+digest.hexdigest()[:16]
 
 
-def compiled_game(romfs, tools=None):
-    bundle=Path(sys.argv[0]).resolve().parent/"native/archipelago.dll"
+def compiled_executable(romfs, tools=None):
+    bundle=resource_root()/"native/archipelago.dll"
     try:
         module=bundle.read_bytes()
     except OSError:
-        return False
+        return None
     if not module:
-        return False
+        return None
     expected=hashlib.sha256(module).digest()
     helpers = [Path(tools)/"host"/name for name in RT_FILES] if tools else []
     menu_helpers = ([Path(tools)/"gpu/vk"/name for name in (*MENU_FILES,"vk_menu.cpp")]
                     if tools else [])
     if any(not helper.is_file() for helper in (*helpers,*menu_helpers)):
-        return False
+        return None
     for path in (romfs.parent/"Triforce.exe",romfs.parent/"bin/Triforce.exe"):
         renderer=path.parent/"triforce_vk.dll"
         if path.is_file() and path.stat().st_size and renderer.is_file() and renderer.stat().st_size:
@@ -247,5 +251,9 @@ def compiled_game(romfs, tools=None):
                         and all(helper.stat().st_mtime_ns<=renderer.stat().st_mtime_ns for helper in menu_helpers)):
                     with renderer.open("rb") as vf,mmap.mmap(vf.fileno(),0,access=mmap.ACCESS_READ) as menu_binary:
                         if menu_binary.find(MENU_BUILD_MARK)>=0:
-                            return True
-    return False
+                            return path
+    return None
+
+
+def compiled_game(romfs, tools=None):
+    return compiled_executable(romfs, tools) is not None
