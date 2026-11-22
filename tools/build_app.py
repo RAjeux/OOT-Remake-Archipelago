@@ -76,6 +76,37 @@ def pinned_node(executable=None, license_file=None):
     return node, license_file
 
 
+def _tk_license_text(interpreter, language):
+    """Read vendor terms, including CPython's consolidated Windows notices."""
+    directory = "tcl" if language == "Tcl" else "tk"
+    zipped = int(str(interpreter.call("info", "patchlevel")).split(".")[0]) >= 9
+    source = f"//zipfs:/lib/{directory}/{directory}_library/license.terms"
+    if zipped and interpreter.call("file", "exists", source):
+        handle = interpreter.call("open", source, "r")
+        try:
+            return interpreter.call("read", handle)
+        finally:
+            interpreter.call("close", handle)
+    folder = interpreter.call("info", "library") if language == "Tcl" else interpreter.eval("set tk_library")
+    terms = Path(folder) / "license.terms"
+    if terms.is_file():
+        return terms.read_text(encoding="utf-8")
+    # CPython's Windows layout may omit these individual files. Its build
+    # concatenates both notices into LICENSE.txt (PCbuild/regen.targets).
+    # Keep the entire file, and reject a PSF-only or truncated license.
+    combined = (Path(sys.base_prefix) / "LICENSE.txt").read_text(encoding="utf-8")
+    normalized = " ".join(combined.split())
+    markers = (
+        "This software is copyrighted by the Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation",
+        "The authors hereby grant permission to use, copy, modify, distribute,",
+        "IN NO EVENT SHALL THE AUTHORS OR DISTRIBUTORS BE LIABLE",
+        "permission to use and distribute the software in accordance with the terms specified in this license.",
+    )
+    if any(normalized.count(marker) < 2 for marker in markers):
+        raise ValueError("Tcl and Tk license terms are missing from this Python distribution.")
+    return combined
+
+
 def licenses(work, node_license):
     """Keep redistribution notices inside the executable, accessible from Help."""
     result = {}
@@ -95,19 +126,8 @@ def licenses(work, node_license):
     window = tkinter.Tk()
     window.withdraw()
     try:
-        zipped = int(str(window.tk.call("info", "patchlevel")).split(".")[0]) >= 9
-        for language, directory in (("Tcl", "tcl"), ("Tk", "tk")):
-            source = f"//zipfs:/lib/{directory}/{directory}_library/license.terms"
-            if zipped and window.tk.call("file", "exists", source):
-                handle = window.tk.call("open", source, "r")
-                try:
-                    raw = window.tk.call("read", handle)
-                finally:
-                    window.tk.call("close", handle)
-            else:
-                # Tcl/Tk 8 use ordinary library folders instead of zipfs.
-                directory = window.tk.call("info", "library") if language == "Tcl" else window.tk.eval("set tk_library")
-                raw = (Path(directory) / "license.terms").read_text(encoding="utf-8")
+        for language in ("Tcl", "Tk"):
+            raw = _tk_license_text(window.tk, language)
             target = work / (language + "-license.terms")
             target.write_text(raw, encoding="utf-8", newline="\n")
             result["licenses/" + target.name] = target
