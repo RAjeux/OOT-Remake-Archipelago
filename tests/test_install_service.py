@@ -116,7 +116,7 @@ class InstallationTransactionTests(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
-        self.root = Path(temporary.name)
+        self.root = Path(temporary.name).resolve()
         self.manifest, self.data = fixture(self.root)
         self.base = self.root / "application"
         self.profile = self.base / self.data["token"]
