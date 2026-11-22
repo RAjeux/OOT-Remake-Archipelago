@@ -23,6 +23,26 @@ PICKUP_FLOWS = {
 }
 
 
+def _after_writes(editor, name, target):
+    """Let native trigger actions commit before querying their GameData values."""
+    from evfl.actor import Actor
+    from evfl.common import ActorIdentifier
+    from evfl.container import Container
+    from oot_rando.patching.event_patch import GAMEDATA_ACTOR_PARAMS
+    from oot_rando.patching.progressive import link
+    if not any(str(actor.identifier) == "EventSystemActor" for actor in editor.chart.actors):
+        # Exact native EventSystemActor parameters, also used by GameDataActor.
+        actor = Actor()
+        actor.identifier = ActorIdentifier("EventSystemActor")
+        actor.concurrent_clips = 1
+        actor.params = Container()
+        actor.params.data = dict(GAMEDATA_ACTOR_PARAMS)
+        editor.chart.actors.append(actor)
+    wait = editor.action(name, "EventSystemActor", "EventWait", {"Frames": 1, "IsWaitEnd": True})
+    link(wait, target)
+    return wait
+
+
 def skull_records(roster):
     from oot_rando.patching import ap_item
     records = []
@@ -148,17 +168,17 @@ def patch_skull_flow(raw, records, *, return_entries=False):
         # GetPouchContent entry. Give that authored presentation a quiet effect
         # callback, retaining its original window, pose and camera sequence.
         effect_name = stem + "_Effect"
+        def preview(branch, actor):
+            target = editor.action(branch + "_PreviewTarget", "PouchSystemActor", "EventTriggerSetForGetWindow",
+                                   {"Actor": actor})
+            cached = editor.action(branch + "_PreviewCache", "GameDataActor", "EventTriggerSetGameDataString64",
+                                   {"GameDataName": NATIVE_SCRATCH, "Index": -1, "Value": actor})
+            link(cached, _after_writes(editor, branch + "_PreviewReady", target))
+            return cached
         if metadata is not None:
             # The physical get flow opens its window before it grants. Resolve
             # the native item at that earlier boundary without changing inventory
             # or acknowledging the location.
-            def preview(branch, actor):
-                target = editor.action(branch + "_PreviewTarget", "PouchSystemActor", "EventTriggerSetForGetWindow",
-                                       {"Actor": actor})
-                cached = editor.action(branch + "_PreviewCache", "GameDataActor", "EventTriggerSetGameDataString64",
-                                       {"GameDataName": NATIVE_SCRATCH, "Index": -1, "Value": actor})
-                link(cached, target)
-                return cached
             register(effect_name + "_Preview", append_tier_choice(editor, metadata, stem + "_Preview", preview))
             quiet = append_recipe(editor, metadata, stem + "_QuietRecipe", grant, commit, pickup=True)
             if isinstance(quiet.data, SubFlowEvent) and quiet.data.entry_point_name == grant:
@@ -174,6 +194,7 @@ def patch_skull_flow(raw, records, *, return_entries=False):
             quiet_root = editor.switch(stem + "_QuietAlreadyCollected", "GameDataActor", "EventQueryIsGameDataBool",
                                        {"GameDataName": record["flag_name"], "Index": -1}, save, quiet_root)
         else:
+            register(effect_name + "_Preview", preview(stem + "_Preview", record["actor"]))
             # The unmodified native GuestPerformer action grants the AP token;
             # this callback only commits its location after that action.
             quiet_root = commit
@@ -184,7 +205,7 @@ def patch_skull_flow(raw, records, *, return_entries=False):
                                      {"GameDataName": SCRATCH, "Index": -1, "Value": identity}, guarded, dispatch)
     selected = editor.action(PREFIX + "Select", "GameDataActor", "EventTriggerSetGameDataString64",
                              {"GameDataName": SCRATCH, "Index": -1, "Value": Argument("ActorName")})
-    link(selected, dispatch)
+    link(selected, _after_writes(editor, PREFIX + "SelectReady", dispatch))
     entries["GetPouchContent"].main_event = make_index(selected)
 
     # Every entry that reaches the dispatcher must preload the new local calls.
@@ -249,7 +270,7 @@ def patch_pickup_presentation(raw, records, effect_entries, flow_name):
                                        {"GameDataName": SCRATCH, "Index": -1, "Value": identity}, reward, branch)
         capture = editor.action(PREFIX + f"GroundSelect{number}", "GameDataActor", "EventTriggerSetGameDataString64",
                                 {"GameDataName": SCRATCH, "Index": -1, "Value": Argument("ActorName")})
-        link(capture, branch)
+        link(capture, _after_writes(editor, PREFIX + f"GroundSelectReady{number}", branch))
         incoming = sum(_retarget(event, grant, capture) for event in originals)
         for entry in chart.entry_points:
             if entry.main_event.v is grant:
@@ -258,23 +279,28 @@ def patch_pickup_presentation(raw, records, effect_entries, flow_name):
         if not incoming:
             raise ValueError(tr("Unknown native pickup flow."))
 
-        # Authored order is message -> native window -> grant. Select the real
-        # local item before that window, and leave the dummy's own message action
-        # untouched for foreign and unrelated pickups.
+        # Authored order is message -> native window -> grant. Resolve every AP
+        # identity explicitly before its window. A foreign GuestPerformer still
+        # performs its authored message action first; its actor alias must not
+        # overwrite the room-bound pouch identity selected for the AP medal.
         local_message = message
         for index, record in reversed(list(enumerate(records, 1))):
-            if "local_item" in record:
-                preview = editor.subflow(PREFIX + f"GroundPreview{number}_{index}", "GetPouchContent",
-                                         effect_entries[record["actor"]] + "_Preview", None)
-                link(preview, message.data.nxt.v)
-                for alias, identity in enumerate((record["actor"], record["pickup"])):
-                    local_message = editor.switch(PREFIX + f"GroundMessage{number}_{index}_{alias}", "GameDataActor",
-                                                  "EventQueryIsGameDataString64",
-                                                  {"GameDataName": SCRATCH, "Index": -1, "Value": identity},
-                                                  preview, local_message)
+            preview = editor.subflow(PREFIX + f"GroundPreview{number}_{index}", "GetPouchContent",
+                                     effect_entries[record["actor"]] + "_Preview", None)
+            link(preview, message.data.nxt.v)
+            presentation = preview
+            if "local_item" not in record:
+                presentation = editor.action(PREFIX + f"GroundForeignMessage{number}_{index}",
+                                             "PouchContentGuestPerformer", "EventTriggerSetOwnNameToMessage", None)
+                link(presentation, preview)
+            for alias, identity in enumerate((record["actor"], record["pickup"])):
+                local_message = editor.switch(PREFIX + f"GroundMessage{number}_{index}_{alias}", "GameDataActor",
+                                              "EventQueryIsGameDataString64",
+                                              {"GameDataName": SCRATCH, "Index": -1, "Value": identity},
+                                              presentation, local_message)
         selected = editor.action(PREFIX + f"GroundMessageSelect{number}", "GameDataActor", "EventTriggerSetGameDataString64",
                                  {"GameDataName": SCRATCH, "Index": -1, "Value": Argument("ActorName")})
-        link(selected, local_message)
+        link(selected, _after_writes(editor, PREFIX + f"GroundMessageReady{number}", local_message))
         clear = editor.action(PREFIX + f"GroundMessageClear{number}", "GameDataActor", "EventTriggerSetGameDataString64",
                               {"GameDataName": NATIVE_SCRATCH, "Index": -1, "Value": ""})
         link(clear, selected)
@@ -289,8 +315,9 @@ def patch_pickup_presentation(raw, records, effect_entries, flow_name):
     # This native notification takes an explicit actor after the grant. A
     # progressive reward may already own its new tier by then; use the concrete
     # actor selected for its original window instead of choosing another tier.
-    actors = sorted({actor for record in records if "local_item" in record
-                     for actor in ITEM_DATA[record["local_item"]].get("tiers", [record["native_actor"]])})
+    actors = sorted({actor for record in records
+                     for actor in (ITEM_DATA[record["local_item"]].get("tiers", [record["native_actor"]])
+                                   if "local_item" in record else [record["actor"]])})
     for number, event in enumerate(originals):
         data = event.data
         if not (isinstance(data, ActionEvent)

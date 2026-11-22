@@ -13,6 +13,8 @@ header='''
 typedef int Ctx;
 static int active, loading, save_exists, owned, cursor, coins, reward_request, pending_index, queued_balance, won, opened, notice, ack;
 static int ap_event_mode16, event_busy, event_accept=1, receipt_requests, last_receipt;
+static int (*ap_restore16)(uint8_t *,int);
+static void (*ap_restore_deferred16)(int);
 static uint64_t ap_delivery_actor16=77;
 static uint64_t ap_delivery_epoch16;
 static int ap_cursor16=33, ap_flag_count16=2, ap_flags16[]={101,102};
@@ -24,6 +26,8 @@ static uint64_t oot_gd_int(Ctx *ctx,uint64_t mgr,uint32_t key){if(!mgr)return 0;
 static int oot_gamedata_bool(Ctx *c,uint32_t h,int *v){*v=loading;return 1;}
 static char oot_flag_state(Ctx *c,int loaded,uint32_t h){return h==102?'1':'0';}
 static uint32_t recomp_load32(Ctx *c,uint64_t ptr){if(ptr==100+0x1c)return cursor;if(ptr==200+0x1c)return won;if(ptr==300+0x1c)return coins;assert(0);return 0;}
+static uint64_t recomp_load64(Ctx *c,uint64_t ptr){assert(ptr==400+104);return event_busy;}
+static uint32_t oot_murmur3(const char *name){assert(!strcmp(name,"Archipelago.RestoreResult"));return 44;}
 static void ap_opened16(uint32_t *f,int n,int goal){assert(n==1&&f[0]==102&&goal==won);opened++;}
 static int ap_next16(int i){return reward_request==2?(i>=2&&i<=7?1998+i:i==8?9999:0):!reward_request?0:i==0?1000:i==1?1001:0;}
 static const char *ap_eventname16(int id){static const char *names[]={"OOTRR_APReceive_Token","OOTRR_APReceive_HeartPiece","OOTRR_APReceive_Bundle","OOTRR_APReceive_Map","OOTRR_APReceive_Progressive","OOTRR_APReceive_SmallKey"};return id>=2000&&id<=2005?names[id-2000]:NULL;}

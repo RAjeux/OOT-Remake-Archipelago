@@ -167,7 +167,7 @@ def install_tools(base, chooser, configured=None):
     return guess
 
 
-def save_session(root, config, data, roster):
+def save_session(root, config, data, roster, *, prepared=None):
     old=root/"native-session.json"
     previous=json.loads(old.read_bytes()) if old.is_file() else {}
     checks={}
@@ -175,8 +175,23 @@ def save_session(root, config, data, roster):
         row=roster.get(n,("",""))
         item,owner=(row["item"],row["player"]) if isinstance(row,dict) else row
         checks[LOCATION_IDS[n]]=dict(Name=n,Flags=CHECK_FLAGS[n],Item=item,Owner=owner)
+        if isinstance(row,dict):
+            checks[LOCATION_IDS[n]]["ItemID"]=row.get("item_id",0)
+            checks[LOCATION_IDS[n]]["Recipient"]=row.get("owner",0)
         if isinstance(row,dict) and row.get("game"):
             checks[LOCATION_IDS[n]]["Game"]=row["game"]
+    recovery=[]
+    if prepared is not None and data.get("local_items") and data.get("reward_mode")=="all_locations":
+        from .restoration import prepared_locations
+        recovery=prepared_locations(prepared,data["checks"])
+        if recovery:
+            for name in data["checks"]:
+                row=roster.get(name)
+                if (not isinstance(row,dict) or type(row.get("item_id")) is not int or row["item_id"]<=0
+                        or type(row.get("owner")) is not int or row["owner"]<=0
+                        or type(row.get("local")) is not bool or row["local"]!=(row["owner"]==data["player"])
+                        or (row["local"] and ITEM_IDS.get(row["item"])!=row["item_id"])):
+                    raise ValueError(tr("Invalid Archipelago restoration metadata."))
     doc=dict(Room=data["room"],Slot=data["slot"],Game=data.get("game",LEGACY_GAME),Token=data["token"],Player=data["player"],Protocol=PROTOCOL,
              RewardMode=data.get("reward_mode","legacy_gear"),
              LocalItems=bool(data.get("local_items",False)),
@@ -185,7 +200,7 @@ def save_session(root, config, data, roster):
              CursorHash=cursor_hash(data["token"]),Baseline=config["baseline"],DeathLink=bool(data.get("death_link",False)),
              Language=detect_language(root,config),
              ItemNames={ITEM_IDS[n]:names for n,names in item_names().items() if n in ITEM_IDS},
-             Items={i:n for n,i in ITEM_IDS.items()},Checks=checks)
+             Items={i:n for n,i in ITEM_IDS.items()},Checks=checks,RecoveryLocations=recovery)
     write_json(old,doc)
 
 

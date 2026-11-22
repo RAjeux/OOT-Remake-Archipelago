@@ -91,7 +91,7 @@ def ground_flow(name):
 
 
 class Pickup:
-    def __init__(self, raw, *, ignored_entries=()):
+    def __init__(self, raw, *, ignored_entries=(), deferred_strings=True):
         raw = raw if isinstance(raw, dict) else {"GetPouchContent": raw}
         self.charts = {name: _flow(content).flowchart for name, content in raw.items()}
         self.chart = self.charts["GetPouchContent"]
@@ -100,6 +100,9 @@ class Pickup:
         self.ignored_entries = set(ignored_entries)
         self.windows = []
         self.message_target = None
+        self.guest_message_actor = None
+        self.deferred_strings = deferred_strings
+        self.pending_strings = {}
 
     def run(self, actor):
         self.call("GetPouchContent", {"ActorName": actor, "IsGetInEvent": False,
@@ -124,14 +127,20 @@ class Pickup:
                 command = data.actor_action.v.v
                 self.trace.append((command, values))
                 key = values.get("GameDataName")
-                if command in {"EventTriggerSetGameDataBool", "EventTriggerSetGameDataString64", "EventTriggerSetGameDataInt"}:
+                if command == "EventTriggerSetGameDataString64" and self.deferred_strings:
+                    self.pending_strings[key] = values["Value"]
+                elif command in {"EventTriggerSetGameDataBool", "EventTriggerSetGameDataString64", "EventTriggerSetGameDataInt"}:
                     self.values[key] = values["Value"]
+                elif command == "EventWait":
+                    self.assert_native_wait(values)
+                    self.values.update(self.pending_strings)
+                    self.pending_strings.clear()
                 elif command == "EventTriggerAddOrSubGameDataInt":
                     self.values[key] = self.values.get(key, 0) + values["Value"]
                 elif command == "EventTriggerSetForGetWindow":
                     self.message_target = values["Actor"]
                 elif command == "EventTriggerSetOwnNameToMessage":
-                    self.message_target = args["ActorName"]
+                    self.message_target = self.guest_message_actor or args["ActorName"]
                 elif command == "EventTriggerAddOrRemovePouchContent":
                     self.held.add(OWNERS.get(values["Actor"], values["Actor"]))
                 event = data.nxt.v
@@ -165,6 +174,10 @@ class Pickup:
                 event = data.nxt.v
             else:
                 raise AssertionError(type(data))
+
+    @staticmethod
+    def assert_native_wait(values):
+        assert values == {"Frames": 1, "IsWaitEnd": True}
 
 
 def roster(names, foreign=False):
@@ -319,8 +332,8 @@ class SkullEventTests(unittest.TestCase):
                             self.assertFalse(guest_grants)
                             self.assertEqual(run.values[NATIVE_SCRATCH], expected)
                         else:
-                            self.assertEqual(target, record[alias])
-                            self.assertEqual(notices, [record[alias]])
+                            self.assertEqual(target, record["actor"])
+                            self.assertEqual(notices, [record["actor"]])
                             self.assertEqual(len(guest_grants), 1)
                         before = len([cmd for cmd, _ in run.trace
                                       if cmd in {"EventTriggerAddOwnToPouch", "EventTriggerAddOrRemovePouchContent"}])
@@ -337,6 +350,52 @@ class SkullEventTests(unittest.TestCase):
                               if cmd == "EventTriggerRequestOpenPickUpWindow"], ["Item_Token_Gold"])
             self.assertEqual(sum(cmd == "EventTriggerAddOwnToPouch" for cmd, _ in ordinary.trace), 1)
             self.assertFalse(any(ordinary.values.get(row["flag_name"]) for row in records))
+
+    def test_foreign_preview_overrides_guest_alias_after_a_progressive_local_pickup(self):
+        names = sorted(AP_SKULL_CHECKS)[:3]
+        records = skull_records(dict(zip(names, [
+            dict(item="Bomb Bag", player="Link", local=True),
+            dict(item="Large Soul of a Nameless Soldier", player="Ami", local=False),
+            dict(item="Rupees (5)", player="Link", local=True)])))
+        pouch, effects = patch_skull_flow(self.native, records, return_entries=True)
+        bag, foreign, rupees = records
+        for name in ("Dm_SY_Get", "Dm_SY_Get_WithoutPlayer"):
+            with self.subTest(flow=name):
+                patched = patch_pickup_presentation(ground_flow(name), records, effects, name)
+                run = Pickup({"GetPouchContent": pouch, name: patched}, deferred_strings=True)
+                entry = "PouchAddItem" if name == "Dm_SY_Get" else name
+                run.call(entry, {"ActorName": bag["pickup"]}, name)
+                bag_actor = run.windows[-1][0]
+                # The guest's name may still be a native actor or a drop alias.
+                # The room identity must win after that native action executes.
+                run.guest_message_actor = bag_actor
+                start = len(run.trace)
+                run.call(entry, {"ActorName": foreign["pickup"]}, name)
+                self.assertEqual(run.windows[-1][0], foreign["actor"])
+                trace = run.trace[start:]
+                guest = next(i for i, (cmd, _) in enumerate(trace) if cmd == "EventTriggerSetOwnNameToMessage")
+                explicit = next(i for i, (cmd, _) in enumerate(trace) if cmd == "EventTriggerSetForGetWindow")
+                self.assertLess(guest, explicit)
+                self.assertEqual([args["ActorName"] for cmd, args in trace
+                                  if cmd == "EventTriggerRequestOpenPickUpWindow"], [foreign["actor"]])
+                self.assertFalse(any(cmd == "EventTriggerAddOrRemovePouchContent" for cmd, _ in trace))
+                self.assertEqual(sum(cmd == "EventTriggerAddOwnToPouch" for cmd, _ in trace), 1)
+                run.call(entry, {"ActorName": rupees["pickup"]}, name)
+                self.assertEqual(run.windows[-1][0], rupees["native_actor"])
+                self.assertTrue(all(run.values[row["flag_name"]] for row in records))
+
+    def test_native_gain_after_a_collected_skull_ignores_the_previous_selection(self):
+        records = skull_records(roster(["Bomb Bag"]))
+        record = records[0]
+        raw = patch_skull_flow(self.native, records)
+        run = Pickup(raw, deferred_strings=True)
+        run.values[SCRATCH] = record["actor"]
+        run.values[record["flag_name"]] = True
+        run.run("Item_HoverBoot")
+        self.assertEqual([args["Actor"] for cmd, args in run.trace
+                          if cmd == "EventTriggerAddOrRemovePouchContent"], ["Item_HoverBoot"])
+        self.assertEqual(run.windows[0][0], "Item_HoverBoot")
+        self.assertEqual(run.values[SCRATCH], "Item_HoverBoot")
 
     @unittest.skipUnless(os.environ.get("OOTRR_ROMFS"), "requires a private native RomFS")
     def test_authoritative_native_entries_reach_the_pickup_callbacks(self):
@@ -378,7 +437,7 @@ class SkullEventTests(unittest.TestCase):
                         if "local_item" in record:
                             expected = ITEM_DATA[record["local_item"]].get("tiers", [record["native_actor"]])[0]
                         else:
-                            expected = record["pickup"]
+                            expected = record.get("actor", record["pickup"])
                         self.assertEqual(run.windows[0][0], expected)
                         if "flag_name" in record:
                             self.assertFalse(run.windows[0][1].get(record["flag_name"]))

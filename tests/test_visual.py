@@ -18,9 +18,10 @@ from oot_rando.formats import byml_codec as by,msbt
 from oot_rando.formats.inspect_resources import sarc
 from oot_rando.patching import ap_item as ap, soul_adapter as soul, repeatable_adapter as rep, chest_flags as ch,event_info
 sys.argv[0]=str(Path('dist/Client-OOT-Remake.pyz').resolve())
-from ootrr_triforce.catalog import CHESTS, ITEM_DATA, ITEM_IDS
+from ootrr_triforce.catalog import CHESTS, ITEM_DATA, ITEM_IDS, LOCATION_IDS
 from ootrr_triforce.medallions import GET,CHEST_ENTRY,REST,prepare,plan_maps,chest_flows
 from ootrr_triforce.mod_codec import Codec
+from ootrr_triforce import restoration
 from oot_rando.patching.progressive import FlowEditor, link
 
 CHEST_GIVE=('GetPouchContent','GetPouchContentByActorNameForTreasureBox')
@@ -147,8 +148,12 @@ def resources(roster, moved):
               for event in chest_events]
     settings.append({'__RowId':'LocalKeyGrant','FlowchartFileName':'Work/Event/EventFlow/Dm_SY_TreasureboxSmall.evfc',
                      'EntryPointName':'Success_LocalKey'})
+    settings.append({'__RowId':'Dm_SY_Get','FlowchartFileName':'Work/Event/EventFlow/Dm_SY_Get.evfc',
+                     'EntryPointName':'Dm_SY_Get','EventSettingComponentList':'NativePickupParticipants'})
     d[ch.EVENT_SETTINGS]=dump(settings)
-    d[ch.ANALYZED]=dump([{'__RowId':event,'SubFlowList':[CHEST_GIVE[0],'ExistingFlow']} for event in chest_events])
+    d[ch.ANALYZED]=dump([{'__RowId':event,'SubFlowList':[CHEST_GIVE[0],'ExistingFlow']} for event in chest_events]+
+                          [{'__RowId':'Dm_SY_Get','SubFlowList':['NativePickupOnly'],
+                            'IsPlayerWarpFirstFrame':True,'RecordedCameraInfo':{'FixtureCamera':'native'}}])
     for event in chest_events:d[event_info.flow_path(event)]=chest_flow(event)
     d[event_info.flow_path(GET[0])]=flow(*GET)
     d[event_info.flow_path('GetPouchContent')]=native_pouch()
@@ -163,6 +168,9 @@ def resources(roster, moved):
         d[path]=dump([{'__RowId':a,'InstanceHeapSize':8192,'ActorName':a} for a in (soul.TEMPLATE,ap.MODEL_ACTOR)])
     flag=by.U32(soul.murmur3('IsGet.'+soul.TEMPLATE))
     d[soul.GAMEDATA]=dump({'Data':{'Bool':[{'Hash':flag,'DefaultValue':False,'SaveFileIndex':0}],
+        'Int':[{'Hash':by.U32(17),'DefaultValue':0,'SaveFileIndex':-1,'ResetTypeValue':8},
+               {'Hash':by.U32(33),'DefaultValue':7,'SaveFileIndex':0,'ResetTypeValue':8}],
+        'UInt64':[{'Hash':by.U32(49),'DefaultValue':by.U64(0x9876543210123456),'SaveFileIndex':0,'ResetTypeValue':8}],
         'Struct':[{'Hash':by.U32(soul.murmur3('IsGet')),'DefaultValue':[{'Hash':by.U32(soul.murmur3(soul.TEMPLATE)),'Value':flag}]}]},
         'MetaData':{'SaveDataSize':[32],'SaveDataOffsetPos':[32],'AllDataSaveSize':32,'AllDataSaveOffset':32}})
     for lang in ('EUfr','USen'):d[f'Mals/{lang}.Product.110.sarc.zs']=message()
@@ -284,6 +292,37 @@ def check():
                 assert not any(str(params.get('GameDataName','')).startswith('Archipelago.ReceivedIndex.') for action,params in actions)
             local_actor=ap.ap_actor(ap.ap_item(json.dumps([owned,*roster[owned]],ensure_ascii=False)))
             assert not (own_mod/f'Pack/Actor/{local_actor}.pack.zs').exists()
+            assert restoration.prepared_locations(own_mod,own_roster)==sorted(LOCATION_IDS[name] for name in own_roster)
+            status_hash=soul.murmur3(restoration.RESULT)
+            own_data=by.load(own_raw(soul.GAMEDATA))['root']
+            status=next(row for row in own_data['Data']['Int'] if row['Hash']==status_hash)
+            assert status['SaveFileIndex']==-1 and status['DefaultValue']==0 and status['ResetTypeValue']==8
+            native_data=by.load(res[soul.GAMEDATA])['root']
+            assert [row for row in own_data['Data']['Int'] if row['Hash']!=status_hash]==native_data['Data']['Int']
+            assert own_data['Data']['UInt64']==native_data['Data']['UInt64']
+            recovery=FlowEditor(own_raw(restoration.FLOW_PATH),'prepared recovery fixture').chart
+            entries={point.name:point.main_event.v for point in recovery.entry_points}
+            settings={row['__RowId']:row for row in by.load(own_raw(ch.EVENT_SETTINGS))['root']}
+            analyzed={row['__RowId']:row for row in by.load(own_raw(ch.ANALYZED))['root']}
+            for name,reward in own_roster.items():
+                event=restoration.event_name(LOCATION_IDS[name]);pending=[entries[event]];seen=set();actions=[]
+                while pending:
+                    node=pending.pop()
+                    if node is None or node in seen:continue
+                    seen.add(node);data=node.data
+                    if isinstance(data,ActionEvent):actions.append((data.actor_action.v.v,data.params.data if data.params else {}))
+                    if isinstance(data,SubFlowEvent):
+                        assert not data.res_flowchart_name
+                        pending.append(entries[data.entry_point_name])
+                    pending.extend(event_info._successors(node))
+                assert any(action=='EventTriggerAddOrRemovePouchContent' for action,params in actions)==reward['local']
+                assert any(action=='EventTriggerSetGameDataBool' and params['Value'] is True for action,params in actions)
+                assert any(action=='EventTriggerSetGameDataInt' and params['GameDataName']==restoration.RESULT and
+                           params['Value']==LOCATION_IDS[name] for action,params in actions)
+                assert not any(str(params.get('GameDataName','')).startswith('Archipelago.ReceivedIndex.') for action,params in actions)
+                assert settings[event]['EntryPointName']==event
+                assert analyzed[event]['SubFlowList']==['GetPouchContent'] and analyzed[event]['IsPlayerWarpFirstFrame'] is False
+                assert 'RecordedCameraInfo' not in analyzed[event]
             assert tree(base)==baseline and tree(game)==vanilla
         print(f'{len(roster)} chests; PASS AP-only staged mod: all normal/substitute drops replaced, one presentation, original key grant bypassed, chest opening preserved, actor packs, model, textures, text, allocations, cache, originals unchanged.')
 if __name__=='__main__': check()

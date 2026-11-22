@@ -307,5 +307,7 @@
   "Invalid local Skulltula list.": "Liste des Skulltulas locales invalide.",
   "Unknown Archipelago location list.": "Liste des emplacements Archipelago inconnue.",
   "An Archipelago location is missing from the OOTRR seed.": "Un emplacement Archipelago manque dans la seed OOTRR.",
-  "The Archipelago location list is incomplete.": "La liste des emplacements Archipelago est incomplète."
+  "The Archipelago location list is incomplete.": "La liste des emplacements Archipelago est incomplète.",
+  "Invalid Archipelago restoration metadata.": "Métadonnées de restauration Archipelago invalides.",
+  "The native Archipelago restoration": "La restauration native Archipelago"
 }

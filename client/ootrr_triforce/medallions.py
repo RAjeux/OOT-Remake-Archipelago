@@ -16,7 +16,7 @@ from .mod_codec import Codec
 REST = "System/Resource/ResourceSizeTable.Product.111.Nin_Ounce_NVN2.rsizetable.zs"
 GET = ("Dm_SY_GetInEvent", "GetInEvent_NotTurn_NotNpc")
 CHEST_ENTRY = "Success_"
-REVISION = 8
+REVISION = 10
 
 
 def chest_flows(raw, records, *, native_pouch=None, small_raw=None):
@@ -323,6 +323,9 @@ def prepare(root, settings, roster, moved):
             if settings.get("shuffle_skulltulas", "off")!="off":
                 from .ap_skulls import prepare_skulls
                 prepare_skulls(romfs, mod, roster, settings)
+            if settings.get("reward_mode")=="all_locations" and local_items:
+                from .restoration import prepare_restoration
+                prepare_restoration(romfs, mod, roster)
         if seed_settings is not None:
             localize_mod(romfs, mod, seed_settings)
         stage.rename(dest)

@@ -44,13 +44,18 @@ type connectionControl struct {
 
 func newConnectionControl(cfg Config) *connectionControl {
 	auto := cfg.AutoConnect == nil || *cfg.AutoConnect
+	server := cfg.Server
+	if normalized, ok := normalizeServer(server); ok {
+		server = normalized
+	}
 	return &connectionControl{
-		server: cfg.Server, protected: cfg.ProtectedPassword, autoConnect: auto,
+		server: server, protected: cfg.ProtectedPassword, autoConnect: auto,
 		desired: auto, epoch: 1, state: "disconnected", wake: make(chan struct{}, 1),
 		protect: protectPassword,
 		dial: func(ctx context.Context, endpoint string) (*websocket.Conn, *http.Response, error) {
 			dialer := *websocket.DefaultDialer
 			dialer.HandshakeTimeout = 12 * time.Second
+			dialer.EnableCompression = true
 			return dialer.DialContext(ctx, endpoint, nil)
 		},
 	}
@@ -138,6 +143,12 @@ func normalizeServer(input string) (string, bool) {
 		if err != nil || n < 1 || n > 65535 {
 			return "", false
 		}
+	}
+	// Hosted rooms require TLS. Upgrade old saved ws:// addresses too; never
+	// retry them in plaintext after a TLS or certificate failure.
+	host := strings.TrimSuffix(strings.ToLower(u.Hostname()), ".")
+	if host == "archipelago.gg" || strings.HasSuffix(host, ".archipelago.gg") {
+		u.Scheme = "wss"
 	}
 	return u.String(), true
 }

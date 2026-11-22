@@ -16,6 +16,11 @@ def append_transient_string64(raw, key):
     return _append_saved_value(raw,key,0,"String64",0xa0,save_file=-1)
 
 
+def append_transient_index(raw, key):
+    """Add an unsaved zero Int without enlarging or relocating save tables."""
+    return _append_saved_value(raw,key,0,"Int",0xd1,save_file=-1)
+
+
 def _append_saved_value(raw, key, baseline, group, default_type, *, save_file=0):
     if raw[:2] not in (b'YB', b'BY') or not 0<=baseline<2**31:
         raise ValueError(tr('Invalid GameData or receipt index.'))

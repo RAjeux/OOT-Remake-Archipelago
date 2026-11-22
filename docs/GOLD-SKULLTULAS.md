@@ -39,9 +39,13 @@ Prepare the room with the matching client ZIP. Old clients do not know these
 new check IDs. Existing generated rooms keep their original settings and
 placements. Triforce's native connection menu and desktop window are unchanged.
 
-Generation, native resource and event-flow tests cover this new integration.
-Actual in-game pickup testing is still required; those checks do not establish
-gameplay coverage for every Skulltula site or reward.
+Generation, native resource and event-flow tests cover this integration.
+Private in-game tests exercised real pickup packs in sequence: a personal Bomb
+Bag, a foreign reward, and five rupees. Their inventory effects, text and saved
+location flags were verified, followed by restoration from an older save. These
+tests used a private scene placement; every original Skulltula site and reward
+has not been played through. The foreign medal's 3D visibility was not confirmed
+by the dark test capture.
 
 See [the complete settings comparison](SETTINGS-COMPATIBILITY.md) for the other
 OOTRR options and the distinction between network checks and native-local

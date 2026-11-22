@@ -1,4 +1,4 @@
-Archipelago · Ocarina of Time Remake · 0.5.0-alpha.1
+Archipelago · Ocarina of Time Remake · 0.5.0-alpha.2
 Alpha for Triforce on Windows x64.
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
@@ -32,6 +32,8 @@ First installation on the Zelda player's PC
    beside romfs. Paths are remembered for later configurations.
 3. Enter the server address and a password only if the room requires one.
    On the machine hosting the server, the default address is 127.0.0.1:38281.
+   archipelago.gg uses wss:// automatically, including saved older ws://
+   addresses. Other hosts and local servers retain their chosen transport.
 4. The host tools are usually in %LOCALAPPDATA%\Programs\Triforce\tools.
    If asked, select the directory containing host and nx2. The installer
    preserves the original source and reports incompatible host tools.
@@ -64,10 +66,10 @@ run Configure-Archipelago.cmd again, and rebuild the game. A change to the
 mod's native library also requires rebuilding Triforce with its new digest.
 Do not configure the mod while the host is updating.
 Each new room requires its own .apootrr file and configuration.
-Upgrading from 0.4.1 to 0.5.0 does not itself require a host rebuild: the
-native network library is unchanged. Extract the complete updated client
-ZIP before preparing a new room. Older native library or host-tool changes
-still require Build again. Existing rooms and saves remain supported.
+Upgrading to 0.5.0-alpha.2 changes the native network library to support
+compressed WebSocket connections. Extract the complete updated client ZIP,
+configure the same .apootrr again, then use Build again in Triforce Setup.
+Existing rooms and saves remain supported; no new seed is needed.
 Triforce's Options menu remains available.
 
 Language
@@ -104,6 +106,12 @@ Each grant and its received-item index are committed together. Items sent
 while Zelda is closed remain on the server and are recovered after
 reconnection and loading a save. Save before quitting normally.
 The mod retains checks during an interruption and retries the connection.
+After preparing the updated mod, loading an older save also restores its
+previously checked AP locations. Your items are granted once to that save;
+foreign items restore only the location, without a second send. This covers
+AP chests, enabled Kokiri purchases and supported Gold Skulltulas. Native-local
+OOTRR rewards outside that catalogue still follow the selected save and are
+not reconstructed from AP history.
 
 If a medal resource cannot be prepared, the room's medaillons-diagnostic.txt
 records the error. The chest notification can still show the item's name
@@ -141,9 +149,10 @@ prices can be randomized natively. Those sources stay local unless they
 belong to the explicit AP chest/shop/Skulltula catalogue. Experimental
 breakable sources stay broken; collect their drop before leaving or it
 can be lost. The repository's docs/SETTINGS-COMPATIBILITY.md compares all
-118 native settings and explains the 24 omitted options. Skulltula pickup
-integration is covered by native resource and event-flow checks; actual
-in-game pickup testing is still required for this experimental path.
+118 native settings and explains the 24 omitted options. Private in-game tests
+verified consecutive personal, foreign and rupee pickups, plus older-save
+recovery, using real pickup packs placed in a private scene. They do not cover
+every original Skulltula site or confirm the foreign medal's 3D visibility.
 
 DeathLink
 Set death_link: true in Zelda's YAML and enable DeathLink in the other

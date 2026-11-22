@@ -14,7 +14,7 @@ from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
-from ootrr_triforce import ap_shops, install_mod, medallions, player
+from ootrr_triforce import ap_shops, install_mod, medallions, player, restoration
 
 
 def put(path, raw):
@@ -55,6 +55,10 @@ class LocalizationPipelineTests(unittest.TestCase):
                 actions.append("shops")
                 put(mod / "Event/shop-flow", b"AP purchase recipe")
 
+            def patch_restoration(_game, mod, *_args):
+                actions.append("restoration")
+                put(mod / "Event/restore-flow", b"AP restoration recipe")
+
             def localize(command, request, original, mod):
                 actions.append(command)
                 self.assertEqual(command, "localize")
@@ -63,15 +67,17 @@ class LocalizationPipelineTests(unittest.TestCase):
                 self.assertEqual(original, game)
                 self.assertEqual((mod / "Event/reward-flow").read_bytes(), b"AP receipt recipe")
                 self.assertEqual((mod / "Event/shop-flow").read_bytes(), b"AP purchase recipe")
+                self.assertEqual((mod / "Event/restore-flow").read_bytes(), b"AP restoration recipe")
                 self.assertEqual((mod / "Mals/EUfr.Product.110.sarc.zs").read_bytes(), b"OOTRR French labels")
                 put(mod / "Mals/USen.Product.110.sarc.zs", b"localized English labels")
                 return ""
 
             with patch.object(medallions, "patch_mod", patch_rewards), patch.object(ap_shops, "prepare_shops", patch_shops), \
+                    patch.object(restoration, "prepare_restoration", patch_restoration), \
                     patch.object(medallions, "run_engine", localize), contextlib.redirect_stdout(io.StringIO()):
                 result = medallions.prepare(cache, settings, roster, {})
                 self.assertEqual(medallions.prepare(cache, settings, roster, {}), result)
-            self.assertEqual(actions, ["rewards", "shops", "localize"])
+            self.assertEqual(actions, ["rewards", "shops", "restoration", "localize"])
             self.assertNotEqual(result / "Archipelago/romfs", old)
             self.assertEqual((old / "old-cache-marker").read_bytes(), b"previous published cache")
             self.assertEqual((base / "Event/reward-flow").read_bytes(), b"native inventory recipe")

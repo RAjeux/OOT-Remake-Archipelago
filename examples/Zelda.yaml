@@ -206,8 +206,9 @@ game: "Ocarina of Time Remake"
   # Shuffle the Market Potion Shop's empty-bottle and bug-tutorial potion rewards locally.
   # Requires shuffle_rewards: supported; both checks need an empty bottle.
   shuffle_potion_shop: false
-  # Each supported adult trade hand-in grants one extra shuffled local reward the first time.
-  # Requires shuffle_rewards: supported.
+  # Add one shuffled local reward to each supported adult trade hand-in the first time. The normal
+  # quest item is also given and stays in its original sequence. This does not shuffle or replace
+  # the adult trade items. Requires shuffle_rewards: supported.
   shuffle_trade_checks: false
   # Shuffle the first supported set of Deku Scrub sales locally. Requires shuffle_rewards:
   # supported.

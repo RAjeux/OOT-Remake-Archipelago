@@ -24,11 +24,13 @@ run("tests/test_settings_parity.py")
 run("tests/test_skull_catalog.py")
 run("tests/test_skull_events.py")
 run("tests/test_transient_data.py")
+run("tests/test_restoration.py")
 run("tests/test_connection_control.py")
 run("tests/test_connection_window.py")
 for check in ("test_cursor","test_title_install","test_visual","test_hud","test_evfl","test_native_setup","test_menu_setup","test_settings","test_settings_engine","test_apworld","test_full_chests","test_receipt_events","test_presented_receipts","test_receipt_registration","test_shop_records","test_shop_flags","test_shop_events"):
     run(f"tests/{check}.py")
 if options.c:
+    run("tests/test_restore_host.py")
     run("tests/test_menu_bridge.py")
     run("tests/test_menu_editing.py")
     run("tests/test_language_host.py")
@@ -48,5 +50,6 @@ if options.network:
     for name in ("complet", "complet-v2"):
         run("tests/test_offline_deathlink.py", "tests/fixtures/" + name)
     run("tests/test_local_items.py", "--room", "tests/fixtures/complet-v2")
+    run("tests/test_native_rollback.py")
     run("tests/test_connection_menu.py")
     run("tests/test_connection_companion.py")

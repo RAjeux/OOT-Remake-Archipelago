@@ -1,6 +1,6 @@
 # Ocarina of Time Remake × Archipelago
 
-**0.5.0-alpha.1 — native integration for Triforce on Windows x64.** Manage Archipelago connections from Zelda's **Options → Archipelago** tab, or use the separate **Connect-Archipelago.pyw** desktop window. Automatic connection at startup remains enabled by default. This alpha uses OOTRR 0.8.1 and game version 1.1.1.
+**0.5.0-alpha.2 — native integration for Triforce on Windows x64.** Manage Archipelago connections from Zelda's **Options → Archipelago** tab, or use the separate **Connect-Archipelago.pyw** desktop window. Automatic connection at startup remains enabled by default. This alpha uses OOTRR 0.8.1 and game version 1.1.1.
 
 Title-screen connections, items received while the game was closed, local and remote chests, one Kokiri purchase, and DeathLink in both directions have been tested on **Triforce 0.6.0**. **Item presentation animations and some camera movements still need improvement.** All eight Kokiri purchases have automated coverage; they have not all been purchased in the game. Hookshot and Fritchii are not supported by this native integration.
 
@@ -20,6 +20,8 @@ Download the Windows ZIP from the [project releases](https://github.com/RAjeux/O
 3. Enable **Archipelago** in Triforce Setup, then rebuild the game with **Build again**. This is required on first installation and when the native library or host tools change.
 4. Launch Zelda normally from Triforce. Open **Options → Archipelago** to change the server, enter a password, connect or disconnect, and view connection errors. The tab supports keyboard, mouse, and controller, including an on-screen keyboard. You can close the configuration console; `Observe-Archipelago.cmd` remains an optional diagnostic tool.
 
+The native client negotiates compressed WebSocket messages when the server supports them. Addresses on `archipelago.gg` use TLS automatically, including older saved `ws://archipelago.gg:<port>` addresses. Local servers retain their selected transport. Upgrading to 0.5.0-alpha.2 changes the native DLL: configure the existing player file again and use **Build again** before launching. Existing rooms and saves remain supported.
+
 The initial mod preparation is still required for each room. The menu changes the connection to that prepared room; its player and save binding stay fixed. See the [in-game connection guide](docs/IN-GAME-CONNECTION.md).
 
 **Connect-Archipelago.pyw** provides the same connection controls outside the game, without a console. With Zelda closed, it saves settings for the next startup. With the updated AP mod running, it controls the existing connection. Triforce's menu remains available. The window is independent of the host's menu renderer; other ports still require a compatible AP gameplay bridge. See the [desktop connection guide](docs/CONNECTION-WINDOW.md).
@@ -34,13 +36,15 @@ Network locations cover the catalogued chests and, when enabled, eight Kokiri pu
 
 Items from other worlds are delivered in order while a save is active, using the game's effects. Items sent while Zelda is closed remain on the server and are recovered after reconnection. Each grant and its received-item index are committed together; save before quitting normally.
 
+In a newly prepared `all_locations` room with personal physical rewards, loading an older save also restores previously checked AP locations. Your reward is granted once to that save; another player's reward only restores the completed location, without sending it again. A durable room journal and the server's checked locations supply this history. This covers AP chests, enabled Kokiri purchases and supported Gold Skulltulas. OOTRR's native-local rewards outside that catalogue still follow the selected save; they do not have an AP check history. Reconfigure an existing player file to prepare the restoration events before using this feature.
+
 Major received items use the game's native turn toward the player camera and item presentation pose. Ordinary pickups retain their native central display and sounds.
 
 `shuffle_shops: shuffle` uses OOTRR's normal shop shuffle and adds eight one-time Kokiri purchases to the AP pool. Each can contain your own item or another player's item, at its OOTRR seed price. Your items use their native appearance and effects; remote items use the AP medal. Single-player rooms work too. Native `deals_1` through `deals_4` and `random` shop modes are also available; shops outside the Kokiri catalogue keep their native local rewards. `shuffle_shops: off` keeps shops outside the AP pool. The former `kokiri_shop_checks` test option has been removed; old generated rooms retain their existing placements.
 
 `death_link: true` shares deaths with other DeathLink participants. A remote death waits for an active event, such as a purchase or item receipt, to finish.
 
-`shuffle_skulltulas` offers `off`, `pinned` for 44 firmly identified native locations, and `matched` for the supported researched matches. The AP check completes on collecting the reward, not on killing the enemy or receiving a token. `matched` normally has 76 eligible checks, or 77 with supported planted/starting beans; 23 uncertain matches remain native-local. This new path has generation, resource and event-flow coverage; in-game Skulltula pickup testing remains required. See the [Gold Skulltula guide](docs/GOLD-SKULLTULAS.md) and [example YAML](examples/Gold-Skulltulas.yaml).
+`shuffle_skulltulas` offers `off`, `pinned` for 44 firmly identified native locations, and `matched` for the supported researched matches. The AP check completes on collecting the reward, not on killing the enemy or receiving a token. `matched` normally has 76 eligible checks, or 77 with supported planted/starting beans; 23 uncertain matches remain native-local. Tests cover generation, resources and event flows, plus private in-game pickup sequences and older-save recovery. Every original site and reward has not been played through. See the [Gold Skulltula guide](docs/GOLD-SKULLTULAS.md) and [example YAML](examples/Gold-Skulltulas.yaml) for the coverage and remaining presentation limits.
 
 The mod automatically follows Triforce's selected game language: French uses French text, and other languages fall back to English. There is no YAML language setting. Other players' names, chat, and item names from other games retain their server wording. Configuration tools default to English and may reuse the known game language. YAML descriptions and developer documentation use English.
 
@@ -79,10 +83,10 @@ From the repository root on Windows:
 
 ```powershell
 py -3 tools/build.py
-py -3 tools/verify_release.py --version 0.5.0-alpha.1
+py -3 tools/verify_release.py --version 0.5.0-alpha.2
 ```
 
-The output is `dist/Archipelago-OOT-Remake-0.5.0-alpha.1.zip`, including the `.pyz` client, APWorld, and their sources. `VERSION` declares the release version. The default assembly uses the supplied native DLL and WebAssembly engine without downloading dependencies. It does not rebuild Triforce.
+The output is `dist/Archipelago-OOT-Remake-0.5.0-alpha.2.zip`, including the `.pyz` client, APWorld, and their sources. `VERSION` declares the release version. The default assembly uses the supplied native DLL and WebAssembly engine without downloading dependencies. It does not rebuild Triforce.
 
 To rebuild the supplied components:
 

@@ -14,7 +14,6 @@ import subprocess
 import sys
 import tempfile
 import uuid
-from urllib.parse import urlsplit
 
 from .catalog import CHESTS, SHOP_CHECKS, AP_SKULL_CHECKS, PINNED_SKULL_CHECKS, EXPECTED, FILLER, GAME, LEGACY_GAME, GEAR, ITEM_IDS, LOCATION_IDS, PROTOCOL
 from .engine import run_engine
@@ -375,7 +374,7 @@ class Session:
                     source = assets / "mods"
                 if config.get("mods_dir"):
                     if config.get("native"):
-                        native_setup.save_session(self.root,config,self.data,roster)
+                        native_setup.save_session(self.root,config,self.data,roster,prepared=source/"Archipelago"/"romfs")
                     dest = install_mod.install(source, Path(config["mods_dir"]), self.data["token"])
                     print(tr('Mod installed: {value0}', value0=dest),flush=True)
                     return dest.parent
@@ -731,10 +730,11 @@ def main():
             return
         default=previous.get("Server","127.0.0.1:38281") if args.native_install else ""
         uri = args.server or input(tr('Server address{value0} : ', value0=' [' + default + ']' if default else '')).strip() or default
-        if "://" not in uri:
-            uri = "ws://" + uri
-        if urlsplit(uri).scheme not in ("ws","wss") or not urlsplit(uri).hostname:
-            raise ValueError(tr('Invalid WebSocket address.'))
+        from .connection_control import ControlError, normalize_server
+        try:
+            uri = normalize_server(uri)
+        except ControlError:
+            raise ValueError(tr('Invalid WebSocket address.')) from None
         password = getpass.getpass(tr('Room password (Enter if none): '))
         if args.native_install:
             runtime.update(server=uri,protected=native_setup.protect_password(password))

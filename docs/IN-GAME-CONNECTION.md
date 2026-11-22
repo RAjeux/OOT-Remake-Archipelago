@@ -4,6 +4,10 @@ After preparing a room's mod and rebuilding Triforce, open Zelda's **Options** s
 
 Enter the server address, such as `archipelago.gg:38281` or `127.0.0.1:38281`, then choose **Connect**. Explicit `ws://` and `wss://` addresses are supported. The panel shows the prepared player, room, connection state, and errors. The game language selects French or English.
 
+The official `archipelago.gg` host and its subdomains use `wss://` automatically.
+Older saved `ws://archipelago.gg:<port>` addresses are upgraded to TLS when used.
+Other hosts and local test servers retain their chosen transport.
+
 Select a text field to type with the keyboard or the controller's on-screen keyboard. Confirm accepts the edit; Back cancels it. Closing the panel releases text input and returns control to the game menu.
 
 The password field is masked. **Keep saved** reuses the existing password without displaying it. Typing a replacement selects **Save new**; **Remove saved** clears it. Changes are stored when choosing Connect, with Windows DPAPI protecting saved passwords. A password that cannot be read on this PC can be replaced or removed from this panel.
@@ -16,7 +20,10 @@ The prepared player is read-only. A server address does not select a new seed or
 
 Installing the connection menu for the first time, or changing its native DLL or Triforce host tools, requires a host rebuild. Extract the complete release, run `Configure-Archipelago.cmd` for the player file, then use **Build again** in Triforce Setup. Both the executable and `triforce_vk.dll` must be rebuilt. The setup tool preserves source backups and reports incompatible host versions before changing their sources.
 
-The 0.5.0 update from 0.4.1 keeps the same native DLL and connection menu, so it does not itself require another host build. Use the complete updated client ZIP when preparing a new room with the new settings or Skulltula checks.
+Version 0.5.0-alpha.1 retained the 0.4.1 native DLL. Version 0.5.0-alpha.2 changes
+the library and gameplay bridge: reconfigure the existing player file and rebuild
+the host. Keep the existing room and saves. Reconfiguration also prepares the
+location restoration events used when loading an older save.
 
 Initial room generation and mod preparation remain separate from connection controls. `Observe-Archipelago.cmd` remains available for diagnostics.
 

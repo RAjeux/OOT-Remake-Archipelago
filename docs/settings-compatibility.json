@@ -1134,7 +1134,7 @@
       "ap_default": false,
       "ap_kind": "toggle",
       "status": "public_native_local",
-      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+      "reason": "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere. This adds a first-time bonus to each supported adult trade hand-in; the normal quest item is also given. Full replacement/shuffling of adult trade items is not implemented."
     },
     {
       "id": "shuffle_scrubs_a",

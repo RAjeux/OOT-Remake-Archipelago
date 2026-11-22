@@ -12,6 +12,8 @@ static int (*ap_death16)(int);
 static int (*ap_connection_info16)(char *,int);
 static int (*ap_connect16)(char *,char *,int,int);
 static int (*ap_disconnect16)(void);
+static int (*ap_restore16)(uint8_t *,int);
+static void (*ap_restore_deferred16)(int);
 static uint32_t ap_cursor16, ap_flags16[4096];
 static int ap_flag_count16;
 static int ap_event_mode16;
@@ -129,9 +131,11 @@ static int ap_boot16(void) {
     ap_connection_info16=(int(*)(char*,int))GetProcAddress(lib,"AP_ConnectionInfo");
     ap_connect16=(int(*)(char*,char*,int,int))GetProcAddress(lib,"AP_Connect");
     ap_disconnect16=(int(*)(void))GetProcAddress(lib,"AP_Disconnect");
+    ap_restore16=(int(*)(uint8_t*,int))GetProcAddress(lib,"AP_Restore");
+    ap_restore_deferred16=(void(*)(int))GetProcAddress(lib,"AP_RestoreDeferred");
     int (*event_delivery)(void)=(int(*)(void))GetProcAddress(lib,"AP_EventDelivery");
     if (!flags||!cursor||!ap_next16||!ap_applied16||!ap_note16||!ap_opened16||!ap_death16||!event_delivery||
-        !ap_connection_info16||!ap_connect16||!ap_disconnect16) return 0;
+        !ap_connection_info16||!ap_connect16||!ap_disconnect16||!ap_restore16||!ap_restore_deferred16) return 0;
     if (!ap_start_client16(start,set_language,utf8,token)) return 0;
     snprintf(ap_profile16,sizeof ap_profile16,"%s\\user",utf8);
     hos_user_dir=ap_profile16;
@@ -240,14 +244,42 @@ static void ap_tick16(Ctx *c,int64_t now) {
     if (!entry) return;
     int loading=0;
     if (oot_gamedata_bool(c,0xef2b60c2u,&loading)&&loading) return;
-    uint32_t opened[4096]; int count=0;
+    uint32_t opened[4096]; uint8_t states[4096]; int count=0;
     for(int i=0;i<ap_flag_count16;i++) {
-        if(oot_flag_state(c,1,ap_flags16[i])=='1') opened[count++]=ap_flags16[i];
+        const char state=oot_flag_state(c,1,ap_flags16[i]);
+        states[i]=(state=='0'||state=='1')?(uint8_t)state:255;
+        if(state=='1') opened[count++]=ap_flags16[i];
     }
     uint64_t final_boss=oot_gd_int(c,mgr,0x641e0375u);
     int won=final_boss && (int32_t)recomp_load32(c,final_boss+0x1c)>0;
     if(count || won) ap_opened16(opened,count,won);
     int index=(int)recomp_load32(c,entry+0x1c);
+    if (index<0) return;
+    static int restore_pending,restore_clearing;
+    static uint64_t restore_mgr,restore_epoch;
+    const uint32_t restore_key=ap_event_mode16 && ap_restore16 && ap_restore_deferred16
+        ? oot_murmur3("Archipelago.RestoreResult") : 0;
+    if (restore_mgr!=mgr || restore_epoch!=ap_delivery_epoch16) {
+        restore_pending=restore_clearing=0;
+        restore_mgr=mgr;restore_epoch=ap_delivery_epoch16;
+    }
+    if (restore_pending) {
+        const uint64_t result=restore_key?oot_gd_int(c,mgr,restore_key):0;
+        if (!result) return;
+        const int status=(int32_t)recomp_load32(c,result+0x1c);
+        if (status==restore_pending) {
+            /* The native flow has committed all effects and location flags.
+               Its result never changes ReceivedIndex or sends an AP item. */
+            restore_pending=0;
+        } else if (status==-restore_pending) {
+            ap_restore_deferred16(restore_pending);
+            restore_pending=0;
+        } else {
+            /* Accepted does not mean started. Even a long idle-looking queue
+               cannot justify another request without a result/context change. */
+            return;
+        }
+    }
     static int pending=-1;
     static uint64_t pending_mgr,pending_epoch;
     static int64_t pending_at;
@@ -264,7 +296,30 @@ static void ap_tick16(Ctx *c,int64_t now) {
     }
     pending=-1;
     int item=ap_next16(index);
-    if (!item) return;
+    if (!item) {
+        /* Network receipts have priority, including bottles/upgrades that can
+           unblock a local refill. Old profiles have no registered whitelist. */
+        if (!restore_key || !ap_delivery_actor16) return;
+        const uint64_t events=oot_singleton(c,OOT_EVENTMGR_SLOT);
+        if (!events || recomp_load64(c,events+104)) return;
+        const int location=ap_restore16(states,ap_flag_count16);
+        if (location<=0) return;
+        const uint64_t result=oot_gd_int(c,mgr,restore_key);
+        if (!result) return;
+        const int status=(int32_t)recomp_load32(c,result+0x1c);
+        if (status) {
+            if (!restore_clearing && oot_gd_set(c,mgr,restore_key,0,0)) restore_clearing=1;
+            return;
+        }
+        /* A queued clear is not a visible clear: observe zero before reusing
+           an old +/-location result. A fresh zero can be cleared and used now. */
+        if (!restore_clearing && !oot_gd_set(c,mgr,restore_key,0,0)) return;
+        restore_clearing=0;
+        char event[64];
+        snprintf(event,sizeof event,"OOTRR_APRestore_%d",location);
+        if (ap_request_item16(c,ap_delivery_actor16,event)) restore_pending=location;
+        return;
+    }
     if (ap_event_mode16) {
         const char *event=ap_eventname16(item);
         if (event && ap_request_item16(c,ap_delivery_actor16,event)) {

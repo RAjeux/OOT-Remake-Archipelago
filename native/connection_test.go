@@ -81,9 +81,15 @@ func startConnectionManager(t *testing.T, s *Client) {
 
 func TestConnectionEndpointNormalization(t *testing.T) {
 	for input, expected := range map[string]string{
-		"127.0.0.1:38281": "ws://127.0.0.1:38281", "archipelago.gg:12345": "ws://archipelago.gg:12345",
+		"127.0.0.1:38281": "ws://127.0.0.1:38281", "archipelago.gg:12345": "wss://archipelago.gg:12345",
 		" [::1]:38281 ": "ws://[::1]:38281", "ws://localhost:1/": "ws://localhost:1/",
 		"wss://archipelago.gg:12345": "wss://archipelago.gg:12345", "example.com": "ws://example.com",
+		"ws://archipelago.gg:12345":       "wss://archipelago.gg:12345",
+		"Archipelago.GG.:12345":           "wss://Archipelago.GG.:12345",
+		"ws://room.archipelago.gg:12345/": "wss://room.archipelago.gg:12345/",
+		"archipelago.gg.example:12345":    "ws://archipelago.gg.example:12345",
+		"fakearchipelago.gg:12345":        "ws://fakearchipelago.gg:12345",
+		"ws://192.168.1.2:38281":          "ws://192.168.1.2:38281",
 	} {
 		got, ok := normalizeServer(input)
 		if !ok || got != expected {
@@ -95,6 +101,34 @@ func TestConnectionEndpointNormalization(t *testing.T) {
 		"ws://user:secret@a", "server name:3", "ws://a\n", strings.Repeat("a", 2049)} {
 		if _, ok := normalizeServer(input); ok {
 			t.Errorf("accepted invalid endpoint %q", input)
+		}
+	}
+}
+
+func TestHostedLegacyEndpointUsesTLSWithoutPlaintextFallback(t *testing.T) {
+	s := connectionFixture(t)
+	s.cfg.Server = "ws://archipelago.gg:12345"
+	s.connection = newConnectionControl(s.cfg)
+	attempts := make(chan string, 4)
+	s.connection.dial = func(_ context.Context, endpoint string) (*websocket.Conn, *http.Response, error) {
+		attempts <- endpoint
+		return nil, nil, errors.New("TLS certificate failure")
+	}
+	startConnectionManager(t, s)
+	for attempt := 0; attempt < 2; attempt++ {
+		select {
+		case endpoint := <-attempts:
+			if endpoint != "wss://archipelago.gg:12345" {
+				t.Fatalf("hosted room dialed without TLS: %s", endpoint)
+			}
+		case <-time.After(2 * time.Second):
+			t.Fatal("hosted connection was not attempted")
+		}
+		if attempt == 0 {
+			waitConnection(t, s, "retrying")
+			if got := s.connect("archipelago.gg:12345", "", 0, 1); got != 1 {
+				t.Fatalf("retry setting: %d", got)
+			}
 		}
 	}
 }
@@ -327,6 +361,9 @@ func connectionServer(t *testing.T, s *Client, kind string, arrivals *atomic.Int
 		}
 		connected := packet{"cmd": "Connected", "slot": slot, "players": []packet{{"slot": s.cfg.Player, "name": s.cfg.Slot}},
 			"checked_locations": []int{}, "slot_data": packet{"Token": s.cfg.Token, "Protocol": s.cfg.Protocol, "Checks": []int{20}, "reward_mode": s.cfg.RewardMode, "local_items": s.cfg.LocalItems}}
+		if kind == "checked" {
+			connected["checked_locations"] = []int{20, 999999}
+		}
 		if conn.WriteJSON([]packet{connected}) != nil {
 			return
 		}

@@ -19,11 +19,13 @@ import (
 )
 
 type Location struct {
-	Name  string
-	Flags []uint32
-	Item  string
-	Owner string
-	Game  string
+	Name      string
+	Flags     []uint32
+	Item      string
+	Owner     string
+	Game      string
+	ItemID    int
+	Recipient int
 }
 type Config struct {
 	Room, Slot, Game, Token, Server, ProtectedPassword, UUID string
@@ -37,14 +39,18 @@ type Config struct {
 	Items                                                    map[int]string
 	ItemNames                                                map[int]map[string]string
 	Checks                                                   map[int]Location
+	RecoveryLocations                                        []int
 }
 type Client struct {
 	cfg                       Config
 	root                      string
 	logger                    *log.Logger
 	mu                        sync.Mutex
+	journalMu                 sync.Mutex
 	flags                     []uint32
 	byFlag                    map[uint32][]int
+	recoveryIDs               []int
+	recoveryDeferred          map[int]time.Time
 	seen                      map[int]bool
 	checked                   map[int]bool
 	history                   []networkItem
@@ -52,6 +58,7 @@ type Client struct {
 	ready, won, goalConfirmed bool
 	notices                   []string
 	revision                  uint64
+	persistedRevision         uint64
 	death                     deathLink
 	connection                *connectionControl
 }
@@ -127,6 +134,25 @@ func newClient(c Config, root string, logger *log.Logger) (*Client, error) {
 		return nil, errors.New("too many location flags")
 	}
 	sort.Slice(s.flags, func(i, j int) bool { return s.flags[i] < s.flags[j] })
+	if len(c.RecoveryLocations) > 0 {
+		if !c.LocalItems || c.RewardMode != "all_locations" || len(c.RecoveryLocations) > len(c.Checks) {
+			return nil, errors.New("invalid recovery event configuration")
+		}
+		unique := map[int]bool{}
+		for _, id := range c.RecoveryLocations {
+			location, known := c.Checks[id]
+			if !known || id <= 0 || id > 0x7fffffff || unique[id] || len(location.Flags) == 0 || location.Recipient < 1 {
+				return nil, errors.New("invalid recovery event configuration")
+			}
+			if location.Recipient == c.Player {
+				if name, known := c.Items[location.ItemID]; !known || name == "" || name != location.Item {
+					return nil, errors.New("invalid recovery event configuration")
+				}
+			}
+			unique[id] = true
+			s.recoveryIDs = append(s.recoveryIDs, id)
+		}
+	}
 	raw, e := os.ReadFile(filepath.Join(root, "native-checks.json"))
 	if e == nil {
 		var j journal
@@ -146,42 +172,23 @@ func newClient(c Config, root string, logger *log.Logger) (*Client, error) {
 }
 func (s *Client) opened(flags []uint32, goal bool) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
+	before := s.revision
 	for _, f := range flags {
 		for _, id := range s.byFlag[f] {
-			if !s.seen[id] {
-				s.seen[id] = true
-				s.revision++
-			}
+			s.rememberCheckLocked(id)
 		}
 	}
 	if goal && !s.won {
 		s.won = true
 		s.revision++
 	}
-}
-func (s *Client) saveChecks() {
-	var written uint64
-	for range time.Tick(250 * time.Millisecond) {
-		s.mu.Lock()
-		rev := s.revision
-		if rev == written {
-			s.mu.Unlock()
-			continue
-		}
-		j := journal{Won: s.won}
-		for k := range s.seen {
-			j.Locations = append(j.Locations, k)
-		}
-		s.mu.Unlock()
-		sort.Ints(j.Locations)
-		raw, _ := json.Marshal(j)
-		dest := filepath.Join(s.root, "native-checks.json")
-		tmp := dest + ".tmp"
-		if e := os.WriteFile(tmp, raw, 0600); e == nil {
-			if e = os.Rename(tmp, dest); e == nil {
-				written = rev
-			}
+	changed := s.revision != before
+	s.mu.Unlock()
+	if changed {
+		// Persist what was actually observed before another save can roll back
+		// its flags. Failures retain the in-memory revision for the retry loop.
+		if err := s.persistChecks(); err != nil {
+			s.logger.Print("Cannot save location journal; retrying.")
 		}
 	}
 }
@@ -311,9 +318,13 @@ func (s *Client) sessionEpoch(conn *websocket.Conn, password string, epoch uint6
 				s.checked = map[int]bool{}
 				for _, id := range m.Checked {
 					s.checked[id] = true
+					s.rememberCheckLocked(id)
 				}
 				s.goalConfirmed = false
 				s.mu.Unlock()
+				if err := s.persistChecks(); err != nil {
+					s.logger.Print("Cannot save location journal; retrying.")
+				}
 				s.notice("connected", s.cfg.Slot)
 				if e := synchronize(); e != nil {
 					return e
@@ -399,10 +410,15 @@ func (s *Client) sessionEpoch(conn *websocket.Conn, password string, epoch uint6
 										return
 									}
 								}
+								// No newly observed check is sent before its journal
+								// revision has reached disk. Server acknowledgements
+								// can rebuild this same journal after a fresh start.
+								_ = s.persistChecks()
 								s.mu.Lock()
 								var missing []int
 								ready := s.ready && s.connectionCurrentLocked(epoch)
-								if ready {
+								durable := s.persistedRevision == s.revision
+								if ready && durable {
 									for id := range s.seen {
 										if !s.checked[id] && now.Sub(last[id]) > 5*time.Second {
 											missing = append(missing, id)
@@ -410,7 +426,7 @@ func (s *Client) sessionEpoch(conn *websocket.Conn, password string, epoch uint6
 										}
 									}
 								}
-								goal := ready && s.won && !s.goalConfirmed && now.Sub(lastGoal) > 10*time.Second
+								goal := ready && durable && s.won && !s.goalConfirmed && now.Sub(lastGoal) > 10*time.Second
 								death := s.death.outgoing
 								s.death.outgoing = nil
 								s.mu.Unlock()
@@ -460,6 +476,7 @@ func (s *Client) sessionEpoch(conn *websocket.Conn, password string, epoch uint6
 					}
 					first := !s.checked[id]
 					s.checked[id] = true
+					s.rememberCheckLocked(id)
 					ownName := s.names[s.cfg.Player]
 					s.mu.Unlock()
 					if loc, ok := s.cfg.Checks[id]; ok && first {
@@ -469,6 +486,9 @@ func (s *Client) sessionEpoch(conn *websocket.Conn, password string, epoch uint6
 							s.logger.Print("Location checked · " + loc.Name)
 						}
 					}
+				}
+				if err := s.persistChecks(); err != nil {
+					s.logger.Print("Cannot save location journal; retrying.")
 				}
 			}
 		}

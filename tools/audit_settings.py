@@ -113,6 +113,8 @@ def report(schema):
             if key in LOCAL_SHUFFLES:
                 status = "public_native_local"
                 reason = "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
+                if key == "shuffle_trade_checks":
+                    reason += " This adds a first-time bonus to each supported adult trade hand-in; the normal quest item is also given. Full replacement/shuffling of adult trade items is not implemented."
             elif key in NETWORK_SHUFFLES:
                 status = "public_network"
                 reason = "The supported AP location family is connected to native checks and rewards; see the setting description for its exact scope."
@@ -151,6 +153,7 @@ def markdown(result):
              f"The native schema has **{result['native_setting_count']} keys**. The current AP catalogue exposes **{result['public_native_count']} native keys**, plus {', '.join('`' + key + '`' for key in result['ap_only'])}. Some native choice lists are deliberately restricted to implemented values.", "",
              "A local shuffle can be compatible with AP without turning all of its locations into network checks: OOTRR builds the complete canonical seed, then the AP pass changes only catalogued locations. The native search collects reachable local rewards before recording each AP sphere. Requiring every earlier AP reward preserves that conservative reachability proof. Local pickups and NPC rewards must remain present and must not receive an additional AP grant.", "",
              "Settings which depend on the *final placement* need extra care. Native hint text, chest sizing and junk-only exclusions cannot simply be copied before AP replaces a reward. Silver Rupee shuffling also adds new item types that need AP IDs and receipt effects.", "",
+             "The adult trade control adds extra rewards while preserving the normal quest items; it does not replace or shuffle those items. See [adult trade rewards](ADULT-TRADE-REWARDS.md). For local versus remote item ownership and the scope of the network pool, see [multiworld distribution](MULTIWORLD-DISTRIBUTION.md).", "",
              "The machine-readable companion is [settings-compatibility.json](settings-compatibility.json). Regenerate both files with `python tools/audit_settings.py --write-docs`; use `--ootrr <ootrr.exe>` to audit another installed native schema. These comparisons validate catalogue coverage, not gameplay for every combination.", "",
              "| Native key | AP status | Details |", "| --- | --- | --- |"]
     for row in result["settings"]:

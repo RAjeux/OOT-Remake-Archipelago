@@ -72,7 +72,7 @@
   "shuffle_boss_hearts": "Mélanger localement les réceptacles de cœur des boss. L'objet attribué apparaît après leur défaite.",
   "shuffle_songs": "Mélanger les leçons de chants entre elles ou dans le pool général. Les leçons restent locales ; les chants placés sur un emplacement AP participent au réseau. Chant de l'Épouvantail préservé. Expérimental.",
   "shuffle_potion_shop": "Mélanger localement le flacon vide et la potion du tutoriel d'insecte de la boutique du Marché. Exige shuffle_rewards: supported ; les deux récompenses demandent un flacon vide.",
-  "shuffle_trade_checks": "Chaque remise prise en charge de la quête d'échanges adulte donne un objet local supplémentaire mélangé la première fois. Exige shuffle_rewards: supported.",
+  "shuffle_trade_checks": "Ajoute une récompense locale aléatoire à la première remise de chaque étape prise en charge de la quête d'échanges adulte. L'objet de quête habituel est aussi donné et reste dans son ordre d'origine. Ce réglage ne mélange ni ne remplace les objets d'échange adulte. Exige shuffle_rewards: supported.",
   "shuffle_scrubs_a": "Mélanger localement le premier groupe de ventes Mojo pris en charge. Exige shuffle_rewards: supported.",
   "shuffle_scrubs_b": "Mélanger localement le second groupe de ventes Mojo pris en charge. Exige shuffle_rewards: supported.",
   "shuffle_cows": "Mélanger localement les récompenses des vaches prises en charge. Exige shuffle_rewards: supported ; le plan natif inclut aussi ses autres vaches compatibles.",

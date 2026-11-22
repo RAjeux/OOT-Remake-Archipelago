@@ -18,8 +18,11 @@ def _choice(name, default, choices, description, group="World"):
     return _spec(name, "choice", default, description, group, choices=tuple(choices))
 
 
-def _toggle(name, default, description, group="Quality of life"):
-    return _spec(name, "toggle", default, description, group)
+def _toggle(name, default, description, group="Quality of life", *, label=None):
+    spec = _spec(name, "toggle", default, description, group)
+    if label is not None:
+        spec["label"] = label
+    return spec
 
 
 def _range(name, default, low, high, description, group="Difficulty", step=1):
@@ -166,7 +169,8 @@ _ADDITIONAL_SPECS = (
     _toggle("shuffle_potion_shop", False,
             "Shuffle the Market Potion Shop's empty-bottle and bug-tutorial potion rewards locally. Requires shuffle_rewards: supported; both checks need an empty bottle.", "Shuffle"),
     _toggle("shuffle_trade_checks", False,
-            "Each supported adult trade hand-in grants one extra shuffled local reward the first time. Requires shuffle_rewards: supported.", "Shuffle"),
+            "Add one shuffled local reward to each supported adult trade hand-in the first time. The normal quest item is also given and stays in its original sequence. This does not shuffle or replace the adult trade items. Requires shuffle_rewards: supported.",
+            "Shuffle", label="Extra Adult Trade Rewards"),
     _toggle("shuffle_scrubs_a", False,
             "Shuffle the first supported set of Deku Scrub sales locally. Requires shuffle_rewards: supported.", "Shuffle"),
     _toggle("shuffle_scrubs_b", False,

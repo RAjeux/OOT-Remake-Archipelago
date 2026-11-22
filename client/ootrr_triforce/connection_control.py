@@ -104,6 +104,11 @@ def normalize_server(value):
         port = parsed.port
         if port is not None and not 1 <= port <= 65535:
             raise ValueError()
+        # Public hosted rooms require TLS, including legacy saved ws:// URLs.
+        # Local addresses and other explicitly selected transports stay intact.
+        hostname = parsed.hostname.lower().removesuffix(".")
+        if hostname == "archipelago.gg" or hostname.endswith(".archipelago.gg"):
+            endpoint = "wss://" + endpoint.split("://", 1)[1]
         # Go URL.String discards an empty fragment marker.
         return endpoint[:-1] if endpoint.endswith("#") else endpoint
     except (ValueError, UnicodeError):

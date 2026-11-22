@@ -1,7 +1,9 @@
 """The companion edits only connection settings and talks to the game owner."""
 from contextlib import contextmanager
+import contextlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import io
 import os
 from pathlib import Path
 import socket
@@ -10,6 +12,7 @@ import tempfile
 import threading
 import unittest
 from unittest.mock import patch
+from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
@@ -277,11 +280,62 @@ class ConnectionControlTests(unittest.TestCase):
         self.assertEqual((self.root / "native-session.json").read_bytes(), before)
 
     def test_address_normalization_matches_native_common_cases(self):
-        examples = {"127.0.0.1:38281": "ws://127.0.0.1:38281", "archipelago.gg:12345": "ws://archipelago.gg:12345",
+        examples = {"127.0.0.1:38281": "ws://127.0.0.1:38281", "archipelago.gg:12345": "wss://archipelago.gg:12345",
                     " [::1]:38281 ": "ws://[::1]:38281", "ws://localhost:1/": "ws://localhost:1/",
-                    "wss://archipelago.gg:12345": "wss://archipelago.gg:12345", "example.com": "ws://example.com"}
+                    "wss://archipelago.gg:12345": "wss://archipelago.gg:12345", "example.com": "ws://example.com",
+                    "ws://archipelago.gg:12345": "wss://archipelago.gg:12345",
+                    "Archipelago.GG.:12345": "wss://Archipelago.GG.:12345",
+                    "ws://room.archipelago.gg:12345/": "wss://room.archipelago.gg:12345/",
+                    "archipelago.gg.example:12345": "ws://archipelago.gg.example:12345",
+                    "fakearchipelago.gg:12345": "ws://fakearchipelago.gg:12345",
+                    "ws://192.168.1.2:38281": "ws://192.168.1.2:38281"}
         for value, expected in examples.items():
             self.assertEqual(control.normalize_server(value), expected)
+
+    def test_legacy_hosted_profile_is_upgraded_without_touching_room_progress(self):
+        original = session(self.root, Server="ws://archipelago.gg:12345")
+        before = (self.root / "native-session.json").read_bytes()
+        controller = control.Controller(self.root)
+        with patch.object(control.http.client, "HTTPConnection", side_effect=AssertionError("offline network")), \
+                patch.object(control, "protect_password", side_effect=AssertionError("keep password")):
+            self.assertEqual(controller.info()["server"], "wss://archipelago.gg:12345")
+            self.assertEqual((self.root / "native-session.json").read_bytes(), before)
+            self.assertEqual(controller.save("archipelago.gg:12345", "", 0, False)["result"], 1)
+        saved = json.loads((self.root / "native-session.json").read_bytes())
+        self.assertEqual(saved, dict(original, Server="wss://archipelago.gg:12345"))
+
+    def test_setup_cli_uses_the_same_hosted_and_loopback_endpoint_rules(self):
+        from ootrr_triforce import player
+        for index, (address, expected) in enumerate([
+            ("archipelago.gg:12345", "wss://archipelago.gg:12345"),
+            ("ws://archipelago.gg:12345", "wss://archipelago.gg:12345"),
+            ("127.0.0.1:38281", "ws://127.0.0.1:38281"),
+        ]):
+            with self.subTest(address=address):
+                root = Path(self.temporary.name) / ("cli-" + str(index))
+                game, mods = root / "game/romfs", root / "mods"
+                game.mkdir(parents=True)
+                mods.mkdir()
+                tool = root / "ootrr.exe"
+                tool.write_bytes(b"unused test executable")
+                manifest = root / "Zelda.apootrr"
+                with ZipFile(ROOT / "tests/fixtures/neutre/salle-test.zip") as archive:
+                    member = next(name for name in archive.namelist() if name.endswith(".apootrr"))
+                    manifest.write_bytes(archive.read(member))
+                captured = []
+
+                async def play(_root, _slot, _data, _runtime, endpoint, password):
+                    captured.append((endpoint, password))
+
+                argv = ["Client.pyz", str(manifest), "--install-only", "--server", address,
+                        "--mods", str(mods), "--ootrr", str(tool), "--romfs", str(game)]
+                with patch.object(sys, "argv", argv), patch.dict(os.environ, {"LOCALAPPDATA": str(root / "local")}), \
+                        patch.object(player, "build"), patch.object(player, "play", play), \
+                        patch.object(player.getpass, "getpass", return_value=""), \
+                        patch.object(control.http.client, "HTTPConnection", side_effect=AssertionError("no network")), \
+                        contextlib.redirect_stdout(io.StringIO()):
+                    player.main()
+                self.assertEqual(captured, [(expected, "")])
 
     def test_profile_identity_change_is_rejected(self):
         controller = control.Controller(self.root)

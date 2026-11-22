@@ -54,8 +54,8 @@ def tables(folder):
 def build_cache(base, token, host, entries, romfs):
     stamp = [(str(key),p.stat().st_size,p.stat().st_mtime_ns) for key,p in entries.items()]
     digest = hashlib.sha256(json.dumps([token,host,str(romfs),stamp]).encode()).hexdigest()[:24]
-    # Rebuild GameData and pickup resources predating the AP Skulltula markers.
-    return base / "mods-v18" / digest
+    # Keep the native grant source separate from previously prepared AP flows.
+    return base / "mods-v19" / digest
 
 
 def state_dir(folder):
