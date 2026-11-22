@@ -90,6 +90,16 @@ class DirectSettingsTests(unittest.TestCase):
         self.assertEqual(second["starting_items"], [])
         self.assertEqual(second["starting_songs"], [])
 
+    def test_yaml_shop_choices_distinguish_native_random_deals_from_ap_random(self):
+        self.assertEqual(SPEC_BY_ID["shuffle_shops"]["choices"][6], "random")
+        for language in ("en", "fr"):
+            rendered = yaml_options(language=language)
+            self.assertIn("deals_3, deals_4, random_deals", rendered)
+            self.assertNotIn("deals_3, deals_4, random\n", rendered)
+        self.assertEqual(engine_settings({"shuffle_shops": "random"})["shuffle_shops"], "random")
+        with self.assertRaises(ValueError):
+            engine_settings({"shuffle_shops": "random_deals"})
+
     def test_native_key_choices_are_the_implemented_subsets(self):
         self.assertEqual(set(SPEC_BY_ID["zora_fountain"]["choices"]), {"closed", "open"})
         self.assertEqual(set(SPEC_BY_ID["shuffle_smallkeys"]["choices"]),

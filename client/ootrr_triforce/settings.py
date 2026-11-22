@@ -54,7 +54,7 @@ _BASE_SPECS = (
     _choice("shuffle_chests", "all", ("off", "all", "overworld", "dungeons"),
             "Shuffle all chests, overworld chests, or dungeon chests. off requires AP shops or Skulltulas. Only catalogued chests become network checks.", "Shuffle"),
     _choice("shuffle_shops", "off", ("off", "shuffle", "deals_1", "deals_2", "deals_3", "deals_4", "random"),
-            "Shuffle shop goods locally, or add special deals across all eight shops. Only the generated special deals become AP checks and can hold your own or another player's items. random rolls zero to four deals per shop, including Kokiri; ordinary goods retain native purchases.", "Shuffle"),
+            "Shuffle shop goods locally, or add special deals across all eight shops. Only the generated special deals become AP checks and can hold your own or another player's items. In YAML, random_deals rolls zero to four deals per shop, including Kokiri; random instead lets Archipelago choose one shop mode for the entire seed. Ordinary goods retain native purchases.", "Shuffle"),
     _choice("shuffle_skulltulas", "off", ("off", "pinned", "matched"),
             "Shuffle Gold Skulltula rewards: pinned uses 44 firmly identified locations; matched adds the supported researched matches, normally 76 checks or 77 with planted/starting beans. Uncertain matches stay local. A check is sent only after collecting the reward.", "Shuffle"),
     _choice("shuffle_smallkeys", "dungeon", SMALL_KEYS,
@@ -382,7 +382,9 @@ def yaml_options(indent="  ", language="en"):
             previous = spec["group"]
         lines += [indent + "# " + line for line in textwrap.wrap(descriptions.get(spec["id"], spec["description"]), width=94)]
         if spec["kind"] in ("choice", "set"):
-            lines += [indent + "# " + line for line in textwrap.wrap(("Valeurs : " if french else "Values: ") + ", ".join(spec["choices"]), width=94)]
+            choices = ["random_deals" if spec["id"] == "shuffle_shops" and value == "random" else value
+                       for value in spec["choices"]]
+            lines += [indent + "# " + line for line in textwrap.wrap(("Valeurs : " if french else "Values: ") + ", ".join(choices), width=94)]
         elif spec["kind"] == "range":
             step = ((f", pas de {spec['step']}" if french else f", step {spec['step']}") if spec["step"] > 1 else "")
             limits = f"Entier : {spec['min']} à {spec['max']}" if french else f"Integer: {spec['min']} to {spec['max']}"

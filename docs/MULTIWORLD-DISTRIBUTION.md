@@ -12,13 +12,17 @@ OOTRR reward, even while the network locations can contain another game's
 items. Turning on a native-local shuffle therefore does not put all of that
 source family's rewards into Archipelago.
 
-With `shuffle_shops: random`, each shop rolls zero to four special deals,
+With `shuffle_shops: random_deals`, each shop rolls zero to four special deals,
 including Kokiri. The native item's eligibility can reduce that number when
 the selected shuffles provide fewer items a shop can sell safely. AP exports
 exactly those generated deals; ordinary shop goods retain native purchases.
 There is no forced Kokiri purchase or required remote recipient. Earlier rooms
 keep their original eight Kokiri checks and cannot adopt the new selection by
 reconnecting; generate a new room instead.
+
+Select Random Deals explicitly. Archipelago's reserved `random` value chooses
+an entire shop mode, while the APWorld maps `random_deals` to OOTRR's native
+`random` mode for per-shop counts.
 
 Full adult trade shuffle is an explicitly integrated exception. Its ten quest
 items enter the AP pool and can be received from any player's game. The ten

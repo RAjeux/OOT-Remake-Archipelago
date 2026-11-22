@@ -43,7 +43,10 @@ def _option_type(spec):
     kind = spec["kind"]
     if kind == "choice":
         base = Choice
-        attrs.update({"option_" + value: index for index, value in enumerate(spec["choices"])})
+        # AP reserves "random" for choosing a complete option value. Keep the
+        # native per-shop draw at its historical index behind an explicit key.
+        attrs.update({"option_" + ("random_deals" if spec["id"] == "shuffle_shops" and value == "random" else value): index
+                      for index, value in enumerate(spec["choices"])})
         attrs["default"] = spec["choices"].index(spec["default"])
     elif kind == "range":
         base = SteppedRange if spec["step"] > 1 else Range
@@ -79,7 +82,7 @@ class KokiriShopChecksRemoved(Removed):
         disabled = value is None or value is False or value == 0 or (
             isinstance(value, str) and value.strip().casefold() in {"", "false", "off", "0", "none", "null"})
         if not disabled:
-            raise ValueError("kokiri_shop_checks was a test option. Use shuffle_shops: random or deals_1 "
+            raise ValueError("kokiri_shop_checks was a test option. Use shuffle_shops: random_deals or deals_1 "
                              "for AP deals across all shops, shuffle_shops: shuffle for ordinary shop goods, "
                              "or shuffle_shops: off to keep vanilla shops.")
         super().__init__("")
@@ -119,6 +122,8 @@ def option_values(options):
         value = option.value
         if spec["kind"] == "choice":
             value = option.current_key
+            if name == "shuffle_shops" and value == "random_deals":
+                value = "random"
         elif spec["kind"] == "toggle":
             value = bool(value)
         values[name] = value

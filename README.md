@@ -1,6 +1,6 @@
 # Ocarina of Time Remake × Archipelago
 
-**0.8.0-alpha.1 — one Windows application for Triforce.** Download `OOT-Remake-Archipelago-0.8.0-alpha.1.exe` to prepare the mod, configure your room and launch the game. The application includes Python and Node.js, downloads the compatible OOTRR 0.8.1 builder when needed, and rebuilds Triforce automatically during setup.
+**0.8.0-alpha.2 — one Windows application for Triforce.** Download `OOT-Remake-Archipelago-0.8.0-alpha.2.exe` to prepare the mod, configure your room and launch the game. The application includes Python and Node.js, downloads the compatible OOTRR 0.8.1 builder when needed, and rebuilds Triforce automatically during setup.
 
 Title-screen connections, items received while the game was closed, local and remote chests, one Kokiri purchase, and DeathLink in both directions have been tested on **Triforce 0.6.0**. **Item presentation animations and some camera movements still need improvement.** All 64 shop identities have automated coverage; purchases in the seven newly connected shops have not been played through in the game. Hookshot and Fritchii are not supported by this native integration.
 
@@ -8,7 +8,7 @@ Title-screen connections, items received while the game was closed, local and re
 
 ## Play
 
-Download **`OOT-Remake-Archipelago-0.8.0-alpha.1.exe`** from the [project releases](https://github.com/RAjeux/OOT-Remake-Archipelago/releases). Keep this one file wherever you prefer; no archive extraction or separate Python, Node.js or OOTRR installation is required.
+Download **`OOT-Remake-Archipelago-0.8.0-alpha.2.exe`** from the [project releases](https://github.com/RAjeux/OOT-Remake-Archipelago/releases). Keep this one file wherever you prefer; no archive extraction or separate Python, Node.js or OOTRR installation is required.
 
 You need Windows x64, a working **Triforce installation with its build tools**, your own **version 1.1.1 game files**, and an active Archipelago room with your `.apootrr` player file. An internet connection is needed for the first download of the compatible builder. No Nintendo game files are supplied.
 
@@ -40,7 +40,9 @@ Major received items use the game's native turn toward the player camera and ite
 
 Reprepared adult-trade rooms silently recover remote quest items which a completed exchange has already consumed. The corresponding check and its personal reward still recover normally. A DeathLink packet from a replaced connection is discarded. See the [stability and update notes](docs/STABILITY.md) for the targeted story fixes and validation scope.
 
-`shuffle_shops: random` rolls zero to four one-time special deals in each of the eight shelf shops, including Kokiri. Only those generated deals enter the AP pool; each may contain your own item or another player's item, without a forced recipient. Your items use their native appearance and effects; remote items use the AP medal. Ordinary goods keep native purchases and remain available normally. `deals_1` through `deals_4` select that many special deals per shop, subject to the native item pool. `shuffle` only mixes ordinary shop goods locally, and `off` keeps vanilla shops; neither adds AP checks. Single-player rooms work too. Shopsanity Prices applies to special deals. A new generated room is required: old player files retain their original eight Kokiri purchases, placements, prices and save history.
+`shuffle_shops: random_deals` (Random Deals) rolls zero to four one-time special deals in each of the eight shelf shops, including Kokiri. Only those generated deals enter the AP pool; each may contain your own item or another player's item, without a forced recipient. Your items use their native appearance and effects; remote items use the AP medal. Ordinary goods keep native purchases and remain available normally. `deals_1` through `deals_4` select that many special deals per shop, subject to the native item pool. `shuffle` only mixes ordinary shop goods locally, and `off` keeps vanilla shops; neither adds AP checks. Single-player rooms work too. Shopsanity Prices applies to special deals. A new generated room is required: old player files retain their original eight Kokiri purchases, placements, prices and save history.
+
+Archipelago reserves `random` (and the Random? control) for choosing a whole option value at random, which can select Off or another shop mode. Choose **Random Deals** explicitly for a variable number of deals per shop. The APWorld translates `random_deals` to OOTRR's native `random` value; native settings strings keep their original format.
 
 `death_link: true` shares deaths with other DeathLink participants. A remote death waits for an active event, such as a purchase or item receipt, to finish.
 
@@ -90,12 +92,12 @@ Use Windows x64 Python with Tcl/Tk support and install the packaging dependencie
 ```powershell
 py -3 -m pip install -r requirements-app.txt
 py -3 tools/build_app.py
-py -3 tools/verify_app.py dist/OOT-Remake-Archipelago-0.8.0-alpha.1.exe
+py -3 tools/verify_app.py dist/OOT-Remake-Archipelago-0.8.0-alpha.2.exe
 ```
 
 `tools/build_app.py` creates the single windowed executable in `dist/`. It bundles the Python runtime, Tk, the pinned Node.js runtime, the APWorld, native bridge and notices. The compatible OOTRR builder is downloaded by the application on first use; game files and Triforce are supplied by the player. `VERSION` declares the release version. The build uses the supplied native DLL and WebAssembly engine and does not build a user's game.
 
-For advanced CLI development, `py -3 tools/build.py` still assembles `dist/Archipelago-OOT-Remake-0.8.0-alpha.1.zip`, including `Client-OOT-Remake.pyz`, command wrappers, APWorld and engine sources. This is separate from the normal player download. After validating a legacy ZIP, record a new reference with `tools/verify_release.py --version <version> --record-reference`; retain older manifests unchanged.
+For advanced CLI development, `py -3 tools/build.py` still assembles `dist/Archipelago-OOT-Remake-0.8.0-alpha.2.zip`, including `Client-OOT-Remake.pyz`, command wrappers, APWorld and engine sources. This is separate from the normal player download. After validating a legacy ZIP, record a new reference with `tools/verify_release.py --version <version> --record-reference`; retain older manifests unchanged.
 
 To rebuild the supplied components:
 

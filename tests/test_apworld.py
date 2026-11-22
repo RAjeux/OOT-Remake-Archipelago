@@ -495,12 +495,23 @@ class AllChestRewardTests(unittest.TestCase):
                 self.assertFalse(option(value).value)
         for value in (True, "true", "True", "on", 1, "1"):
             with self.subTest(enabled_legacy_value=value):
-                with self.assertRaisesRegex(ValueError, "shuffle_shops: random or deals_1"):
+                with self.assertRaisesRegex(ValueError, "shuffle_shops: random_deals or deals_1"):
                     option(value)
         self.assertNotIn("kokiri_shop_checks", {spec["id"] for spec in OPTION_SPECS})
         w, _, _ = self.make_world(shops=True)
         w.options.kokiri_shop_checks = SimpleNamespace(value=False)
         self.assertEqual(namespace["option_values"](w.options)["shuffle_shops"], "deals_1")
+
+    def test_ap_random_deals_choice_reaches_the_native_random_mode_at_the_same_index(self):
+        w, _, _ = self.make_world(shops=True)
+        native_choices = next(spec["choices"] for spec in OPTION_SPECS if spec["id"] == "shuffle_shops")
+        w.options.shuffle_shops = SimpleNamespace(value=6, current_key="random_deals")
+        values = namespace["option_values"](w.options)
+        self.assertEqual(native_choices[6], "random")
+        self.assertEqual(values["shuffle_shops"], "random")
+        self.assertEqual(engine_settings(values)["shuffle_shops"], "random")
+        w.generate_early()
+        self.assertEqual(w.engine_calls[-1][1]["settings"]["shuffle_shops"], "random")
 
     def test_reverse_fill_preserves_early_slots_needed_by_counted_rules(self):
         w, names, rewards = self.make_world()

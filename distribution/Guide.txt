@@ -1,9 +1,9 @@
-OOT Remake Archipelago · 0.8.0-alpha.1
+OOT Remake Archipelago · 0.8.0-alpha.2
 One application for Triforce on Windows x64.
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
 Before you start
-Download OOT-Remake-Archipelago-0.8.0-alpha.1.exe from the project releases.
+Download OOT-Remake-Archipelago-0.8.0-alpha.2.exe from the project releases.
 Python and Node.js are included. The compatible OOTRR 0.8.1 builder is
 downloaded automatically when first needed; an internet connection is
 required for that download. No separate runtime or randomizer installation
@@ -93,11 +93,12 @@ the AP catalogue continue to follow the selected save.
 Supported settings
 The YAML exposes 93 native OOTRR settings, the adult trade extension and
 DeathLink. In particular:
-- shuffle_shops: random rolls zero to four special deals in each of the eight
+- shuffle_shops: random_deals (Random Deals) rolls zero to four special deals in each of the eight
   shops, including Kokiri. Only these deals become AP checks and can hold your
   own or another player's item. deals_1 through deals_4 request that many deals
   per shop; shuffle keeps ordinary goods local. Existing rooms retain their
   original shop checks; generate a new room for the new selection.
+  Archipelago's plain random / Random? chooses a whole shop mode instead.
 - shuffle_skulltulas: pinned enables 44 identified checks. matched enables
   76 supported checks, or 77 with supported planted or starting beans.
   Collect the reward to complete its check. Uncertain sites stay local.

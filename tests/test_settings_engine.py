@@ -1,16 +1,19 @@
 """Prove that typed AP settings reach the actual vendored OOTRR WASM."""
+import ast
 import json
 import os
 from pathlib import Path
 import shutil
 import sys
+from types import SimpleNamespace
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
 from ootrr_triforce.catalog import DEFAULT_SETTINGS, SHOP_CHECKS
 from ootrr_triforce.engine import run_engine
-from ootrr_triforce.settings import FIXED_SETTINGS, engine_settings
+from ootrr_triforce.settings import (FIXED_SETTINGS, OPTION_SPECS, default_options, engine_settings,
+                                     validate_options)
 from ootrr_triforce.shop_pool import shop_checks
 
 
@@ -56,6 +59,19 @@ class NativeSettingsTests(unittest.TestCase):
         self.assertIn("Ganon", reached)
         self.assertTrue(set(SHOP_CHECKS).issubset(generated["seed_file"]["shops"]))
         self.assertFalse(shop_checks(generated["seed_file"]))
+
+    def test_ap_random_deals_key_produces_a_seed_with_the_native_random_mode(self):
+        tree = ast.parse((ROOT / "apworld/ootrr_remake/options.py").read_text(encoding="utf-8"))
+        function = next(node for node in tree.body if isinstance(node, ast.FunctionDef)
+                        and node.name == "option_values")
+        scope = dict(OPTION_SPECS=OPTION_SPECS, default_options=default_options, validate_options=validate_options)
+        exec(compile(ast.Module(body=[function], type_ignores=[]), "options.py", "exec"), scope)
+        options = SimpleNamespace(shuffle_shops=SimpleNamespace(value=6, current_key="random_deals"))
+        settings = engine_settings(scope["option_values"](options))
+        self.assertEqual(settings["shuffle_shops"], "random")
+        generated = json.loads(run_engine("generate", {"settings": settings, "seed": "AP-RANDOM-DEALS-CHOICE-VALIDATION"}))
+        self.assertEqual(self.inspect(generated["seed_file"]["settings"])["settings"]["shuffle_shops"], "random")
+        self.assertIn("Ganon", {name for wave in generated["waves"] for name in wave})
 
     def test_open_bridge_alias_has_identical_native_seed_and_access_proof(self):
         alias = engine_settings({"bridge": "open"})
