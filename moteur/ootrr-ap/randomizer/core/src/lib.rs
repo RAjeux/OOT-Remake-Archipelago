@@ -15,6 +15,7 @@ pub use ootrr_logic::{fill, logic_demo, logic_items, logic_json, logic_synth, lo
 pub use ootrr_cosmetics::{colors, cosmetic, sfx, slink, title_logo};
 
 pub mod ainb;
+pub mod adult_trade;
 pub mod boss_heart;
 pub mod calibrate;
 pub mod catalog_free;

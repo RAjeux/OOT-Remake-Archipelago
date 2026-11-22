@@ -676,6 +676,7 @@ const LOCATIONS_TAB: &[PortSection] = &[
             Entry::Plain("shuffle_treasure_reward"),
             Entry::Plain("shuffle_potion_shop"),
             Entry::Plain("shuffle_trade_checks"),
+            Entry::Plain(crate::adult_trade::SETTING),
             Entry::View(&COWS),
             Entry::Plain("shuffle_frog_songs"),
             Entry::Plain("shuffle_frog_bug_heart"),

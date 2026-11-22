@@ -474,6 +474,12 @@ pub fn build() -> Schema {
             .when("shuffle_rewards", "supported"),
     );
     s.push(
+        Setting::toggle(crate::adult_trade::NUM, crate::adult_trade::SETTING, "shuffle", "Adult trade item shuffle (Archipelago)", false)
+            .wire_as(Value::Bool(false))
+            .tip("Replace the ten adult trade quest gifts with Archipelago checks, shuffle their independent quest items, and include Biggoron's final reward. Starts with a hatched Pocket Cucco. Requires the Archipelago client postpass; this seed must be converted with base-seed before a portable OOTRR base build.")
+            .when("shuffle_rewards", "supported"),
+    );
+    s.push(
         Setting::toggle(65, "shuffle_cows", "shuffle", "Link's House and Gerudo Valley cows", false)
             .tip("The cow in Link's House and the cow in Gerudo Valley each give one extra shuffled item the first time their milk scene starts, with or without a bottle. The milk stays vanilla and stays repeatable. The other cows have their own setting.")
             .when("shuffle_rewards", "supported"),

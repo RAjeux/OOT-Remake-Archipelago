@@ -119,6 +119,9 @@ pub fn ok(d: &Data, name: &str) -> bool {
         return false;
     };
     if crate::flow_extra::trade::is(name) {
+        if crate::adult_trade::is_data(d) {
+            return l.gated && l.item.is_some();
+        }
         return l.gated && d.vanilla_of(name).is_some_and(|v| l.item.as_deref() != d.item(v).and_then(|i| i.actor.as_deref()));
     }
     if crate::flow_extra::cows::is(name) || crate::flow_extra::frogs::is(name) || crate::flow_extra::potion::is(name) {

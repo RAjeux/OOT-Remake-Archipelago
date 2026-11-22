@@ -34,6 +34,8 @@ pub fn add(d: &Data, p: &Plan, w: &mut World, seed: &str) -> Res<()> {
 pub fn rebuild(d: &Data, seed: &SeedFile) -> Res<(World, Placement)> {
     let loaded: Loaded = seed.settings()?;
     let mut p: Plan = plan(&loaded.settings)?;
+    let trade_data = crate::adult_trade::data_with(d, p.adult_trade);
+    let d = trade_data.as_ref().unwrap_or(d);
     let lay: Option<crate::shops::Layout> = crate::shops::seed::layout(seed)?;
     let owned: Option<Data> = lay.as_ref().map(|l| crate::shops::logic::data_with(d, l)).transpose()?;
     let d: &Data = owned.as_ref().unwrap_or(d);

@@ -6,7 +6,7 @@ from pathlib import Path
 from BaseClasses import Item, ItemClassification, Location, Region
 from worlds.AutoWorld import WebWorld, World
 from .catalog import (AP_SKULL_CHECKS, CHESTS, FILLER, GAME, ITEM_DATA, ITEM_IDS, LOCATION_IDS,
-                      PINNED_SKULL_CHECKS, PROTOCOL, LOCATION_REWARD_MODE, SHOP_CHECKS, SKULL_CHECKS)
+                      PINNED_SKULL_CHECKS, PROTOCOL, LOCATION_REWARD_MODE, SHOP_CHECKS, SKULL_CHECKS, TRADE_CHECKS)
 from .engine import run_engine
 from .options import OPTION_GROUPS, RemakeOptions, option_values
 from .settings import engine_settings
@@ -41,6 +41,7 @@ class RemakeWorld(World):
         self.seed_file = generated["seed_file"]
         self.kokiri_shop_checks = values["shuffle_shops"] != "off"
         self.shuffle_skulltulas = values.get("shuffle_skulltulas", "off")
+        self.adult_trade_shuffle = bool(values.get("adult_trade_shuffle", False))
         eligible_skulls = (PINNED_SKULL_CHECKS if self.shuffle_skulltulas == "pinned" else
                            AP_SKULL_CHECKS if self.shuffle_skulltulas == "matched" else frozenset())
         self.local_skulltulas = {}
@@ -60,7 +61,10 @@ class RemakeWorld(World):
                 self.local_skulltulas[bean_ride] = (
                     "Native-only: OOTRR does not prove this bean ride without preplanted or starting beans.")
         rewards = {name: prize for name, prize in self.seed_file["placements"].items()
-                   if name in CHESTS or (name in eligible_skulls and name not in self.local_skulltulas)}
+                   if name in CHESTS or (name in eligible_skulls and name not in self.local_skulltulas)
+                   or (self.adult_trade_shuffle and name in TRADE_CHECKS)}
+        if self.adult_trade_shuffle and not set(TRADE_CHECKS) <= rewards.keys():
+            raise ValueError("Adult trade shuffle requires all eleven supported trade rewards.")
         if self.kokiri_shop_checks:
             shops = self.seed_file.get("shops", {})
             if not all(name in shops for name in SHOP_CHECKS):
@@ -148,7 +152,7 @@ class RemakeWorld(World):
                 "death_link": bool(self.options.death_link.value), "reward_mode": LOCATION_REWARD_MODE,
                 "local_items": True, "kokiri_shop_checks": self.kokiri_shop_checks,
                 "foreign_only_shops": False, "shuffle_skulltulas": self.shuffle_skulltulas,
-                "local_skulltulas": self.local_skulltulas}
+                "local_skulltulas": self.local_skulltulas, "adult_trade_shuffle": self.adult_trade_shuffle}
 
     def generate_output(self, output_directory):
         output = {"game": self.game, "protocol": PROTOCOL, "room": self.multiworld.seed_name, "slot": self.player_name,
@@ -157,6 +161,6 @@ class RemakeWorld(World):
                   "death_link": bool(self.options.death_link.value), "reward_mode": LOCATION_REWARD_MODE,
                   "local_items": True, "kokiri_shop_checks": self.kokiri_shop_checks,
                   "foreign_only_shops": False, "shuffle_skulltulas": self.shuffle_skulltulas,
-                  "local_skulltulas": self.local_skulltulas}
+                  "local_skulltulas": self.local_skulltulas, "adult_trade_shuffle": self.adult_trade_shuffle}
         path = Path(output_directory) / (self.multiworld.get_out_file_name_base(self.player) + ".apootrr")
         path.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")

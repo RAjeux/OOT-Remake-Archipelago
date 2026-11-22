@@ -14,7 +14,10 @@ pub fn open(l: &Loc, p: &Plan) -> bool {
         return p.rewards.scrubs_b;
     }
     if crate::flow_extra::trade::is(&l.name) {
-        return p.rewards.trade;
+        return p.rewards.trade || p.adult_trade;
+    }
+    if l.name == crate::adult_trade::FINAL && p.adult_trade {
+        return true;
     }
     if crate::flow_extra::cows::is_other(&l.name) {
         return p.rewards.cows_other;

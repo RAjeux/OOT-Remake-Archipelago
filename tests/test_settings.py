@@ -152,7 +152,7 @@ class DirectSettingsTests(unittest.TestCase):
         self.assertEqual(values["starting_items"].count("bow"), 1)
 
     def test_native_local_families_prices_and_lacs_have_effective_dependencies(self):
-        changed = {"shuffle_rewards": "supported", "shuffle_cows": True, "shuffle_trade_checks": True,
+        changed = {"shuffle_rewards": "supported", "shuffle_cows": True, "adult_trade_shuffle": True,
                    "shuffle_ocarinas": True, "shuffle_songs": "anywhere", "song_harp_colors": False,
                    "shuffle_ganon_bosskey": "lacs_dungeons", "lacs_rewards": 3,
                    "shuffle_scrubs_a": True, "scrub_prices": "fixed", "scrub_price_fixed": 0,
@@ -169,7 +169,7 @@ class DirectSettingsTests(unittest.TestCase):
         self.assertEqual(engine_settings({"shuffle_chests": "off", "shuffle_skulltulas": "matched"})["shuffle_chests"], "off")
         for shop in ("shuffle", "deals_1", "deals_2", "deals_3", "deals_4", "random"):
             self.assertEqual(engine_settings({"shuffle_chests": "off", "shuffle_shops": shop})["shuffle_shops"], shop)
-        for bad in ({"shuffle_cows": True}, {"shuffle_ocarinas": True}, {"shuffle_trade_checks": True},
+        for bad in ({"shuffle_cows": True}, {"shuffle_ocarinas": True}, {"adult_trade_shuffle": True},
                     {"scrub_prices": "cheap"}, {"scrub_hint_text": True}, {"merchant_prices": "fixed"},
                     {"fairy_price_fixed": 0}, {"lacs_rewards": 3}, {"song_harp_colors": False},
                     {"shopsanity_prices": "giant"}, {"shuffle_rewards": "supported", "shuffle_merchants": "beans"},

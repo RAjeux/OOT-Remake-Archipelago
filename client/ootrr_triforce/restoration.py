@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 from .catalog import (AP_SKULL_CHECKS, CHESTS, CHECK_FLAGS, ITEM_DATA, ITEM_IDS,
-                      LOCATION_IDS, SHOP_CHECKS, SKULL_CHECKS)
+                      LOCATION_IDS, SHOP_CHECKS, SKULL_CHECKS, TRADE_CHECKS)
 from .cursor_resource import append_transient_index
 from .i18n import tr
 from .mod_codec import Codec
@@ -44,6 +44,8 @@ def restoration_records(roster):
             counters = list(SHOP_CHECKS[name]["counters"])
         elif name in AP_SKULL_CHECKS:
             flags = [SKULL_CHECKS[name]["flag_name"]]
+        elif name in TRADE_CHECKS:
+            flags = [TRADE_CHECKS[name]["flag_name"]]
         else:
             raise _invalid()
         if [murmur3(flag) for flag in flags] != CHECK_FLAGS[name]:
@@ -55,7 +57,8 @@ def restoration_records(roster):
         if local and (item not in ITEM_DATA or reward.get("item_id", ITEM_IDS[item]) != ITEM_IDS[item]):
             raise _invalid()
         records.append(dict(name=name, id=LOCATION_IDS[name], flags=list(dict.fromkeys(flags)),
-                            counters=counters, local=local, item=item if local else None))
+                            counters=counters, local=local, item=item if local else None,
+                            wake_talon=name in TRADE_CHECKS and TRADE_CHECKS[name]["wake_talon"]))
     return records
 
 
@@ -142,12 +145,16 @@ def build_restoration_flow(raw, roster):
                              {"GameDataName": RESULT, "Index": -1, "Value": value})
 
     entries = {}
+    trade_mode = bool(set(roster).intersection(TRADE_CHECKS))
     for record in records:
         stem = event_name(record["id"])
         done = status(stem + "_Done", record["id"])
         save = editor.action(stem + "_Save", "GameSystemActor", "EventTriggerRequestAutoSave", None)
         link(save, done)
         commit = save
+        if trade_mode:
+            from .trade_state import append_reconcile
+            commit = append_reconcile(editor, stem + "_TradeSettle", save)
         # Sold-out counters are location state, not a second purchase/payment.
         for index, counter in reversed(list(enumerate(record["counters"]))):
             sold = editor.action(stem + "_Sold" + str(index), "GameDataActor", "EventTriggerSetGameDataInt",
@@ -159,6 +166,12 @@ def build_restoration_flow(raw, roster):
                                    {"GameDataName": flag, "Index": -1, "Value": True})
             link(opened, commit)
             commit = opened
+        if record["wake_talon"]:
+            from .trade_catalog import TALON_AWAKE
+            awake = editor.action(stem + "_Talon", "GameDataActor", "EventTriggerSetGameDataBool",
+                                  {"GameDataName": TALON_AWAKE, "Index": -1, "Value": True})
+            link(awake, commit)
+            commit = awake
 
         reward = commit
         if record["local"]:

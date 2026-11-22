@@ -15,7 +15,7 @@ import sys
 import tempfile
 import uuid
 
-from .catalog import CHESTS, SHOP_CHECKS, AP_SKULL_CHECKS, PINNED_SKULL_CHECKS, EXPECTED, FILLER, GAME, LEGACY_GAME, GEAR, ITEM_IDS, LOCATION_IDS, PROTOCOL
+from .catalog import CHESTS, SHOP_CHECKS, TRADE_CHECKS, AP_SKULL_CHECKS, PINNED_SKULL_CHECKS, EXPECTED, FILLER, GAME, LEGACY_GAME, GEAR, ITEM_IDS, LOCATION_IDS, PROTOCOL
 from .engine import run_engine
 from .settings import yaml_options
 from .live import LiveInventory
@@ -65,6 +65,12 @@ def read_manifest(path):
             or seed["generator"] != "ootrr-core 0.8.1" or seed["format"] != "ootrr-seed"):
         raise ValueError(tr('Incompatible player file or version.'))
     allowed=set(CHESTS) | (set(SHOP_CHECKS) if data.get("kokiri_shop_checks") else set())
+    if type(data.get("adult_trade_shuffle", False)) is not bool:
+        raise ValueError(tr("Invalid adult trade shuffle metadata."))
+    if data.get("adult_trade_shuffle"):
+        if not set(TRADE_CHECKS) <= set(data["checks"]):
+            raise ValueError(tr("The adult trade location list is incomplete."))
+        allowed.update(TRADE_CHECKS)
     skull_mode=data.get("shuffle_skulltulas", "off")
     if skull_mode not in {"off", "pinned", "matched"}:
         raise ValueError(tr('Unknown Gold Skulltula shuffle mode.'))
@@ -143,6 +149,12 @@ def patch_request(data):
 def preparation_settings(settings, data):
     """Bind text localization to the player's canonical seed, never UI defaults."""
     result = dict(settings)
+    if data.get("adult_trade_shuffle"):
+        result["adult_trade_shuffle"] = True
+        result["_ap_token"] = data["token"]
+    else:
+        result.pop("adult_trade_shuffle", None)
+        result.pop("_ap_token", None)
     seed = data.get("seed_file", {})
     if "settings" in seed:
         result["_seed_settings"] = seed["settings"]
@@ -161,7 +173,9 @@ def build(root, settings, data):
     with tempfile.TemporaryDirectory(dir=root, prefix="build-") as tmp:
         scratch = Path(tmp)
         native = scratch / "room.ootrr"
-        native.write_text(json.dumps(data["seed_file"]), encoding="utf-8")
+        base_seed = (json.loads(run_engine("base-seed", {"seed_file": data["seed_file"]}))
+                     if data.get("adult_trade_shuffle") else data["seed_file"])
+        native.write_text(json.dumps(base_seed), encoding="utf-8")
         stage = scratch / "mods"
         romfs = Path(settings["romfs"])
         if not (romfs / "Pack" / "ZsDic.pack.zs").is_file():
@@ -175,6 +189,9 @@ def build(root, settings, data):
         mod = stage / "Archipelago" / "romfs"
         print(run_engine("patch", patch_request(data), romfs, mod).strip(), flush=True)
         write_title(romfs, mod)
+        if data.get("adult_trade_shuffle"):
+            from .trade_state import prepare_trade_state
+            prepare_trade_state(romfs, mod, data)
         if data.get("reward_mode") in ("all_chest_rewards", "all_locations"):
             from .receipt_events import prepare_receipts
             prepare_receipts(romfs,mod,data)
@@ -694,6 +711,7 @@ def main():
                    player=data["player"],kokiri_shop_checks=bool(data.get("kokiri_shop_checks",False)),
                    foreign_only_shops=bool(data.get("foreign_only_shops",False)),
                    shuffle_skulltulas=data.get("shuffle_skulltulas", "off"),
+                   adult_trade_shuffle=bool(data.get("adult_trade_shuffle", False)),
                    shop_prices={name:row["price"] for name,row in data["seed_file"].get("shops",{}).items()
                                 if name in SHOP_CHECKS})
     if args.native_install:

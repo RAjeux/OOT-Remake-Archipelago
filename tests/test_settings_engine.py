@@ -57,10 +57,10 @@ class NativeSettingsTests(unittest.TestCase):
         self.assertTrue(set(SHOP_CHECKS).issubset(generated["seed_file"]["shops"]))
 
     def test_broad_native_local_profile_preserves_ap_projection_and_supported_items(self):
-        from ootrr_triforce.catalog import CHESTS, ITEM_IDS, AP_SKULL_CHECKS
+        from ootrr_triforce.catalog import CHESTS, ITEM_IDS, AP_SKULL_CHECKS, TRADE_CHECKS
         changes = dict(shuffle_rewards="supported", shuffle_rewards_extra=True,
                        shuffle_songs="anywhere", shuffle_dungeon_rewards="anywhere",
-                       shuffle_trade_checks=True, shuffle_cows=True, shuffle_frog_songs=True,
+                       adult_trade_shuffle=True, shuffle_cows=True, shuffle_frog_songs=True,
                        shuffle_frog_bug_heart=True, shuffle_potion_shop=True, shuffle_ocarinas=True,
                        shuffle_kokiri_sword=True, shuffle_scrubs_a=True, shuffle_scrubs_b=True,
                        shuffle_merchants="all", plant_beans=True, shuffle_boss_hearts=True,
@@ -77,7 +77,7 @@ class NativeSettingsTests(unittest.TestCase):
         reached = {name for wave in generated["waves"] for name in wave}
         self.assertIn("Ganon", reached)
         network = {name: item for name, item in seed["placements"].items()
-                   if name in CHESTS or name in AP_SKULL_CHECKS}
+                   if name in CHESTS or name in AP_SKULL_CHECKS or name in TRADE_CHECKS}
         self.assertTrue(network)
         self.assertTrue(set(network) <= reached)
         self.assertTrue(set(network.values()) <= ITEM_IDS.keys())

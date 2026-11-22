@@ -1801,4 +1801,10 @@ for _name in SKULL_CHECKS:
     LOCATION_IDS[_name] = 0x6F7200 + len(LOCATION_IDS)
 CHECK_FLAGS.update({name: [metadata["flag"]] for name, metadata in SKULL_CHECKS.items()})
 
+# Full adult trades are opt-in; old rooms retain their original check lists.
+from .trade_catalog import TRADE_CHECKS
+for _name, _metadata in TRADE_CHECKS.items():
+    LOCATION_IDS[_name] = _metadata["id"]
+CHECK_FLAGS.update({name: [metadata["flag"]] for name, metadata in TRADE_CHECKS.items()})
+
 del _name

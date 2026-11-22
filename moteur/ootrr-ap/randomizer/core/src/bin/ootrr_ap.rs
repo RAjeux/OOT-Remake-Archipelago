@@ -35,6 +35,14 @@ fn generate(j: &Json) -> Result<()> {
     Ok(())
 }
 
+fn base_seed(j: &Json) -> Result<()> {
+    let input = j.get("seed_file").ok_or("missing seed_file")?;
+    let seed = ootrr_core::settings::seed::SeedFile::parse(&input.pretty())?;
+    let derived = ootrr_core::adult_trade::base_seed(&seed)?;
+    println!("{}", derived.to_json().pretty());
+    Ok(())
+}
+
 fn message_paths(j: &Json) -> Result<Vec<String>> {
     let paths = j.get("messages").and_then(Json::as_arr).ok_or("missing language archive list")?;
     let mut result = Vec::new();
@@ -247,12 +255,13 @@ fn run() -> Result<()> {
     let j=json::parse(&input)?;
     match env::args().nth(1).as_deref() {
         Some("generate") => generate(&j),
+        Some("base-seed") => base_seed(&j),
         Some("settings") => inspect_settings(&j),
         Some("localize") => localize(&j),
         Some("patch") => patch(&j),
         Some("shops") => shops(&j),
         Some("skulls") => ap_skulls::run(&j),
-        _ => Err("expected generate, settings, localize, patch, shops or skulls".into()),
+        _ => Err("expected generate, base-seed, settings, localize, patch, shops or skulls".into()),
     }
 }
 fn main() {

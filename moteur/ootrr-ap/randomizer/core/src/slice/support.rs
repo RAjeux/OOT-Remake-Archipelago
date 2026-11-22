@@ -56,6 +56,7 @@ pub struct Plan {
     pub chests: Mode,
     pub keys: di::Keys,
     pub rewards: crate::flow_extra::Rewards,
+    pub adult_trade: bool,
     pub hearts: bool,
     pub world: pu::Free,
     pub songs: Songs,
@@ -201,6 +202,10 @@ impl Plan {
         if self.rewards.potion {
             out.push((crate::flow_extra::potion::KEY, crate::flow_extra::potion::ON));
         }
+        if self.adult_trade {
+            out.push(("adult_trade_shuffle", "true"));
+            out.push(("disable_trade_revert", "true"));
+        }
         out
     }
 
@@ -238,6 +243,7 @@ pub fn plan(s: &Settings) -> Res<Plan> {
     let keys: di::Keys = di::Keys::read(s, &mut bad);
     di::chest_guard(s, chests, [keys.small, keys.boss, keys.ganon, keys.map], &mut bad);
     let mut rewards: crate::flow_extra::Rewards = crate::flow_extra::Rewards::read(s, &mut bad);
+    let adult_trade = crate::adult_trade::check_settings(s, rewards.on, rewards.trade, &mut bad);
     let hearts: bool = toggle(s, "shuffle_boss_hearts", &mut bad);
     let hints: bool = toggle(s, "gossip_hints", &mut bad);
     let fast: bool = toggle(s, "faster_chests", &mut bad);
@@ -330,6 +336,7 @@ pub fn plan(s: &Settings) -> Res<Plan> {
         (hints, "Gossip stones give hints. Their text is replaced in every language."),
         (rewards.extra, "Kak 20 Gold Skulltula Reward, DMT Biggoron and GC Medigoron are shuffled with structural event edits."),
         (rewards.trade, "The ten adult trade quest hand ins each give one extra shuffled item the first time. The trade chain itself stays vanilla."),
+        (adult_trade, crate::adult_trade::NOTE),
         (rewards.cows, crate::flow_extra::cows::NOTE),
         (rewards.cows_other, crate::flow_extra::cows::NOTE_OTHER),
         (rewards.frog_songs, crate::flow_extra::frogs::SONGS_NOTE),
@@ -401,7 +408,7 @@ pub fn plan(s: &Settings) -> Res<Plan> {
         notes.push(crate::lacs_key::NOTE.to_string());
         notes.push(crate::medal_gate::LACS_NOTE.to_string());
     }
-    Ok(Plan { chests, keys, rewards, hearts, world, songs, harp_colors, hints, fast, chest_sizes, intro, start, gates, excluded, notes, drops, skulls, remake, chus, qol, treasure, kit, open, npc, shops, bridge, silver, lacs, rainbow, trials, door, short, first_pickups, story, endings, ocarinas, kokiri_sword, difficulty })
+    Ok(Plan { chests, keys, rewards, adult_trade, hearts, world, songs, harp_colors, hints, fast, chest_sizes, intro, start, gates, excluded, notes, drops, skulls, remake, chus, qol, treasure, kit, open, npc, shops, bridge, silver, lacs, rainbow, trials, door, short, first_pickups, story, endings, ocarinas, kokiri_sword, difficulty })
 }
 
 #[cfg(test)]

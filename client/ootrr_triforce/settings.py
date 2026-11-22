@@ -168,9 +168,9 @@ _ADDITIONAL_SPECS = (
             "Shuffle the native song lessons among themselves or into the wider pool. Native lessons remain local; songs placed at AP locations join AP. Scarecrow's Song is preserved. Experimental.", "Shuffle"),
     _toggle("shuffle_potion_shop", False,
             "Shuffle the Market Potion Shop's empty-bottle and bug-tutorial potion rewards locally. Requires shuffle_rewards: supported; both checks need an empty bottle.", "Shuffle"),
-    _toggle("shuffle_trade_checks", False,
-            "Add one shuffled local reward to each supported adult trade hand-in the first time. The normal quest item is also given and stays in its original sequence. This does not shuffle or replace the adult trade items. Requires shuffle_rewards: supported.",
-            "Shuffle", label="Extra Adult Trade Rewards"),
+    _toggle("adult_trade_shuffle", False,
+            "Replace adult trade rewards with Archipelago items and shuffle the ten quest items into the multiworld. NPCs automatically accept their required owned item. The starting Cucco is already hatched, timed items do not expire, and the final Claim Check exchange has no three-day wait. Requires shuffle_rewards: supported.",
+            "Shuffle", label="Adult Trade Shuffle"),
     _toggle("shuffle_scrubs_a", False,
             "Shuffle the first supported set of Deku Scrub sales locally. Requires shuffle_rewards: supported.", "Shuffle"),
     _toggle("shuffle_scrubs_b", False,
@@ -218,6 +218,8 @@ OPTION_SPECS = _BASE_SPECS + _ADDITIONAL_SPECS + tuple(_toggle(name, False, desc
                                   for name, description in _DIFFICULTY)
 SPEC_BY_ID = {spec["id"]: spec for spec in OPTION_SPECS}
 AP_ONLY = frozenset({"death_link"})
+# Additions implemented by this integration's engine, not portable OOTRR 0.8.1.
+ENGINE_EXTENSIONS = {"adult_trade_shuffle": {"kind": "toggle", "default": False}}
 
 # These are internal constraints, never free-form YAML options. In particular,
 # bosses, pots, NPCs and other untracked rewards retain their native sources.
@@ -301,12 +303,12 @@ def validate_options(values):
         if result[name] == "overworld" and result["shuffle_chests"] == "dungeons":
             raise ValueError(name + ": overworld requires shuffle_chests: all.")
     if result["shuffle_chests"]=="off":
-        if result["shuffle_shops"]=="off" and result["shuffle_skulltulas"]=="off":
+        if result["shuffle_shops"]=="off" and result["shuffle_skulltulas"]=="off" and not result["adult_trade_shuffle"]:
             raise ValueError("shuffle_chests: off requires shuffled AP shops or Skulltulas.")
         for name in ("shuffle_smallkeys", "shuffle_bosskeys", "shuffle_ganon_bosskey", "shuffle_mapcompass"):
             if result[name] in {"regional", "overworld", "any_dungeon", "keysanity", "lacs_dungeons"}:
                 raise ValueError(name + " requires shuffled chests for this placement mode.")
-    npc_children=("shuffle_potion_shop", "shuffle_rewards_extra", "shuffle_trade_checks",
+    npc_children=("shuffle_potion_shop", "shuffle_rewards_extra", "adult_trade_shuffle",
                   "shuffle_scrubs_a", "shuffle_scrubs_b", "shuffle_cows", "shuffle_frog_songs",
                   "shuffle_frog_bug_heart", "shuffle_ocarinas")
     for name in npc_children:

@@ -13,7 +13,7 @@ game: "Ocarina of Time Remake"
   # become AP checks; other shops retain their native local rewards. Goods can belong to you or
   # another player.
   # Values: off, shuffle, deals_1, deals_2, deals_3, deals_4, random
-  shuffle_shops: "shuffle"
+  shuffle_shops: "off"
   # Shuffle Gold Skulltula rewards: pinned uses 44 firmly identified locations; matched adds the
   # supported researched matches, normally 76 checks or 77 with planted/starting beans. Uncertain
   # matches stay local. A check is sent only after collecting the reward.
@@ -206,10 +206,11 @@ game: "Ocarina of Time Remake"
   # Shuffle the Market Potion Shop's empty-bottle and bug-tutorial potion rewards locally.
   # Requires shuffle_rewards: supported; both checks need an empty bottle.
   shuffle_potion_shop: false
-  # Add one shuffled local reward to each supported adult trade hand-in the first time. The normal
-  # quest item is also given and stays in its original sequence. This does not shuffle or replace
-  # the adult trade items. Requires shuffle_rewards: supported.
-  shuffle_trade_checks: false
+  # Replace adult trade rewards with Archipelago items and shuffle the ten quest items into the
+  # multiworld. NPCs automatically accept their required owned item. The starting Cucco is already
+  # hatched, timed items do not expire, and the final Claim Check exchange has no three-day wait.
+  # Requires shuffle_rewards: supported.
+  adult_trade_shuffle: false
   # Shuffle the first supported set of Deku Scrub sales locally. Requires shuffle_rewards:
   # supported.
   shuffle_scrubs_a: false
@@ -333,5 +334,5 @@ game: "Ocarina of Time Remake"
   # A fairy released from a bottle also heals awake enemies and bosses. Experimental.
   fairy_helps_enemies: false
 
-  # Share deaths with the other DeathLink players.
-  death_link: true
+  # Share deaths with other DeathLink players.
+  death_link: false

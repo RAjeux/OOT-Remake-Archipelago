@@ -84,9 +84,22 @@ class KokiriShopChecksRemoved(Removed):
         super().__init__("")
 
 
+class TradeBonusRemoved(Removed):
+    """New rooms replace the additive test-era trade rewards with full trades."""
+
+    def __init__(self, value):
+        disabled = value is None or value is False or value == 0 or (
+            isinstance(value, str) and value.strip().casefold() in {"", "false", "off", "0", "none", "null"})
+        if not disabled:
+            raise ValueError("shuffle_trade_checks added bonus rewards. Replace it with adult_trade_shuffle: true "
+                             "for quest-item replacement; existing generated rooms keep their legacy behavior.")
+        super().__init__("")
+
+
 RemakeOptions = make_dataclass(
     "RemakeOptions", [(name, option) for name, option in OPTION_TYPES.items()]
-    + [("ootrr_settings", OOTRRSettingsRemoved), ("kokiri_shop_checks", KokiriShopChecksRemoved)], bases=(PerGameCommonOptions,),
+    + [("ootrr_settings", OOTRRSettingsRemoved), ("kokiri_shop_checks", KokiriShopChecksRemoved),
+       ("shuffle_trade_checks", TradeBonusRemoved)], bases=(PerGameCommonOptions,),
     namespace={"__module__": __name__})
 
 OPTION_GROUPS = [OptionGroup(group, [OPTION_TYPES[spec["id"]] for spec in OPTION_SPECS if spec["group"] == group],

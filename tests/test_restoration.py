@@ -20,7 +20,7 @@ from oot_rando.patching import chest_flags
 from oot_rando.patching.progressive import FlowEditor
 from oot_rando.patching.soul_adapter import murmur3
 from ootrr_triforce import ap_skulls, native_setup, restoration as restore
-from ootrr_triforce.catalog import AP_SKULL_CHECKS, CHESTS, ITEM_DATA, ITEM_IDS, LOCATION_IDS, SHOP_CHECKS
+from ootrr_triforce.catalog import AP_SKULL_CHECKS, CHESTS, ITEM_DATA, ITEM_IDS, LOCATION_IDS, SHOP_CHECKS, TRADE_CHECKS
 from ootrr_triforce.cursor_resource import append_transient_index
 from ootrr_triforce.receipt_events import CURSOR_PREFIX, OWNERS
 from test_receipt_events import native_flow
@@ -97,6 +97,8 @@ class SaveRun:
                     self.inventory[params["ActorName"]] += 1
                 elif action == "EventTriggerRequestAutoSave":
                     self.saves.append((copy.deepcopy(self.values), self.inventory.copy()))
+                elif action == "EventWait":
+                    assert params == {"Frames": 1, "IsWaitEnd": True}
                 else:
                     raise AssertionError("Unexpected presentation or action: " + action)
                 node = data.nxt.v
@@ -108,6 +110,8 @@ class SaveRun:
                     result = self.inventory[params["ActorName"]] > 0
                 elif query == "EventQueryIsAnyBottleEmpty":
                     result = self.empty_bottle
+                elif query == "EventQueryIsExistInPouch":
+                    result = self.inventory[OWNERS.get(params["Actor"], params["Actor"])] >= params["Num"]
                 else:
                     raise AssertionError("Unexpected restoration query: " + query)
                 node = data.cases[0 if result else 1].v
@@ -207,6 +211,26 @@ class RestorationFlowTests(unittest.TestCase):
         run = self.graph({SKULL: reward("Bombs (5)")}, source).restore(SKULL)
         self.assertEqual(sum(run.inventory.values()), 1)
         self.assertNotIn(ap_skulls.SCRATCH, run.values)
+
+    def test_trade_rollback_consumes_exact_input_and_late_source_cannot_restore_spent_token(self):
+        name = "LW Trade Cojiro"
+        run = self.graph({name: reward(local=False), CHEST: reward("Cojiro")})
+        run.inventory["Item_CojiroCucco"] = run.inventory["Item_Prescription"] = 1
+        run.restore(name)
+        self.assertEqual(run.inventory["Item_CojiroCucco"], 0)
+        self.assertEqual(run.inventory["Item_Prescription"], 1)
+        run.restore(CHEST).restore(name).restore(CHEST)
+        self.assertEqual(run.inventory["Item_CojiroCucco"], 0)
+        self.assertEqual(run.inventory["Item_Prescription"], 1)
+
+    def test_restoring_completed_cucco_trade_also_preserves_its_talon_prerequisite(self):
+        from ootrr_triforce.trade_catalog import TALON_AWAKE
+        name = "Kak Anju Trade Pocket Cucco"
+        run = self.graph({name: reward("Rupees (5)")})
+        run.inventory["Item_PocketCucco"] = 1
+        run.restore(name)
+        self.assertTrue(run.values[TALON_AWAKE])
+        self.assertEqual(run.inventory["Item_PocketCucco"], 0)
 
     def test_native_fallback_accepts_only_the_authored_skull_commit_barrier(self):
         source = ap_skulls.patch_skull_flow(pouch(), ap_skulls.skull_records({SKULL: reward("Bombs (5)")}))

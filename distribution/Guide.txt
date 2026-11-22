@@ -1,4 +1,4 @@
-Archipelago · Ocarina of Time Remake · 0.5.0-alpha.2
+Archipelago · Ocarina of Time Remake · 0.6.0-alpha.1
 Alpha for Triforce on Windows x64.
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
@@ -19,7 +19,7 @@ Create a room
 2. Run Create-YAML.cmd to prepare Zelda's YAML. Supported OOTRR settings
    and their descriptions are written directly in the file. The repository's
    examples/ directory also provides examples. death_link and
-   shuffle_shops are explained below.
+   shuffle_shops and adult_trade_shuffle are explained below.
 3. Generate a room with this YAML and the other players' YAML files.
    Obtain your .apootrr player file, then start that room's server.
 
@@ -71,6 +71,9 @@ compressed WebSocket connections. Extract the complete updated client ZIP,
 configure the same .apootrr again, then use Build again in Triforce Setup.
 Existing rooms and saves remain supported; no new seed is needed.
 Triforce's Options menu remains available.
+Version 0.6.0-alpha.1 keeps that same native library. If you already installed
+0.5.0-alpha.2, preparing the mod again is enough; no host rebuild is needed.
+The full adult trade shuffle requires a newly generated room and its own save.
 
 Language
 The mod automatically follows the game language selected in Triforce.
@@ -93,8 +96,8 @@ A chest containing your own item shows and grants the assigned native item.
 A chest containing another player's item shows an AP medal and recipient,
 then reports its AP location. The old local reward is not granted as well.
 Network locations cover catalogued chests and, when enabled, eight Kokiri
-purchases and supported Gold Skulltula drops. Other sources, including
-freestanding heart pieces, retain OOTRR's local handling and may differ
+purchases, supported Gold Skulltula drops and adult trade rewards. Other
+sources, including freestanding heart pieces, retain OOTRR's local handling and may differ
 from the unmodified game.
 Items from other worlds are delivered in order while a save is active.
 Their effects are native; presentation and some camera movements remain
@@ -109,7 +112,8 @@ The mod retains checks during an interruption and retries the connection.
 After preparing the updated mod, loading an older save also restores its
 previously checked AP locations. Your items are granted once to that save;
 foreign items restore only the location, without a second send. This covers
-AP chests, enabled Kokiri purchases and supported Gold Skulltulas. Native-local
+AP chests, enabled Kokiri purchases, supported Gold Skulltulas and shuffled
+adult trades. Native-local
 OOTRR rewards outside that catalogue still follow the selected save and are
 not reconstructed from AP history.
 
@@ -133,6 +137,20 @@ One purchase has been tested in the game, including the other player's
 receipt and the sold-out state after reloading. All eight shelves have
 automated coverage, but they have not all been purchased in the game.
 
+Adult trade shuffle
+Set adult_trade_shuffle: true and shuffle_rewards: supported before generating
+a new room. The eleven adult trade rewards become AP checks, including Anju's
+first gift and Biggoron's final reward. They grant only the assigned AP item;
+the old quest reward is not added as a bonus. The ten quest items are shuffled
+throughout the multiworld, starting with an already hatched Pocket Cucco.
+Talk to the appropriate NPC while owning their requested item. Items hidden
+behind another trade item in the shared menu slot are accepted automatically.
+Only the requested item is consumed; your other trade items remain available.
+Wake Talon before returning the Pocket Cucco to Anju. Trade items no longer
+expire, and Biggoron's final exchange does not require waiting three days.
+The former additive shuffle_trade_checks control is not accepted in new
+YAMLs. Existing generated rooms keep their original behavior.
+
 Gold Skulltulas and the other OOTRR settings
 shuffle_skulltulas accepts off, pinned and matched. pinned adds 44 firmly
 identified native locations; matched adds the supported researched matches.
@@ -143,13 +161,14 @@ keep their native local handling. Local bottle refills are not placed on
 AP Skulltulas because their pickup cannot wait for an empty bottle.
 Use the complete matching client ZIP and generate a new room for these IDs.
 
-The YAML now includes 94 native OOTRR settings and DeathLink. Supported
+The YAML includes 93 native OOTRR settings, the adult trade extension and
+DeathLink. Supported
 NPCs, songs, cows, ground pickups, destructibles, dungeon entrances and
 prices can be randomized natively. Those sources stay local unless they
-belong to the explicit AP chest/shop/Skulltula catalogue. Experimental
+belong to the explicit AP chest/shop/Skulltula/trade catalogue. Experimental
 breakable sources stay broken; collect their drop before leaving or it
 can be lost. The repository's docs/SETTINGS-COMPATIBILITY.md compares all
-118 native settings and explains the 24 omitted options. Private in-game tests
+118 native settings and explains the 25 omitted options. Private in-game tests
 verified consecutive personal, foreign and rupee pickups, plus older-save
 recovery, using real pickup packs placed in a private scene. They do not cover
 every original Skulltula site or confirm the foreign medal's 3D visibility.

@@ -13,7 +13,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
-from ootrr_triforce.settings import AP_ONLY, FIXED_SETTINGS, SPEC_BY_ID
+from ootrr_triforce.settings import AP_ONLY, ENGINE_EXTENSIONS, FIXED_SETTINGS, SPEC_BY_ID
 
 SCHEMA = ROOT / "tests/fixtures/ootrr-settings-schema.json"
 LOCAL_SHUFFLES = frozenset({
@@ -27,6 +27,7 @@ LOCAL_SHUFFLES = frozenset({
 })
 NETWORK_SHUFFLES = frozenset({"shuffle_chests", "shuffle_shops", "shuffle_skulltulas"})
 SPECIAL = {
+    "shuffle_trade_checks": ("legacy_additive_replaced", "This portable OOTRR setting adds a bonus while retaining vanilla quest items. New AP rooms use the integration's adult_trade_shuffle extension for complete replacement; old generated rooms retain their additive behavior."),
     "open_door_of_time": ("legacy_alias", "The legacy boolean is superseded by door_of_time_condition and its related controls."),
     "shuffle_scrubs": ("native_rejected", "The native planner accepts only off for this old selector; shuffle_scrubs_a and shuffle_scrubs_b implement the available subsets."),
     "shuffle_hideoutkeys": ("native_rejected", "The native planner accepts only vanilla; roaming hideout-key placement is not implemented."),
@@ -64,6 +65,11 @@ def public_errors(schema):
     errors = []
     for key, public in SPEC_BY_ID.items():
         if key in AP_ONLY:
+            continue
+        if key in ENGINE_EXTENSIONS and key not in native:
+            extension = ENGINE_EXTENSIONS[key]
+            if any(public[field] != extension[field] for field in ("kind", "default")):
+                errors.append(f"Invalid integration extension contract: {key}")
             continue
         row = native.get(key)
         if row is None:
@@ -143,17 +149,18 @@ def report(schema):
                         for item in section.get("items", []) if "stub" in item]
     return {"basis": "OOTRR 0.8.1 native schema and the current AP settings catalogue",
             "native_setting_count": len(rows), "public_native_count": sum(row["id"] in SPEC_BY_ID for row in rows),
-            "ap_only": sorted(AP_ONLY), "status_counts": dict(sorted(counts.items())),
+            "ap_only": sorted(AP_ONLY), "engine_extensions": ENGINE_EXTENSIONS,
+            "status_counts": dict(sorted(counts.items())),
             "menu_placeholders": placeholders, "settings": rows, "errors": public_errors(schema)}
 
 
 def markdown(result):
     lines = ["# Settings compatibility", "",
              "This comparison uses the **OOTRR remake 0.8.1** schema vendored by this project. It does not claim parity with every setting of the separate N64 OoT Randomizer or Ship of Harkinian. The remake's menu also contains placeholder controls which its own engine cannot apply.", "",
-             f"The native schema has **{result['native_setting_count']} keys**. The current AP catalogue exposes **{result['public_native_count']} native keys**, plus {', '.join('`' + key + '`' for key in result['ap_only'])}. Some native choice lists are deliberately restricted to implemented values.", "",
+             f"The native schema has **{result['native_setting_count']} keys**. The current AP catalogue exposes **{result['public_native_count']} native keys**, the integration extension {', '.join('`' + key + '`' for key in result['engine_extensions'])}, and {', '.join('`' + key + '`' for key in result['ap_only'])}. Some native choice lists are deliberately restricted to implemented values.", "",
              "A local shuffle can be compatible with AP without turning all of its locations into network checks: OOTRR builds the complete canonical seed, then the AP pass changes only catalogued locations. The native search collects reachable local rewards before recording each AP sphere. Requiring every earlier AP reward preserves that conservative reachability proof. Local pickups and NPC rewards must remain present and must not receive an additional AP grant.", "",
              "Settings which depend on the *final placement* need extra care. Native hint text, chest sizing and junk-only exclusions cannot simply be copied before AP replaces a reward. Silver Rupee shuffling also adds new item types that need AP IDs and receipt effects.", "",
-             "The adult trade control adds extra rewards while preserving the normal quest items; it does not replace or shuffle those items. See [adult trade rewards](ADULT-TRADE-REWARDS.md). For local versus remote item ownership and the scope of the network pool, see [multiworld distribution](MULTIWORLD-DISTRIBUTION.md).", "",
+             "The `adult_trade_shuffle` integration extension replaces the legacy additive trade control. It shuffles ten quest items and exports eleven trade checks, with independent inventory guards and native item delivery. It is implemented by this project's engine and client rather than the unmodified portable OOTRR 0.8.1 application. See [adult trade rewards](ADULT-TRADE-REWARDS.md). For local versus remote item ownership and the scope of the network pool, see [multiworld distribution](MULTIWORLD-DISTRIBUTION.md).", "",
              "The machine-readable companion is [settings-compatibility.json](settings-compatibility.json). Regenerate both files with `python tools/audit_settings.py --write-docs`; use `--ootrr <ootrr.exe>` to audit another installed native schema. These comparisons validate catalogue coverage, not gameplay for every combination.", "",
              "| Native key | AP status | Details |", "| --- | --- | --- |"]
     for row in result["settings"]:

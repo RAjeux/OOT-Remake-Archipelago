@@ -73,6 +73,11 @@ fn silver(s: &Spot) -> Option<bool> {
 }
 
 fn trade(s: &Spot) -> Option<bool> {
+    if s.p.adult_trade {
+        if let Some(allowed) = crate::adult_trade::placement(s.name, s.item) {
+            return Some(allowed);
+        }
+    }
     s.d.item(s.item).is_some_and(|i| !crate::flow_extra::trade::keeps(s.d, s.name, i)).then_some(false)
 }
 

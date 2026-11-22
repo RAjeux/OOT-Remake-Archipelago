@@ -2,13 +2,13 @@
 
 This comparison uses the **OOTRR remake 0.8.1** schema vendored by this project. It does not claim parity with every setting of the separate N64 OoT Randomizer or Ship of Harkinian. The remake's menu also contains placeholder controls which its own engine cannot apply.
 
-The native schema has **118 keys**. The current AP catalogue exposes **94 native keys**, plus `death_link`. Some native choice lists are deliberately restricted to implemented values.
+The native schema has **118 keys**. The current AP catalogue exposes **93 native keys**, the integration extension `adult_trade_shuffle`, and `death_link`. Some native choice lists are deliberately restricted to implemented values.
 
 A local shuffle can be compatible with AP without turning all of its locations into network checks: OOTRR builds the complete canonical seed, then the AP pass changes only catalogued locations. The native search collects reachable local rewards before recording each AP sphere. Requiring every earlier AP reward preserves that conservative reachability proof. Local pickups and NPC rewards must remain present and must not receive an additional AP grant.
 
 Settings which depend on the *final placement* need extra care. Native hint text, chest sizing and junk-only exclusions cannot simply be copied before AP replaces a reward. Silver Rupee shuffling also adds new item types that need AP IDs and receipt effects.
 
-The adult trade control adds extra rewards while preserving the normal quest items; it does not replace or shuffle those items. See [adult trade rewards](ADULT-TRADE-REWARDS.md). For local versus remote item ownership and the scope of the network pool, see [multiworld distribution](MULTIWORLD-DISTRIBUTION.md).
+The `adult_trade_shuffle` integration extension replaces the legacy additive trade control. It shuffles ten quest items and exports eleven trade checks, with independent inventory guards and native item delivery. It is implemented by this project's engine and client rather than the unmodified portable OOTRR 0.8.1 application. See [adult trade rewards](ADULT-TRADE-REWARDS.md). For local versus remote item ownership and the scope of the network pool, see [multiworld distribution](MULTIWORLD-DISTRIBUTION.md).
 
 The machine-readable companion is [settings-compatibility.json](settings-compatibility.json). Regenerate both files with `python tools/audit_settings.py --write-docs`; use `--ootrr <ootrr.exe>` to audit another installed native schema. These comparisons validate catalogue coverage, not gameplay for every combination.
 
@@ -62,7 +62,7 @@ The machine-readable companion is [settings-compatibility.json](settings-compati
 | `shuffle_potion_shop` | `public_native_local` | OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere. |
 | `shuffle_rewards_extra` | `public_native_local` | OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere. |
 | `shuffle_skulltulas` | `public_network` | The supported AP location family is connected to native checks and rewards; see the setting description for its exact scope. |
-| `shuffle_trade_checks` | `public_native_local` | OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere. This adds a first-time bonus to each supported adult trade hand-in; the normal quest item is also given. Full replacement/shuffling of adult trade items is not implemented. |
+| `shuffle_trade_checks` | `legacy_additive_replaced` | This portable OOTRR setting adds a bonus while retaining vanilla quest items. New AP rooms use the integration's adult_trade_shuffle extension for complete replacement; old generated rooms retain their additive behavior. |
 | `shuffle_scrubs_a` | `public_native_local` | OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere. |
 | `shuffle_scrubs_b` | `public_native_local` | OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere. |
 | `bombchus_in_logic` | `known_native_gameplay_gap` | The native source documents Bombchus being unusable without a Bomb Bag even though this option's logic assumes they work. A logic-only toggle can therefore produce an unusable required explosive. |

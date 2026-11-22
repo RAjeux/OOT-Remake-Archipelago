@@ -122,11 +122,13 @@ pub fn skipped_locations(p: &crate::slice::support::Plan) -> Vec<&'static str> {
 }
 
 pub fn build_for(seed: &SeedFile, romfs: &P, load: &P, mod_name: &str, host: Host) -> Res<Built> {
+    crate::adult_trade::require_base(seed)?;
     let b: Built = crate::slice::seed_packs::build(seed, romfs, load, mod_name, host)?;
     crate::shelf::seed::after(seed, romfs, load, mod_name, host, b)
 }
 
 pub fn build_with(seed: &SeedFile, romfs: &P, load: &P, mod_name: &str, host: Host, extra: &Extra) -> Res<Built> {
+    crate::adult_trade::require_base(seed)?;
     let d: Data = Data::load()?;
     let loaded = seed.settings()?;
     let p = plan(&loaded.settings)?;

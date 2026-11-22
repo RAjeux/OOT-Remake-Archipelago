@@ -99,7 +99,7 @@ def append_recipe(editor, metadata, stem, grant_entry, commit, *, pickup=False):
                            "IsShowNumDisplay": pickup, "IsTreasureBox": not pickup})
 
 
-def copy_receipt_presenter(editor, metadata, item_id, core_name, *, style="large", ground_raw=None):
+def copy_receipt_presenter(editor, metadata, item_id, core_name, *, style="large", ground_raw=None, prefix=None):
     """Keep the native item model/pose and authored camera-facing turn.
 
     The NPC gift scene supplies a model without needing a physical pickup actor.
@@ -172,7 +172,7 @@ def copy_receipt_presenter(editor, metadata, item_id, core_name, *, style="large
             event.data.actor_action = make_rindex(editor._holder(owner.actions, cleanup.data.actor_action.v.v))
             event.data.params = copy.deepcopy(cleanup.data.params)
 
-    entry = copy_entry(editor.chart, editor, PRESENTER_ENTRY, "OOTRR_APShow_" + str(item_id),
+    entry = copy_entry(editor.chart, editor, PRESENTER_ENTRY, prefix or "OOTRR_APShow_" + str(item_id),
                        local_closure=natural_camera, callback=callback, skip=skip, transform=transform)
     if len(replaced) != 1:
         raise ValueError(tr('Unrecognized native animation grant: ') + metadata["actor"])

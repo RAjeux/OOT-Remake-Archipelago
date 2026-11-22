@@ -234,6 +234,8 @@ pub fn generate_data(d: &Data, s: &Settings, seed: &str, o: &GenOpts) -> Res<Gen
     let watch: Watch = Watch::new(o.limit, o.live.clone());
     let mut p: Plan = plan(s)?;
     p.notes.extend(p.trials.note());
+    let trade_data = crate::adult_trade::data_with(d, p.adult_trade);
+    let d = trade_data.as_ref().unwrap_or(d);
     let room: crate::shops::layout::Room = crate::shops::rules::room(d, &p)?;
     let mut lay: Option<crate::shops::Layout> = crate::shops::layout::of(&p.shops, seed, room)?;
     p.notes.extend(lay.as_ref().and_then(|l| crate::shops::rules::cut_note(l.cut, room)));
@@ -397,6 +399,9 @@ pub fn generate_data(d: &Data, s: &Settings, seed: &str, o: &GenOpts) -> Res<Gen
         fixed_elsewhere: w.real.len() - pk.free.len(),
     };
     let mut seed_file: SeedFile = SeedFile::new(seed, s, &d.scan.game, map)?;
+    if p.adult_trade {
+        crate::adult_trade::validate(&seed_file)?;
+    }
     if let Some(l) = lay.as_mut() {
         crate::shops::layout::fill_deals(l, &seed_file.placements)?;
         seed_file.shops = crate::shops::seed::entries(l);
@@ -465,6 +470,8 @@ pub fn generate_data(d: &Data, s: &Settings, seed: &str, o: &GenOpts) -> Res<Gen
 
 pub fn plando_options(d: &Data, s: &Settings) -> Res<(Vec<String>, Vec<String>)> {
     let p: Plan = plan(s)?;
+    let trade_data = crate::adult_trade::data_with(d, p.adult_trade);
+    let d = trade_data.as_ref().unwrap_or(d);
     let w: World = world_with(d, &p.logic())?;
     let vanilla: Placement = vanilla_place(&w, d)?;
     let pk: Pick = pick(d, &w, &p);
