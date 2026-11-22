@@ -1,4 +1,8 @@
 {
+  "Invalid Archipelago shop mode.": "Mode de boutiques Archipelago invalide.",
+  "Invalid native shop reward list.": "Liste de récompenses des boutiques natives invalide.",
+  "The native shop catalogue is incomplete.": "Le catalogue des boutiques natives est incomplet.",
+  "The Archipelago shop selection does not match the native deals.": "La sélection des achats Archipelago ne correspond pas aux offres spéciales natives.",
   "GameData name table is missing.": "Table des noms GameData absente.",
   "Expected a GameData dictionary.": "Dictionnaire GameData attendu.",
   "Missing GameData field: ": "Champ GameData absent : ",
@@ -6,6 +10,9 @@
   "Invalid GameData container: ": "Conteneur GameData invalide : ",
   "Invalid save size: ": "Taille de sauvegarde invalide : ",
   "Missing or invalid OOTRR price for ": "Prix OOTRR absent ou invalide pour ",
+  "The room shop selection does not match its Archipelago rewards.": "La sélection des achats de la salle ne correspond pas à ses récompenses Archipelago.",
+  "Unsupported Archipelago shop mode.": "Mode de boutiques Archipelago non pris en charge.",
+  "Preparing Archipelago shop purchases...": "Préparation des achats Archipelago en boutique...",
   "Shop text archives were not found in Mals.": "Archives des textes de boutique introuvables dans Mals.",
   "Native local-item grant not found.": "Remise native des objets locaux introuvable.",
   "Unexpected actor for ": "Acteur inattendu pour ",

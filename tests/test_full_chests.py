@@ -10,7 +10,8 @@ from zipfile import ZipFile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "dist/Client-OOT-Remake.pyz"))
 sys.path.insert(0, str(ROOT / "client"))
-from ootrr_triforce.catalog import CHESTS, CHECK_FLAGS, GAME, GEAR, ITEM_IDS, LOCATION_IDS, SHOP_CHECKS, SKULL_CHECKS, AP_SKULL_CHECKS
+from ootrr_triforce.catalog import CHESTS, CHECK_FLAGS, GAME, GEAR, ITEM_IDS, LOCATION_IDS, LEGACY_SHOP_CHECKS, SHOP_CHECKS, SKULL_CHECKS, AP_SKULL_CHECKS
+from ootrr_triforce.shop_pool import SHOP_CHECK_MODE
 from ootrr_triforce.native_setup import save_session
 from ootrr_triforce.player import patch_request, read_manifest
 from ootrr_triforce.presentation import Presentation
@@ -121,14 +122,14 @@ class FullChestTests(unittest.TestCase):
     def v2(self):
         data = fixture("complet")
         data.update(reward_mode="all_locations", local_items=True, kokiri_shop_checks=True)
-        for index, name in enumerate(SHOP_CHECKS):
+        for index, name in enumerate(sorted(LEGACY_SHOP_CHECKS)):
             item = list(ITEM_IDS)[index]
             data["seed_file"].setdefault("shops", {})[name] = {"item": item, "price": 40}
             data["checks"].append(name)
             data["moved"][name] = item
         return data
 
-    def test_v2_manifest_includes_all_shops_without_chest_actor_requests(self):
+    def test_v2_manifest_keeps_all_eight_legacy_shops_without_chest_actor_requests(self):
         data = self.read(self.v2())
         self.assertEqual(len(data["checks"]), 136)
         requests = patch_request(data)["files"]
@@ -169,6 +170,73 @@ class FullChestTests(unittest.TestCase):
             self.assertTrue(session["LocalItems"])
             self.assertEqual(session["RewardMode"], "all_locations")
             self.assertEqual(session["Checks"][str(LOCATION_IDS[shop])]["Flags"], list(CHECK_FLAGS[shop]))
+
+    def global_shops(self, selected=None):
+        data = fixture("complet")
+        if selected is None:
+            selected = {next(name for name, row in SHOP_CHECKS.items() if row["shop"] == shop)
+                        for shop in dict.fromkeys(row["shop"] for row in SHOP_CHECKS.values())}
+        data.update(reward_mode="all_locations", local_items=True, kokiri_shop_checks=False,
+                    foreign_only_shops=False, shop_check_mode=SHOP_CHECK_MODE, shop_checks=sorted(selected))
+        data["seed_file"]["shops"] = {
+            name: dict(item="Bow" if name in selected else row["item"], price=40,
+                       deal=name in selected) for name, row in SHOP_CHECKS.items()}
+        for name in sorted(selected):
+            data["checks"].append(name)
+            data["moved"][name] = "Bow"
+        return data
+
+    def test_new_manifest_tracks_native_deals_across_all_shops_and_no_ordinary_stock(self):
+        data = self.read(self.global_shops())
+        selected = set(data["shop_checks"])
+        self.assertEqual(len(data["seed_file"]["shops"]), 64)
+        self.assertEqual(len(selected), 8)
+        self.assertEqual(len(selected & LEGACY_SHOP_CHECKS), 1)
+        self.assertEqual(set(data["checks"]) & set(SHOP_CHECKS), selected)
+        requests = patch_request(data)["files"]
+        actual = {(path, row["actor"]) for path, rows in requests.items() for row in rows}
+        expected = {(path, ref["actor"]) for name in data["checks"] if name in CHESTS
+                    for ref in CHESTS[name] for path in ref["files"]}
+        self.assertEqual(actual, expected)
+        for mutation in ("missing_deal", "ordinary_check", "changed_seed_deal", "legacy_mode"):
+            invalid = copy.deepcopy(data)
+            if mutation == "missing_deal":
+                invalid["checks"].remove(sorted(selected)[0])
+            elif mutation == "ordinary_check":
+                ordinary = sorted(set(SHOP_CHECKS) - selected)[0]
+                invalid["checks"].append(ordinary)
+                invalid["moved"][ordinary] = invalid["seed_file"]["shops"][ordinary]["item"]
+            elif mutation == "changed_seed_deal":
+                invalid["seed_file"]["shops"][sorted(selected)[0]]["deal"] = False
+            else:
+                invalid["kokiri_shop_checks"] = True
+            with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                self.read(invalid)
+
+    def test_new_ordinary_shuffle_has_no_ap_shop_checks_and_preserves_old_player_files(self):
+        data = self.read(self.global_shops(set()))
+        self.assertEqual(data["shop_checks"], [])
+        self.assertFalse(set(data["checks"]) & set(SHOP_CHECKS))
+        self.assertEqual(len(data["seed_file"]["shops"]), 64)
+        for name in ("neutre", "complet", "complet-v2"):
+            with self.subTest(old_room=name):
+                old = fixture(name)
+                old_checks = list(old["checks"])
+                validated = self.read(old)
+                self.assertEqual(validated["checks"], old_checks)
+                self.assertNotIn("shop_check_mode", validated)
+
+    def test_new_sessions_keep_global_shop_ids_and_saved_flags(self):
+        data = self.read(self.global_shops())
+        roster = {name: dict(item="Bow", player="Zelda", local=index % 2 == 0)
+                  for index, name in enumerate(data["shop_checks"])}
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            save_session(root, {"server": "ws://127.0.0.1:38281", "protected": "", "baseline": 0}, data, roster)
+            session = json.loads((root / "native-session.json").read_bytes())
+        self.assertEqual(set(session["Checks"]), {str(LOCATION_IDS[name]) for name in data["checks"]})
+        for name in data["shop_checks"]:
+            self.assertEqual(session["Checks"][str(LOCATION_IDS[name])]["Flags"], CHECK_FLAGS[name])
 
 
 if __name__ == "__main__":

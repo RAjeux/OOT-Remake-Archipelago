@@ -1,8 +1,8 @@
 # Multiworld item distribution
 
 The randomizer first creates an OOTRR seed. Archipelago then moves the rewards
-from this integration's network locations: the catalogued chests, the eight
-enabled Kokiri purchases, the supported enabled Gold Skulltula drops, and the
+from this integration's network locations: the catalogued chests, the selected
+special deals across all eight shops, the supported enabled Gold Skulltula drops, and the
 eleven adult trade checks when `adult_trade_shuffle` is enabled.
 
 Rewards from sources outside that catalogue remain local to Zelda. This
@@ -11,6 +11,14 @@ freestanding items and other local sources. They retain their seed-assigned
 OOTRR reward, even while the network locations can contain another game's
 items. Turning on a native-local shuffle therefore does not put all of that
 source family's rewards into Archipelago.
+
+With `shuffle_shops: random`, each shop rolls zero to four special deals,
+including Kokiri. The native item's eligibility can reduce that number when
+the selected shuffles provide fewer items a shop can sell safely. AP exports
+exactly those generated deals; ordinary shop goods retain native purchases.
+There is no forced Kokiri purchase or required remote recipient. Earlier rooms
+keep their original eight Kokiri checks and cannot adopt the new selection by
+reconnecting; generate a new room instead.
 
 Full adult trade shuffle is an explicitly integrated exception. Its ten quest
 items enter the AP pool and can be received from any player's game. The ten

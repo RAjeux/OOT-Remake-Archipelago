@@ -15,6 +15,7 @@ from zipfile import ZipFile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
 from ootrr_triforce import ap_shops, install_mod, medallions, player, restoration
+from ootrr_triforce.catalog import LEGACY_SHOP_CHECKS
 
 
 def put(path, raw):
@@ -98,6 +99,23 @@ class LocalizationPipelineTests(unittest.TestCase):
                 legacy = {key: value for key, value in settings.items() if key != "_seed_settings"}
                 self.assertEqual(medallions.prepare(cache, legacy, {}, {}), cache / "mods")
                 self.assertEqual(engine.call_count, 2)
+
+    def test_special_deal_mode_does_not_reuse_a_legacy_shop_visual_cache(self):
+        with tempfile.TemporaryDirectory() as directory:
+            _, _, cache, _, settings = self.fixture(directory)
+            roster = {name: ("Foreign reward", "Ami") for name in sorted(LEGACY_SHOP_CHECKS)}
+            settings["shop_prices"] = {name: 10 for name in roster}
+            new_settings = dict(settings, kokiri_shop_checks=False, shop_check_mode="special_deals",
+                                shop_checks=sorted(roster))
+            with patch.object(medallions, "patch_mod"), patch.object(ap_shops, "prepare_shops") as shops, \
+                    patch.object(restoration, "prepare_restoration"), \
+                    patch.object(medallions, "run_engine", return_value=""), contextlib.redirect_stdout(io.StringIO()):
+                legacy = medallions.prepare(cache, settings, roster, {})
+                selected = medallions.prepare(cache, new_settings, roster, {})
+                cached = medallions.prepare(cache, new_settings, roster, {})
+            self.assertNotEqual(legacy, selected)
+            self.assertEqual(selected, cached)
+            self.assertEqual(shops.call_count, 2)
 
     def test_failed_localization_never_publishes_or_changes_the_base(self):
         with tempfile.TemporaryDirectory() as directory:

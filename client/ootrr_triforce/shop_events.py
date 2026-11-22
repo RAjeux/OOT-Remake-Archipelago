@@ -24,6 +24,7 @@ GRANTS = ((156, "Event281"), (461, "Event543"))
 CAPACITY = ((6, "Event77"), (170, "Event303"))
 BOTTLE_CAPACITY = (186, "Event325")
 SHOP_FLAGS = {record["flag_name"] for record in SHOP_CHECKS.values()}
+SHOP_BY_FLAG = {record["flag_name"]: record for record in SHOP_CHECKS.values()}
 
 
 def _command(event, kind):
@@ -37,12 +38,14 @@ def _records(records):
     for record in records:
         actor, flag = record.get("actor"), record.get("flag_name")
         counts = record.get("counters")
+        metadata = SHOP_BY_FLAG.get(flag) if isinstance(flag, str) else None
         if (not isinstance(actor, str) or not re.fullmatch(r"Item_AP_[A-Za-z0-9_]+", actor)
                 or not isinstance(flag, str) or flag not in SHOP_FLAGS
-                or not isinstance(counts, (list, tuple)) or len(counts) != 3
+                or not isinstance(counts, (list, tuple)) or not 1 <= len(counts) <= 3
                 or any(not isinstance(name, str) or not name or "\0" in name for name in counts)
-                or len(set(counts)) != 3
-                or type(record.get("price")) is not int or record["price"] < 0):
+                or len(set(counts)) != len(counts)
+                or list(counts) != metadata["counters"]
+                or type(record.get("price")) is not int or not 1 <= record["price"] <= 999):
             raise ValueError(tr('Invalid Archipelago shop metadata.'))
         if actor in actors or flag in flags or set(counts) & counters:
             raise ValueError(tr('Each Archipelago purchase must have its own actor, flag and unique counters.'))

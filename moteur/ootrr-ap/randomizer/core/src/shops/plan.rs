@@ -94,7 +94,7 @@ pub fn settings() -> Vec<Setting> {
             .opt("deals_2", "2 Items", "Two slots in each shop are special deals, the other slots sell shuffled shop goods.")
             .opt("deals_3", "3 Items", "Three slots in each shop are special deals, the other slots sell shuffled shop goods.")
             .opt("deals_4", "4 Items", "Four slots in each shop are special deals, the other slots sell shuffled shop goods.")
-            .opt("random", "Random", "Each shop gets 0 to 4 special deals, the Kokiri Shop at least one."),
+            .opt("random", "Random", "Each shop gets 0 to 4 special deals."),
         with_deals(
             Setting::choice(95, PRICES, "shuffle", "Shopsanity Prices", "starting")
                 .tip("The price range of special deals, named by the wallet that can pay the highest price. The remake's wallets hold 200, 500 and 1000 rupees. Prices lean to the middle of the range, in steps of 5 rupees. Kokiri Shop deals never cost more than 200, so the Kokiri Sword and other early items stay in reach. Shop goods always keep their own price.")

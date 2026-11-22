@@ -19,7 +19,13 @@ from ootrr_triforce.catalog import (AP_SKULL_CHECKS, CHESTS, DEFAULT_SETTINGS, F
                                     LOCATION_REWARD_MODE, PINNED_SKULL_CHECKS, SHOP_CHECKS, SKULL_CHECKS,
                                     TRADE_CHECKS)
 from ootrr_triforce.trade_catalog import TRADE_ITEMS
+from ootrr_triforce.shop_pool import SHOP_CHECK_MODE, shop_checks
 from ootrr_triforce.settings import OPTION_SPECS, default_options, engine_settings, validate_options
+
+DEAL_NAMES = tuple(next(name for name, row in SHOP_CHECKS.items() if row["shop"] == shop)
+                   for shop in dict.fromkeys(row["shop"] for row in SHOP_CHECKS.values()))
+DEAL_REWARDS = dict(zip(DEAL_NAMES, ("Bow", "Bomb Bag", "Dins Fire", "Rupees (20)",
+                                    "Piece of Heart", "Small Key (Forest Temple)", "Ice Arrows", "Deku Nuts (5)")))
 
 
 class Region:
@@ -75,7 +81,8 @@ class AllChestRewardTests(unittest.TestCase):
         seed = dict(checksum="synthetic", placements=dict(zip(names, rewards)))
         generated = dict(seed_file=seed, waves=[names[:2] + ["Local NPC reward"], names[2:] + ["Ganon"]])
         if shops:
-            seed["shops"] = {name: {"item": row["item"], "price": row["price"]} for name, row in SHOP_CHECKS.items()}
+            seed["shops"] = {name: {"item": DEAL_REWARDS.get(name, row["item"]), "price": row["price"],
+                                    "deal": name in DEAL_REWARDS} for name, row in SHOP_CHECKS.items()}
             generated["waves"][0].extend(SHOP_CHECKS)
         if changes:
             changes(generated)
@@ -88,7 +95,7 @@ class AllChestRewardTests(unittest.TestCase):
         w.game, w.player, w.player_name = GAME, 1, "Zelda"
         w.random = SimpleNamespace(getrandbits=lambda bits: 17)
         values = default_options()
-        values.update(death_link=True, shuffle_shops="shuffle" if shops else "off")
+        values.update(death_link=True, shuffle_shops="deals_1" if shops else "off")
         values.update(option_changes or {})
         w.options = SimpleNamespace(**{
             spec["id"]: SimpleNamespace(value=(spec["choices"].index(values[spec["id"]])
@@ -224,6 +231,35 @@ class AllChestRewardTests(unittest.TestCase):
                 self.assertTrue(rule(State(**earlier)))
                 earlier[required] = 0
                 self.assertFalse(rule(State(**earlier)), "A remote hand-in token must stay in the AP access rule")
+
+    @unittest.skipUnless(os.environ.get("OOTRR_NODE") or shutil.which("node"),
+                         "Node.js needed for the native shop-to-AP integration")
+    def test_real_native_shop_deals_project_exactly_into_ap_locations_and_rewards(self):
+        from ootrr_triforce.engine import run_engine
+        w, _, _ = self.make_world(option_changes={"shuffle_shops": "deals_1"}, engine=run_engine)
+        native = w.seed_file["shops"]
+        selected = {name for name, row in native.items() if row.get("deal", False)}
+        ordinary = set(native) - selected
+        self.assertEqual(set(native), set(SHOP_CHECKS))
+        self.assertTrue(selected)
+        self.assertLessEqual(len(selected), 8)
+        self.assertTrue(any(SHOP_CHECKS[name]["shop"] != "KF Shop" for name in selected))
+        self.assertEqual(w.shop_checks, selected)
+        self.assertEqual(set(w.moved) & set(SHOP_CHECKS), selected)
+        self.assertFalse(set(w.waves) & ordinary)
+        w.create_items()
+        w.create_regions()
+        expected = Counter(w.seed_file["placements"][name] for name in w.waves if name not in SHOP_CHECKS)
+        expected.update(native[name]["item"] for name in selected)
+        self.assertEqual(Counter(item.name for item in w.multiworld.itempool), expected)
+        locations = [location for region in w.multiworld.regions for location in region.locations]
+        self.assertEqual(len(w.multiworld.itempool), len(locations))
+        self.assertEqual({location.name for location in locations if location.name in SHOP_CHECKS}, selected)
+        for location in locations:
+            if location.name in selected:
+                self.assertTrue(all(location.item_rule(item) for item in w.multiworld.itempool))
+                self.assertTrue(location.item_rule(SimpleNamespace(player=2, name="Other game's reward")))
+        self.assertEqual(w.fill_slot_data()["shop_checks"], sorted(selected))
 
     def test_every_reward_is_conserved_and_repeated_keys_count(self):
         w, names, rewards = self.make_world()
@@ -370,29 +406,36 @@ class AllChestRewardTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "no Archipelago destination"):
                     self.make_world(change)
 
-    def test_all_kokiri_goods_join_the_pool_and_counted_rules(self):
+    def test_only_selected_deals_join_the_pool_and_counted_rules_across_all_shops(self):
         w, names, rewards = self.make_world(shops=True)
-        self.assertEqual(set(w.waves), set(names) | set(SHOP_CHECKS))
-        goods = [row["item"] for row in SHOP_CHECKS.values()]
+        self.assertEqual(set(w.waves), set(names) | set(DEAL_NAMES))
+        self.assertEqual(w.shop_checks, set(DEAL_NAMES))
+        self.assertEqual(len(w.seed_file["shops"]), 64)
+        goods = list(DEAL_REWARDS.values())
         w.create_items()
         self.assertEqual(Counter(item.name for item in w.multiworld.itempool), Counter(rewards + goods))
         w.create_regions()
-        state = State(**{"Small Key (Forest Temple)": 2, **Counter(goods)})
+        state = State(**Counter([*rewards[:2], *goods]))
         self.assertTrue(w.multiworld.completion_condition[1](state))
         state.counts[goods[0]] -= 1
         self.assertFalse(w.multiworld.completion_condition[1](state))
-        self.assertIs(w.fill_slot_data()["kokiri_shop_checks"], True)
+        self.assertIs(w.fill_slot_data()["kokiri_shop_checks"], False)
+        self.assertEqual(w.fill_slot_data()["shop_check_mode"], SHOP_CHECK_MODE)
+        self.assertEqual(w.fill_slot_data()["shop_checks"], sorted(DEAL_NAMES))
         self.assertIs(w.fill_slot_data()["foreign_only_shops"], False)
         self.assertEqual(sum(len(region.locations) for region in w.multiworld.regions), 12)
         locations = [location for region in w.multiworld.regions for location in region.locations]
         self.assertEqual(sum(location.name in SHOP_CHECKS for location in locations), 8)
         for location in locations:
-            self.assertTrue(location.item_rule(SimpleNamespace(player=2)))
-            self.assertTrue(location.item_rule(SimpleNamespace(player=1)))
+            self.assertTrue(location.item_rule(SimpleNamespace(player=2, name="Other game's progression")))
+            self.assertTrue(all(location.item_rule(item) for item in w.multiworld.itempool))
         with tempfile.TemporaryDirectory() as folder:
             w.generate_output(folder)
             manifest = json.loads(next(Path(folder).glob("*.apootrr")).read_bytes())
-            self.assertIs(manifest["kokiri_shop_checks"], True)
+            self.assertIs(manifest["kokiri_shop_checks"], False)
+            self.assertEqual(manifest["shop_check_mode"], SHOP_CHECK_MODE)
+            self.assertEqual(manifest["shop_checks"], sorted(DEAL_NAMES))
+            self.assertEqual(set(manifest["checks"]) & set(SHOP_CHECKS), set(DEAL_NAMES))
             self.assertIs(manifest["foreign_only_shops"], False)
 
     def test_shuffled_shops_work_in_a_single_player_pool(self):
@@ -403,12 +446,39 @@ class AllChestRewardTests(unittest.TestCase):
         shops = [location for location in locations if location.name in SHOP_CHECKS]
         self.assertEqual(len(shops), 8)
         self.assertEqual(len(w.multiworld.itempool), len(locations))
-        self.assertEqual(w.engine_calls[0][1]["settings"]["shuffle_shops"], "shuffle")
-        expected = Counter(rewards + [row["item"] for row in SHOP_CHECKS.values()])
+        self.assertEqual(w.engine_calls[0][1]["settings"]["shuffle_shops"], "deals_1")
+        expected = Counter(rewards + list(DEAL_REWARDS.values()))
         self.assertEqual(Counter(item.name for item in w.multiworld.itempool), expected)
         for location in shops:
             self.assertTrue(all(location.item_rule(item) for item in w.multiworld.itempool))
             self.assertTrue(location.item_rule(SimpleNamespace(player=2)))
+
+    def test_ordinary_shuffled_goods_keep_native_repeat_purchases_and_add_no_ap_checks(self):
+        def ordinary(generated):
+            for name, row in generated["seed_file"]["shops"].items():
+                row.update(item=SHOP_CHECKS[name]["item"], deal=False)
+        w, names, rewards = self.make_world(ordinary, shops=True, option_changes={"shuffle_shops": "shuffle"})
+        self.assertEqual(w.shop_checks, set())
+        self.assertEqual(set(w.moved), set(names))
+        self.assertEqual(len(w.seed_file["shops"]), 64)
+        w.create_items()
+        self.assertEqual(Counter(item.name for item in w.multiworld.itempool), Counter(rewards))
+        self.assertEqual(w.fill_slot_data()["shop_checks"], [])
+
+    def test_native_deal_selection_can_exclude_kokiri_and_have_a_variable_count(self):
+        selected = {"Kak Bazaar Item 8", "Market Potion Shop Item 2", "ZD Shop Item 8"}
+        def only_three(generated):
+            for name, row in generated["seed_file"]["shops"].items():
+                row.update(item="Rupees (50)" if name in selected else SHOP_CHECKS[name]["item"],
+                           deal=name in selected)
+        w, names, rewards = self.make_world(only_three, shops=True, option_changes={"shuffle_shops": "random"})
+        self.assertEqual(w.shop_checks, selected)
+        self.assertEqual(set(w.moved), set(names) | selected)
+        self.assertFalse(any(name.startswith("KF Shop") for name in w.shop_checks))
+        w.create_items()
+        w.create_regions()
+        self.assertEqual(Counter(item.name for item in w.multiworld.itempool), Counter(rewards + ["Rupees (50)"] * 3))
+        self.assertEqual(sum(len(region.locations) for region in w.multiworld.regions), len(names) + 3)
 
     def test_old_foreign_only_yaml_option_reports_its_replacement(self):
         class Removed:
@@ -425,12 +495,12 @@ class AllChestRewardTests(unittest.TestCase):
                 self.assertFalse(option(value).value)
         for value in (True, "true", "True", "on", 1, "1"):
             with self.subTest(enabled_legacy_value=value):
-                with self.assertRaisesRegex(ValueError, "shuffle_shops: shuffle"):
+                with self.assertRaisesRegex(ValueError, "shuffle_shops: random or deals_1"):
                     option(value)
         self.assertNotIn("kokiri_shop_checks", {spec["id"] for spec in OPTION_SPECS})
         w, _, _ = self.make_world(shops=True)
         w.options.kokiri_shop_checks = SimpleNamespace(value=False)
-        self.assertEqual(namespace["option_values"](w.options)["shuffle_shops"], "shuffle")
+        self.assertEqual(namespace["option_values"](w.options)["shuffle_shops"], "deals_1")
 
     def test_reverse_fill_preserves_early_slots_needed_by_counted_rules(self):
         w, names, rewards = self.make_world()
@@ -481,13 +551,18 @@ class AllChestRewardTests(unittest.TestCase):
         self.assertEqual(Counter(placed.values()), Counter(rewards))
         self.assertEqual([placed[name] for name in names[:2]], rewards[:2])
 
-    def test_kokiri_requires_every_price_and_reachability_proof(self):
+    def test_global_shop_selection_requires_complete_metadata_price_and_reachability_proof(self):
         def no_goods(generated):
             generated["seed_file"]["shops"].pop(next(iter(SHOP_CHECKS)))
-        with self.assertRaisesRegex(ValueError, "eight shop slots"):
+        with self.assertRaisesRegex(ValueError, "catalogue is incomplete"):
             self.make_world(no_goods, shops=True)
+        for price in (None, False, 0, 1000):
+            def bad_price(generated):
+                generated["seed_file"]["shops"][DEAL_NAMES[0]]["price"] = price
+            with self.subTest(price=price), self.assertRaisesRegex(ValueError, "native shop reward list"):
+                self.make_world(bad_price, shops=True)
         def no_reach(generated):
-            generated["waves"][0].remove(next(iter(SHOP_CHECKS)))
+            generated["waves"][0].remove(DEAL_NAMES[-1])
         with self.assertRaisesRegex(ValueError, "did not prove"):
             self.make_world(no_reach, shops=True)
 

@@ -1,6 +1,6 @@
 # Desktop connection window
 
-Open **OOT-Remake-Archipelago-0.7.0-alpha.1.exe** and choose **Connection** from
+Open **OOT-Remake-Archipelago-0.8.0-alpha.1.exe** and choose **Connection** from
 the home screen. The controls open inside the same application, without a
 console or a separate Python installation.
 

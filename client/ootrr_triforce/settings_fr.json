@@ -1,6 +1,6 @@
 {
   "death_link": "Partager les morts avec les autres joueurs DeathLink.",
-  "shuffle_shops": "Mélange OOTRR des boutiques, ou une à quatre offres spéciales par boutique. Les huit achats Kokiri deviennent des checks AP ; les autres boutiques gardent leurs récompenses locales. Objets pour toi ou un autre joueur.",
+  "shuffle_shops": "Mélange local des marchandises, ou offres spéciales dans les huit boutiques. Seules les offres spéciales tirées deviennent des checks AP et peuvent contenir un objet pour toi ou un autre joueur. random tire de zéro à quatre offres par boutique, Kokiri comprise ; les autres articles gardent leurs achats natifs.",
   "shuffle_skulltulas": "Mélanger les Skulltulas d'or : pinned utilise 44 emplacements identifiés ; matched ajoute les appariements étudiés compatibles, soit normalement 76 checks ou 77 avec haricots plantés/de départ. Les appariements incertains restent locaux. Le check est envoyé après ramassage.",
   "shuffle_chests": "Mélanger les coffres partout, hors donjons ou en donjon. off exige des boutiques ou Skulltulas AP mélangées. Seuls les coffres du catalogue deviennent des checks réseau.",
   "shuffle_smallkeys": "Petites clés : emplacement habituel, donjon d'origine, n'importe quel donjon ou partout. Les deux derniers choix exigent les coffres de donjon mélangés.",

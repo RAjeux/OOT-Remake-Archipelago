@@ -185,7 +185,7 @@ class DirectSettingsTests(unittest.TestCase):
         self.assertIs(native["bombchus_in_logic"], False)
         self.assertEqual(native["shuffle_hideoutkeys"], "vanilla")
         self.assertEqual(engine_settings({"shuffle_chests": "off", "shuffle_skulltulas": "matched"})["shuffle_chests"], "off")
-        for shop in ("shuffle", "deals_1", "deals_2", "deals_3", "deals_4", "random"):
+        for shop in ("deals_1", "deals_2", "deals_3", "deals_4", "random"):
             self.assertEqual(engine_settings({"shuffle_chests": "off", "shuffle_shops": shop})["shuffle_shops"], shop)
         for bad in ({"shuffle_cows": True}, {"shuffle_ocarinas": True}, {"adult_trade_shuffle": True},
                     {"scrub_prices": "cheap"}, {"scrub_hint_text": True}, {"merchant_prices": "fixed"},
@@ -195,6 +195,13 @@ class DirectSettingsTests(unittest.TestCase):
                     {"enemy_gates": True, "shuffle_entrances": "dungeons"}):
             with self.subTest(settings=bad), self.assertRaises(ValueError):
                 validate_options(bad)
+
+    def test_ordinary_shop_shuffle_does_not_create_an_ap_pool_without_other_checks(self):
+        with self.assertRaisesRegex(ValueError, "AP shop deals"):
+            validate_options({"shuffle_chests": "off", "shuffle_shops": "shuffle"})
+        values = validate_options({"shuffle_chests": "off", "shuffle_shops": "shuffle",
+                                   "shuffle_skulltulas": "matched"})
+        self.assertEqual(values["shuffle_shops"], "shuffle")
 
 
 if __name__ == "__main__":

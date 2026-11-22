@@ -27,6 +27,7 @@ from . import install_mod
 from . import native_setup
 from .title_screen import write_title
 from .save_bridge import Snapshot, apply_history, exclusive, history_cursor, save_path, write_json
+from .shop_pool import manifest_shop_checks
 
 BY_ID = {v: k for k, v in ITEM_IDS.items()}
 
@@ -65,7 +66,8 @@ def read_manifest(path):
     if (data["protocol"] != PROTOCOL or data["token"] != token
             or seed["generator"] != "ootrr-core 0.8.1" or seed["format"] != "ootrr-seed"):
         raise ValueError(tr('Incompatible player file or version.'))
-    allowed=set(CHESTS) | (set(SHOP_CHECKS) if data.get("kokiri_shop_checks") else set())
+    selected_shops = manifest_shop_checks(data)
+    allowed=set(CHESTS) | set(selected_shops)
     if type(data.get("adult_trade_shuffle", False)) is not bool:
         raise ValueError(tr("Invalid adult trade shuffle metadata."))
     if data.get("adult_trade_shuffle"):
@@ -91,11 +93,8 @@ def read_manifest(path):
     if mode not in ("legacy_gear", "all_chest_rewards", "all_locations"):
         raise ValueError(tr('Unknown Archipelago reward mode.'))
     rewards=dict(seed["placements"])
-    if data.get("kokiri_shop_checks"):
-        shops=seed.get("shops",{})
-        if not all(name in shops for name in SHOP_CHECKS):
-            raise ValueError(tr('The seed does not contain all eight Kokiri purchases.'))
-        rewards.update({name:shops[name]["item"] for name in SHOP_CHECKS})
+    shops = seed.get("shops", {})
+    rewards.update({name: shops[name]["item"] for name in selected_shops})
     if not set(data["checks"]) <= rewards.keys():
         raise ValueError(tr('An Archipelago location is missing from the OOTRR seed.'))
     if mode in ("all_chest_rewards", "all_locations"):
@@ -150,6 +149,12 @@ def patch_request(data):
 def preparation_settings(settings, data):
     """Bind text localization to the player's canonical seed, never UI defaults."""
     result = dict(settings)
+    if "shop_check_mode" in data:
+        result["shop_check_mode"] = data["shop_check_mode"]
+        result["shop_checks"] = sorted(manifest_shop_checks(data))
+    else:
+        result.pop("shop_check_mode", None)
+        result.pop("shop_checks", None)
     if data.get("adult_trade_shuffle"):
         result["adult_trade_shuffle"] = True
         result["_ap_token"] = data["token"]
@@ -718,11 +723,13 @@ def main():
     runtime = dict(cfg, mods_dir=str(mods), exe=profile.get("exe"), install_only=bool(args.install_only or args.setup),
                    reward_mode=data.get("reward_mode","legacy_gear"),local_items=bool(data.get("local_items",False)),
                    player=data["player"],kokiri_shop_checks=bool(data.get("kokiri_shop_checks",False)),
+                   shop_check_mode=data.get("shop_check_mode"),
+                   shop_checks=sorted(manifest_shop_checks(data)),
                    foreign_only_shops=bool(data.get("foreign_only_shops",False)),
                    shuffle_skulltulas=data.get("shuffle_skulltulas", "off"),
                    adult_trade_shuffle=bool(data.get("adult_trade_shuffle", False)),
                    shop_prices={name:row["price"] for name,row in data["seed_file"].get("shops",{}).items()
-                                if name in SHOP_CHECKS})
+                                if name in manifest_shop_checks(data)})
     if args.native_install:
         existing=root/"native-session.json"
         previous=json.loads(existing.read_bytes()) if existing.is_file() else {}

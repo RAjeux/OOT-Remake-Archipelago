@@ -23,16 +23,17 @@ from oot_rando.patching.event_patch import _flow
 from oot_rando.patching.event_info import reachable
 from oot_rando.patching.progressive import FlowEditor, link
 from ootrr_triforce.shop_events import ENTRY, FLOW_PATH, PREFIX, SELECTED, patch_shop_flow, prepare_shop_events
-from ootrr_triforce.catalog import ITEM_DATA
+from ootrr_triforce.catalog import ITEM_DATA, SHOP_CHECKS
 from ootrr_triforce.receipt_events import DUNGEONS, OWNERS
 from ootrr_triforce.native_presentations import is_cure
 from test_receipt_events import native_flow
 
 
 def records():
-    return [{"actor": "Item_AP_test" + str(slot), "flag_name": "Archipelago.Shop.KF." + str(slot),
-             "counters": [f"Shop_SoldNum.Kokiri.{age}.{slot}" for age in ("Child", "Short", "Adult")],
-             "name": "KF Shop Item " + str(slot + 1), "price": 10 + 5 * slot} for slot in (0, 7)]
+    return [{"actor": "Item_AP_test" + str(row["slot"]), "flag_name": row["flag_name"],
+             "shop": row["shop"], "counters": list(row["counters"]),
+             "name": name, "price": 10 + 5 * row["slot"]}
+            for name, row in SHOP_CHECKS.items() if row["shop"] == "KF Shop" and row["slot"] in (0, 7)]
 
 
 def native_shop():
@@ -222,7 +223,7 @@ class ShopEventTests(unittest.TestCase):
         invalid = records(); invalid[0]["flag_name"] = "Archipelago.Shop.KF.8"
         with self.assertRaises(ValueError): patch_shop_flow(self.before, invalid)
 
-    def test_all_eight_real_catalog_flags_can_be_hooked(self):
+    def test_all_real_catalog_flags_can_be_hooked(self):
         from ootrr_triforce.catalog import SHOP_CHECKS
         native_records = [dict(record, name=name, actor="Item_AP_catalog" + str(index), price=15)
                           for index, (name, record) in enumerate(SHOP_CHECKS.items())]
@@ -230,6 +231,43 @@ class ShopEventTests(unittest.TestCase):
         flags = {event.data.params.data.get("GameDataName") for event in patched.events
                  if event.name.startswith(PREFIX + "Collected")}
         self.assertEqual(flags, {record["flag_name"] for record in SHOP_CHECKS.values()})
+
+    def test_selected_deals_commit_each_shop_stock_and_replay_without_another_grant(self):
+        shops = list(dict.fromkeys(row["shop"] for row in SHOP_CHECKS.values()))
+        rewards = []
+        for index, shop in enumerate(shops):
+            name, metadata = next((name, row) for name, row in SHOP_CHECKS.items() if row["shop"] == shop)
+            rewards.append(dict(metadata, name=name, actor="Item_AP_deal" + str(index), price=15,
+                                local_item="Bow", native_actor=ITEM_DATA["Bow"]["actor"]))
+        raw = patch_shop_flow(self.before, rewards, pouch_raw=native_flow())
+        self.assertEqual({len(row["counters"]) for row in rewards}, {1, 2, 3})
+        for row in rewards:
+            with self.subTest(shop=row["shop"]):
+                run = Purchase(raw, row["actor"], rewards=rewards)
+                run.run("FirstBuy")
+                self.assertEqual(run.money, 85)
+                self.assertTrue(run.values[row["flag_name"]])
+                self.assertTrue(all(run.values[counter] == 1 for counter in row["counters"]))
+                grants = sum(command == "EventTriggerAddOrRemovePouchContent" for command, _ in run.trace)
+                self.assertEqual(grants, 1)
+                for counter in row["counters"]:
+                    run.values[counter] = 0
+                run.run(ENTRY)
+                self.assertTrue(all(run.values[counter] == 1 for counter in row["counters"]))
+                self.assertEqual(sum(command == "EventTriggerAddOrRemovePouchContent" for command, _ in run.trace), grants)
+                other_flags = {other["flag_name"] for other in rewards if other is not row}
+                self.assertTrue(other_flags.isdisjoint(run.values))
+        ordinary = Purchase(raw, "Shop_Heart", rewards=rewards, capacity=0)
+        ordinary.run("FirstBuy")
+        self.assertFalse(any(key.startswith("Archipelago.Shop.") for key in ordinary.values))
+        self.assertEqual(ordinary.money, 85)
+
+    def test_forged_or_truncated_stock_counters_are_rejected(self):
+        for counters in (["Unrelated.GameData"], records()[0]["counters"][:-1], list(reversed(records()[0]["counters"]))):
+            invalid = records()
+            invalid[0]["counters"] = counters
+            with self.subTest(counters=counters), self.assertRaises(ValueError):
+                patch_shop_flow(self.before, invalid)
 
     def test_every_local_item_uses_one_native_effect_without_a_network_ack(self):
         from ootrr_triforce.catalog import SHOP_CHECKS

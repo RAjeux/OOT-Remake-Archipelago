@@ -79,8 +79,9 @@ class KokiriShopChecksRemoved(Removed):
         disabled = value is None or value is False or value == 0 or (
             isinstance(value, str) and value.strip().casefold() in {"", "false", "off", "0", "none", "null"})
         if not disabled:
-            raise ValueError("kokiri_shop_checks was a test option. Replace it with shuffle_shops: shuffle "
-                             "to randomize shops normally, or shuffle_shops: off to disable shop checks.")
+            raise ValueError("kokiri_shop_checks was a test option. Use shuffle_shops: random or deals_1 "
+                             "for AP deals across all shops, shuffle_shops: shuffle for ordinary shop goods, "
+                             "or shuffle_shops: off to keep vanilla shops.")
         super().__init__("")
 
 

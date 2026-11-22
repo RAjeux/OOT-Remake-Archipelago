@@ -15,7 +15,7 @@ from zipfile import ZipFile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
 from ootrr_triforce import app_runtime, install_mod, install_service as service, player
-from ootrr_triforce.catalog import GAME, ITEM_IDS, LOCATION_IDS, PROTOCOL
+from ootrr_triforce.catalog import GAME, ITEM_IDS, LOCATION_IDS, PROTOCOL, SHOP_CHECKS
 
 
 def put(path, data):
@@ -202,6 +202,31 @@ class InstallationTransactionTests(unittest.TestCase):
         self.assertNotIn("node", config)
         self.assertNotIn("password", config)
         self.assertEqual(progress[-1], 100)
+        self.assert_saves_unchanged()
+
+    def test_special_deal_selection_and_native_prices_reach_the_preparation_pipeline(self):
+        data = copy.deepcopy(self.data)
+        selected = [next(name for name, row in SHOP_CHECKS.items() if row["shop"] == shop)
+                    for shop in ("Market Bazaar", "GC Shop")]
+        data.update(shop_check_mode="special_deals", shop_checks=selected, kokiri_shop_checks=False,
+                    foreign_only_shops=False)
+        data["checks"] = [name for name in data["checks"] if name not in SHOP_CHECKS] + selected
+        data["seed_file"]["shops"] = {name: dict(item=row["item"], price=row["price"], deal=name in selected)
+                                      for name, row in SHOP_CHECKS.items()}
+        for index, name in enumerate(selected):
+            data["seed_file"]["shops"][name]["price"] = 25 + index
+        with patch.object(service.player, "read_manifest", return_value=data):
+            service.install(self.request)
+        runtime = service.player.build.call_args.args[1]
+        self.assertEqual(runtime["shop_check_mode"], "special_deals")
+        self.assertEqual(runtime["shop_checks"], selected)
+        self.assertFalse(runtime["kokiri_shop_checks"])
+        self.assertFalse(runtime["foreign_only_shops"])
+        self.assertEqual({name: runtime["shop_prices"][name] for name in selected},
+                         {name: 25 + index for index, name in enumerate(selected)})
+        prepared = self.prepare.call_args.args[1]
+        self.assertEqual(prepared["shop_check_mode"], "special_deals")
+        self.assertEqual(prepared["shop_checks"], sorted(selected))
         self.assert_saves_unchanged()
 
     def test_failed_build_restores_mod_native_sources_settings_and_executable(self):

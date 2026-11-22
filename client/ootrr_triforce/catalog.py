@@ -1791,6 +1791,7 @@ SHOP_CHECKS = {'KF Shop Item 1': {'shop': 'KF Shop',
                     'flag': 1369278633}}
 for _name in SHOP_CHECKS:
     LOCATION_IDS[_name] = 0x6F7200 + len(LOCATION_IDS)
+LEGACY_SHOP_CHECKS = frozenset(SHOP_CHECKS)
 CHECK_FLAGS = {name: [ref["flag"] for ref in refs] for name, refs in CHESTS.items()}
 CHECK_FLAGS.update({name: [metadata["flag"]] for name, metadata in SHOP_CHECKS.items()})
 
@@ -1806,5 +1807,12 @@ from .trade_catalog import TRADE_CHECKS
 for _name, _metadata in TRADE_CHECKS.items():
     LOCATION_IDS[_name] = _metadata["id"]
 CHECK_FLAGS.update({name: [metadata["flag"]] for name, metadata in TRADE_CHECKS.items()})
+
+# Global shops append their own reserved IDs after every legacy family. Never
+# insert them into the original contiguous chest/Kokiri/Skulltula/trade range.
+from .shop_catalog import ADDITIONAL_SHOP_CHECKS
+SHOP_CHECKS.update(ADDITIONAL_SHOP_CHECKS)
+LOCATION_IDS.update({name: metadata["id"] for name, metadata in ADDITIONAL_SHOP_CHECKS.items()})
+CHECK_FLAGS.update({name: [metadata["flag"]] for name, metadata in ADDITIONAL_SHOP_CHECKS.items()})
 
 del _name

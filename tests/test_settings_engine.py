@@ -11,6 +11,7 @@ sys.path.insert(0, str(ROOT / "client"))
 from ootrr_triforce.catalog import DEFAULT_SETTINGS, SHOP_CHECKS
 from ootrr_triforce.engine import run_engine
 from ootrr_triforce.settings import FIXED_SETTINGS, engine_settings
+from ootrr_triforce.shop_pool import shop_checks
 
 
 CHANGED = {"shuffle_shops": "shuffle", "open_forest": "open", "open_kakariko": "open",
@@ -53,8 +54,8 @@ class NativeSettingsTests(unittest.TestCase):
         self.assertTrue(generated["seed_file"]["placements"])
         reached = {name for wave in generated["waves"] for name in wave}
         self.assertIn("Ganon", reached)
-        self.assertTrue(set(SHOP_CHECKS).issubset(reached))
         self.assertTrue(set(SHOP_CHECKS).issubset(generated["seed_file"]["shops"]))
+        self.assertFalse(shop_checks(generated["seed_file"]))
 
     def test_open_bridge_alias_has_identical_native_seed_and_access_proof(self):
         alias = engine_settings({"bridge": "open"})
@@ -96,12 +97,16 @@ class NativeSettingsTests(unittest.TestCase):
         self.assertIn("Ganon", reached)
         network = {name: item for name, item in seed["placements"].items()
                    if name in CHESTS or name in AP_SKULL_CHECKS or name in TRADE_CHECKS}
+        deals = shop_checks(seed)
+        network.update({name: seed["shops"][name]["item"] for name in deals})
         self.assertTrue(network)
         self.assertTrue(set(network) <= reached)
         self.assertTrue(set(network.values()) <= ITEM_IDS.keys())
         self.assertTrue(any(name in AP_SKULL_CHECKS for name in network))
         self.assertTrue(any(name not in network and name not in SHOP_CHECKS for name in seed["placements"]))
-        self.assertTrue(set(SHOP_CHECKS) <= reached)
+        self.assertTrue(deals <= reached)
+        self.assertTrue(all(sum(SHOP_CHECKS[name]["shop"] == shop for name in deals) <= 4
+                            for shop in {row["shop"] for row in SHOP_CHECKS.values()}))
         self.assertEqual(self.inspect(seed["settings"])["settings"]["shuffle_skulltulas"], "matched")
 
 

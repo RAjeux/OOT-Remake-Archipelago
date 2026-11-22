@@ -16,7 +16,7 @@ from .mod_codec import Codec
 REST = "System/Resource/ResourceSizeTable.Product.111.Nin_Ounce_NVN2.rsizetable.zs"
 GET = ("Dm_SY_GetInEvent", "GetInEvent_NotTurn_NotNpc")
 CHEST_ENTRY = "Success_"
-REVISION = 15
+REVISION = 16
 
 
 def chest_flows(raw, records, *, native_pouch=None, small_raw=None):
@@ -303,6 +303,7 @@ def prepare(root, settings, roster, moved):
     full_rewards = settings.get("reward_mode") in ("all_chest_rewards", "all_locations")
     local_items = bool(settings.get("local_items"))
     payload = json.dumps([REVISION, full_rewards, local_items, settings.get("kokiri_shop_checks", False),
+                          settings.get("shop_check_mode"), settings.get("shop_checks", []),
                           settings.get("shop_prices", {}), settings.get("shuffle_skulltulas", "off"),
                           bool(settings.get("adult_trade_shuffle")), seed_settings, roster, effective],
                          ensure_ascii=False, sort_keys=True)
@@ -320,9 +321,8 @@ def prepare(root, settings, roster, moved):
         romfs, mod = Path(settings["romfs"]), target / "Archipelago" / "romfs"
         if roster:
             patch_mod(romfs, mod, roster, moved, full_rewards=full_rewards, local_items=local_items)
-            if settings.get("kokiri_shop_checks"):
-                from .ap_shops import prepare_shops
-                prepare_shops(romfs, mod, roster, settings)
+            from .ap_shops import prepare_shops
+            prepare_shops(romfs, mod, roster, settings)
             if settings.get("adult_trade_shuffle"):
                 from .ap_trade import prepare_trade_rewards
                 from .trade_events import prepare_trade_events

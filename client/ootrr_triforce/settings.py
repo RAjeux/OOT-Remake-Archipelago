@@ -54,7 +54,7 @@ _BASE_SPECS = (
     _choice("shuffle_chests", "all", ("off", "all", "overworld", "dungeons"),
             "Shuffle all chests, overworld chests, or dungeon chests. off requires AP shops or Skulltulas. Only catalogued chests become network checks.", "Shuffle"),
     _choice("shuffle_shops", "off", ("off", "shuffle", "deals_1", "deals_2", "deals_3", "deals_4", "random"),
-            "Use OOTRR's shop shuffle or add one to four special deals per shop. The eight Kokiri purchases become AP checks; other shops retain their native local rewards. Goods can belong to you or another player.", "Shuffle"),
+            "Shuffle shop goods locally, or add special deals across all eight shops. Only the generated special deals become AP checks and can hold your own or another player's items. random rolls zero to four deals per shop, including Kokiri; ordinary goods retain native purchases.", "Shuffle"),
     _choice("shuffle_skulltulas", "off", ("off", "pinned", "matched"),
             "Shuffle Gold Skulltula rewards: pinned uses 44 firmly identified locations; matched adds the supported researched matches, normally 76 checks or 77 with planted/starting beans. Uncertain matches stay local. A check is sent only after collecting the reward.", "Shuffle"),
     _choice("shuffle_smallkeys", "dungeon", SMALL_KEYS,
@@ -310,8 +310,9 @@ def validate_options(values):
         if result[name] == "overworld" and result["shuffle_chests"] == "dungeons":
             raise ValueError(name + ": overworld requires shuffle_chests: all.")
     if result["shuffle_chests"]=="off":
-        if result["shuffle_shops"]=="off" and result["shuffle_skulltulas"]=="off" and not result["adult_trade_shuffle"]:
-            raise ValueError("shuffle_chests: off requires shuffled AP shops or Skulltulas.")
+        if (result["shuffle_shops"] not in {"deals_1", "deals_2", "deals_3", "deals_4", "random"}
+                and result["shuffle_skulltulas"]=="off" and not result["adult_trade_shuffle"]):
+            raise ValueError("shuffle_chests: off requires AP shop deals, Skulltulas or adult trades.")
         for name in ("shuffle_smallkeys", "shuffle_bosskeys", "shuffle_ganon_bosskey", "shuffle_mapcompass"):
             if result[name] in {"regional", "overworld", "any_dungeon", "keysanity", "lacs_dungeons"}:
                 raise ValueError(name + " requires shuffled chests for this placement mode.")

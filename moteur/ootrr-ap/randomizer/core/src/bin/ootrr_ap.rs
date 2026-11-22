@@ -187,6 +187,7 @@ fn patch(j: &Json) -> Result<()> {
 fn shop_jobs(j: &Json) -> Result<Vec<ootrr_core::shelf::Job>> {
     use std::collections::BTreeSet;
     use ootrr_core::shelf::{Job, What};
+    let table = ootrr_core::shops::table()?;
     let records = j.get("shops").and_then(Json::as_arr).ok_or("missing shop jobs")?;
     let strings = |r: &Json, key: &str| -> Result<Vec<String>> {
         r.get(key).and_then(Json::as_arr).ok_or_else(|| format!("missing {key}").into())
@@ -201,11 +202,29 @@ fn shop_jobs(j: &Json) -> Result<Vec<ootrr_core::shelf::Job>> {
         if !(1..=999).contains(&price) || !(0..8).contains(&slot) {
             return Err("invalid AP shop price or slot".into());
         }
+        let name = field(r, "name")?;
+        // Old player files only contain Kokiri purchases and omit the shop.
+        // New rooms identify every shelf by its canonical shop and slot pair.
+        let shop = match r.get("shop") {
+            Some(value) => value.as_str().ok_or("invalid AP shop name")?,
+            None => "KF Shop",
+        };
+        let source = table.slot(name).ok_or("unknown AP shop location")?;
+        let metadata = table.shop(shop).ok_or("unknown AP shop")?;
+        if source.shop != shop || source.slot != slot as usize {
+            return Err("AP shop location does not match its shop and slot".into());
+        }
+        let keepers = strings(r, "keepers")?;
+        let bancs = strings(r, "bancs")?;
+        let counters = strings(r, "counters")?;
+        if keepers != metadata.keepers || bancs != metadata.bancs || counters != source.counters {
+            return Err("AP shop resources do not match the canonical shelf".into());
+        }
         let item = field(r, "actor")?;
         if !item.starts_with("Item_AP_") || !ootrr_core::pickup_pack::is_actor_name(item) {
             return Err("AP shelf must contain a presentation token".into());
         }
-        if !slots.insert(slot) || !actors.insert(item) {
+        if !slots.insert((shop, slot)) || !actors.insert(item) {
             return Err("each AP shop slot needs a unique presentation token".into());
         }
         // All shelves use their own no-effect AP pouch identity. A local
@@ -224,9 +243,8 @@ fn shop_jobs(j: &Json) -> Result<Vec<ootrr_core::shelf::Job>> {
             }
             _ => return Err("a local shop reward needs its name and native actor".into()),
         };
-        jobs.push(Job { label: field(r,"name")?.to_string(), shop: "KF Shop".to_string(),
-            slot: slot as usize, keepers: strings(r,"keepers")?, bancs: strings(r,"bancs")?,
-            counters: strings(r,"counters")?,
+        jobs.push(Job { label: name.to_string(), shop: shop.to_string(),
+            slot: slot as usize, keepers, bancs, counters,
             what: What::Deal { item: item.to_string(), price: price as i32, model }, tiered: None });
     }
     Ok(jobs)
@@ -282,12 +300,21 @@ mod tests {
         m.write().unwrap()
     }
 
-    fn shop_record(actor: &str, slot: i64) -> Json {
-        Json::obj().with("name", format!("KF Shop Item {}", slot + 1).into())
+    fn shop_record_in(actor: &str, shop: &str, slot: i64) -> Json {
+        let table = ootrr_core::shops::table().unwrap();
+        let source = table.at(shop, slot as usize).unwrap();
+        let metadata = table.shop(shop).unwrap();
+        Json::obj().with("name", source.name.clone().into()).with("shop", shop.into())
             .with("actor", actor.into()).with("slot", slot.into()).with("price", 20_i64.into())
-            .with("keepers", Json::strs(["Npc_Kokiri_001_Shop_Child"]))
-            .with("bancs", Json::strs(["Banc/Kokiri.bcett.byml.zs"]))
-            .with("counters", Json::strs(["Shop_SoldNum.Test"]))
+            .with("keepers", Json::strs(metadata.keepers.iter().map(String::as_str)))
+            .with("bancs", Json::strs(metadata.bancs.iter().map(String::as_str)))
+            .with("counters", Json::strs(source.counters.iter().map(String::as_str)))
+    }
+
+    fn shop_record(actor: &str, slot: i64) -> Json {
+        let Json::Obj(mut fields) = shop_record_in(actor, "KF Shop", slot) else { unreachable!() };
+        fields.retain(|(name, _)| name != "shop");
+        Json::Obj(fields)
     }
 
     #[test]
@@ -307,6 +334,54 @@ mod tests {
                      vec![remote.clone().with("local_item", "Bow".into())],
                      vec![local.with("native_actor", "Item_AP_8765".into())]] {
             assert!(shop_jobs(&Json::obj().with("shops", Json::Arr(rows))).is_err());
+        }
+    }
+
+    #[test]
+    fn every_shop_can_use_the_same_slot_number_with_distinct_local_or_foreign_rewards() {
+        use ootrr_core::shelf::What;
+        let table = ootrr_core::shops::table().unwrap();
+        let records = table.slots.iter().enumerate().map(|(index, slot)| {
+            let record = shop_record_in(&format!("Item_AP_{}", 10000 + index), &slot.shop, slot.slot as i64);
+            if index % 2 == 0 {
+                record.with("local_item", "Bow".into()).with("native_actor", "Item_Range_Bow".into())
+            } else { record }
+        }).collect();
+        let jobs = shop_jobs(&Json::obj().with("shops", Json::Arr(records))).unwrap();
+        assert_eq!(jobs.len(), 64);
+        for (index, job) in jobs.iter().enumerate() {
+            let source = &table.slots[index];
+            assert_eq!((job.label.as_str(), job.shop.as_str(), job.slot),
+                       (source.name.as_str(), source.shop.as_str(), source.slot));
+            assert_eq!(job.counters, source.counters);
+            assert_eq!(job.keepers, table.shop(&source.shop).unwrap().keepers);
+            assert!(matches!(&job.what, What::Deal { model, .. } if model.is_some() == (index % 2 == 0)));
+        }
+    }
+
+    #[test]
+    fn legacy_kokiri_jobs_keep_their_physical_slots_without_an_explicit_shop() {
+        let records = (0..8).map(|slot| shop_record(&format!("Item_AP_{}", 20000 + slot), slot)).collect();
+        let jobs = shop_jobs(&Json::obj().with("shops", Json::Arr(records))).unwrap();
+        assert_eq!(jobs.len(), 8);
+        assert!(jobs.iter().enumerate().all(|(slot, job)| job.shop == "KF Shop" && job.slot == slot));
+    }
+
+    #[test]
+    fn shops_reject_crossed_identities_shared_tokens_and_tampered_resources() {
+        let first = shop_record_in("Item_AP_1234", "KF Shop", 0);
+        let second = shop_record_in("Item_AP_5678", "Market Bazaar", 0);
+        for records in [
+            vec![first.clone(), first.clone()],
+            vec![first.clone(), second.clone().with("actor", "Item_AP_1234".into())],
+            vec![first.clone().with("shop", "Market Bazaar".into())],
+            vec![first.clone().with("shop", "Unknown Shop".into())],
+            vec![first.clone().with("slot", 1_i64.into())],
+            vec![first.clone().with("keepers", Json::strs(["Npc_Hylia_018_Shop_Child"]))],
+            vec![first.clone().with("bancs", Json::strs(["Banc/../unsafe"]))],
+            vec![second.with("counters", Json::strs(["Shop_SoldNum.Npc_Kokiri_001_Shop_Child.0"]))],
+        ] {
+            assert!(shop_jobs(&Json::obj().with("shops", Json::Arr(records))).is_err());
         }
     }
 

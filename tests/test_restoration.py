@@ -172,6 +172,29 @@ class RestorationFlowTests(unittest.TestCase):
         self.assertTrue(all(run.values[name] == 1 for name in SHOP_CHECKS[SHOP]["counters"]))
         self.assertEqual(len(run.saves), 2)
 
+    def test_each_shop_recovers_only_selected_purchases_and_shared_age_stock_once(self):
+        names = [next(name for name, row in SHOP_CHECKS.items() if row["shop"] == shop)
+                 for shop in dict.fromkeys(row["shop"] for row in SHOP_CHECKS.values())]
+        roster = {name: reward("Bow", local=index % 2 == 0) for index, name in enumerate(names)}
+        run = self.graph(roster)
+        for name in names:
+            run.restore(name)
+            row = SHOP_CHECKS[name]
+            self.assertTrue(run.values[row["flag_name"]])
+            self.assertTrue(all(run.values[counter] == 1 for counter in row["counters"]))
+        inventory = run.inventory.copy()
+        for name in names:
+            for counter in SHOP_CHECKS[name]["counters"]:
+                run.values[counter] = 0
+            run.restore(name)
+            self.assertTrue(all(run.values[counter] == 1 for counter in SHOP_CHECKS[name]["counters"]))
+        self.assertEqual(run.inventory, inventory)
+        self.assertEqual(sum(inventory.values()), 4)
+        self.assertEqual(len(run.saves), 16)
+        for name in set(SHOP_CHECKS).difference(names):
+            self.assertNotIn(SHOP_CHECKS[name]["flag_name"], run.values)
+            self.assertTrue(set(SHOP_CHECKS[name]["counters"]).isdisjoint(run.values))
+
     def test_progressive_rewards_select_current_native_tier_and_do_not_duplicate(self):
         run = self.graph({CHEST: reward("Bomb Bag"), MULTI: reward("Bomb Bag")})
         tiers = ITEM_DATA["Bomb Bag"]["tiers"]
@@ -243,7 +266,7 @@ class RestorationFlowTests(unittest.TestCase):
 
     def test_all_exported_locations_have_verifiable_native_flags(self):
         roster = {name: reward(local=False) for name in (*CHESTS, *SHOP_CHECKS, *AP_SKULL_CHECKS)}
-        self.assertEqual(len(restore.restoration_records(roster)), 213)
+        self.assertEqual(len(restore.restoration_records(roster)), len(CHESTS) + len(SHOP_CHECKS) + len(AP_SKULL_CHECKS))
         self.graph(roster)
         with self.assertRaises(ValueError):
             restore.restoration_records({"Unknown check": reward()})

@@ -52,9 +52,10 @@ def bind_romfs(source, mod, data, baseline):
     frame=read(GAME_DATA)
     before=codec.decode(frame)
     after=add_cursor(before,data["token"],baseline)
-    if data.get("kokiri_shop_checks"):
+    if data.get("kokiri_shop_checks") or data.get("shop_check_mode") == "special_deals":
         from .cursor_resource import append_saved_bool
-        for name in sorted(set(data["checks"]).intersection(SHOP_CHECKS)):
+        from .ap_shops import selected_shops
+        for name in sorted(selected_shops(data["checks"], data)):
             after=append_saved_bool(after,SHOP_CHECKS[name]["flag"])
     skulls=set(data.get("checks", ())).intersection(AP_SKULL_CHECKS)
     if skulls:

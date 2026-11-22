@@ -3,20 +3,42 @@ from .i18n import tr
 import json
 from pathlib import Path
 
-from .catalog import ITEM_DATA, ITEM_IDS, SHOP_CHECKS
+from .catalog import ITEM_DATA, ITEM_IDS, LEGACY_SHOP_CHECKS, SHOP_CHECKS
 from .engine import run_engine
+
+
+def selected_shops(roster, settings):
+    """Resolve trusted shelf names without turning ordinary goods into checks."""
+    actual = set(roster).intersection(SHOP_CHECKS)
+    mode = settings.get("shop_check_mode")
+    if mode == "special_deals":
+        selected = settings.get("shop_checks")
+        if (not isinstance(selected, (list, tuple))
+                or any(not isinstance(name, str) or name not in SHOP_CHECKS for name in selected)
+                or len(set(selected)) != len(selected) or set(selected) != actual):
+            raise ValueError(tr('The room shop selection does not match its Archipelago rewards.'))
+        return frozenset(selected)
+    if mode is not None:
+        raise ValueError(tr('Unsupported Archipelago shop mode.'))
+    if settings.get("kokiri_shop_checks"):
+        if actual != LEGACY_SHOP_CHECKS:
+            raise ValueError(tr('The room did not provide all eight Kokiri shop rewards.'))
+        return LEGACY_SHOP_CHECKS
+    if actual:
+        raise ValueError(tr('The room shop selection does not match its Archipelago rewards.'))
+    return frozenset()
 
 
 def shop_records(roster, settings):
     from oot_rando.patching import ap_item
     prices = settings.get("shop_prices", {})
     records = []
-    for name in sorted(set(roster).intersection(SHOP_CHECKS)):
+    for name in sorted(selected_shops(roster, settings)):
         row = roster[name]
         local_item = None
         if isinstance(row, dict):
             if row.get("local"):
-                if settings.get("foreign_only_shops"):
+                if settings.get("foreign_only_shops") and settings.get("shop_check_mode") is None:
                     raise ValueError(tr("This test room reserves Kokiri purchases for other players' items."))
                 local_item = row["item"]
                 if (not isinstance(local_item, str) or local_item not in ITEM_DATA
@@ -30,27 +52,25 @@ def shop_records(roster, settings):
             raise ValueError(tr('Missing or invalid OOTRR price for ') + name)
         metadata = SHOP_CHECKS[name]
         label = ap_item.ap_item(json.dumps([name, item, player], ensure_ascii=False))
-        record = dict(name=name, actor=ap_item.ap_actor(label), slot=metadata["slot"],
+        record = dict(name=name, shop=metadata["shop"], actor=ap_item.ap_actor(label), slot=metadata["slot"],
                       price=price, flag_name=metadata["flag_name"],
                       counters=list(metadata["counters"]), keepers=list(metadata["keepers"]),
                       bancs=list(metadata["bancs"]))
         if local_item is not None:
             record.update(local_item=local_item, native_actor=ITEM_DATA[local_item]["actor"])
         records.append(record)
-    if settings.get("kokiri_shop_checks") and len(records) != len(SHOP_CHECKS):
-        raise ValueError(tr('The room did not provide all eight Kokiri shop rewards.'))
     return records
 
 
 def prepare_shops(romfs, mod, roster, settings):
     """Called inside the visual staging transaction, before its atomic publish."""
-    if not settings.get("kokiri_shop_checks"):
+    records = shop_records(roster, settings)
+    if not records:
         return {}
     from .shop_events import prepare_shop_events
-    records = shop_records(roster, settings)
     if Path(mod).name != "romfs" or Path(mod).parent.name != "Archipelago":
         raise ValueError(tr('The shop staging folder is not an Archipelago mod.'))
-    print(tr('Preparing the eight Archipelago purchases in Kokiri Shop…'), flush=True)
+    print(tr('Preparing Archipelago shop purchases...'), flush=True)
     # Node's WASI host on Windows cannot implement fd_readdir. Pass the real
     # archive names while Python can enumerate them, keeping Rust's staged I/O.
     messages = sorted({path.relative_to(home).as_posix() for home in (Path(romfs), Path(mod))

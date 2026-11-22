@@ -232,6 +232,22 @@ mod tests {
     }
 
     #[test]
+    fn every_logical_shelf_has_its_own_purchase_identity_and_sold_counters() {
+        let t = table().unwrap();
+        let mut targets = HS::new();
+        let mut counters = HS::new();
+        for slot in &t.slots {
+            assert!(targets.insert(slot.target.as_str()), "{} shares its shelf identity", slot.name);
+            assert!((1..=3).contains(&slot.counters.len()), "{}", slot.name);
+            for counter in &slot.counters {
+                assert!(counters.insert(counter.as_str()), "{} reuses {counter}", slot.name);
+            }
+        }
+        assert_eq!(targets.len(), 64);
+        assert_eq!(counters.len(), 96);
+    }
+
+    #[test]
     fn every_location_and_item_of_the_table_is_known() {
         let d: Data = Data::load().unwrap();
         let w = crate::slice::logic::world(&d).unwrap();

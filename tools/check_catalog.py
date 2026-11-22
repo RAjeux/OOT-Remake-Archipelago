@@ -3,7 +3,8 @@ from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 import sys
 sys.path.insert(0,str(root/'client'))
-from ootrr_triforce.catalog import CHESTS, GEAR, LOCATION_IDS, ITEM_IDS, FILLER, ITEM_DATA, EXPECTED, SHOP_ITEMS, SHOP_CHECKS, CHECK_FLAGS, SKULL_CHECKS, TRADE_CHECKS
+from ootrr_triforce.catalog import CHESTS, GEAR, LOCATION_IDS, ITEM_IDS, FILLER, ITEM_DATA, EXPECTED, SHOP_ITEMS, SHOP_CHECKS, LEGACY_SHOP_CHECKS, CHECK_FLAGS, SKULL_CHECKS, TRADE_CHECKS
+from ootrr_triforce.shop_catalog import ADDITIONAL_SHOP_CHECKS, SHOP_FIRST_ID
 from oot_rando.patching.soul_adapter import murmur3
 data=root/'moteur/ootrr-ap/data'
 load=lambda x:json.loads((data/x).read_text(encoding='utf-8'))
@@ -30,9 +31,14 @@ for l in load('locations.json')['locations']:
 assert all_locs==CHESTS and recipes==GEAR, "The catalogue differs from OOTRR data."
 shops=load('shops.json')
 kokiri={row['name']:row for row in shops['slots'] if row['shop']=='KF Shop'}
-assert list(SHOP_CHECKS)==sorted(kokiri) and len(SHOP_CHECKS)==8, "Kokiri locations differ from the engine."
+assert LEGACY_SHOP_CHECKS==set(kokiri) and len(LEGACY_SHOP_CHECKS)==8, "Legacy Kokiri locations differ from the engine."
 location_order=[*sorted(all_locs),*sorted(kokiri),*SKULL_CHECKS,*TRADE_CHECKS]
-assert LOCATION_IDS=={n:0x6F7200+i for i,n in enumerate(location_order)}, "Location IDs changed."
+expected_ids={n:0x6F7200+i for i,n in enumerate(location_order)}
+expected_ids.update({n:row['id'] for n,row in ADDITIONAL_SHOP_CHECKS.items()})
+assert LOCATION_IDS==expected_ids, "Location IDs changed."
+assert set(LOCATION_IDS[n] for n in ADDITIONAL_SHOP_CHECKS)==set(range(SHOP_FIRST_ID,SHOP_FIRST_ID+56)), "Global shop ID reservation changed."
+assert len(set(LOCATION_IDS.values()))==len(LOCATION_IDS), "Location IDs overlap."
+assert set(SHOP_CHECKS)=={row['name'] for row in shops['slots']} and len(SHOP_CHECKS)==64, "Shop locations differ from the engine."
 legacy=[*sorted(recipes),FILLER]
 rewards={}
 for item in sorted(load('items.json')['items'],key=lambda row:row['name']):
@@ -55,10 +61,18 @@ assert ITEM_IDS=={n:0x6F7100+i for i,n in enumerate(order)}, "Item IDs changed."
 for name,item in rewards.items():
  expected={item['actor'],*item.get('tiers',()),*item.get('world',())}
  assert expected<=set(EXPECTED[name]), f"Incomplete chest actors: {name}"
-for name,row in kokiri.items():
+shop_metadata={row['shop']:row for row in shops['shops']}
+for row in shops['slots']:
+ name=row['name']
  ref=SHOP_CHECKS[name]
- assert all(ref[key]==row[key] for key in ('shop','slot','actor','item','price','counters','target')), f"Incorrect Kokiri slot: {name}"
- assert ref['flag_name']=='Archipelago.Shop.KF.'+str(row['slot']) and ref['flag']==murmur3(ref['flag_name']), f"Incorrect Kokiri flag: {name}"
+ assert all(ref[key]==row[key] for key in ('shop','slot','actor','item','price','counters','target')), f"Incorrect shop slot: {name}"
+ assert all(ref[key]==shop_metadata[row['shop']][key] for key in ('keepers','files','bancs')), f"Incorrect shop placement: {name}"
+ assert ref['flag']==murmur3(ref['flag_name']), f"Incorrect shop flag: {name}"
+ if name in LEGACY_SHOP_CHECKS:
+  assert ref['flag_name']=='Archipelago.Shop.KF.'+str(row['slot']), f"Legacy Kokiri flag changed: {name}"
+assert len({row['flag'] for row in SHOP_CHECKS.values()})==64, "Shop saved flags overlap."
+counters=[counter for row in SHOP_CHECKS.values() for counter in row['counters']]
+assert len(counters)==len(set(counters))==96, "Shop stock identities overlap."
 assert CHECK_FLAGS=={**{name:[ref['flag'] for ref in refs] for name,refs in CHESTS.items()},
                      **{name:[row['flag']] for name,row in SHOP_CHECKS.items()},
                      **{name:[row['flag']] for name,row in SKULL_CHECKS.items()},
@@ -68,4 +82,4 @@ for family in (SKULL_CHECKS, TRADE_CHECKS):
   assert row['flag']==murmur3(row['flag_name']), f"Incorrect saved check flag: {name}"
   if family is TRADE_CHECKS:
    assert row['id']==LOCATION_IDS[name], f"Incorrect adult trade ID: {name}"
-print(f"{len(all_locs)} chests, {len(kokiri)} Kokiri purchases, {len(SKULL_CHECKS)} reserved Skulltulas and {len(TRADE_CHECKS)} adult trades; {len(ITEM_IDS)} items. Frozen IDs and all check flags match.")
+print(f"{len(all_locs)} chests, {len(SHOP_CHECKS)} shop slots (including {len(kokiri)} legacy Kokiri purchases), {len(SKULL_CHECKS)} reserved Skulltulas and {len(TRADE_CHECKS)} adult trades; {len(ITEM_IDS)} items. Frozen IDs and all check flags match.")

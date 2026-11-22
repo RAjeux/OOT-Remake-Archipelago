@@ -87,7 +87,6 @@ fn deal_slots(t: &Table, o: &Opts, room: Room, rng: &mut Rng) -> (BS<String>, us
     for (si, sh) in t.shops.iter().enumerate().filter(|(_, s)| s.deals) {
         let n: usize = match o.level {
             Level::Deals(n) => n as usize,
-            Level::Random if si == 0 => 1 + rng.below(4) as usize,
             Level::Random => rng.below(5) as usize,
             _ => 0,
         };
@@ -329,6 +328,30 @@ mod tests {
         assert_eq!((few.deal_count(), few.cut), (3, 29));
         for sh in t.shops.iter().filter(|s| s.deals).take(3) {
             assert!(few.get(&t.at(&sh.shop, sh.deal_order[0]).unwrap().name).unwrap().deal, "{}", sh.shop);
+        }
+    }
+
+    #[test]
+    fn random_gives_every_shop_zero_to_four_deals_without_a_kokiri_minimum() {
+        let t = table().unwrap();
+        let mut seen: BM<String, BS<usize>> = t.shops.iter().map(|s| (s.shop.clone(), BS::new())).collect();
+        for n in 0..160 {
+            let seed = format!("random shops {n}");
+            let l = make(&opts(Level::Random), &seed, Room::any(64)).unwrap();
+            assert_eq!(l, make(&opts(Level::Random), &seed, Room::any(64)).unwrap());
+            for sh in &t.shops {
+                let slots: Vec<&Slot> = t.slots.iter().filter(|s| s.shop == sh.shop).collect();
+                let count = slots.iter().filter(|s| l.get(&s.name).unwrap().deal).count();
+                assert!(count <= 4, "{} has {count} deals", sh.shop);
+                seen.get_mut(&sh.shop).unwrap().insert(count);
+                for (index, slot) in sh.deal_order.iter().enumerate() {
+                    let name = &t.at(&sh.shop, *slot).unwrap().name;
+                    assert_eq!(l.get(name).unwrap().deal, index < count, "{} {slot}", sh.shop);
+                }
+            }
+        }
+        for (shop, counts) in seen {
+            assert_eq!(counts, (0..=4).collect(), "{shop} must draw from the same complete range");
         }
     }
 }

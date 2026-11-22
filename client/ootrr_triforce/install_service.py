@@ -462,6 +462,7 @@ def _install(request, progress, cancel, base, diagnostic):
                        protected=native_setup.protect_password(request.get("password", "")),
                        reward_mode=data.get("reward_mode", "legacy_gear"), local_items=bool(data.get("local_items")),
                        player=data["player"], kokiri_shop_checks=bool(data.get("kokiri_shop_checks")),
+                       shop_check_mode=data.get("shop_check_mode"), shop_checks=list(data.get("shop_checks", ())),
                        foreign_only_shops=bool(data.get("foreign_only_shops")), shuffle_skulltulas=data.get("shuffle_skulltulas", "off"),
                        adult_trade_shuffle=bool(data.get("adult_trade_shuffle")),
                        shop_prices={name: row["price"] for name, row in data["seed_file"].get("shops", {}).items() if name in SHOP_CHECKS})
