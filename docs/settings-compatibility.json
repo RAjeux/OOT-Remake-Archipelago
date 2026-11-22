@@ -597,19 +597,25 @@
       ],
       "ap_default": "vanilla",
       "ap_kind": "choice",
+      "integration_choice_aliases": {
+        "open": {
+          "bridge": "dungeons",
+          "bridge_rewards": 0
+        }
+      },
       "ap_choices": [
         "vanilla",
-        "dungeons"
+        "dungeons",
+        "open"
       ],
       "omitted_native_choices": [
         "hearts",
         "medallions",
-        "open",
         "random",
         "stones",
         "tokens"
       ],
-      "omitted_native_reason": "The native bridge code implements Vanilla and the combined dungeon-reward threshold; the other schema goal variants are not implemented.",
+      "omitted_native_reason": "The native bridge code implements Vanilla and the combined dungeon-reward threshold. AP's open choice maps to that threshold at zero rewards; the remaining schema goal variants are not implemented.",
       "status": "public",
       "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
     },

@@ -1,6 +1,6 @@
 # Ocarina of Time Remake × Archipelago
 
-**0.6.0-alpha.1 — native integration for Triforce on Windows x64.** Manage Archipelago connections from Zelda's **Options → Archipelago** tab, or use the separate **Connect-Archipelago.pyw** desktop window. Automatic connection at startup remains enabled by default. This alpha uses OOTRR 0.8.1 and game version 1.1.1.
+**0.6.1-alpha.1 — native integration for Triforce on Windows x64.** Manage Archipelago connections from Zelda's **Options → Archipelago** tab, or use the separate **Connect-Archipelago.pyw** desktop window. Automatic connection at startup remains enabled by default. This alpha uses the portable OOTRR 0.8.1 builder and game version 1.1.1, with selected stability and dungeon-logic fixes adapted from OOTRR 0.8.2.
 
 Title-screen connections, items received while the game was closed, local and remote chests, one Kokiri purchase, and DeathLink in both directions have been tested on **Triforce 0.6.0**. **Item presentation animations and some camera movements still need improvement.** All eight Kokiri purchases have automated coverage; they have not all been purchased in the game. Hookshot and Fritchii are not supported by this native integration.
 
@@ -20,9 +20,9 @@ Download the Windows ZIP from the [project releases](https://github.com/RAjeux/O
 3. Enable **Archipelago** in Triforce Setup, then rebuild the game with **Build again**. This is required on first installation and when the native library or host tools change.
 4. Launch Zelda normally from Triforce. Open **Options → Archipelago** to change the server, enter a password, connect or disconnect, and view connection errors. The tab supports keyboard, mouse, and controller, including an on-screen keyboard. You can close the configuration console; `Observe-Archipelago.cmd` remains an optional diagnostic tool.
 
-The native client negotiates compressed WebSocket messages when the server supports them. Addresses on `archipelago.gg` use TLS automatically, including older saved `ws://archipelago.gg:<port>` addresses. Local servers retain their selected transport. Upgrading to 0.5.0-alpha.2 changes the native DLL: configure the existing player file again and use **Build again** before launching. Existing rooms and saves remain supported.
+The native client negotiates compressed WebSocket messages when the server supports them. Addresses on `archipelago.gg` use TLS automatically, including older saved `ws://archipelago.gg:<port>` addresses. Local servers retain their selected transport.
 
-Version 0.6.0-alpha.1 keeps that native DLL. An installation already using 0.5.0-alpha.2 only needs the mod prepared again. Enabling the full adult trade shuffle requires a new room and a fresh save.
+Version 0.6.1-alpha.1 changes the native DLL. Prepare the mod again and use **Build again** when upgrading. Existing player files and saves remain supported. Generate a new room to use the corrected dungeon access rules; an existing room retains its original placements. Enabling the full adult trade shuffle also requires a new room and a fresh save.
 
 The initial mod preparation is still required for each room. The menu changes the connection to that prepared room; its player and save binding stay fixed. See the [in-game connection guide](docs/IN-GAME-CONNECTION.md).
 
@@ -42,6 +42,8 @@ In a newly prepared `all_locations` room with personal physical rewards, loading
 
 Major received items use the game's native turn toward the player camera and item presentation pose. Ordinary pickups retain their native central display and sounds.
 
+Reprepared adult-trade rooms silently recover remote quest items which a completed exchange has already consumed. The corresponding check and its personal reward still recover normally. A DeathLink packet from a replaced connection is discarded. See the [stability and update notes](docs/STABILITY.md) for the targeted story fixes and validation scope.
+
 `shuffle_shops: shuffle` uses OOTRR's normal shop shuffle and adds eight one-time Kokiri purchases to the AP pool. Each can contain your own item or another player's item, at its OOTRR seed price. Your items use their native appearance and effects; remote items use the AP medal. Single-player rooms work too. Native `deals_1` through `deals_4` and `random` shop modes are also available; shops outside the Kokiri catalogue keep their native local rewards. `shuffle_shops: off` keeps shops outside the AP pool. The former `kokiri_shop_checks` test option has been removed; old generated rooms retain their existing placements.
 
 `death_link: true` shares deaths with other DeathLink participants. A remote death waits for an active event, such as a purchase or item receipt, to finish.
@@ -57,6 +59,8 @@ Restart the game after changing Triforce's language. Both translations are insta
 The YAML exposes **93 native OOTRR settings, the adult trade extension and DeathLink**, with descriptions, allowed values and dependency checks. Native-local shuffles include supported NPC and song rewards, cows, ground pickups, destructibles, dungeon entrances, and prices. OOTRR builds those rewards from the same seed that proves the AP access rules; AP moves only its catalogued rewards. Experimental destructibles retain OOTRR's one-time break persistence: leaving their drop behind can lose it.
 
 The [complete comparison of all 118 native settings](docs/SETTINGS-COMPATIBILITY.md) explains the 25 omitted native controls, including the replaced additive trade setting, unavailable native features, Silver Rupee delivery, AP-aware hints, chest sizes and location exclusions. Do not add omitted YAML keys expecting them to enable those features.
+
+The [OoTR comparison](docs/OOTR-SETTINGS-COMPARISON.md) distinguishes the N64 randomizer's settings from those available in the remake. `bridge: open` provides the existing zero-reward bridge condition directly in the YAML.
 
 New rooms use `reward_mode: all_locations`, `local_items: true`, and `items_handling=5`: personal items are granted physically, while the network supplies remote items and AP starting inventory. Older `all_chest_rewards` and `legacy_gear` rooms keep mode `7`. Generate a new room to change modes; do not edit an existing room's flags to convert it.
 
@@ -88,10 +92,10 @@ From the repository root on Windows:
 
 ```powershell
 py -3 tools/build.py
-py -3 tools/verify_release.py --version 0.6.0-alpha.1
+py -3 tools/verify_release.py --version 0.6.1-alpha.1
 ```
 
-The output is `dist/Archipelago-OOT-Remake-0.6.0-alpha.1.zip`, including the `.pyz` client, APWorld, and their sources. `VERSION` declares the release version. The default assembly uses the supplied native DLL and WebAssembly engine without downloading dependencies. It does not rebuild Triforce.
+The output is `dist/Archipelago-OOT-Remake-0.6.1-alpha.1.zip`, including the `.pyz` client, APWorld, and their sources. `VERSION` declares the release version. The default assembly uses the supplied native DLL and WebAssembly engine without downloading dependencies. It does not rebuild Triforce.
 
 To rebuild the supplied components:
 

@@ -40,6 +40,7 @@ type Config struct {
 	ItemNames                                                map[int]map[string]string
 	Checks                                                   map[int]Location
 	RecoveryLocations                                        []int
+	TradeReplayReceipts                                      map[int]int
 }
 type Client struct {
 	cfg                       Config
@@ -152,6 +153,9 @@ func newClient(c Config, root string, logger *log.Logger) (*Client, error) {
 			unique[id] = true
 			s.recoveryIDs = append(s.recoveryIDs, id)
 		}
+	}
+	if err := validateTradeReplay(c, s.recoveryIDs); err != nil {
+		return nil, err
 	}
 	raw, e := os.ReadFile(filepath.Join(root, "native-checks.json"))
 	if e == nil {
@@ -462,7 +466,7 @@ func (s *Client) sessionEpoch(conn *websocket.Conn, password string, epoch uint6
 				}
 			case "Bounced":
 				if auth {
-					s.receiveDeath(m, time.Now())
+					s.receiveDeathEpoch(m, time.Now(), epoch)
 				}
 			case "RoomUpdate":
 				if !auth {

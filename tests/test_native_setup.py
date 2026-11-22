@@ -1,5 +1,6 @@
 """Native DLL updates must invalidate the generated mod cache and compiled game."""
 import hashlib
+import json
 import os
 from pathlib import Path
 import sys
@@ -10,6 +11,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
 from ootrr_triforce.native_setup import BUILD_MARK, MENU_BUILD_MARK, MENU_FILES, compiled_game, runtime_cache_name
+from ootrr_triforce import native_setup
 
 
 class CompiledGameTests(unittest.TestCase):
@@ -100,6 +102,55 @@ class CompiledGameTests(unittest.TestCase):
                     receipt.write_bytes(receipt.read_bytes() + b"\n# receipt update\n")
                     self.assertNotEqual(cache / runtime_cache_name(0), baseline,
                                         "Receipt updates must also invalidate the generated native mod.")
+
+
+class TradeReplaySessionTests(unittest.TestCase):
+    def inputs(self):
+        from ootrr_triforce.catalog import GAME, ITEM_IDS, TRADE_CHECKS
+        from test_trade_receipts import TOKEN
+        data = dict(room="room", slot="Zelda", token=TOKEN, player=2, game=GAME,
+                    reward_mode="all_locations", local_items=True, adult_trade_shuffle=True,
+                    checks=list(TRADE_CHECKS))
+        roster = {name:dict(item="Rupees (5)", item_id=ITEM_IDS["Rupees (5)"], owner=2,
+                           player="Zelda", local=True, game=GAME) for name in data["checks"]}
+        config = dict(server="ws://127.0.0.1:38281", protected="", baseline=0)
+        return data, roster, config
+
+    def test_validated_trade_capability_is_exported_only_for_full_recovery_rooms(self):
+        from ootrr_triforce.catalog import LOCATION_IDS
+        from ootrr_triforce import trade_receipts
+        from test_trade_receipts import PreparedTradeReplayTests
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder); prepared=PreparedTradeReplayTests().finalize(root / "resources")
+            (root / "profile").mkdir()
+            data,roster,config=self.inputs()
+            recovery=[LOCATION_IDS[name] for name in data["checks"]]
+            with patch("ootrr_triforce.restoration.prepared_locations", return_value=recovery), patch.object(native_setup,"detect_language",return_value="en"):
+                native_setup.save_session(root / "profile",config,data,roster,prepared=prepared)
+                saved=root / "profile/native-session.json"
+                session=json.loads(saved.read_bytes())
+                self.assertEqual(session["TradeReplayReceipts"], {str(key):value for key,value in trade_receipts.replay_receipts().items()})
+                before=saved.read_bytes()
+                for mode in (dict(local_items=False),dict(reward_mode="legacy_gear")):
+                    with self.subTest(mode=mode), self.assertRaises(ValueError):
+                        native_setup.save_session(root / "profile",config,data|mode,roster,prepared=prepared)
+                    self.assertEqual(saved.read_bytes(),before)
+                with patch("ootrr_triforce.restoration.prepared_locations",return_value=recovery[:-1]), self.assertRaises(ValueError):
+                    native_setup.save_session(root / "profile",config,data,roster,prepared=prepared)
+                self.assertEqual(saved.read_bytes(),before)
+
+    def test_existing_rooms_without_prepared_capability_keep_the_original_protocol(self):
+        from ootrr_triforce.catalog import LOCATION_IDS
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder); prepared=root / "empty-romfs"; prepared.mkdir()
+            (root / "profile").mkdir()
+            data,roster,config=self.inputs()
+            recovery=[LOCATION_IDS[name] for name in data["checks"]]
+            with patch("ootrr_triforce.restoration.prepared_locations",return_value=recovery), patch.object(native_setup,"detect_language",return_value="en"):
+                native_setup.save_session(root / "profile",config,data,roster,prepared=prepared)
+                self.assertNotIn("TradeReplayReceipts",json.loads((root / "profile/native-session.json").read_bytes()))
+                native_setup.save_session(root / "profile",config,data|dict(adult_trade_shuffle=False),roster,prepared=prepared)
+                self.assertNotIn("TradeReplayReceipts",json.loads((root / "profile/native-session.json").read_bytes()))
 
 
 if __name__ == "__main__":

@@ -56,6 +56,24 @@ class NativeSettingsTests(unittest.TestCase):
         self.assertTrue(set(SHOP_CHECKS).issubset(reached))
         self.assertTrue(set(SHOP_CHECKS).issubset(generated["seed_file"]["shops"]))
 
+    def test_open_bridge_alias_has_identical_native_seed_and_access_proof(self):
+        alias = engine_settings({"bridge": "open"})
+        native = engine_settings({"bridge": "dungeons", "bridge_rewards": 0})
+        self.assertEqual(alias, native)
+        inspected = self.inspect(alias)
+        self.assertEqual(inspected["settings"]["bridge"], "dungeons")
+        self.assertEqual(inspected["settings"]["bridge_rewards"], 0)
+        self.assertEqual(self.inspect(inspected["settings_string"]), inspected)
+        request = {"settings": alias, "seed": "AP-OPEN-BRIDGE-CANONICAL-VALIDATION"}
+        generated = json.loads(run_engine("generate", request))
+        request["settings"] = native
+        explicit = json.loads(run_engine("generate", request))
+        self.assertEqual(generated, explicit)
+        self.assertIn("Ganon", {name for wave in generated["waves"] for name in wave})
+        saved = self.inspect(generated["seed_file"]["settings"])["settings"]
+        self.assertEqual(saved["bridge"], "dungeons")
+        self.assertEqual(saved["bridge_rewards"], 0)
+
     def test_broad_native_local_profile_preserves_ap_projection_and_supported_items(self):
         from ootrr_triforce.catalog import CHESTS, ITEM_IDS, AP_SKULL_CHECKS, TRADE_CHECKS
         changes = dict(shuffle_rewards="supported", shuffle_rewards_extra=True,

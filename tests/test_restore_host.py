@@ -26,6 +26,7 @@ static uint64_t ap_delivery_actor16=77,ap_delivery_epoch16,manager=1;
 static int active,save_exists,loading,event_exists,event_busy,ready,whitelist;
 static int cursor,status,status_exists,queued_clear,clear_ok,request_ok;
 static int clear_calls,restore_calls,restore_requests,remote_requests,request_attempts;
+static int quiet_requests,replay_allowed,replay_calls;
 static int deferred,last_deferred,acks,next_calls,network_item,want_second,unknown_snapshots;
 static char flag_states[3];
 static int64_t now=1000000000LL,deferred_until;
@@ -43,6 +44,8 @@ static void ap_opened16(uint32_t*flags,int count,int won){assert(!won);for(int i
 static int ap_next16(int index){assert(index==cursor);next_calls++;return network_item&&index==0?1000:0;}
 static void ap_applied16(int index){assert(index==0&&cursor==1);acks++;}
 static const char *ap_eventname16(int item){return item==1000?"OOTRR_APReceive_1000":NULL;}
+static int (*ap_receipt_replay16)(int,int);
+static int replay_api(int cursor_value,int item){assert(cursor_value==0&&item==1000);replay_calls++;return replay_allowed;}
 static int restore_api(uint8_t*states,int count){
     restore_calls++;assert(count==3);
     for(int i=0;i<count;i++){
@@ -62,6 +65,7 @@ static int ap_request_item16(Ctx*c,uint64_t actor,const char*name){
     (void)c;assert(actor==77);request_attempts++;
     if(event_busy||!event_exists||!request_ok)return 0;
     if(!strcmp(name,"OOTRR_APReceive_1000")){remote_requests++;return 1;}
+    if(!strcmp(name,"OOTRR_APTradeReplay_1000")){quiet_requests++;return 1;}
     assert(!strcmp(name,"OOTRR_APRestore_501")||!strcmp(name,"OOTRR_APRestore_502"));
     restore_requests++;return 1;
 }
@@ -75,6 +79,7 @@ static void reset(void){
     active=save_exists=event_exists=ready=whitelist=status_exists=clear_ok=request_ok=1;
     loading=event_busy=cursor=status=0;queued_clear=INT_MIN;deferred_until=0;
     clear_calls=restore_calls=restore_requests=remote_requests=request_attempts=deferred=last_deferred=acks=next_calls=network_item=want_second=unknown_snapshots=0;
+    quiet_requests=replay_allowed=replay_calls=0;ap_receipt_replay16=NULL;
     memcpy(flag_states,"000",3);now+=61000000000LL;
 }
 static void commit_clear(void){assert(queued_clear==0);status=queued_clear;queued_clear=INT_MIN;}
@@ -84,6 +89,15 @@ static void tick(Ctx*c){now+=400000000LL;ap_tick16(c,now);}
 checks = r'''
 int main(void){
     Ctx c=0;
+    reset();network_item=1;ap_receipt_replay16=replay_api;replay_allowed=1;
+    tick(&c);assert(quiet_requests==1&&remote_requests==0&&restore_requests==0&&replay_calls==1&&cursor==0&&!acks);
+    now+=61000000000LL;tick(&c);assert(quiet_requests==1&&replay_calls==1&&!restore_requests);
+    cursor=1;tick(&c);assert(acks==1&&restore_requests==1&&cursor==1);
+    assert(!memcmp(flag_states,"000",3)); /* Quiet receipt leaves missing check/reward recoverable. */
+    reset();network_item=1;ap_receipt_replay16=replay_api;
+    tick(&c);assert(quiet_requests==0&&remote_requests==1&&replay_calls==1);
+    reset();network_item=1;ap_receipt_replay16=replay_api;replay_allowed=1;flag_states[2]='?';
+    tick(&c);assert(quiet_requests==0&&remote_requests==1&&replay_calls==0);
     reset();whitelist=0;status_exists=0;tick(&c);
     assert(!restore_requests&&!clear_calls);
     network_item=1;tick(&c);assert(remote_requests==1&&!restore_requests);

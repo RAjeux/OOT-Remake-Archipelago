@@ -89,6 +89,38 @@ func TestDeathLinkLifeBoundariesAndEcho(t *testing.T) {
 	}
 }
 
+func TestDeathLinkReplacedSessionCannotCarryEventOrDedupeIntoNewSession(t *testing.T) {
+	s := deathClient(t, true)
+	s.ready = true
+	now := time.Now()
+	s.deathState(0, now)
+	oldEpoch := s.connection.epoch
+	s.connection.epoch++
+	currentEpoch := s.connection.epoch
+	death := bounced("Ami", 123)
+
+	// The old reader can cross its outer packet gate before replacement, then
+	// finish parsing only after the new authenticated session becomes ready.
+	s.receiveDeathEpoch(death, now, oldEpoch)
+	if s.death.pending != nil || len(s.death.seen) != 0 {
+		t.Fatal("replaced session carried a pending death or poisoned its dedupe key")
+	}
+	if s.deathState(0, now) {
+		t.Fatal("a replaced session killed Link")
+	}
+
+	// A current peer must still be able to deliver that exact event. Rejecting
+	// the stale reader must not make a legitimate current death disappear.
+	s.receiveDeathEpoch(death, now, currentEpoch)
+	if !s.deathState(0, now) || len(s.death.seen) != 1 {
+		t.Fatal("the current session's death was lost after rejecting the stale peer")
+	}
+	s.deathState(1, now)
+	if s.death.outgoing != nil {
+		t.Fatal("current remote death echoed after a stale peer was rejected")
+	}
+}
+
 func TestDeathLinkRejectsMalformedEvents(t *testing.T) {
 	s := deathClient(t, true)
 	s.ready = true

@@ -192,6 +192,14 @@ def save_session(root, config, data, roster, *, prepared=None):
                         or type(row.get("local")) is not bool or row["local"]!=(row["owner"]==data["player"])
                         or (row["local"] and ITEM_IDS.get(row["item"])!=row["item_id"])):
                     raise ValueError(tr("Invalid Archipelago restoration metadata."))
+    trade_replay = {}
+    if prepared is not None and data.get("adult_trade_shuffle"):
+        from .trade_receipts import prepared_trade_receipts
+        trade_replay = prepared_trade_receipts(prepared, data["token"])
+        if trade_replay and (not data.get("local_items") or data.get("reward_mode") != "all_locations"
+                             or not set(trade_replay.values()) <= set(recovery)
+                             or not set(trade_replay.values()) <= set(checks)):
+            raise ValueError(tr("Invalid adult trade replay capability."))
     doc=dict(Room=data["room"],Slot=data["slot"],Game=data.get("game",LEGACY_GAME),Token=data["token"],Player=data["player"],Protocol=PROTOCOL,
              RewardMode=data.get("reward_mode","legacy_gear"),
              LocalItems=bool(data.get("local_items",False)),
@@ -201,6 +209,8 @@ def save_session(root, config, data, roster, *, prepared=None):
              Language=detect_language(root,config),
              ItemNames={ITEM_IDS[n]:names for n,names in item_names().items() if n in ITEM_IDS},
              Items={i:n for n,i in ITEM_IDS.items()},Checks=checks,RecoveryLocations=recovery)
+    if trade_replay:
+        doc["TradeReplayReceipts"] = trade_replay
     write_json(old,doc)
 
 

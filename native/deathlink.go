@@ -39,6 +39,10 @@ func (s *Client) rememberDeath(d deathData) bool {
 }
 
 func (s *Client) receiveDeath(m wire, now time.Time) {
+	s.receiveDeathEpoch(m, now, 0)
+}
+
+func (s *Client) receiveDeathEpoch(m wire, now time.Time, epoch uint64) {
 	if !s.cfg.DeathLink {
 		return
 	}
@@ -52,6 +56,13 @@ func (s *Client) receiveDeath(m wire, now time.Time) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	// Parsing happens outside the lock. A connection can be replaced between
+	// the session's packet gate and this mutation, even after the next session
+	// has already synchronized. Do not carry an old live event or its dedupe
+	// key into that replacement session.
+	if !s.connectionCurrentLocked(epoch) {
+		return
+	}
 	if !s.rememberDeath(d) || d.Source == s.cfg.Slot || d.Source == s.names[s.cfg.Player] {
 		return
 	}

@@ -83,10 +83,10 @@ _BASE_SPECS = (
             "With the open or song condition, Zelda's escape waits for the two dungeons or three stones, or is skipped with the Ocarina available in the moat from the start."),
     _toggle("door_of_time_song", True,
             "With the vanilla or stones condition, also require the Song of Time to open the door.", "World"),
-    _choice("bridge", "vanilla", ("vanilla", "dungeons"),
-            "Ganon bridge: native condition, or a total number of stones and medallions set by bridge_rewards.", "Goal"),
+    _choice("bridge", "vanilla", ("vanilla", "dungeons", "open"),
+            "Ganon bridge: native condition, a total number of stones and medallions set by bridge_rewards, or open without rewards when approached. open fixes bridge_rewards at zero.", "Goal"),
     _range("bridge_rewards", 9, 0, 9,
-           "Number of stones and medallions required; only used with bridge: dungeons.", "Goal"),
+           "Number of stones and medallions required with bridge: dungeons. bridge: open fixes this count at zero; leave the default value or set it to zero.", "Goal"),
     _toggle("skip_ganon_trials", False, "Reach Ganon's Tower without completing the trials.", "Goal"),
     _range("trials", 6, 0, 6, "Number of trials required when skip_ganon_trials is disabled.", "Goal"),
     _range("starting_hearts", 3, 1, 20, "Number of hearts at the start of the game.", "Starting inventory"),
@@ -220,6 +220,9 @@ SPEC_BY_ID = {spec["id"]: spec for spec in OPTION_SPECS}
 AP_ONLY = frozenset({"death_link"})
 # Additions implemented by this integration's engine, not portable OOTRR 0.8.1.
 ENGINE_EXTENSIONS = {"adult_trade_shuffle": {"kind": "toggle", "default": False}}
+# The portable engine rejects its own schema's open value. Its existing native
+# reward gate at zero gives the same unrestricted access on approaching it.
+BRIDGE_OPEN_ALIAS = {"bridge": "dungeons", "bridge_rewards": 0}
 
 # These are internal constraints, never free-form YAML options. In particular,
 # bosses, pots, NPCs and other untracked rewards retain their native sources.
@@ -282,7 +285,11 @@ def validate_options(values):
             raise ValueError("open_kakariko: open already grants Impa's song; remove zeldas_lullaby from starting_songs.")
     if result["early_beds"] and not result["time_always_passes"]:
         raise ValueError("early_beds requires time_always_passes: true.")
-    if result["bridge"] != "dungeons" and result["bridge_rewards"] != 9:
+    if result["bridge"] == "open":
+        if result["bridge_rewards"] not in {0, 9}:
+            raise ValueError("bridge: open fixes bridge_rewards at zero; leave its default value or set it to zero.")
+        result["bridge_rewards"] = 0
+    elif result["bridge"] != "dungeons" and result["bridge_rewards"] != 9:
         raise ValueError("bridge_rewards is only used with bridge: dungeons.")
     if result["skip_ganon_trials"] and result["trials"] != 6:
         raise ValueError("trials is only used when skip_ganon_trials is false.")
@@ -351,6 +358,8 @@ def engine_settings(values):
     options = validate_options(values)
     result = copy.deepcopy(FIXED_SETTINGS)
     result.update({name: value for name, value in options.items() if name not in AP_ONLY})
+    if options["bridge"] == "open":
+        result.update(BRIDGE_OPEN_ALIAS)
     return result
 
 

@@ -327,5 +327,8 @@
   "Unknown native adult trade presentation flow.": "Séquence native de présentation d'objet de quête adulte inconnue.",
   "The room is missing an adult trade item receipt.": "Il manque une réception d'objet de quête adulte dans cette salle.",
   "An adult trade receipt belongs to a different room.": "Une réception d'objet de quête adulte appartient à une autre salle.",
-  "An adult trade receipt has no room-bound acknowledgement.": "Une réception d'objet de quête adulte n'a pas de confirmation liée à cette salle."
+  "An adult trade receipt has no room-bound acknowledgement.": "Une réception d'objet de quête adulte n'a pas de confirmation liée à cette salle.",
+  "Invalid adult trade replay capability.": "Capacité de restauration silencieuse des objets de quête adulte invalide.",
+  "Unsupported prepared story event layout.": "Structure préparée des événements de l'histoire incompatible.",
+  "Use the OOTRR portable 0.8.1 builder. Other versions can change native location identities.": "Utilise le générateur OOTRR portable 0.8.1. Les autres versions peuvent modifier l'identité des emplacements natifs."
 }

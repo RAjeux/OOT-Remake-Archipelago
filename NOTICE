@@ -5,7 +5,9 @@ GNU General Public License, version 3 or (at your option) any later version.
 The full license text is provided in LICENSE. Existing third-party copyright
 notices and licenses remain in effect for their respective files.
 
-This integration adapts OOTRR 0.8.1, licensed GPL-3.0-or-later. Its complete
+This integration adapts OOTRR 0.8.1 and selected stability and dungeon-logic
+fixes from OOTRR 0.8.2, revision 0fa64f44b5e689f39bcf98a151fc32cb019d538e,
+licensed GPL-3.0-or-later. Its complete
 notices, including the MIT-licensed OoT Randomizer logic and other upstream
 contributions, are preserved in moteur/ootrr-ap/NOTICE and
 client/ootrr_triforce/NOTICE. Earlier OOTRR MIT notices are retained upstream.

@@ -1,8 +1,12 @@
 """Spent trade-token replay acknowledges once without a misleading item scene."""
 import io
+import copy
+import json
 from pathlib import Path
 import sys
+import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
@@ -19,6 +23,7 @@ from ootrr_triforce.catalog import ITEM_DATA, ITEM_IDS, TRADE_CHECKS
 from ootrr_triforce.receipt_events import CURSOR_PREFIX, event_name
 from ootrr_triforce.trade_catalog import TRADE_ITEMS
 from ootrr_triforce.trade_receipts import patch_trade_receipt_guard, PREFIX
+from ootrr_triforce import trade_receipts as replay
 
 TOKEN = "abcdef0123456789" * 4
 CURSOR = CURSOR_PREFIX + TOKEN
@@ -137,6 +142,18 @@ class Receipt:
 
 
 class TradeReplayTests(unittest.TestCase):
+    def test_host_selected_replay_acknowledges_without_local_flags_presentation_or_reward(self):
+        raw = patch_trade_receipt_guard(receipt_fixture(), TOKEN)
+        for item, location in replay.replay_receipts().items():
+            with self.subTest(item=item):
+                run = Receipt(raw)
+                run.run(replay.replay_event(item))
+                self.assertFalse(run.stock)
+                self.assertEqual(run.values, {CURSOR: 8})
+                self.assertEqual(run.trace, ["EventTriggerAddOrSubGameDataInt", "EventWait", "EventTriggerRequestAutoSave"])
+                self.assertEqual(run.saves, [{CURSOR: 8}])
+                self.assertNotIn(location, run.values)
+
     def test_major_receipts_find_their_ack_across_the_real_two_chart_shape(self):
         pouch, presenter = major_fixture()
         with self.assertRaisesRegex(ValueError, "no room-bound acknowledgement"):
@@ -209,6 +226,78 @@ class TradeReplayTests(unittest.TestCase):
         raw = patch_trade_receipt_guard(receipt_fixture(), TOKEN)
         with self.assertRaises(ValueError):
             patch_trade_receipt_guard(raw, TOKEN)
+
+
+class PreparedTradeReplayTests(unittest.TestCase):
+    def resources(self):
+        from oot_rando.formats import byml_codec as by
+        doc = lambda rows: by.dump(dict(root=rows, endian="<", version=7))
+        resources = {replay.FLOW_PATH: patch_trade_receipt_guard(receipt_fixture(), TOKEN)}
+        resources.update(replay._register_quiet_events(doc([dict(__RowId="Dm_SY_Get")]), doc([])))
+        return resources
+
+    def finalize(self, folder):
+        root = Path(folder)
+        game, prepared = root / "game", root / "Archipelago/romfs"
+        (game / "Pack").mkdir(parents=True)
+        (game / "Pack/ZsDic.pack.zs").write_bytes(b"private dictionary fixture")
+        resources = self.resources()
+        for path, data in resources.items():
+            target = prepared / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
+        class IdentityCodec:
+            def __init__(self, pack): pass
+            def decode(self, frame): return frame
+        with patch.object(replay, "Codec", IdentityCodec):
+            self.assertEqual(replay.finalize_trade_receipts(game, prepared, TOKEN), replay.replay_receipts())
+        return prepared
+
+    def test_registrations_require_only_the_quiet_pouch_event(self):
+        resources = self.resources()
+        replay._validate_quiet_resources(resources, TOKEN)
+        with self.assertRaises(ValueError):
+            replay._validate_quiet_resources(resources, "0" * 64)
+        for path in (replay.SETTINGS, replay.ANALYZED):
+            from oot_rando.formats import byml_codec as by
+            broken = copy.deepcopy(resources)
+            rows = by.load(broken[path])
+            rows["root"] = [row for row in rows["root"] if row.get("__RowId") != replay.replay_event(ITEM_IDS["Cojiro"])]
+            broken[path] = by.dump(rows)
+            with self.subTest(resource=path), self.assertRaises(ValueError):
+                replay._validate_quiet_resources(broken, TOKEN)
+        broken = copy.deepcopy(resources)
+        editor = FlowEditor(broken[replay.FLOW_PATH], "malformed quiet entry")
+        point = next(point for point in editor.chart.entry_points if point.name == replay.replay_event(ITEM_IDS["Cojiro"]))
+        point.main_event = make_index(next(point for point in editor.chart.entry_points if point.name == event_name(ITEM_IDS["Cojiro"])).main_event.v)
+        broken[replay.FLOW_PATH] = editor.write("malformed quiet entry")[0]
+        with self.assertRaises(ValueError):
+            replay._validate_quiet_resources(broken, TOKEN)
+
+    def test_final_marker_binds_room_exact_mapping_and_unchanged_resources(self):
+        with tempfile.TemporaryDirectory() as folder:
+            prepared = self.finalize(folder)
+            self.assertEqual(replay.prepared_trade_receipts(prepared, TOKEN), replay.replay_receipts())
+            with self.assertRaises(ValueError):
+                replay.prepared_trade_receipts(prepared, "0" * 64)
+            path = prepared / replay.FLOW_PATH
+            path.write_bytes(path.read_bytes() + b"changed")
+            with self.assertRaises(ValueError):
+                replay.prepared_trade_receipts(prepared, TOKEN)
+
+    def test_absent_legacy_marker_is_optional_but_wrong_pairs_and_malformed_marker_are_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            self.assertEqual(replay.prepared_trade_receipts(folder, TOKEN), {})
+            prepared = self.finalize(folder)
+            path = prepared / replay.MARKER
+            original = json.loads(path.read_bytes())
+            bad = copy.deepcopy(original)
+            keys = list(bad["receipts"])
+            bad["receipts"][keys[0]], bad["receipts"][keys[1]] = bad["receipts"][keys[1]], bad["receipts"][keys[0]]
+            for data in (bad, [], {**original, "schema": True}, {**original, "resources": []}):
+                with self.subTest(data_type=type(data).__name__):
+                    path.write_text(json.dumps(data), encoding="utf-8")
+                    with self.assertRaises(ValueError): replay.prepared_trade_receipts(prepared, TOKEN)
 
 
 if __name__ == "__main__":

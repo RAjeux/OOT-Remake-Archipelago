@@ -99,7 +99,7 @@ class DirectSettingsTests(unittest.TestCase):
         self.assertEqual(set(SPEC_BY_ID["shuffle_ganon_bosskey"]["choices"]), boss | {"lacs_dungeons"})
         self.assertEqual(set(SPEC_BY_ID["shuffle_mapcompass"]["choices"]),
                          {"remove", "startwith", "vanilla", "dungeon", "regional", "any_dungeon", "keysanity"})
-        self.assertEqual(set(SPEC_BY_ID["bridge"]["choices"]), {"vanilla", "dungeons"})
+        self.assertEqual(set(SPEC_BY_ID["bridge"]["choices"]), {"vanilla", "dungeons", "open"})
         for name in ("shuffle_smallkeys", "shuffle_bosskeys", "shuffle_ganon_bosskey", "shuffle_mapcompass"):
             with self.subTest(option=name):
                 with self.assertRaises(ValueError):
@@ -121,6 +121,24 @@ class DirectSettingsTests(unittest.TestCase):
         self.assertEqual(native["shuffle_shops"], "shuffle")
         self.assertEqual(engine_settings({"shuffle_shops": "off"})["shuffle_shops"], "off")
         self.assertEqual({name: native[name] for name in FIXED_SETTINGS}, FIXED_SETTINGS)
+
+    def test_open_bridge_canonicalizes_to_the_existing_zero_reward_gate(self):
+        expected = engine_settings({"bridge": "dungeons", "bridge_rewards": 0})
+        for count in (None, 0, 9):
+            values = {"bridge": "open"}
+            if count is not None:
+                values["bridge_rewards"] = count
+            with self.subTest(count=count):
+                public = validate_options(values)
+                self.assertEqual(public["bridge"], "open")
+                self.assertEqual(public["bridge_rewards"], 0)
+                self.assertEqual(validate_options(public), public)
+                self.assertEqual(engine_settings(public), expected)
+        for count in (1, 5):
+            with self.subTest(conflicting_count=count), self.assertRaisesRegex(ValueError, "fixes bridge_rewards at zero"):
+                engine_settings({"bridge": "open", "bridge_rewards": count})
+        with self.assertRaisesRegex(ValueError, "only used with bridge: dungeons"):
+            engine_settings({"bridge": "vanilla", "bridge_rewards": 0})
 
     def test_invalid_types_ranges_and_untracked_options_are_rejected(self):
         for values in ({"shuffle_chests": "off"}, {"shuffle_smallkeys": "overworld"},

@@ -1032,7 +1032,7 @@ mod tests {
     }
 
     #[test]
-    fn seeds_that_generated_before_keep_their_exact_placements() {
+    fn corrected_dungeon_logic_keeps_its_versioned_generation_baseline() {
         let d: Data = Data::load().unwrap();
         let cases: [(&[(&str, &str)], &str); 4] = [
             (&[], "default 0"),
@@ -1049,7 +1049,7 @@ mod tests {
             let g: Generated = generate_data(&d, &s, seed, &GenOpts::default()).unwrap();
             got.insert(seed.to_string(), format!("{} {:016x}", g.seed_file.placements.len(), digest(&g.seed_file.placements)));
         }
-        crate::slice::pins::verify("old_seeds", &got);
+        crate::slice::pins::verify("ap_dungeon_logic_v2/old_seeds", &got);
     }
 
     #[test]
@@ -1250,7 +1250,7 @@ mod tests {
     }
 
     #[test]
-    fn rewards_off_and_stones_and_medallions_on_keep_the_old_seeds() {
+    fn corrected_dungeon_logic_keeps_its_versioned_reward_mode_baseline() {
         let d: Data = Data::load().unwrap();
         let mut on: Settings = Settings::default();
         crate::slice::pick::shuffle_both(&mut on);
@@ -1286,7 +1286,7 @@ mod tests {
             f.settings_string = old.to_string();
             got.insert(format!("{old} {seed}"), f.checksum());
         }
-        crate::slice::pins::verify("rewards_off_and_stones", &got);
+        crate::slice::pins::verify("ap_dungeon_logic_v2/rewards_off_and_stones", &got);
     }
 
     #[test]
@@ -1301,7 +1301,7 @@ mod tests {
     }
 
     #[test]
-    fn beehives_on_seeds_are_pinned() {
+    fn corrected_dungeon_logic_keeps_its_versioned_beehive_baseline() {
         let d: Data = Data::load().unwrap();
         let mut hives: Settings = Settings::default();
         crate::slice::pick::shuffle_both(&mut hives);
@@ -1323,7 +1323,7 @@ mod tests {
             assert_eq!(f.placements.keys().filter(|k| k.starts_with("Kak Hole")).count(), 7);
             got.insert(format!("{name} {seed}"), f.checksum());
         }
-        crate::slice::pins::verify("beehives", &got);
+        crate::slice::pins::verify("ap_dungeon_logic_v2/beehives", &got);
     }
 
     #[test]

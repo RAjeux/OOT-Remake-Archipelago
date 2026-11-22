@@ -1,4 +1,4 @@
-Archipelago · Ocarina of Time Remake · 0.6.0-alpha.1
+Archipelago · Ocarina of Time Remake · 0.6.1-alpha.1
 Alpha for Triforce on Windows x64.
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
@@ -10,6 +10,13 @@ Before you start
 Prepare Windows x64, Triforce and its build tools, your own version 1.1.1
 game dump (including romfs), OOTRR portable 0.8.1, Python 3.11 or later,
 and Node.js 22 or 24. No Nintendo game files are included.
+Download OOTRR-0.8.1-windows-x64-portable.zip from
+https://github.com/ootrando/ootrr/releases/tag/v0.8.1
+and unpack it in a separate folder alongside your regular OOTRR installation.
+Select this portable folder's ootrr.exe when configuring Archipelago.
+The regular app may update to 0.8.2, which changes some native location
+identities and cannot build this integration's frozen seed catalogue.
+Configuration checks the portable builder's settings protocol before building.
 The room generation machine needs Archipelago and the included APWorld.
 The APWorld requires Archipelago 0.6.7 or later; direct YAML generation
 has been tested with 0.6.8. Use a save dedicated to your Archipelago room.
@@ -71,8 +78,10 @@ compressed WebSocket connections. Extract the complete updated client ZIP,
 configure the same .apootrr again, then use Build again in Triforce Setup.
 Existing rooms and saves remain supported; no new seed is needed.
 Triforce's Options menu remains available.
-Version 0.6.0-alpha.1 keeps that same native library. If you already installed
-0.5.0-alpha.2, preparing the mod again is enough; no host rebuild is needed.
+Version 0.6.1-alpha.1 updates that native library. Prepare the mod again and
+use Build again in Triforce Setup. Existing player files and saves remain
+supported. Generate a new room to use the corrected dungeon access rules;
+an existing room retains its original placements.
 The full adult trade shuffle requires a newly generated room and its own save.
 
 Language
@@ -172,6 +181,10 @@ can be lost. The repository's docs/SETTINGS-COMPATIBILITY.md compares all
 verified consecutive personal, foreign and rupee pickups, plus older-save
 recovery, using real pickup packs placed in a private scene. They do not cover
 every original Skulltula site or confirm the foreign medal's 3D visibility.
+
+Set bridge: open for a bridge that appears on approach without dungeon rewards.
+Leave bridge_rewards at its default 9 or set it to 0; this choice uses an
+effective threshold of 0. Set bridge: dungeons to choose another reward count.
 
 DeathLink
 Set death_link: true in Zelda's YAML and enable DeathLink in the other

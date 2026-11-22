@@ -70,11 +70,12 @@ game: "Ocarina of Time Remake"
   door_of_time_song: true
 
   # Goal
-  # Ganon bridge: native condition, or a total number of stones and medallions set by
-  # bridge_rewards.
-  # Values: vanilla, dungeons
+  # Ganon bridge: native condition, a total number of stones and medallions (dungeons),
+  # or no dungeon rewards (open). The bridge appears when approached.
+  # Values: vanilla, dungeons, open
   bridge: "vanilla"
   # Number of stones and medallions required; only used with bridge: dungeons.
+  # With bridge: open, use 0 or leave the default 9; the effective threshold is 0.
   # Integer: 0 to 9.
   bridge_rewards: 9
   # Reach Ganon's Tower without completing the trials.

@@ -39,6 +39,8 @@ pub mod skull_names;
 pub mod skull_rules;
 pub mod skulls;
 pub mod stages;
+#[cfg(test)]
+mod stability_logic;
 pub mod song_spots;
 pub mod starts;
 pub mod support;

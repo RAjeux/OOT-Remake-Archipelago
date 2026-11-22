@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import sys
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
@@ -49,9 +50,18 @@ def fixture(name):
     progress = editor.action("NativeStep", "ChallengeSystemActor", "EventExecuteProgressChallengeStep",
                              {"ChallengeName": trade.SHARED, "StepName": "Complete"})
     link(progress, remove)
+    native_start = progress
+    if name == "Npc_Hylia_053_Adult":
+        sale = editor.action("NativeBluePotionSale", name, "FixtureBuyBluePotion", None)
+        native_start = sale
+        for event, expression in reversed(list({"Event29": "SubEvent_GetSwordBigGoron_IsAfter_Step03_03_Exp",
+                                                "Event30": "SubEvent_GetSwordBigGoron_IsAfter_Step04_Exp",
+                                                "Event3": "SubEvent_GetSwordBigGoron_IsAfter_Step05_01_Exp"}.items())):
+            native_start = editor.switch(event,"GameDataActor","EventQueryIsGameDataBoolExp",
+                                         {"GameDataName":expression},native_start,progress)
     for name in ("Talk", "ShowRequiredItem"):
         point = EntryPoint(name)
-        point.main_event = make_index(progress)
+        point.main_event = make_index(native_start)
         editor.chart.entry_points.append(point)
     return editor.write("NPC fixture")[0]
 
@@ -175,6 +185,20 @@ class NativeTradeRouteTests(unittest.TestCase):
         run.is_get.add("Item_CojiroCucco")
         run.stock["Item_CojiroCucco"] = 0
         run.run()
+        self.assertFalse(run.calls)
+
+    def test_granny_blue_potion_sale_uses_only_her_completed_ap_exchange(self):
+        run,rows = self.setup_run("Npc_Hylia_053_Adult")
+        run.stock["Item_Prescription"] = run.stock["Item_CojiroCucco"] = 1
+        run.run()
+        self.assertFalse(any(command == "FixtureBuyBluePotion" for command,_ in run.trace))
+        run.flags[TRADE_CHECKS["LW Trade Cojiro"]["flag_name"]] = True
+        run.run()
+        self.assertFalse(any(command == "FixtureBuyBluePotion" for command,_ in run.trace))
+        run.flags[TRADE_CHECKS["Kak Granny Trade Odd Mushroom"]["flag_name"]] = True
+        run.run()
+        self.assertEqual(sum(command == "FixtureBuyBluePotion" for command,_ in run.trace),1)
+        self.assertEqual(run.stock,{"Item_Prescription":1,"Item_CojiroCucco":1})
         self.assertFalse(run.calls)
 
     def test_full_bottle_keeps_the_required_item_and_explains_the_block(self):
@@ -326,6 +350,43 @@ class NativeTradeRouteTests(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get("OOTRR_ROMFS"), "requires a private native RomFS")
 class RealTradeLayoutTests(unittest.TestCase):
+    def test_granny_native_sale_is_reachable_after_ap_mushroom_without_linear_progress(self):
+        from ootrr_triforce.mod_codec import Codec
+        romfs=Path(os.environ["OOTRR_ROMFS"])
+        with patch.object(sys,"argv",[str(ROOT / "dist/Client-OOT-Remake.pyz")]):
+            codec=Codec((romfs / "Pack/ZsDic.pack.zs").read_bytes())
+        name="Npc_Hylia_053_Adult"
+        raw=codec.decode((romfs / (trade.FLOW_ROOT + name + ".bfevfl.zs")).read_bytes())
+        patched=trade.patch_trade_flow(raw,rows_for(name),name)
+        def buy_available(data,completed):
+            chart=_flow(data).flowchart
+            pending=[next(point.main_event.v for point in chart.entry_points if point.name=="Talk")]
+            seen=set()
+            while pending:
+                node=pending.pop()
+                if node is None or node in seen:continue
+                seen.add(node)
+                current=node.data
+                params=current.params.data if getattr(current,"params",None) else {}
+                if isinstance(current,SubFlowEvent) and current.res_flowchart_name=="" and current.entry_point_name=="Buy_BluePotion":
+                    return True
+                if isinstance(current,SwitchEvent):
+                    command=current.actor_query.v.v
+                    if command=="EventQueryIsGameDataBoolExp" or command=="EventQueryIsExistInPouch":
+                        branches=[current.cases.get(1)]
+                    elif command=="EventQueryIsGameDataBool" and params.get("GameDataName","").startswith("Archipelago.Trade."):
+                        branches=[current.cases.get(0 if completed else 1)]
+                    else:branches=list(current.cases.values())
+                    pending.extend(branch.v for branch in branches if branch is not None)
+                else:pending.append(current.nxt.v)
+            return False
+        self.assertFalse(buy_available(raw,True),"Native quest stage is deliberately not progressed in full shuffle")
+        self.assertFalse(buy_available(patched,False))
+        self.assertTrue(buy_available(patched,True))
+        before={point.name:point.main_event.v.name for point in _flow(raw).flowchart.entry_points}
+        after={point.name:point.main_event.v.name for point in _flow(patched).flowchart.entry_points}
+        self.assertEqual(before["Buy_BluePotion"],after["Buy_BluePotion"],"Retain the native shop's price/bottle/purchase flow")
+
     def test_native_npc_timer_and_spawn_layouts_are_supported(self):
         from ootrr_triforce.mod_codec import Codec
         from oot_rando.patching.event_info import entry_calls, entry_names

@@ -14,6 +14,7 @@ static int (*ap_connect16)(char *,char *,int,int);
 static int (*ap_disconnect16)(void);
 static int (*ap_restore16)(uint8_t *,int);
 static void (*ap_restore_deferred16)(int);
+static int (*ap_receipt_replay16)(int,int);
 static uint32_t ap_cursor16, ap_flags16[4096];
 static int ap_flag_count16;
 static int ap_event_mode16;
@@ -133,6 +134,7 @@ static int ap_boot16(void) {
     ap_disconnect16=(int(*)(void))GetProcAddress(lib,"AP_Disconnect");
     ap_restore16=(int(*)(uint8_t*,int))GetProcAddress(lib,"AP_Restore");
     ap_restore_deferred16=(void(*)(int))GetProcAddress(lib,"AP_RestoreDeferred");
+    ap_receipt_replay16=(int(*)(int,int))GetProcAddress(lib,"AP_ReceiptReplay");
     int (*event_delivery)(void)=(int(*)(void))GetProcAddress(lib,"AP_EventDelivery");
     if (!flags||!cursor||!ap_next16||!ap_applied16||!ap_note16||!ap_opened16||!ap_death16||!event_delivery||
         !ap_connection_info16||!ap_connect16||!ap_disconnect16||!ap_restore16||!ap_restore_deferred16) return 0;
@@ -244,10 +246,11 @@ static void ap_tick16(Ctx *c,int64_t now) {
     if (!entry) return;
     int loading=0;
     if (oot_gamedata_bool(c,0xef2b60c2u,&loading)&&loading) return;
-    uint32_t opened[4096]; uint8_t states[4096]; int count=0;
+    uint32_t opened[4096]; uint8_t states[4096]; int count=0,snapshot_valid=1;
     for(int i=0;i<ap_flag_count16;i++) {
         const char state=oot_flag_state(c,1,ap_flags16[i]);
         states[i]=(state=='0'||state=='1')?(uint8_t)state:255;
+        if(states[i]==255) snapshot_valid=0;
         if(state=='1') opened[count++]=ap_flags16[i];
     }
     uint64_t final_boss=oot_gd_int(c,mgr,0x641e0375u);
@@ -322,6 +325,11 @@ static void ap_tick16(Ctx *c,int64_t now) {
     }
     if (ap_event_mode16) {
         const char *event=ap_eventname16(item);
+        char replay[64];
+        if (event && snapshot_valid && ap_receipt_replay16 && ap_receipt_replay16(index,item)) {
+            snprintf(replay,sizeof replay,"OOTRR_APTradeReplay_%d",item);
+            event=replay;
+        }
         if (event && ap_request_item16(c,ap_delivery_actor16,event)) {
             pending=index;pending_mgr=mgr;pending_epoch=ap_delivery_epoch16;pending_at=now;
         }

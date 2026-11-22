@@ -16,7 +16,7 @@ from .mod_codec import Codec
 REST = "System/Resource/ResourceSizeTable.Product.111.Nin_Ounce_NVN2.rsizetable.zs"
 GET = ("Dm_SY_GetInEvent", "GetInEvent_NotTurn_NotNpc")
 CHEST_ENTRY = "Success_"
-REVISION = 14
+REVISION = 15
 
 
 def chest_flows(raw, records, *, native_pouch=None, small_raw=None):
@@ -338,6 +338,9 @@ def prepare(root, settings, roster, moved):
                 prepare_restoration(romfs, mod, roster)
         if seed_settings is not None:
             localize_mod(romfs, mod, seed_settings)
+        if settings.get("adult_trade_shuffle"):
+            from .trade_receipts import finalize_trade_receipts
+            finalize_trade_receipts(romfs, mod, settings["_ap_token"])
         stage.rename(dest)
     print(tr('Medals ready.'), flush=True)
     return dest / "mods"

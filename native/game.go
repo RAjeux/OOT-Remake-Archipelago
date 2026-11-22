@@ -145,6 +145,12 @@ func AP_Applied(index C.int) {
 		return
 	}
 	it := s.history[i]
+	if s.replayTradeReceiptLocked(i, it.Item) {
+		// The native quiet event only restored receipt history. Do not announce
+		// another physical item which its completed exchange has already spent.
+		s.mu.Unlock()
+		return
+	}
 	who := s.names[it.Player]
 	if who == "" {
 		who = "Archipelago"

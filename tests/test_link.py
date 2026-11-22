@@ -31,6 +31,7 @@ static uint32_t oot_murmur3(const char *name){assert(!strcmp(name,"Archipelago.R
 static void ap_opened16(uint32_t *f,int n,int goal){assert(n==1&&f[0]==102&&goal==won);opened++;}
 static int ap_next16(int i){return reward_request==2?(i>=2&&i<=7?1998+i:i==8?9999:0):!reward_request?0:i==0?1000:i==1?1001:0;}
 static const char *ap_eventname16(int id){static const char *names[]={"OOTRR_APReceive_Token","OOTRR_APReceive_HeartPiece","OOTRR_APReceive_Bundle","OOTRR_APReceive_Map","OOTRR_APReceive_Progressive","OOTRR_APReceive_SmallKey"};return id>=2000&&id<=2005?names[id-2000]:NULL;}
+static int (*ap_receipt_replay16)(int,int);
 static int ap_request_item16(Ctx *c,uint64_t actor,const char *name){assert(actor==77);if(event_busy||!event_accept)return 0;receipt_requests++;for(int id=2000;id<=2005;id++)if(!strcmp(name,ap_eventname16(id)))last_receipt=id;return 1;}
 #define AP_RUPEE_ID 1001
 static const char *ap_item_name16(int id){return id==1000?"Shield":NULL;}

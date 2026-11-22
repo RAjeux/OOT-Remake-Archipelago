@@ -170,6 +170,8 @@ def build(root, settings, data):
         return
     if dest.exists():
         raise ValueError(tr('Incomplete mod folder. Move it aside to retry: {value0}', value0=dest))
+    from .builder import validate_builder
+    validate_builder(settings["ootrr"])
     with tempfile.TemporaryDirectory(dir=root, prefix="build-") as tmp:
         scratch = Path(tmp)
         native = scratch / "room.ootrr"
@@ -189,6 +191,12 @@ def build(root, settings, data):
         mod = stage / "Archipelago" / "romfs"
         print(run_engine("patch", patch_request(data), romfs, mod).strip(), flush=True)
         write_title(romfs, mod)
+        from .story_fixes import prepare_story_fixes
+        prepare_story_fixes(romfs, mod)
+        from .quest_fixes import prepare_quest_fixes
+        prepare_quest_fixes(romfs, mod)
+        from .fortress_fixes import prepare_fortress_fixes
+        prepare_fortress_fixes(romfs, mod)
         if data.get("adult_trade_shuffle"):
             from .trade_state import prepare_trade_state
             prepare_trade_state(romfs, mod, data)

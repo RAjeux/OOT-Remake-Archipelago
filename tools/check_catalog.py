@@ -3,12 +3,12 @@ from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 import sys
 sys.path.insert(0,str(root/'client'))
-from ootrr_triforce.catalog import CHESTS, GEAR, LOCATION_IDS, ITEM_IDS, FILLER, ITEM_DATA, EXPECTED, SHOP_ITEMS, SHOP_CHECKS, CHECK_FLAGS
+from ootrr_triforce.catalog import CHESTS, GEAR, LOCATION_IDS, ITEM_IDS, FILLER, ITEM_DATA, EXPECTED, SHOP_ITEMS, SHOP_CHECKS, CHECK_FLAGS, SKULL_CHECKS, TRADE_CHECKS
 from oot_rando.patching.soul_adapter import murmur3
 data=root/'moteur/ootrr-ap/data'
-load=lambda x:json.loads((data/x).read_text())
+load=lambda x:json.loads((data/x).read_text(encoding='utf-8'))
 flags={f['name']:int(f['hash'],16) for f in load('flags.json')['flags'] if f.get('name') and f.get('save')==0 and f['type'] in {'Bool','Int','Enum'}}
-raw=(root/'moteur/ootrr-ap/randomizer/core/src/start_items/table.rs').read_text()
+raw=(root/'moteur/ootrr-ap/randomizer/core/src/start_items/table.rs').read_text(encoding='utf-8')
 recipes={}
 for name, actor in re.findall(r'logic: "([^"]+)", offset: 0, strip: Strip::Unique, recipe: Recipe::Grant\(&\["([^"]+)"\]\)',raw):
  if name=='Hylian Shield': continue
@@ -31,7 +31,7 @@ assert all_locs==CHESTS and recipes==GEAR, "The catalogue differs from OOTRR dat
 shops=load('shops.json')
 kokiri={row['name']:row for row in shops['slots'] if row['shop']=='KF Shop'}
 assert list(SHOP_CHECKS)==sorted(kokiri) and len(SHOP_CHECKS)==8, "Kokiri locations differ from the engine."
-location_order=[*sorted(all_locs),*sorted(kokiri)]
+location_order=[*sorted(all_locs),*sorted(kokiri),*SKULL_CHECKS,*TRADE_CHECKS]
 assert LOCATION_IDS=={n:0x6F7200+i for i,n in enumerate(location_order)}, "Location IDs changed."
 legacy=[*sorted(recipes),FILLER]
 rewards={}
@@ -60,5 +60,12 @@ for name,row in kokiri.items():
  assert all(ref[key]==row[key] for key in ('shop','slot','actor','item','price','counters','target')), f"Incorrect Kokiri slot: {name}"
  assert ref['flag_name']=='Archipelago.Shop.KF.'+str(row['slot']) and ref['flag']==murmur3(ref['flag_name']), f"Incorrect Kokiri flag: {name}"
 assert CHECK_FLAGS=={**{name:[ref['flag'] for ref in refs] for name,refs in CHESTS.items()},
-                     **{name:[row['flag']] for name,row in SHOP_CHECKS.items()}}, "Incomplete check flags."
-print(f"{len(all_locs)} chests and {len(kokiri)} Kokiri purchases, {len(ITEM_IDS)} items; the original 128 locations and 168 items keep their IDs.")
+                     **{name:[row['flag']] for name,row in SHOP_CHECKS.items()},
+                     **{name:[row['flag']] for name,row in SKULL_CHECKS.items()},
+                     **{name:[row['flag']] for name,row in TRADE_CHECKS.items()}}, "Incomplete check flags."
+for family in (SKULL_CHECKS, TRADE_CHECKS):
+ for name,row in family.items():
+  assert row['flag']==murmur3(row['flag_name']), f"Incorrect saved check flag: {name}"
+  if family is TRADE_CHECKS:
+   assert row['id']==LOCATION_IDS[name], f"Incorrect adult trade ID: {name}"
+print(f"{len(all_locs)} chests, {len(kokiri)} Kokiri purchases, {len(SKULL_CHECKS)} reserved Skulltulas and {len(TRADE_CHECKS)} adult trades; {len(ITEM_IDS)} items. Frozen IDs and all check flags match.")

@@ -13,7 +13,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
-from ootrr_triforce.settings import AP_ONLY, ENGINE_EXTENSIONS, FIXED_SETTINGS, SPEC_BY_ID
+from ootrr_triforce.settings import AP_ONLY, BRIDGE_OPEN_ALIAS, ENGINE_EXTENSIONS, FIXED_SETTINGS, SPEC_BY_ID
 
 SCHEMA = ROOT / "tests/fixtures/ootrr-settings-schema.json"
 LOCAL_SHUFFLES = frozenset({
@@ -44,7 +44,7 @@ PARTIAL_REASONS = {
     "shuffle_smallkeys": "The native dungeon-item planner implements only vanilla, dungeon, any_dungeon and keysanity for Small Keys.",
     "shuffle_mapcompass": "The native dungeon-item planner rejects Overworld-only Maps/Compasses; its other supported placement modes remain available.",
     "shuffle_ganon_bosskey": "The native planner supports the regular key-placement modes and lacs_dungeons, but not the other schema-advertised reward triggers.",
-    "bridge": "The native bridge code implements Vanilla and the combined dungeon-reward threshold; the other schema goal variants are not implemented.",
+    "bridge": "The native bridge code implements Vanilla and the combined dungeon-reward threshold. AP's open choice maps to that threshold at zero rewards; the remaining schema goal variants are not implemented.",
     "zora_fountain": "The native world-opening code implements Closed and Open, not the advertised child-only blockage variant.",
     "starting_items": "Zelda's Letter cannot be granted as an isolated starting pouch item; the supported open Kakariko story state grants it together with the corresponding quest progress.",
     "shuffle_entrances": "Only dungeon entrance pairing is implemented. Native overworld/everything modes are explicitly rejected because age/return/story transition handling is incomplete.",
@@ -108,6 +108,8 @@ def report(schema):
                 row["native_" + name] = native[name]
         if public is not None:
             row.update(ap_default=public["default"], ap_kind=public["kind"])
+            if key == "bridge":
+                row["integration_choice_aliases"] = {"open": dict(BRIDGE_OPEN_ALIAS)}
             if public.get("choices"):
                 row["ap_choices"] = list(public["choices"])
                 row["omitted_native_choices"] = sorted(set(row.get("native_choices", [])) - set(public["choices"]))
@@ -170,6 +172,8 @@ def markdown(result):
             detail += " " + row["omitted_native_reason"]
         if row.get("native_caution"):
             detail += " " + row["native_caution"]
+        if row.get("integration_choice_aliases"):
+            detail += " The integration's `open` choice uses `bridge: dungeons` with `bridge_rewards: 0`; the bridge opens on approach without requiring dungeon rewards."
         lines.append(f"| `{row['id']}` | `{row['status']}` | {detail} |")
     lines += ["", "## Native menu placeholders", "",
               "These controls appear as unavailable placeholders in OOTRR itself; listing them in a YAML would not add their engine implementation.", ""]

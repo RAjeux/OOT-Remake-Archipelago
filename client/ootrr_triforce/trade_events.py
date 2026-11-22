@@ -153,6 +153,36 @@ def _init(editor, name, actor, target):
     return node
 
 
+def _granny_shop(editor, name):
+    """Keep Granny's native sale unlocked by her completed mushroom exchange."""
+    if name != "Npc_Hylia_053_Adult":
+        return
+    from evfl.event import SwitchEvent
+    from evfl.util import make_index
+    from .shop_events import _retarget
+    expected = {"Event29": "SubEvent_GetSwordBigGoron_IsAfter_Step03_03_Exp",
+                "Event30": "SubEvent_GetSwordBigGoron_IsAfter_Step04_Exp",
+                "Event3": "SubEvent_GetSwordBigGoron_IsAfter_Step05_01_Exp"}
+    gates = [node for node in editor.chart.events if node.name in expected]
+    if len(gates) != len(expected):
+        raise _invalid()
+    for node in gates:
+        data = node.data
+        if (not isinstance(data, SwitchEvent) or str(data.actor.v.identifier) != "GameDataActor"
+                or data.actor_query.v.v != "EventQueryIsGameDataBoolExp" or data.params is None
+                or data.params.data != {"GameDataName": expected[node.name]} or set(data.cases) != {0,1}):
+            raise _invalid()
+    flag = TRADE_CHECKS["Kak Granny Trade Odd Mushroom"]["flag_name"]
+    for node in gates:
+        replacement = editor.switch(PREFIX + "GrannyShop" + node.name, "GameDataActor", "EventQueryIsGameDataBool",
+                                    {"GameDataName": flag, "Index": -1}, node.data.cases[0].v, node.data.cases[1].v)
+        for previous in list(editor.chart.events):
+            _retarget(previous, node, replacement)
+        for point in editor.chart.entry_points:
+            if point.main_event.v is node:
+                point.main_event = make_index(replacement)
+
+
 def patch_trade_flow(raw, records, name):
     """Guard each NPC's native talk/show-item entry by stock and AP completion."""
     from evfl.common import ActorIdentifier
@@ -169,6 +199,7 @@ def patch_trade_flow(raw, records, name):
     rows = [row for row in records if row["flow"] == name]
     if not rows:
         raise _invalid()
+    _granny_shop(editor, name)
     _skip(editor, [node for node in editor.chart.events if _legacy(node, name)])
     points = [point for point in editor.chart.entry_points if (
         point.name == "Talk" or point.name.endswith("_Talk") or point.name.startswith("Talk_")

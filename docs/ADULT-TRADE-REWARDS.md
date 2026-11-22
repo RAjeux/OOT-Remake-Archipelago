@@ -48,10 +48,12 @@ checks. Completed trade checks restore their completion and consumption, and
 personal rewards are recovered without sending a friend's reward twice. Save
 normally before quitting.
 
-When loading an older save, remote item history can replay before completed
-trade checks are restored. A previously spent quest item can show its receipt
-animation before recovery removes it again. The final inventory still keeps
-spent items consumed, and another player's reward is not sent twice.
+With the updated mod prepared, loading an older save silently acknowledges
+remote quest items which a completed exchange has already consumed. Their
+receipt animation and notification are not shown again. The exchange's own
+reward and completion still recover normally, and another player's reward is
+not sent twice. Reconfigure an existing player file and rebuild Triforce when
+upgrading the native library to enable this behavior.
 
 ## Existing rooms and the old bonus option
 

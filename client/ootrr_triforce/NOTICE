@@ -4,6 +4,9 @@ released under the MIT License. That text is kept in LICENSE-MIT and still appli
 
 The notices below belong to third party work that OOTRR builds on. They stay in force and are compatible with the GPL.
 
+This integration retains the OOTRR 0.8.1 base and adapts selected stability and dungeon-logic fixes
+from OOTRR 0.8.2, revision 0fa64f44b5e689f39bcf98a151fc32cb019d538e. The portable builder remains 0.8.1.
+
 Thanks to OruizGl for pull request #3 (Open Areas Settings). Its findings and ideas are the base of the adult Master Sword pedestal that works before the Forest Sage,
 the child sword fix and Sheik's new spot in every seed, Navi's lesson flags for an open or closed Deku forest, the D-pad shortcut fix for items given at the start and the Hyrule Field first visit flag fix for the clock.
 
