@@ -13,6 +13,7 @@ import sysconfig
 import tempfile
 from urllib.request import urlopen
 from zipfile import ZipFile
+from build import HOST_FILES
 
 ROOT = Path(__file__).resolve().parents[1]
 NODE_VERSION = "24.22.3"
@@ -20,7 +21,6 @@ NODE_SHA256 = "86fc4785327db5f5c7558dc6156c543b433c313e813a222e088086222ab4afa6"
 NODE_LICENSE_SHA256 = "ed34dd8e3f0a78dbaf00d0444ce8e285b015b765379c2e17880455f70370f8e9"
 NODE_ZIP_SHA256 = "e612af99f626ab415ea225af6bce5c971feb448cb5cae250bb1c3fa50c5f7d9f"
 NODE_URL = f"https://nodejs.org/dist/v{NODE_VERSION}/node-v{NODE_VERSION}-win-x64.zip"
-HOST_FILES = ("ootrr_archipelago.inc", "ootrr_ap_items.inc", "ootrr_ap_digest.h", "ootrr_ap_menu.inc")
 PACKAGES = ("ootrr_triforce", "oot_rando", "ainb", "evfl", "websockets")
 PYINSTALLER_VERSION = "6.22.3"
 

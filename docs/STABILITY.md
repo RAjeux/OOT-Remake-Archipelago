@@ -1,5 +1,37 @@
 # Stability fixes and upgrade scope
 
+## 0.9.0: setup and independent option rolls
+
+Archipelago's Random? control rolls each field separately. Previously an unused
+fixed price, goal count or song-color choice could reject generation even though
+its parent setting did not use it. AP generation now resets only inactive
+sub-options to their defaults. Active prices, progression choices and dependency
+checks are preserved. The native settings-string validator remains strict.
+
+Setup also retains the prepared room's automatic-connection preference. Selecting
+a host checks its game files and build tools before installation, on a worker
+thread so the window remains responsive. Changing the selected folder invalidates
+an older check result.
+
+Hookshot and Triforce use independent application profiles and saves. Selecting
+Hookshot does not reuse the save or connection history of the same room in
+Triforce. The shared AP protocol, item IDs and native received-item transactions
+are unchanged. See [port compatibility](PORT-COMPATIBILITY.md) for the tested
+versions and remaining limits.
+
+The option changes were checked with Archipelago 0.6.8's real option classes and
+two isolated generations: one with the player's unchanged YAML, and one with two
+players, deliberately inconsistent inactive settings and an active fixed fairy
+price. Both generated successfully and the active price remained exact. These
+checks do not establish that every possible randomized combination is valid.
+
+The behavior was compared with the disabled-option handling in
+[OoT Randomizer](https://github.com/OoTRandomizer/OoT-Randomizer/blob/Dev/Settings.py)
+and the public-to-native option translation in
+[Archipelago's OoT world](https://github.com/ArchipelagoMW/Archipelago/blob/0.6.8/worlds/oot/__init__.py).
+
+## Earlier gameplay and logic fixes
+
 Version 0.6.1-alpha.1 retains the portable **OOTRR 0.8.1** builder and the
 integration's existing AP identities. It adapts selected fixes from
 [OOTRR 0.8.2](https://github.com/ootrando/ootrr/releases/tag/v0.8.2), revision

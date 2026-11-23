@@ -57,7 +57,71 @@ def _json(path, default=None):
 
 def _folder(value):
     path = Path(value).expanduser().resolve()
-    return path.parent if path.name.casefold() == "triforce.exe" else path
+    if path.name.casefold() in {"triforce.exe", "hookshot.exe"}:
+        return path.parent.parent if path.parent.name.casefold() == "bin" else path.parent
+    return path
+
+
+def _host(value=None):
+    selected = value or "nx2navi"
+    if selected not in {"nx2navi", "hookshot"}:
+        raise InstallError(tr("Choose Triforce or the experimental Hookshot integration."))
+    return selected
+
+
+def _adapter(host):
+    if host == "hookshot":
+        from . import hookshot_setup
+        return hookshot_setup
+    return native_setup
+
+
+def _executable_name(host):
+    return "hookshot.exe" if host == "hookshot" else "Triforce.exe"
+
+
+def _host_base(base, host):
+    return base / "hosts/hookshot" if host == "hookshot" else base
+
+
+def _compiled_game(host, romfs, tools):
+    return (bool(_adapter(host).compiled_executable(romfs, tools)) if host == "hookshot"
+            else native_setup.compiled_game(romfs, tools))
+
+
+def _tools_for(game, value, host):
+    if not value and host == "hookshot":
+        found = _adapter(host).discover(game=game)
+        value = found.get("native_tools") or found.get("tools")
+    return Path(value or "").expanduser().resolve()
+
+
+def _validate_installation(game, romfs, tools, host):
+    if (not any((folder / _executable_name(host)).is_file() for folder in (game, game / "bin"))
+            or not (game / "image.bin").is_file()):
+        message = ("Choose the Hookshot folder containing hookshot.exe and image.bin." if host == "hookshot"
+                   else "Choose the Triforce folder containing Triforce.exe and image.bin.")
+        raise InstallError(tr(message))
+    if not (romfs / "Pack/ZsDic.pack.zs").is_file():
+        raise InstallError(tr("Choose your version 1.1.1 game's romfs folder."))
+    if (game / "romfs").resolve() != romfs:
+        raise InstallError(tr("The selected romfs must belong to the selected game installation."))
+    if host == "hookshot":
+        validate = getattr(_adapter(host), "validate_installation", None)
+        if validate:
+            validate(game, tools)
+    elif not (tools / "host/hos_main.c").is_file() or not (tools / "nx2/build.py").is_file():
+        raise InstallError(tr("Install Triforce's build tools in Triforce Setup first."))
+
+
+def inspect_installation(request):
+    """Read-only preflight used by the desktop form before any AP connection."""
+    host = _host(request.get("host"))
+    game = _folder(request.get("game", ""))
+    romfs = Path(request.get("romfs") or game / "romfs").expanduser().resolve()
+    tools = _tools_for(game, request.get("tools"), host)
+    _validate_installation(game, romfs, tools, host)
+    return dict(valid=True, host=host, tools=str(tools))
 
 
 def _emit(progress, percent, message):
@@ -95,9 +159,18 @@ def _registered_game():
         return None
 
 
-def discover(base=None):
+def discover(base=None, host=None):
     """Read remembered and standard paths; do not create files or start a game."""
-    base = _base(base)
+    app_base = _base(base)
+    desktop = _json(app_base / "desktop-host.json", {})
+    desktop = desktop if isinstance(desktop, dict) else {}
+    previous = _json(app_base / "outils.json", {})
+    previous = previous if isinstance(previous, dict) else {}
+    remembered_host = desktop.get("host") or previous.get("host")
+    if remembered_host not in {"nx2navi", "hookshot"}:
+        remembered_host = None
+    host = _host(host or remembered_host)
+    base = _host_base(app_base, host)
     cfg = _json(base / "outils.json", {})
     if not isinstance(cfg, dict):
         cfg = {}
@@ -106,14 +179,23 @@ def discover(base=None):
         if name in cfg and not isinstance(cfg[name], (str, os.PathLike)):
             cfg.pop(name)
     local = Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local/share"))
-    candidates = [Path(cfg["game"]) if cfg.get("game") else None,
-                  Path(cfg["romfs"]).parent if cfg.get("romfs") else None,
-                  _registered_game(), Path.home() / "Games/Triforce"]
-    game = next((path for path in candidates if path and (path / "Triforce.exe").is_file()), Path.home() / "Games/Triforce")
-    tools = Path(cfg.get("native_tools") or local / "Programs/Triforce/tools")
     ports = cfg.get("ports", {})
-    port = ports.get("nx2navi", {}) if isinstance(ports, dict) else {}
+    port = ports.get(host, {}) if isinstance(ports, dict) else {}
     port = port if isinstance(port, dict) else {}
+    port = {name: value for name, value in port.items() if isinstance(value, (str, os.PathLike))}
+    remembered = cfg if cfg.get("host", "nx2navi") == host else {}
+    candidates = [Path(port["game"]) if isinstance(port.get("game"), str) and port["game"] else None,
+                  Path(remembered["game"]) if remembered.get("game") else None,
+                  Path(remembered["romfs"]).parent if remembered.get("romfs") else None,
+                  _registered_game(), Path.home() / "Games/Triforce"]
+    game = next((path for path in candidates if path and any((folder / "Triforce.exe").is_file()
+                 for folder in (path, path / "bin"))), Path.home() / "Games/Triforce")
+    tools = Path(port.get("native_tools") or remembered.get("native_tools") or local / "Programs/Triforce/tools")
+    if host == "hookshot":
+        found = _adapter(host).discover(game=port.get("game") or remembered.get("game"),
+                                       tools=port.get("native_tools") or remembered.get("native_tools"))
+        game = Path(found["game"])
+        tools = Path(found.get("native_tools") or found.get("tools") or "")
     configured_mods = port.get("mods")
     mods = Path(configured_mods if isinstance(configured_mods, (str, os.PathLike)) and configured_mods else game / "mods")
     profile = _profile(base)
@@ -129,19 +211,21 @@ def discover(base=None):
     # Old preferences can point at an automatically updated OOTRR 0.8.2.
     # Leave the default empty so setup obtains its verified compatible tool.
     builder = str(pinned) if pinned.is_file() else ""
-    romfs = Path(cfg.get("romfs") or game / "romfs")
+    romfs = Path(port.get("romfs") or remembered.get("romfs") or game / "romfs")
     try:
         ready = bool(profile and session.get("Token") == profile.name
                      and (mods / "Archipelago/romfs/Archipelago/room-v1.txt").read_text().strip() == profile.name
                      and (game / "romfs").resolve() == romfs.resolve()
-                     and native_setup.compiled_game(game / "romfs", tools))
+                     and _compiled_game(host, game / "romfs", tools))
     except (OSError, ValueError):
         ready = False
-    return dict(base=str(base), game=str(game), romfs=str(romfs), tools=str(tools), mods=str(mods),
+    return dict(base=str(base), app_base=str(app_base), host=host, game=str(game), romfs=str(romfs),
+                tools="" if host == "hookshot" and tools == Path(".") else str(tools), mods=str(mods),
                 builder=builder, node=str(node), manifest=cfg.get("manifest", ""),
                 server=session.get("Server", "127.0.0.1:38281"), profile=str(profile or ""),
+                auto_connect=bool(session.get("AutoConnect", True)),
                 room=session.get("Room", ""), slot=session.get("Slot", ""), token=session.get("Token", ""),
-                language=detect_language(profile or base, dict(cfg, exe=str(game / "Triforce.exe"), romfs=str(romfs))),
+                language=detect_language(profile or base, dict(cfg, exe=str(game / _executable_name(host)), romfs=str(romfs))),
                 ready=ready, build_required=not ready,
                 diagnostic_log=str(base / "setup-diagnostic.log"))
 
@@ -228,7 +312,7 @@ async def fetch_roster(data, server, password, cancel=None, timeout=45):
                 return roster
 
 
-def _running_game(game, tools):
+def _running_game(game, tools, host="nx2navi"):
     if os.name != "nt":
         return False
     import ctypes as C
@@ -248,13 +332,15 @@ def _running_game(game, tools):
     snapshot = kernel.CreateToolhelp32Snapshot(2, 0)
     if snapshot == C.c_void_p(-1).value:
         raise InstallError(tr("Unable to check whether Zelda is running. Close it and try again."))
-    targets = {(game / "Triforce.exe").resolve(), (game / "bin/Triforce.exe").resolve(),
-               (tools.parent / "TriforceSetup.exe").resolve()}
+    executable = _executable_name(host)
+    setup = "HookshotSetup.exe" if host == "hookshot" else "TriforceSetup.exe"
+    targets = {(game / executable).resolve(), (game / "bin" / executable).resolve(),
+               (tools.parent / setup).resolve()}
     try:
         entry = Process(size=C.sizeof(Process))
         found = kernel.Process32FirstW(snapshot, C.byref(entry))
         while found:
-            if entry.exe.casefold() in {"triforce.exe", "triforcesetup.exe"}:
+            if entry.exe.casefold() in {executable.casefold(), setup.casefold()}:
                 handle = kernel.OpenProcess(0x1000, False, entry.pid)
                 if not handle:
                     return True
@@ -362,12 +448,14 @@ def _build_game(game, tools, mods, log, progress):
 def install(request, progress=None, cancel=None):
     """Prepare and commit one room; callbacks run on the calling worker thread."""
     _cancelled(cancel)
-    base = _base(request.get("base"))
+    app_base = _base(request.get("base"))
+    host = _host(request.get("host"))
+    base = _host_base(app_base, host)
     base.mkdir(parents=True, exist_ok=True)
     diagnostic = base / "setup-diagnostic.log"
     password = request.get("password", "")
     try:
-        return _install(request, progress, cancel, base, diagnostic)
+        return _install(dict(request, app_base=app_base), progress, cancel, base, diagnostic)
     except InstallCancelled:
         raise
     except InterruptedError:
@@ -377,7 +465,9 @@ def install(request, progress=None, cancel=None):
     except InstallError as exc:
         exc.diagnostic_log = str(diagnostic)
         raise
-    except Exception:
+    except Exception as error:
+        if host == "hookshot" and isinstance(error, getattr(_adapter(host), "HookshotError", ())):
+            raise InstallError(error.public_message, diagnostic) from None
         detail = traceback.format_exc()
         if password:
             detail = detail.replace(password, "[redacted]")
@@ -392,24 +482,19 @@ def _install(request, progress, cancel, base, diagnostic):
     manifest = Path(request.get("manifest", "")).expanduser().resolve()
     inspect_manifest(manifest)
     data = player.read_manifest(manifest)
+    host = _host(request.get("host"))
+    adapter = _adapter(host)
     try:
         server = normalize_server(request.get("server", ""))
     except ControlError:
         raise InstallError(tr("Enter a valid Archipelago server address.")) from None
     game = _folder(request.get("game", ""))
     romfs = Path(request.get("romfs") or game / "romfs").expanduser().resolve()
-    tools = Path(request.get("tools", "")).expanduser().resolve()
+    tools = _tools_for(game, request.get("tools"), host)
     mods = Path(request.get("mods") or game / "mods").expanduser().resolve()
-    if not (game / "Triforce.exe").is_file() or not (game / "image.bin").is_file():
-        raise InstallError(tr("Choose the Triforce folder containing Triforce.exe and image.bin."))
-    if not (romfs / "Pack/ZsDic.pack.zs").is_file():
-        raise InstallError(tr("Choose your version 1.1.1 game's romfs folder."))
-    if (game / "romfs").resolve() != romfs:
-        raise InstallError(tr("The selected romfs must belong to this Triforce installation."))
-    if not (tools / "host/hos_main.c").is_file() or not (tools / "nx2/build.py").is_file():
-        raise InstallError(tr("Install Triforce's build tools in Triforce Setup first."))
-    if _running_game(game, tools):
-        raise InstallError(tr("Close Zelda and Triforce Setup before installing."))
+    _validate_installation(game, romfs, tools, host)
+    if _running_game(game, tools, host):
+        raise InstallError(tr("Close Zelda and its setup application before installing."))
     profile = base / data["token"]
     if profile.is_symlink() or (hasattr(profile, "is_junction") and profile.is_junction()):
         raise InstallError(tr("This room's profile is linked to another folder. Choose a normal application data folder."))
@@ -420,6 +505,7 @@ def _install(request, progress, cancel, base, diagnostic):
     if previous_file.exists() and any(previous.get(key) != data[value] for key, value in
                         (("Token", "token"), ("Room", "room"), ("Player", "player"), ("Slot", "slot"))):
         raise InstallError(tr("This room's existing profile does not match the player file."))
+    automatic = bool(request.get("auto_connect", previous.get("AutoConnect", True)))
     baseline = previous.get("Baseline", history_cursor(profile))
     if type(baseline) is not int or baseline < 0:
         raise InstallError(tr("This room's existing profile is invalid. Open the diagnostic log for details."))
@@ -437,7 +523,7 @@ def _install(request, progress, cancel, base, diagnostic):
             if (profile / "user").is_dir():
                 locks.enter_context(exclusive(profile / "user/save.lock"))
         except BlockingIOError:
-            raise InstallError(tr("Close Zelda and Triforce Setup before installing.")) from None
+            raise InstallError(tr("Close Zelda and its setup application before installing.")) from None
         _cancelled(cancel)
         _emit(progress, 4, tr("Connecting to your Archipelago room..."))
         try:
@@ -446,19 +532,20 @@ def _install(request, progress, cancel, base, diagnostic):
             raise InstallError(tr("The server could not be reached. Check its address and try again.")) from None
         _cancelled(cancel)
         _emit(progress, 10, tr("Preparing the required tools..."))
-        pinned_builder = base / "tools/OOTRR-0.8.1-windows-x64-portable/ootrr.exe"
+        builder_base = Path(request["app_base"])
+        pinned_builder = builder_base / "tools/OOTRR-0.8.1-windows-x64-portable/ootrr.exe"
         if request.get("builder") and Path(request["builder"]).expanduser().resolve() != pinned_builder:
             builder = Path(request["builder"]).expanduser().resolve()
             from .builder import validate_builder
             validate_builder(builder)
         else:
-            builder = Path(ensure_builder(base, progress=lambda message: _emit(progress, 12, message), cancel=cancel))
+            builder = Path(ensure_builder(builder_base, progress=lambda message: _emit(progress, 12, message), cancel=cancel))
         node = request.get("node") or bundled_node()
         if not node:
             raise InstallError(tr("The bundled randomizer runtime is missing. Download the complete application again."))
         _cancelled(cancel)
         runtime = dict(romfs=str(romfs), ootrr=str(builder), native=True, baseline=baseline, host="nx2navi",
-                       install_only=True, exe=str(game / "Triforce.exe"), server=server,
+                       install_only=True, exe=str(game / _executable_name(host)), server=server,
                        protected=native_setup.protect_password(request.get("password", "")),
                        reward_mode=data.get("reward_mode", "legacy_gear"), local_items=bool(data.get("local_items")),
                        player=data["player"], kokiri_shop_checks=bool(data.get("kokiri_shop_checks")),
@@ -466,7 +553,8 @@ def _install(request, progress, cancel, base, diagnostic):
                        foreign_only_shops=bool(data.get("foreign_only_shops")), shuffle_skulltulas=data.get("shuffle_skulltulas", "off"),
                        adult_trade_shuffle=bool(data.get("adult_trade_shuffle")),
                        shop_prices={name: row["price"] for name, row in data["seed_file"].get("shops", {}).items() if name in SHOP_CHECKS})
-        assets = install_mod.build_cache(base, data["token"], "nx2navi", {}, romfs) / native_setup.runtime_cache_name(baseline)
+        runtime["host"] = host
+        assets = install_mod.build_cache(base, data["token"], host, {}, romfs) / native_setup.runtime_cache_name(baseline)
         runtime.update(assets=assets, other_tables={})
         with diagnostic.open("w", encoding="utf-8") as log, redirect_stdout(log), redirect_stderr(log), _node_environment(node):
             _emit(progress, 18, tr("Preparing your randomized game..."))
@@ -475,53 +563,61 @@ def _install(request, progress, cancel, base, diagnostic):
             _emit(progress, 45, tr("Preparing item models and native rewards..."))
             source = player.prepare(assets, player.preparation_settings(runtime, data), roster, data["moved"])
             _cancelled(cancel)
-            if _running_game(game, tools):
-                raise InstallError(tr("Close Zelda and Triforce Setup before installing."))
+            if _running_game(game, tools, host):
+                raise InstallError(tr("Close Zelda and its setup application before installing."))
             _emit(progress, 74, tr("Finishing setup. Please keep this window open..."))
             backup = base / "backups" / (datetime.now().strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:8])
             mutable = [base / name for name in ("outils.json", "last-profile.json", "derniere-salle-native.json")]
+            mutable.append(Path(request["app_base"]) / "desktop-host.json")
             mutable.append(profile / "native-session.json")
-            mutable += [tools / "host" / name for name in (*native_setup.RT_FILES, "hos_main.c")]
-            mutable += [tools / "gpu/vk" / name for name in (*native_setup.MENU_FILES, "vk_menu.cpp")]
+            if host == "nx2navi":
+                mutable += [tools / "host" / name for name in (*native_setup.RT_FILES, "hos_main.c")]
+                mutable += [tools / "gpu/vk" / name for name in (*native_setup.MENU_FILES, "vk_menu.cpp")]
             copies = _backup_files(mutable, backup / "files")
             old_mod = mods / "Archipelago"
             old_inode = old_mod.stat().st_ino if old_mod.exists() else None
             mod_changed = False
             moved_seed = None
             try:
-                native_setup.install_tools(base, lambda *args, **kwargs: tools, tools)
+                tools = adapter.install_tools(base, lambda *args, **kwargs: tools, tools)
                 native_setup.save_session(profile, runtime, data, roster, prepared=source / "Archipelago/romfs")
                 session = _json(profile / "native-session.json", {})
-                session["AutoConnect"] = bool(request.get("auto_connect", True))
+                session["AutoConnect"] = automatic
                 write_json(profile / "native-session.json", session)
                 seed = mods / "My Seed"
                 if seed.is_dir() and ((seed / "romfs" / install_mod.REST).is_file() or (seed / "romfs/UI/Layout2Archive").is_dir()):
                     if seed.is_symlink() or (hasattr(seed, "is_junction") and seed.is_junction()):
-                        raise InstallError(tr("The old randomizer mod is linked to another folder. Disable it in Triforce before installing."))
+                        raise InstallError(tr("The old randomizer mod is linked to another folder. Disable it in the selected host before installing."))
                     moved_seed = state / ("previous-randomizer-" + uuid.uuid4().hex[:12])
                     seed.rename(moved_seed)
                 dest = install_mod.install(source, mods, data["token"])
                 mod_changed = old_inode is None or dest.stat().st_ino != old_inode
-                compatible = native_setup.compiled_game(game / "romfs", tools)
+                compatible = _compiled_game(host, game / "romfs", tools)
                 if not compatible and request.get("rebuild", True):
                     # A normal room change does not rebuild Triforce or copy
                     # hundreds of megabytes of unchanged executable files.
                     outputs = [folder / name for folder in (game, game / "bin")
-                               for name in ("Triforce.exe", "triforce_vk.dll", "SDL2.dll", "SDL3.dll", "wgpu_native.dll")]
-                    outputs += [game / name for name in ("image.bin", ".triforce_installed.json", "language.txt")]
+                               for name in (_executable_name(host), "triforce_vk.dll", "hookshot_vk.dll", "SDL2.dll", "SDL3.dll", "wgpu_native.dll")]
+                    outputs += [game / name for name in ("image.bin", ".triforce_installed.json", ".hookshot_build.json", "language.txt")]
                     outputs += [path for folder in (game, game / "bin") for path in folder.glob("*.dll")]
                     copies.update(_backup_files(outputs, backup / "game"))
-                    _emit(progress, 86, tr("Building Triforce. This may take several minutes."))
-                    _build_game(game, tools, mods, log, progress)
-                    compatible = native_setup.compiled_game(game / "romfs", tools)
+                    if host == "hookshot":
+                        _emit(progress, 86, tr("Building the experimental Hookshot integration. This may take several minutes."))
+                        adapter.build_game(game, tools, log, progress=progress, cancel=cancel)
+                    else:
+                        _emit(progress, 86, tr("Building Triforce. This may take several minutes."))
+                        _build_game(game, tools, mods, log, progress)
+                    compatible = _compiled_game(host, game / "romfs", tools)
                     if not compatible:
                         raise InstallError(tr("The rebuilt game does not match the installed Archipelago module."))
-                cfg.update(host="nx2navi", game=str(game), exe=str(game / "Triforce.exe"), romfs=str(romfs),
+                cfg.update(host=host, game=str(game), exe=str(game / _executable_name(host)), romfs=str(romfs),
                            ootrr=str(builder), native_tools=str(tools), manifest=str(manifest))
-                cfg.setdefault("ports", {}).setdefault("nx2navi", {}).update(mods=str(mods), exe=str(game / "Triforce.exe"))
+                cfg.setdefault("ports", {}).setdefault(host, {}).update(mods=str(mods), exe=str(game / _executable_name(host)),
+                                                                       game=str(game), romfs=str(romfs), native_tools=str(tools))
                 write_json(base / "outils.json", cfg)
                 write_json(base / "last-profile.json", dict(root=str(profile)))
                 write_json(base / "derniere-salle-native.json", data["token"])
+                write_json(Path(request["app_base"]) / "desktop-host.json", dict(host=host))
                 write_json(backup / "installation.json", dict(room=data["room"], token=data["token"], saves_modified=False,
                            files={str(path): str(copy) if copy else None for path, copy in copies.items()},
                            moved_previous_randomizer=str(moved_seed or "")))
@@ -536,33 +632,43 @@ def _install(request, progress, cancel, base, diagnostic):
                     moved_seed.rename(mods / "My Seed")
                 _restore_files(copies)
                 raise
-    result = dict(base=str(base), profile=str(profile), game=str(game), romfs=str(romfs), tools=str(tools), mods=str(mods),
+    result = dict(base=str(base), app_base=str(request["app_base"]), host=host, profile=str(profile), game=str(game), romfs=str(romfs), tools=str(tools), mods=str(mods),
                   room=data["room"], slot=data["slot"], token=data["token"], ready=compatible,
                   build_required=not compatible, backup=str(backup), diagnostic_log=str(diagnostic),
-                  setup=str(tools.parent / "TriforceSetup.exe"))
-    _emit(progress, 100, tr("Ready to play.") if compatible else tr("The mod is installed. Finish building the game in Triforce Setup."))
+                  setup=str(tools.parent / ("HookshotSetup.exe" if host == "hookshot" else "TriforceSetup.exe")),
+                  auto_connect=automatic)
+    _emit(progress, 100, tr("Ready to play.") if compatible else tr("The mod is installed. Finish building the selected game host before playing."))
     return result
 
 
 def launch(result):
-    """Launch Triforce normally, preserving keyboard and controller input."""
+    """Launch the selected host normally, preserving keyboard and controller input."""
     from .app_runtime import spawn_process
     game = _folder(result["game"])
+    host = _host(result.get("host"))
     romfs = Path(result.get("romfs") or game / "romfs").resolve()
     tools = Path(result["tools"]).resolve()
     mods = Path(result.get("mods") or game / "mods").resolve()
     profile = Path(result["profile"]).resolve()
     session = _json(profile / "native-session.json", {})
-    executable = native_setup.compiled_executable(game / "romfs", tools)
+    executable = _adapter(host).compiled_executable(game / "romfs", tools)
     if (not isinstance(session, dict) or session.get("Token") != profile.name
             or not (game / "image.bin").is_file() or (game / "romfs").resolve() != romfs
             or executable is None
             or not (mods / "Archipelago/romfs/Archipelago/room-v1.txt").is_file()
             or (mods / "Archipelago/romfs/Archipelago/room-v1.txt").read_text().strip() != profile.name):
         raise InstallError(tr("Prepare this room before launching Zelda."))
-    if _running_game(game, tools):
-        raise InstallError(tr("Zelda or Triforce Setup is already running."))
+    if _running_game(game, tools, host):
+        raise InstallError(tr("Zelda or its setup application is already running."))
     environment = {key: value for key, value in os.environ.items() if not key.startswith("HOS_INPUT_")}
     environment.update(HOS_MODS=str(mods), HOS_SAVE_LOCK="1")
-    return spawn_process([str(executable), str(game / "image.bin"), "--romfs", str(romfs),
-                          "--user", str(profile / "user")], cwd=executable.parent, env=environment)
+    if host == "hookshot":
+        environment["OOTRR_AP_BASE"] = str(profile.parent)
+    process = spawn_process([str(executable), str(game / "image.bin"), "--romfs", str(romfs),
+                             "--user", str(profile / "user")], cwd=executable.parent, env=environment)
+    if result.get("app_base"):
+        try:
+            write_json(Path(result["app_base"]) / "desktop-host.json", dict(host=host))
+        except OSError:
+            pass
+    return process

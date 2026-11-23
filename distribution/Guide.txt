@@ -1,9 +1,9 @@
-OOT Remake Archipelago · 0.8.0-alpha.2
-One application for Triforce on Windows x64.
+OOT Remake Archipelago · 0.9.0-alpha.1
+One Windows x64 application for Triforce and experimental Hookshot 3.0.1.
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
 Before you start
-Download OOT-Remake-Archipelago-0.8.0-alpha.2.exe from the project releases.
+Download OOT-Remake-Archipelago-0.9.0-alpha.1.exe from the project releases.
 Python and Node.js are included. The compatible OOTRR 0.8.1 builder is
 downloaded automatically when first needed; an internet connection is
 required for that download. No separate runtime or randomizer installation
@@ -12,14 +12,17 @@ is needed.
 You supply a working Triforce installation with its build tools and your own
 version 1.1.1 game files. Obtain your .apootrr player file and the address
 of its active Archipelago room. No Nintendo game files are included.
+Hookshot requires its completed 3.0.1 installation, original build tools and
+retained build files. Other Hookshot versions are rejected by this adapter.
 
 Prepare and play
 1. Open the application and choose Set up a room.
-2. Select your .apootrr player file. Triforce is detected when possible;
-   choose its game folder if the application cannot find it.
+2. Select your .apootrr player file and Game host. The selected installation
+   is detected when possible; choose its game folder if it is not found.
+   The application checks the game files and tools before installation.
 3. Enter the room address and a password only if the room requires one.
    Choose Install and prepare.
-4. Wait for preparation and any necessary Triforce build to finish.
+4. Wait for preparation and any necessary host build to finish.
    Progress appears in the same window; no console is needed.
 5. Choose Play. The game connects from the title screen.
    Use a save dedicated to this room.
@@ -29,10 +32,14 @@ while playing leaves Zelda and its Archipelago connection running.
 
 Change the connection
 Choose Connection in the application, or open Options > Archipelago in
-Zelda. Both interfaces control the same prepared room and game connection.
+Triforce. Hookshot provides F1/Insert > Gameplay > AP Server / AP Connect.
+These interfaces control the same prepared room and game connection.
+Hookshot's native editor accepts ASCII; use the app's Connection window for
+passwords with accents or other non-ASCII characters, then keep the saved password.
 With Zelda closed, Save remembers the address and password for the next
 startup. With the mod running, Connect and Disconnect apply to the live
 connection. Automatic connection is enabled by default.
+Preparing an existing room retains your automatic-connection preference.
 
 In the desktop connection window, Keep retains the saved password without
 showing it, Replace saves a new one, and Clear removes it. Passwords are
@@ -60,8 +67,10 @@ Updates and saved data
 Room profiles, connection settings, downloaded tools and saves are stored
 under %LOCALAPPDATA%\OOTRR-Archipelago. They remain available when the
 application executable is moved, replaced or closed.
+Hookshot uses a separate hosts\hookshot folder for its profiles and saves.
+Switching hosts does not transfer a save or its received-item history.
 
-Close Zelda before preparing a mod. Let any Triforce update finish, then
+Close Zelda and its builder before preparing a mod. Let any host update finish, then
 use Set up a room in the new application with the same .apootrr file.
 Existing saves and profiles are preserved. The application rebuilds the
 game when necessary. Your normal OOTRR installation is left in place;
@@ -110,6 +119,11 @@ DeathLink. In particular:
   default 9 or use 0; this choice uses an effective threshold of zero.
 - death_link: true shares deaths with other participating games. A received
   death waits for an active purchase or item receipt to finish.
+
+Random? rolls each field independently. Inactive sub-options are ignored:
+for example, a random Fixed Price has no effect when the price mode is Cheap.
+Active settings still follow their documented dependencies, so selecting
+Random? everywhere does not guarantee a valid combination.
 
 Supported native-local shuffles include songs, NPC rewards, cows, ground
 items, destructibles, dungeon entrances and prices. Experimental breakable

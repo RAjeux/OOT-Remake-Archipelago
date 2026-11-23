@@ -16,7 +16,8 @@ FORBIDDEN_ROOTS = {"romfs", "exefs", "mods", "user", "saves", "screenshots", "bu
 FORBIDDEN_NAMES = {"outils.json", "native-session.json", "last-profile.json", "connection-control.json", "contexte-codex.md"}
 FORBIDDEN_SUFFIXES = {".sav", ".apsave", ".apootrr", ".archipelago", ".apmultidata", ".apmultisave"}
 REQUIRED_MODULES = {"ootrr_triforce.app_window", "ootrr_triforce.app_runtime", "ootrr_triforce.install_service",
-                    "ootrr_triforce.player", "ootrr_triforce.connection_window", "tkinter", "zstandard"}
+                    "ootrr_triforce.player", "ootrr_triforce.connection_window", "ootrr_triforce.hookshot_setup",
+                    "tkinter", "zstandard"}
 
 
 def sha(raw):
@@ -82,7 +83,7 @@ def inspect_zip(raw, private_markers, context):
 
 def inspect_app(path, extra_markers=()):
     from PyInstaller.archive.readers import CArchiveReader
-    from build_app import NODE_SHA256
+    from build_app import HOST_FILES, NODE_SHA256
 
     path = Path(path)
     private_markers = markers(extra_markers)
@@ -104,9 +105,11 @@ def inspect_app(path, extra_markers=()):
         raise ValueError("The application manifest does not match this source version.")
     expected_native = sha((ROOT / "prebuilt/windows-x64/archipelago.dll").read_bytes())
     expected_wasm = sha((ROOT / "client/ootrr_triforce/engine.wasm").read_bytes())
-    for name, expected in (("native/archipelago.dll", expected_native),
-                           ("ootrr_triforce/engine.wasm", expected_wasm),
-                           ("runtime/node/node.exe", NODE_SHA256)):
+    components = [("native/archipelago.dll", expected_native),
+                  ("ootrr_triforce/engine.wasm", expected_wasm),
+                  ("runtime/node/node.exe", NODE_SHA256)]
+    components.extend(("native/" + name, sha((ROOT / "native" / name).read_bytes())) for name in HOST_FILES)
+    for name, expected in components:
         if manifest["payload"].get(name) != expected:
             raise ValueError("Embedded component differs from the reviewed source: " + name)
     for name, digest in manifest["payload"].items():

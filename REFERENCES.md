@@ -12,6 +12,14 @@ Integration code and its modifications are licensed under **GPL-3.0-or-later**; 
 | [Archipelago](https://github.com/ArchipelagoMW/Archipelago/tree/debe4cf035c7c15efe6fb95f72343af0d420c68c) | Reference revision `debe4cf035c7c15efe6fb95f72343af0d420c68c`; protocol/server baseline 0.6.7, direct YAML generation tested with 0.6.8 | Upstream project and reference protocol; its artwork has terms separate from its code. |
 | [Archipelago-SoH 1.4.2](https://github.com/HarbourMasters/Archipelago-SoH/releases/tag/Soh_1.4.2) | Consulted revision `cd9179cb4f5890f8a977e6cac59c54cda48a9df6` | Multiworld integration reference; this repository does not redistribute the SoH game. |
 | [Triforce](https://git.triforceproject.com/triforce/source) | Reference revision `b0e46adb484681a34ece82bbace9ec085a4eae1f`; test excerpts in `references/triforce/` | Original GPL notices and provenance are retained, including `references/triforce/host/PROVENANCE.md`. The mod's bridge is in `native/`, with its installer in `native_setup.py`. |
+| [Hookshot source lineage](https://github.com/tailin/hookshot) | Experimental Windows adapter targets the locally installed 3.0.1 host and renderer using exact source hashes in `hookshot_setup.py`. The linked repository is a publicly accessible fork of NotRexed/Hookshot. | Hookshot and game binaries are not redistributed. The new adapter and menu live in `native/ootrr_ap_hookshot*.inc`; adapted Triforce GameData helpers retain their GPL-3.0-or-later attribution. Original Hookshot sources are copied locally before patching. |
+
+The independent option-roll audit also consulted disabled-setting normalization
+in [OoT Randomizer's Settings.py](https://github.com/OoTRandomizer/OoT-Randomizer/blob/Dev/Settings.py)
+and public-to-native option translation in
+[Archipelago 0.6.8's OoT world](https://github.com/ArchipelagoMW/Archipelago/blob/0.6.8/worlds/oot/__init__.py).
+These are design references; the remake adapter does not imply N64 OoT or
+Ship of Harkinian host compatibility.
 
 Python dependencies retain their licenses in `client/credits/` and `client/websockets/`, including the ainb, evfl, and Zstandard notices. Rust dependencies and licenses are vendored in `moteur/ootrr-ap/vendor/`. Go licenses and third-party DLL sources are in `distribution/sources/` and `native/vendor/`. The installer's x64 Zstandard library is accompanied by `distribution/runtime/LICENSE.txt`.
 

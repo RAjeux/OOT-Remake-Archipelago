@@ -66,8 +66,9 @@ world = next(node for node in tree.body if isinstance(node, ast.ClassDef) and no
 namespace = dict(globals(), RemakeItem=Item, RemakeLocation=Location,
                  ItemClassification=SimpleNamespace(progression=1, filler=0))
 option_tree = ast.parse((ROOT / "apworld/ootrr_remake/options.py").read_text(encoding="utf-8"))
-option_values = next(node for node in option_tree.body if isinstance(node, ast.FunctionDef) and node.name == "option_values")
-exec(compile(ast.Module(body=[option_values], type_ignores=[]),
+option_values = [node for node in option_tree.body if isinstance(node, ast.FunctionDef)
+                 and node.name in {"option_values", "_normalize_inactive_options"}]
+exec(compile(ast.Module(body=option_values, type_ignores=[]),
              str(ROOT / "apworld/ootrr_remake/options.py"), "exec"), namespace)
 exec(compile(ast.Module(body=[node for node in world.body if isinstance(node, ast.FunctionDef)], type_ignores=[]),
              str(ROOT / "apworld/ootrr_remake/__init__.py"), "exec"), namespace)

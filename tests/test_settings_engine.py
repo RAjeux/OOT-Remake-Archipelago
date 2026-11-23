@@ -62,10 +62,10 @@ class NativeSettingsTests(unittest.TestCase):
 
     def test_ap_random_deals_key_produces_a_seed_with_the_native_random_mode(self):
         tree = ast.parse((ROOT / "apworld/ootrr_remake/options.py").read_text(encoding="utf-8"))
-        function = next(node for node in tree.body if isinstance(node, ast.FunctionDef)
-                        and node.name == "option_values")
+        functions = [node for node in tree.body if isinstance(node, ast.FunctionDef)
+                     and node.name in {"option_values", "_normalize_inactive_options"}]
         scope = dict(OPTION_SPECS=OPTION_SPECS, default_options=default_options, validate_options=validate_options)
-        exec(compile(ast.Module(body=[function], type_ignores=[]), "options.py", "exec"), scope)
+        exec(compile(ast.Module(body=functions, type_ignores=[]), "options.py", "exec"), scope)
         options = SimpleNamespace(shuffle_shops=SimpleNamespace(value=6, current_key="random_deals"))
         settings = engine_settings(scope["option_values"](options))
         self.assertEqual(settings["shuffle_shops"], "random")

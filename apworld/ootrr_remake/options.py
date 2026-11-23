@@ -111,6 +111,44 @@ OPTION_GROUPS = [OptionGroup(group, [OPTION_TYPES[spec["id"]] for spec in OPTION
                  for group in dict.fromkeys(spec["group"] for spec in OPTION_SPECS)]
 
 
+def _normalize_inactive_options(values):
+    """Discard rolled sub-options whose native parent does not use them.
+
+    Archipelago rolls each YAML option independently. Its options page cannot
+    hide OOTRR's dependent controls, so their unused rolls must not invalidate
+    an otherwise valid room. Active choices and progression options stay exact.
+    """
+    values = dict(values)
+    defaults = default_options()
+
+    def reset(*names):
+        for name in names:
+            values[name] = defaults[name]
+
+    if values["bridge"] != "dungeons":
+        reset("bridge_rewards")
+    if values["skip_ganon_trials"]:
+        reset("trials")
+    if values["door_of_time_condition"] in {"open", "song"}:
+        reset("door_of_time_song")
+    else:
+        reset("door_of_time_escape")
+    if values["shuffle_ganon_bosskey"] != "lacs_dungeons":
+        reset("lacs_rewards")
+    if values["shuffle_shops"] not in {"deals_1", "deals_2", "deals_3", "deals_4", "random"}:
+        reset("shopsanity_prices")
+    if not (values["shuffle_scrubs_a"] or values["shuffle_scrubs_b"]):
+        reset("scrub_prices", "scrub_hint_text")
+    if values["shuffle_merchants"] == "off":
+        reset("merchant_prices")
+    for kind in ("scrub", "merchant", "fairy"):
+        if values[kind + "_prices"] != "fixed":
+            reset(kind + "_price_fixed")
+    if values["shuffle_songs"] != "anywhere":
+        reset("song_harp_colors")
+    return values
+
+
 def option_values(options):
     """Convert AP's rolled Choice/Toggle/Range/Set values to native JSON types."""
     values = default_options()
@@ -127,4 +165,4 @@ def option_values(options):
         elif spec["kind"] == "toggle":
             value = bool(value)
         values[name] = value
-    return validate_options(values)
+    return validate_options(_normalize_inactive_options(values))

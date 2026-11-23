@@ -27,6 +27,8 @@ def self_test(destination):
     assert manifest["platform"] == "windows-x64"
     for name, digest in manifest["payload"].items():
         assert hashlib.sha256((at / name).read_bytes()).hexdigest() == digest, name
+    for name in ("ootrr_ap_hookshot.inc", "ootrr_ap_hookshot_menu.inc"):
+        assert "native/" + name in manifest["payload"] and (at / "native" / name).is_file(), name
     library = ctypes.CDLL(str(at / "native/archipelago.dll"))
     for symbol in ("AP_Start", "AP_ConnectionInfo", "AP_ReceiptReplay"):
         assert getattr(library, symbol)
@@ -70,6 +72,7 @@ def self_test(destination):
                   version=manifest["version"], node=manifest["node_version"],
                   wasm_settings=True, zstd_round_trip=True, native_exports=True,
                   tkinter=True, translations=True, payload_hashes=True,
+                  hookshot_resources=True,
                   apworld_install=True, previous_apworld_preserved=True,
                   persistent_node_engine=True,
                   game_started=False, server_connected=False)

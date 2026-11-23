@@ -18,7 +18,8 @@ ENGINE = ROOT / "moteur" / "ootrr-ap"
 DLL = ROOT / "prebuilt/windows-x64/archipelago.dll"
 WORLD_FILES = ("catalog.py", "shop_catalog.py", "shop_pool.py", "skull_catalog.py", "trade_catalog.py", "settings.py", "settings_fr.json", "i18n.py", "i18n_fr.json", "app_runtime.py",
                "engine.py", "engine.cjs", "engine.wasm", "LICENSE", "NOTICE")
-HOST_FILES = ("ootrr_archipelago.inc", "ootrr_ap_items.inc", "ootrr_ap_digest.h", "ootrr_ap_menu.inc")
+HOST_FILES = ("ootrr_archipelago.inc", "ootrr_ap_items.inc", "ootrr_ap_digest.h", "ootrr_ap_menu.inc",
+              "ootrr_ap_hookshot.inc", "ootrr_ap_hookshot_menu.inc")
 VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
 RELEASE = f"Archipelago-OOT-Remake-{VERSION}.zip"
 

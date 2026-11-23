@@ -21,6 +21,10 @@ class Cancelled(InterruptedError):
     public_message = "Setup cancelled."
 
 
+class UnsupportedGame(ValueError):
+    public_message = "Choose a compatible game installation."
+
+
 class FakeService:
     def __init__(self, base):
         self.base = base
@@ -34,12 +38,29 @@ class FakeService:
         self.inspect_started = threading.Event()
         self.install_started = threading.Event()
         self.install_error = None
+        self.preflight_gate = None
+        self.preflight_started = threading.Event()
+        self.preflight_calls = []
 
-    def discover(self, base=None):
+    def discover(self, base=None, host=None):
         self.discover_started.set()
         if self.discover_gate:
             self.discover_gate.wait(4)
-        return dict(self.discovery)
+        result = dict(self.discovery)
+        if host == "hookshot":
+            result.update(game=str(self.base / "Hookshot"), romfs=str(self.base / "Hookshot/romfs"),
+                          tools=str(self.base / "Hookshot tools"), mods=str(self.base / "Hookshot/mods"),
+                          host="hookshot", base=str(self.base / "hosts/hookshot"), ready=False, profile="")
+        return result
+
+    def inspect_installation(self, request):
+        self.preflight_calls.append((dict(request), threading.get_ident()))
+        self.preflight_started.set()
+        if self.preflight_gate:
+            self.preflight_gate.wait(4)
+        if "Unsupported" in request["game"]:
+            raise UnsupportedGame()
+        return dict(valid=True, host=request["host"])
 
     def inspect_manifest(self, path):
         self.inspect_started.set()
@@ -100,7 +121,7 @@ class AppWindowTests(unittest.TestCase):
         self.window = None
 
     def tearDown(self):
-        for gate in (self.service.discover_gate, self.service.inspect_gate, self.service.install_gate):
+        for gate in (self.service.discover_gate, self.service.inspect_gate, self.service.install_gate, self.service.preflight_gate):
             if gate:
                 gate.set()
         if self.window and not self.window.closed:
@@ -164,6 +185,24 @@ class AppWindowTests(unittest.TestCase):
         self.assertEqual(window.fields["tools"].get(), str(self.base / "tools"))
         self.assertEqual(window.fields["server"].get(), "archipelago.gg:45678")
 
+    def test_discovery_preserves_saved_auto_connect_and_explicit_user_changes(self):
+        self.service.discovery["auto_connect"] = False
+        window = self.open()
+        self.assertFalse(window.automatic.get())
+        self.prepare_form(window)
+        window.install_button.invoke()
+        self.pump(lambda: not window.busy)
+        self.assertFalse(self.service.calls[-1][1]["auto_connect"])
+
+    def test_delayed_discovery_does_not_reenable_auto_connect_after_user_disables_it(self):
+        self.service.discover_gate = threading.Event()
+        window = self.open(wait=False)
+        self.pump(self.service.discover_started.is_set)
+        window.automatic.set(False)
+        self.service.discover_gate.set()
+        self.pump(lambda: window.status_key != "finding")
+        self.assertFalse(window.automatic.get())
+
     def test_selecting_another_game_retargets_setup_and_preserves_shared_tools(self):
         game_a, game_b = self.base / "Game A", self.base / "Game B"
         shared_tools = self.base / "Shared tools"
@@ -189,6 +228,62 @@ class AppWindowTests(unittest.TestCase):
         self.assertEqual(request["tools"], str(shared_tools))
         after = {path.relative_to(self.base): path.read_bytes() for path in self.base.rglob("*") if path.is_file()}
         self.assertEqual(after, before)
+
+    def test_host_switch_uses_only_the_selected_host_paths_and_request(self):
+        window = self.open()
+        window.host_choice.current(1)
+        window._choose_host()
+        self.pump(lambda: window.fields["game"].get() == str(self.base / "Hookshot") and window.installation_info is not None)
+        self.assertEqual(window.host, "hookshot")
+        self.assertEqual(window.target_mods, str(self.base / "Hookshot/mods"))
+        self.assertIn("experimental", window.host_note.cget("text").lower())
+        self.prepare_form(window)
+        window.install_button.invoke()
+        self.pump(lambda: not window.busy)
+        request = self.service.calls[-1][1]
+        self.assertEqual(request["host"], "hookshot")
+        self.assertEqual(request["romfs"], str(self.base / "Hookshot/romfs"))
+        self.assertEqual(request["tools"], str(self.base / "Hookshot tools"))
+
+    def test_initial_discovery_cannot_replace_a_host_selected_while_it_is_running(self):
+        self.service.discover_gate = threading.Event()
+        window = self.open(wait=False)
+        self.pump(self.service.discover_started.is_set)
+        window.host_choice.current(1)
+        window._choose_host()
+        self.service.discover_gate.set()
+        self.pump(lambda: window.installation_info is not None)
+        self.assertEqual(window.host, "hookshot")
+        self.assertEqual(window.fields["game"].get(), str(self.base / "Hookshot"))
+        self.assertEqual(window.fields["romfs"].get(), str(self.base / "Hookshot/romfs"))
+        self.assertEqual(window.target_mods, str(self.base / "Hookshot/mods"))
+
+    def test_stale_installation_check_cannot_enable_an_unsupported_edited_folder(self):
+        self.service.preflight_gate = threading.Event()
+        window = self.open()
+        self.pump(self.service.preflight_started.is_set)
+        window.fields["game"].set(str(self.base / "Unsupported game"))
+        self.service.preflight_gate.set()
+        self.prepare_form(window)
+        self.pump(lambda: window.installation_message == "game_invalid")
+        self.assertIsNone(window.installation_info)
+        self.assertEqual(str(window.install_button.cget("state")), "disabled")
+        self.assertEqual(window.installation_label.cget("text"), UnsupportedGame.public_message)
+        self.assertTrue(all(thread != threading.get_ident() for _, thread in self.service.preflight_calls))
+        self.assertFalse(self.service.calls)
+        self.assertEqual(window.fields["romfs"].get(), str(self.base / "Unsupported game/romfs"))
+
+    def test_password_visibility_is_explicit_and_does_not_change_the_password(self):
+        window = self.open()
+        window.fields["password"].set("example-value")
+        self.assertTrue(window.password_entry.cget("show"))
+        window.show_password.set(True)
+        window._reveal_password()
+        self.assertEqual(window.password_entry.cget("show"), "")
+        window.show_password.set(False)
+        window._reveal_password()
+        self.assertTrue(window.password_entry.cget("show"))
+        self.assertEqual(window.fields["password"].get(), "example-value")
 
     def test_install_erases_password_and_runs_service_outside_tk_thread(self):
         window = self.open()

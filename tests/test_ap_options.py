@@ -187,6 +187,75 @@ class APChoiceContractTests(unittest.TestCase):
                 self.assertEqual(rolled.value, value)
                 self.assertEqual(choose.call_args.args[0], list(range(7)))
 
+    def rolled_options(self, **values):
+        return types.SimpleNamespace(**{
+            name: (self.world.OPTION_TYPES[name].from_any(value)
+                   if settings.SPEC_BY_ID[name]["kind"] == "choice" else types.SimpleNamespace(value=value))
+            for name, value in values.items()})
+
+    def test_inactive_economy_rolls_are_ignored_without_mutating_ap_choices(self):
+        raw = dict(scrub_prices="fixed", scrub_price_fixed=99, scrub_hint_text=True,
+                   merchant_prices="fixed", merchant_price_fixed=0,
+                   fairy_prices="cheap", fairy_price_fixed=99, shopsanity_prices="giant")
+        with self.assertRaises(ValueError):
+            settings.validate_options(raw)
+        rolled = self.rolled_options(**raw)
+        normalized = self.world.option_values(rolled)
+        for name in ("scrub_prices", "scrub_price_fixed", "scrub_hint_text", "merchant_prices",
+                     "merchant_price_fixed", "fairy_price_fixed", "shopsanity_prices"):
+            self.assertEqual(normalized[name], settings.default_options()[name], name)
+        self.assertEqual(normalized["fairy_prices"], "cheap")
+        self.assertEqual(rolled.scrub_prices.current_key, "fixed")
+        self.assertEqual(rolled.scrub_price_fixed.value, 99)
+        self.assertEqual(settings.engine_settings(normalized)["fairy_prices"], "cheap")
+
+    def test_active_economy_values_are_preserved_including_free_fixed_purchases(self):
+        for kind in ("scrub", "merchant", "fairy"):
+            for price in (0, 10, 99):
+                raw = dict(shuffle_rewards="supported", shuffle_scrubs_a=True,
+                           shuffle_merchants="all", plant_beans=True,
+                           **{kind + "_prices": "fixed", kind + "_price_fixed": price})
+                with self.subTest(kind=kind, price=price):
+                    normalized = self.world.option_values(self.rolled_options(**raw))
+                    for name, value in raw.items():
+                        self.assertEqual(normalized[name], value)
+                    self.assertEqual(settings.engine_settings(normalized)[kind + "_price_fixed"], price)
+
+    def test_inactive_goal_and_hint_rolls_do_not_reject_valid_active_modes(self):
+        raw = dict(bridge="open", bridge_rewards=3, skip_ganon_trials=True, trials=2,
+                   door_of_time_condition="open", door_of_time_song=False,
+                   lacs_rewards=1, song_harp_colors=False)
+        normalized = self.world.option_values(self.rolled_options(**raw))
+        self.assertEqual(normalized["bridge"], "open")
+        self.assertEqual(normalized["bridge_rewards"], 0)
+        self.assertIs(normalized["skip_ganon_trials"], True)
+        for name in ("trials", "door_of_time_song", "lacs_rewards", "song_harp_colors"):
+            self.assertEqual(normalized[name], settings.default_options()[name], name)
+        self.assertEqual(settings.engine_settings(normalized)["bridge_rewards"], 0)
+
+    def test_door_suboptions_follow_their_active_native_condition(self):
+        for condition in ("vanilla", "stones", "song", "open"):
+            raw = dict(door_of_time_condition=condition, door_of_time_song=False, door_of_time_escape="vanilla")
+            with self.subTest(condition=condition):
+                normalized = self.world.option_values(self.rolled_options(**raw))
+                self.assertEqual(normalized["door_of_time_condition"], condition)
+                self.assertEqual(normalized["door_of_time_song"], condition in {"open", "song"})
+                self.assertEqual(normalized["door_of_time_escape"], "vanilla" if condition in {"open", "song"} else "moat")
+                settings.engine_settings(normalized)
+
+    def test_active_progression_and_invalid_combinations_are_never_silently_changed(self):
+        raw = dict(bridge="dungeons", bridge_rewards=3, trials=2, shuffle_chests="all",
+                   shuffle_rewards="supported", shuffle_ganon_bosskey="lacs_dungeons", lacs_rewards=4,
+                   door_of_time_condition="stones", door_of_time_song=False,
+                   shuffle_songs="anywhere", song_harp_colors=False,
+                   shuffle_shops="deals_1", shopsanity_prices="giant")
+        self.assertEqual(self.world.option_values(self.rolled_options(**raw)), settings.validate_options(raw))
+        for invalid in (dict(shuffle_cows=True), dict(open_kakariko="open"),
+                        dict(early_beds=True, time_always_passes=False), dict(shuffle_merchants="beans"),
+                        dict(shuffle_chests="off")):
+            with self.subTest(active_invalid=invalid), self.assertRaises(ValueError):
+                self.world.option_values(self.rolled_options(**invalid))
+
 
 SOURCE = Path(os.environ["AP_SOURCE"]).resolve() if os.environ.get("AP_SOURCE") else None
 
@@ -226,6 +295,27 @@ class PrimaryAPChoiceTests(APChoiceContractTests):
                 rolled = argparse.Namespace(game=GAME, name="ContractTest")
                 self.generator.handle_option(rolled, {"shuffle_shops": {"random": 10}}, "shuffle_shops", option, None)
                 self.assertEqual(rolled.shuffle_shops.value, value)
+
+    def test_actual_ap_random_economy_rolls_normalize_only_unused_fields(self):
+        for seed in range(32):
+            with self.subTest(seed=seed):
+                state = random.getstate()
+                try:
+                    random.seed(seed)
+                    rolled = types.SimpleNamespace(**{
+                        name: self.world.OPTION_TYPES[name].from_any("random")
+                        for name in ("scrub_prices", "scrub_price_fixed", "scrub_hint_text",
+                                     "merchant_prices", "merchant_price_fixed", "fairy_prices", "fairy_price_fixed",
+                                     "shopsanity_prices")})
+                    normalized = self.world.option_values(rolled)
+                    self.assertEqual(normalized["scrub_prices"], "vanilla")
+                    self.assertEqual(normalized["merchant_prices"], "vanilla")
+                    self.assertEqual(normalized["fairy_prices"], rolled.fairy_prices.current_key)
+                    expected_price = rolled.fairy_price_fixed.value if normalized["fairy_prices"] == "fixed" else 10
+                    self.assertEqual(normalized["fairy_price_fixed"], expected_price)
+                    settings.engine_settings(normalized)
+                finally:
+                    random.setstate(state)
 
 
 if __name__ == "__main__":

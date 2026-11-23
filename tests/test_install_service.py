@@ -8,6 +8,7 @@ from pathlib import Path
 import sys
 import tempfile
 import threading
+import types
 import unittest
 from unittest.mock import AsyncMock, Mock, patch
 from zipfile import ZipFile
@@ -195,7 +196,7 @@ class InstallationTransactionTests(unittest.TestCase):
         current = json.loads((self.profile / "native-session.json").read_bytes())
         self.assertEqual(current["UUID"], "preserved-uuid")
         self.assertEqual(current["Baseline"], 3)
-        self.assertTrue(current["AutoConnect"])
+        self.assertFalse(current["AutoConnect"])
         config = json.loads((self.base / "outils.json").read_bytes())
         self.assertEqual(config["keep"], "setting")
         self.assertEqual(config["ports"]["hookshot"], dict(keep="other port"))
@@ -328,6 +329,119 @@ class InstallationTransactionTests(unittest.TestCase):
         self.assertEqual(args[0][1], str(self.game / "image.bin"))
         self.assertEqual(options["cwd"], binary.parent)
         self.assertIn(str(self.profile / "user"), args[0])
+
+    def hookshot(self, *, compiled=True):
+        game = self.root / "Hookshot"
+        for relative, raw in (("hookshot.exe", b"old Hookshot"), ("image.bin", b"Hookshot image"),
+                              ("hookshot_vk.dll", b"old Hookshot renderer"), ("romfs/Pack/ZsDic.pack.zs", b"dictionary")):
+            put(game / relative, raw)
+        isolated = self.base / "hosts/hookshot"
+        tools = isolated / "hookshot-tools/current"
+        state = {"compiled": compiled}
+        adapter = types.SimpleNamespace(
+            validate_installation=Mock(),
+            install_tools=Mock(return_value=tools),
+            compiled_executable=Mock(side_effect=lambda *_args: game / "hookshot.exe" if state["compiled"] else None),
+            discover=Mock(return_value=dict(game=str(game), romfs=str(game / "romfs"), native_tools=str(tools))),
+            build_game=Mock(side_effect=lambda *_args, **_kwargs: state.update(compiled=True)),
+        )
+        self.stack.enter_context(patch.object(service, "_adapter", side_effect=lambda host: adapter if host == "hookshot" else service.native_setup))
+        def save_session(root, runtime, data, roster, prepared):
+            put(root / "native-session.json", json.dumps(dict(Token=data["token"], Room=data["room"], Player=data["player"],
+                Slot=data["slot"], UUID="new-hookshot-profile", AutoConnect=True)).encode())
+        self.session_save.side_effect = save_session
+        request = dict(self.request, host="hookshot", game=str(game), romfs=str(game / "romfs"),
+                       tools=str(tools), mods=str(game / "mods"), auto_connect=False)
+        return game, isolated, adapter, request
+
+    def test_hookshot_install_keeps_triforce_profile_saves_and_preferences_separate(self):
+        game, isolated, adapter, request = self.hookshot()
+        global_preferences = (self.base / "outils.json").read_bytes()
+        triforce_session = (self.profile / "native-session.json").read_bytes()
+        result = service.install(request)
+        self.assertEqual(result["host"], "hookshot")
+        self.assertEqual(Path(result["profile"]), isolated / self.data["token"])
+        self.assertEqual(Path(result["base"]), isolated)
+        self.assertEqual(Path(result["app_base"]), self.base)
+        self.assertEqual((self.base / "outils.json").read_bytes(), global_preferences)
+        self.assertEqual((self.profile / "native-session.json").read_bytes(), triforce_session)
+        self.assertEqual(service.player.build.call_args.args[1]["host"], "hookshot")
+        self.assertFalse(result["auto_connect"])
+        self.assertFalse(json.loads((Path(result["profile"]) / "native-session.json").read_bytes())["AutoConnect"])
+        self.assertEqual(json.loads((self.base / "desktop-host.json").read_bytes()), dict(host="hookshot"))
+        adapter.validate_installation.assert_called_once()
+        self.assert_saves_unchanged()
+        found = service.discover(self.base)
+        self.assertEqual(found["host"], "hookshot")
+        self.assertEqual(found["profile"], result["profile"])
+        self.assertFalse(found["auto_connect"])
+
+    def test_failed_hookshot_build_restores_binary_and_never_reassigns_triforce_profile(self):
+        game, isolated, adapter, request = self.hookshot(compiled=False)
+        def fail(*_args, **_kwargs):
+            (game / "hookshot.exe").write_bytes(b"incomplete build")
+            (game / "hookshot_vk.dll").write_bytes(b"incomplete renderer")
+            raise service.InstallError("Hookshot build failed")
+        adapter.build_game.side_effect = fail
+        with self.assertRaises(service.InstallError):
+            service.install(request)
+        self.assertEqual((game / "hookshot.exe").read_bytes(), b"old Hookshot")
+        self.assertEqual((game / "hookshot_vk.dll").read_bytes(), b"old Hookshot renderer")
+        self.assertFalse((self.base / "desktop-host.json").exists())
+        self.assertFalse((isolated / self.data["token"] / "native-session.json").exists())
+        for path, raw in self.old_files.items():
+            self.assertEqual(path.read_bytes(), raw)
+
+    def test_incompatible_hookshot_is_rejected_before_scouting_or_preparing(self):
+        _, _, adapter, request = self.hookshot()
+        adapter.validate_installation.side_effect = service.InstallError("Unsupported Hookshot version")
+        with self.assertRaises(service.InstallError):
+            service.install(request)
+        service.fetch_roster.assert_not_called()
+        service.player.build.assert_not_called()
+        adapter.install_tools.assert_not_called()
+
+    def test_hookshot_launch_uses_its_profile_base_and_never_enables_scripted_input(self):
+        game, _, adapter, request = self.hookshot()
+        result = service.install(request)
+        put(self.base / "desktop-host.json", b'{"host":"nx2navi"}')
+        with patch.dict(os.environ, {"HOS_INPUT_SCRIPT_BACKGROUND": "inherited", "HOS_INPUT_LIVE": "inherited"}), \
+                patch.object(app_runtime, "spawn_process") as spawn:
+            service.launch(result)
+        args, options = spawn.call_args
+        self.assertEqual(args[0][:2], [str(game / "hookshot.exe"), str(game / "image.bin")])
+        self.assertEqual(options["env"]["OOTRR_AP_BASE"], str(Path(result["profile"]).parent))
+        self.assertFalse(any(name.startswith("HOS_INPUT_") for name in options["env"]))
+        self.assertEqual(options["env"]["HOS_SAVE_LOCK"], "1")
+        self.assertEqual(json.loads((self.base / "desktop-host.json").read_bytes()), dict(host="hookshot"))
+
+    def test_preflight_reads_paths_without_scouting_or_writing_client_state(self):
+        before = {path: path.read_bytes() for path in self.base.rglob("*") if path.is_file()}
+        result = service.inspect_installation(self.request)
+        self.assertTrue(result["valid"])
+        self.assertEqual(before, {path: path.read_bytes() for path in self.base.rglob("*") if path.is_file()})
+        service.fetch_roster.assert_not_called()
+        self.tools_install.assert_not_called()
+
+    def test_hookshot_preflight_detects_tools_from_the_selected_game_without_installing(self):
+        game, _, adapter, request = self.hookshot()
+        result = service.inspect_installation(dict(request, tools=""))
+        self.assertEqual(result["tools"], request["tools"])
+        adapter.discover.assert_called_once_with(game=game)
+        adapter.install_tools.assert_not_called()
+        service.fetch_roster.assert_not_called()
+
+    def test_binary_path_under_bin_is_normalized_for_preflight_and_launch(self):
+        binary = self.game / "bin/Triforce.exe"
+        put(binary, b"native binary")
+        (self.game / "Triforce.exe").unlink()
+        self.assertTrue(service.inspect_installation(dict(self.request, game=str(binary)))["valid"])
+        self.executable.return_value = binary
+        put(self.mods / "Archipelago/romfs/Archipelago/room-v1.txt", self.data["token"].encode())
+        result = dict(profile=str(self.profile), game=str(binary), tools=str(self.tools), mods=str(self.mods))
+        with patch.object(app_runtime, "spawn_process") as spawn:
+            service.launch(result)
+        self.assertEqual(spawn.call_args.args[0][:2], [str(binary), str(self.game / "image.bin")])
 
 
 class ExistingRendererEnvironmentTests(unittest.TestCase):

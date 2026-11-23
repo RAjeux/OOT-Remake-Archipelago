@@ -27,6 +27,16 @@ TEXT = {
     "setup": "Set up a room",
     "yaml": "Create YAML",
     "connection": "Connection",
+    "host": "Game host",
+    "triforce": "Triforce",
+    "hookshot": "Hookshot (experimental)",
+    "triforce_note": "Use Zelda's Archipelago menu or this app's Connection window. Each host keeps separate saves.",
+    "hookshot_note": "Experimental integration: setup verifies the compatible Hookshot build. Hookshot uses separate saves from Triforce.",
+    "checking_game": "Checking game files and build tools…",
+    "game_ready": "Game files and build tools are ready.",
+    "game_invalid": "Choose the selected host's game folder and build tools before installing.",
+    "compatibility": "Host compatibility",
+    "show_password": "Show password",
     "help": "Help",
     "guide": "Getting started",
     "open_log": "Open log",
@@ -44,9 +54,9 @@ TEXT = {
     "player_room": "{slot} · Room {room}",
     "setup_intro": "Choose the player file generated for you by Archipelago. Your existing saves are kept.",
     "player_file": "Archipelago player file",
-    "game_folder": "Triforce folder",
+    "game_folder": "Game installation folder",
     "romfs": "Game files (romfs)",
-    "tools": "Triforce build tools",
+    "tools": "Host build tools",
     "browse": "Browse…",
     "folders": "Change detected folders…",
     "server": "Room address",
@@ -61,9 +71,9 @@ TEXT = {
     "cancelling": "Cancelling safely…",
     "cancelled": "Setup cancelled.",
     "setup_failed": "Setup could not be completed. Check the game folder and server, then try again.",
-    "launch_failed": "The game could not be launched. Check the Triforce folder in Set up a room.",
-    "launched": "Game launched. The mod connects automatically.",
-    "build_needed": "Preparation is complete, but Triforce still needs to build the game.",
+    "launch_failed": "The game could not be launched. Check the selected host's folder in Set up a room.",
+    "launched": "Game launched.",
+    "build_needed": "Preparation is complete, but the selected host still needs to build the game.",
     "yaml_intro": "Create a configuration with all supported settings, then generate a room with the other players' YAML files in Archipelago.",
     "player_name": "Player name",
     "save_yaml": "Save YAML…",
@@ -79,11 +89,11 @@ TEXT = {
     "world_failed": "The APWorld could not be installed. Choose your Archipelago installation folder and try again.",
     "yaml_file": "YAML configuration",
     "all_files": "All files",
-    "choose_game": "Choose the Triforce folder containing your game",
+    "choose_game": "Choose the folder containing your installed game",
     "choose_romfs": "Choose the game's romfs folder",
-    "choose_tools": "Choose the Triforce build tools folder",
+    "choose_tools": "Choose the selected host's build tools folder",
     "path_failed": "This location could not be opened.",
-    "about_body": "Ocarina of Time Remake integration for Archipelago.\nYour own game files and Triforce are required.",
+    "about_body": "Ocarina of Time Remake integration for Archipelago.\nYour own game files and a compatible Windows host are required.",
 }
 
 
@@ -94,7 +104,7 @@ def yaml_content(name):
     name = name.strip()
     if not name or len(name) > 16 or name == "Archipelago" or any(ord(char) < 32 for char in name):
         raise ValueError("invalid_player_name")
-    return ("# Supported OOT Remake Archipelago settings for Triforce.\n"
+    return ("# Supported OOT Remake Archipelago settings.\n"
             "# Edit the values below before generating the room.\n"
             f"name: {json.dumps(name, ensure_ascii=False)}\n"
             f"game: {json.dumps(GAME)}\n{json.dumps(GAME)}:\n" + yaml_options() +
@@ -126,6 +136,12 @@ class AppWindow:
         self.stop = threading.Event()
         self.after_ids = set()
         self.inspect_after = None
+        self.game_after = None
+        self.game_revision = 0
+        self.installation_info = None
+        self.installation_message = "checking_game"
+        self.installation_detail = ""
+        self.host = "nx2navi"
         self.manifest_revision = 0
         self.manifest_info = None
         self.manifest_message = "choose_player"
@@ -141,10 +157,12 @@ class AppWindow:
         self.fields = {name: tk.StringVar() for name in ("manifest", "game", "romfs", "tools", "server", "password")}
         self.automatic = tk.BooleanVar(value=True)
         self.extra_folders = tk.BooleanVar(value=False)
+        self.show_password = tk.BooleanVar(value=False)
         self.player_name = tk.StringVar(value="Link")
         self._build()
         for name, variable in self.fields.items():
             variable.trace_add("write", lambda *_args, name=name: self._edited(name))
+        self.automatic.trace_add("write", lambda *_args: self._edited("auto_connect"))
         self.worker = threading.Thread(target=self._work, name="Archipelago setup", daemon=True)
         self.worker.start()
         self.master.protocol("WM_DELETE_WINDOW", self.close)
@@ -167,7 +185,8 @@ class AppWindow:
         return widget
 
     def _build(self):
-        self.master.geometry("780x680")
+        height = min(840, max(580, self.master.winfo_screenheight() - 100))
+        self.master.geometry(f"780x{height}")
         self.master.minsize(680, 580)
         self.master.columnconfigure(0, weight=1)
         self.master.rowconfigure(1, weight=1)
@@ -257,29 +276,46 @@ class AppWindow:
         self._path_field(form, 1, "manifest", "player_file", self.browse_manifest)
         self.manifest_label = ttk.Label(form, wraplength=640)
         self.manifest_label.grid(row=2, column=0, sticky="ew", pady=(6, 14))
-        self._path_field(form, 3, "game", "game_folder", lambda: self.browse_folder("game", "choose_game"))
+        host_row = ttk.Frame(form)
+        host_row.columnconfigure(0, weight=1)
+        host_row.grid(row=3, column=0, sticky="ew", pady=(0, 14))
+        self._label(host_row, "host").grid(row=0, column=0, sticky="w", pady=(0, 5))
+        self.host_choice = ttk.Combobox(host_row, state="readonly", width=32)
+        self.host_choice.grid(row=1, column=0, sticky="ew")
+        self.host_choice.bind("<<ComboboxSelected>>", self._choose_host)
+        self.host_note = ttk.Label(host_row, wraplength=640)
+        self.host_note.grid(row=2, column=0, sticky="ew", pady=(6, 0))
+        self._path_field(form, 4, "game", "game_folder", lambda: self.browse_folder("game", "choose_game"))
         folders = ttk.Checkbutton(form, variable=self.extra_folders, command=self._render_folders)
         self.translated_widgets.append((folders, "folders"))
         self.form_widgets.append(folders)
-        folders.grid(row=4, column=0, sticky="w", pady=(10, 0))
+        folders.grid(row=6, column=0, sticky="w", pady=(10, 0))
         self.folder_details = ttk.Frame(form)
         self.folder_details.columnconfigure(0, weight=1)
-        self.folder_details.grid(row=5, column=0, sticky="ew", pady=(10, 0))
+        self.folder_details.grid(row=7, column=0, sticky="ew", pady=(10, 0))
         self._path_field(self.folder_details, 0, "romfs", "romfs", lambda: self.browse_folder("romfs", "choose_romfs"))
         self._path_field(self.folder_details, 1, "tools", "tools", lambda: self.browse_folder("tools", "choose_tools"))
         self.folder_details.grid_remove()
-        for row, (name, key) in enumerate((("server", "server"), ("password", "password")), 6):
+        self.installation_label = ttk.Label(form, wraplength=640)
+        self.installation_label.grid(row=5, column=0, sticky="ew", pady=(4, 0))
+        for row, (name, key) in enumerate((("server", "server"), ("password", "password")), 8):
             frame = ttk.Frame(form)
             frame.columnconfigure(0, weight=1)
             frame.grid(row=row, column=0, sticky="ew", pady=(15, 0))
             self._label(frame, key).grid(row=0, column=0, sticky="w", pady=(0, 5))
             entry = ttk.Entry(frame, textvariable=self.fields[name], show="•" if name == "password" else "")
             entry.grid(row=1, column=0, sticky="ew")
+            if name == "password":
+                self.password_entry = entry
             self.form_widgets.append(entry)
+        reveal = ttk.Checkbutton(form, variable=self.show_password, command=self._reveal_password)
+        self.translated_widgets.append((reveal, "show_password"))
+        self.form_widgets.append(reveal)
+        reveal.grid(row=10, column=0, sticky="w", pady=(6, 0))
         auto = ttk.Checkbutton(form, variable=self.automatic)
         self.translated_widgets.append((auto, "automatic"))
         self.form_widgets.append(auto)
-        auto.grid(row=8, column=0, sticky="w", pady=(15, 0))
+        auto.grid(row=11, column=0, sticky="w", pady=(15, 0))
         actions = ttk.Frame(pane)
         actions.grid(row=2, column=0, sticky="ew", pady=(14, 0))
         actions.columnconfigure(0, weight=1)
@@ -339,13 +375,15 @@ class AppWindow:
         if name == "game":
             value = self.fields["game"].get().strip()
             folder = Path(value).expanduser() if value else None
-            if folder is not None and folder.name.casefold() == "triforce.exe":
-                folder = folder.parent
+            if folder is not None and folder.name.casefold() in {"triforce.exe", "hookshot.exe"}:
+                folder = folder.parent.parent if folder.parent.name.casefold() == "bin" else folder.parent
             self._set_field("romfs", folder / "romfs" if folder is not None else "")
             self.target_mods = str(folder / "mods") if folder is not None else ""
             # A delayed discovery must not overwrite folders selected by the
             # user. Triforce's shared build tools remain independently chosen.
             self.dirty.add("romfs")
+        if name in {"game", "romfs", "tools"}:
+            self._queue_installation_check()
         if name == "manifest":
             self.manifest_revision += 1
             self.manifest_info = None
@@ -370,6 +408,49 @@ class AppWindow:
         path = self.fields["manifest"].get().strip()
         identity = (self.manifest_revision, path)
         self._submit("manifest", lambda: self.service.inspect_manifest(path), identity)
+
+    def _choose_host(self, _event=None):
+        if self.busy:
+            return
+        selected = "hookshot" if self.host_choice.current() == 1 else "nx2navi"
+        if selected == self.host:
+            return
+        self.host = selected
+        self.current = {}
+        if self.connection_window and not self.connection_window.closed:
+            self.connection_window.close()
+        self.dirty.add("host")
+        self.dirty.difference_update({"game", "romfs", "tools"})
+        self.game_revision += 1
+        self.installation_info = None
+        self.installation_message, self.installation_detail = "checking_game", ""
+        self._submit("discover", lambda: self.service.discover(base=self.base, host=selected), selected)
+        self._render()
+
+    def _queue_installation_check(self):
+        self.game_revision += 1
+        self.installation_info = None
+        self.installation_message, self.installation_detail = "checking_game", ""
+        if self.game_after:
+            self.master.after_cancel(self.game_after)
+            self.after_ids.discard(self.game_after)
+        self.game_after = self._schedule(200, self._inspect_installation)
+
+    def _inspect_installation(self):
+        self.game_after = None
+        request = {name: self.fields[name].get().strip() for name in ("game", "romfs", "tools")}
+        request["host"] = self.host
+        identity = self.game_revision
+        inspect = getattr(self.service, "inspect_installation", None)
+        if inspect is None:
+            self.installation_info = {"valid": True}
+            self.installation_message = "game_ready"
+            self._render()
+            return
+        self._submit("installation", lambda: inspect(request), identity)
+
+    def _reveal_password(self):
+        self.password_entry.configure(show="" if self.show_password.get() else "•")
 
     def _submit(self, kind, operation, identity=None):
         self.jobs.put_nowait(_Task(kind, operation, identity))
@@ -400,20 +481,48 @@ class AppWindow:
                 self.progress.configure(value=max(0, min(100, percent)))
                 self.progress_text = str(message)
             elif task.kind == "discover":
+                if task.identity is not None and task.identity != self.host:
+                    continue
+                if (task.identity is None and "host" in self.dirty
+                        and result.get("host", "nx2navi") != self.host):
+                    continue
                 if not result.get("_failed"):
                     self.current = dict(result)
+                    if "host" not in self.dirty:
+                        self.host = result.get("host", "nx2navi")
                     self.language = normalize_language(result.get("language"))
                     set_language(self.language)
                     for name in ("manifest", "game", "romfs", "tools", "server"):
                         if name not in self.dirty:
                             self._set_field(name, result.get(name, ""))
+                    if "auto_connect" not in self.dirty:
+                        self.updating = True
+                        try:
+                            self.automatic.set(bool(result.get("auto_connect", True)))
+                        finally:
+                            self.updating = False
                     if "game" not in self.dirty:
                         self.target_mods = str(result.get("mods") or Path(self.fields["game"].get()) / "mods")
                     if self.fields["manifest"].get():
                         self._inspect_manifest()
+                    self._queue_installation_check()
                     self.status_key = "ready" if result.get("ready") else "prepare_first"
                 else:
                     self.status_key = "prepare_first"
+                    self.installation_info = None
+                    self.installation_message = "game_invalid"
+                    self.installation_detail = result.get("_message", "")
+            elif task.kind == "installation":
+                if task.identity != self.game_revision:
+                    continue
+                self.installation_info = None if result.get("_failed") else result
+                self.installation_message = "game_invalid" if result.get("_failed") else "game_ready"
+                self.installation_detail = result.get("_message", "")
+                if result.get("tools") and not self.fields["tools"].get().strip():
+                    self._set_field("tools", result["tools"])
+                if result.get("_failed"):
+                    self.extra_folders.set(True)
+                    self._render_folders()
             elif task.kind == "manifest":
                 if task.identity == (self.manifest_revision, self.fields["manifest"].get().strip()):
                     self.manifest_info = None if result.get("_failed") else result
@@ -428,7 +537,11 @@ class AppWindow:
                     }[task.kind]
                     self.progress_text = result.get("_message", "")
                 elif task.kind == "install":
+                    old_profile = self.current.get("profile")
                     self.current.update(result)
+                    if (old_profile != self.current.get("profile") and self.connection_window
+                            and not self.connection_window.closed):
+                        self.connection_window.close()
                     self.current["manifest"] = self.fields["manifest"].get().strip()
                     self.status_key = "ready" if result.get("ready") else "build_needed"
                     self.page = "home"
@@ -463,11 +576,17 @@ class AppWindow:
         if self.menu_language != self.language:
             self.help_menu.delete(0, "end")
             for key, command in (("guide", self.open_guide), ("open_log", self.open_log),
+                                 ("compatibility", self.open_compatibility),
                                  ("open_data", self.open_data), ("licenses", self.open_licenses),
                                  ("about", self.about)):
                 self.help_menu.add_command(label=self._text(key), command=command)
             self.menu_language = self.language
         self.page_frames[self.page].tkraise()
+        self.host_choice.configure(values=(self._text("triforce"), self._text("hookshot")),
+                                   state="disabled" if self.busy else "readonly")
+        self.host_choice.current(1 if self.host == "hookshot" else 0)
+        self.host_note.configure(text=self._text("hookshot_note" if self.host == "hookshot" else "triforce_note"))
+        self.installation_label.configure(text=self.installation_detail or self._text(self.installation_message))
         ready = bool(self.current.get("ready"))
         self.home_status.configure(text=self._text("ready" if ready else "update_title" if self.current.get("profile") else "not_prepared"))
         if self.current.get("profile"):
@@ -480,7 +599,8 @@ class AppWindow:
         self.connection_button.configure(state="normal" if self.current.get("profile") and not self.busy else "disabled")
         for widget in (self.setup_button, self.yaml_button, self.save_yaml_button, self.world_button, *self.form_widgets):
             widget.configure(state="disabled" if self.busy else "normal")
-        can_install = bool(self.manifest_info and self.fields["game"].get().strip() and self.fields["server"].get().strip())
+        can_install = bool(self.manifest_info and self.installation_info and self.installation_info.get("valid")
+                           and self.fields["game"].get().strip() and self.fields["server"].get().strip())
         self.install_button.configure(state="normal" if can_install and not self.busy else "disabled")
         self.cancel_button.configure(state="normal" if self.busy and not self.cancel_event.is_set() else "disabled")
         self.manifest_label.configure(text=self._text("player_room", slot=self.manifest_info.get("slot", ""),
@@ -522,7 +642,9 @@ class AppWindow:
         if self.busy or not self.manifest_info:
             return
         request = {key: value.get().strip() if key != "password" else value.get() for key, value in self.fields.items()}
-        request.update(mods=self.target_mods, rebuild=True, auto_connect=self.automatic.get())
+        if not self.installation_info or not self.installation_info.get("valid"):
+            return
+        request.update(host=self.host, mods=self.target_mods, rebuild=True, auto_connect=self.automatic.get())
         if self.base is not None:
             request["base"] = self.base
         self._set_field("password", "")
@@ -587,7 +709,8 @@ class AppWindow:
             from .connection_window import ConnectionWindow
             factory = ConnectionWindow
         child = tk.Toplevel(self.master)
-        self.connection_window = factory(child, base=self.base, explicit=Path(self.current["profile"]))
+        self.connection_window = factory(child, base=self.current.get("base") or self.base,
+                                         explicit=Path(self.current["profile"]))
 
     def _open_path(self, path):
         try:
@@ -602,6 +725,9 @@ class AppWindow:
 
     def open_guide(self):
         webbrowser.open("https://github.com/RAjeux/OOT-Remake-Archipelago#play")
+
+    def open_compatibility(self):
+        webbrowser.open("https://github.com/RAjeux/OOT-Remake-Archipelago/blob/main/docs/PORT-COMPATIBILITY.md")
 
     def open_log(self):
         from .app_runtime import log_path

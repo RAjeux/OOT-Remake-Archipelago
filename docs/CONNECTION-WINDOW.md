@@ -1,13 +1,14 @@
 # Desktop connection window
 
-Open **OOT-Remake-Archipelago-0.8.0-alpha.2.exe** and choose **Connection** from
+Open **OOT-Remake-Archipelago-0.9.0-alpha.1.exe** and choose **Connection** from
 the home screen. The controls open inside the same application, without a
 console or a separate Python installation.
 
 Choose an already prepared room, enter the server address and, if needed, its
 password. The player and room are fixed by that room's mod. Preparing a new
 `.apootrr` file through the application's **Set up a room** action is required
-for a new room. That action prepares the mod and rebuilds Triforce when needed.
+for a new room. That action prepares the mod and rebuilds the selected compatible
+host when needed.
 
 With Zelda closed, **Save** stores the connection settings for the next startup.
 With the AP mod running, **Connect** and **Disconnect** control its existing
@@ -25,18 +26,23 @@ the same settings and connection. Changes made in either interface are visible
 in the other after applying them. Unsaved desktop edits are retained while the
 window refreshes the connection status.
 
+The experimental Hookshot 3.0.1 adapter provides **F1/Insert → Gameplay → AP
+Server / AP Connect**, using Hookshot's native text fields and controller
+navigation. Select its host in **Set up a room** first. Hookshot uses separate
+profiles and saves from Triforce.
+
 ## Host support
 
 The window does not depend on a host's menu renderer. It controls the AP bridge
 inside the game through an authenticated service on the local PC. It never
 opens a second Archipelago session or writes game saves.
 
-The published native installer supports **Triforce on Windows x64**. An updated
+The native installer supports **Triforce on Windows x64** and the pinned,
+experimental **Hookshot 3.0.1 Windows** adapter. An updated
 AP bridge is required for live desktop controls; use **Set up a room** in the
 updated application to install it and perform any required game build. Offline
-settings can be saved after closing the game. The Hookshot prototype can use
-this same interface when built with the
-updated bridge. Other ports and emulators still need their own gameplay bridge;
+settings can be saved after closing the game. Other ports and emulators still
+need their own gameplay bridge;
 this window alone does not add real-time item or DeathLink support to Fritchii.
 
 ## Development
