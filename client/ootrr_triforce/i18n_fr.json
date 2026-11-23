@@ -474,5 +474,6 @@
   "Finish the Hookshot game installation before preparing Archipelago.": "Termine l’installation de Hookshot avant de préparer Archipelago. Le cache de compilation du jeu doit être présent.",
   "The Hookshot adapter sources are incomplete. Prepare the room again.": "Les sources de l’adaptateur Hookshot sont incomplètes. Prépare à nouveau la salle.",
   "Building Hookshot. This may take several minutes.": "Compilation de Hookshot. Cela peut prendre plusieurs minutes.",
-  "Hookshot could not be rebuilt. Your previous installation has been restored.": "La compilation de Hookshot a échoué. L’installation précédente a été restaurée."
+  "Hookshot could not be rebuilt. Your previous installation has been restored.": "La compilation de Hookshot a échoué. L’installation précédente a été restaurée.",
+  "Choose compatible Triforce build tools or update this application before preparing the room.": "Choisis des outils de compilation Triforce compatibles ou mets cette application à jour avant de préparer la salle."
 }

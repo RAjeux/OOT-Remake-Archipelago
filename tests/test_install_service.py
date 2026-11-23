@@ -131,7 +131,10 @@ class InstallationTransactionTests(unittest.TestCase):
             (self.game / "triforce_vk.dll", b"old renderer"),
             (self.game / "image.bin", b"original image"),
             (self.game / "romfs/Pack/ZsDic.pack.zs", b"native dictionary"),
-            (self.tools / "host/hos_main.c", b"old host"),
+            (self.tools / "host/hos_main.c", (ROOT / "references/triforce/host/hos_main.c").read_bytes()),
+            (self.tools / "host/nn_applet.c", b"const char *hos_desired_language(void);"),
+            (self.tools / "gpu/vk/vk_api.h", b"#define HOS_SHARE_NOTICE 1"),
+            (self.tools / "gpu/vk/vk_menu.cpp", (ROOT / "tests/fixtures/triforce-menu-source.cpp").read_bytes()),
             (self.tools / "nx2/build.py", b"native build entry"),
             (self.game / "user/save/slot_00/progress.sav", b"original game save"),
             (self.profile / "user/save/slot_00/progress.sav", b"room save"),
@@ -416,11 +419,44 @@ class InstallationTransactionTests(unittest.TestCase):
         self.assertEqual(json.loads((self.base / "desktop-host.json").read_bytes()), dict(host="hookshot"))
 
     def test_preflight_reads_paths_without_scouting_or_writing_client_state(self):
-        before = {path: path.read_bytes() for path in self.base.rglob("*") if path.is_file()}
+        before = {path: path.read_bytes() for path in self.root.rglob("*") if path.is_file()}
         result = service.inspect_installation(self.request)
         self.assertTrue(result["valid"])
-        self.assertEqual(before, {path: path.read_bytes() for path in self.base.rglob("*") if path.is_file()})
+        self.assertEqual(before, {path: path.read_bytes() for path in self.root.rglob("*") if path.is_file()})
         service.fetch_roster.assert_not_called()
+        self.tools_install.assert_not_called()
+
+    def test_incompatible_triforce_sources_are_rejected_before_scouting_or_preparing(self):
+        for relative, invalid in (("gpu/vk/vk_menu.cpp", b"unsupported updated menu"),
+                                  ("host/hos_main.c", b"missing AP gameplay hooks"),
+                                  ("gpu/vk/vk_api.h", b"missing host notifications"),
+                                  ("host/nn_applet.c", b"missing game language export")):
+            path = self.tools / relative
+            original = path.read_bytes()
+            with self.subTest(source=relative):
+                path.write_bytes(invalid)
+                before = {name: name.read_bytes() for name in self.root.rglob("*") if name.is_file()}
+                with self.assertRaises(service.InstallError) as error:
+                    service.install(self.request)
+                self.assertIn("compatible Triforce build tools", error.exception.public_message)
+                self.assertNotIn("test-secret", error.exception.public_message)
+                self.assertEqual(before, {name: name.read_bytes() for name in self.root.rglob("*") if name.is_file()})
+                service.fetch_roster.assert_not_called()
+                service.player.build.assert_not_called()
+                self.prepare.assert_not_called()
+                self.tools_install.assert_not_called()
+            path.write_bytes(original)
+
+    def test_preflight_accepts_installed_patches_without_creating_backups_or_changing_sources(self):
+        from ootrr_triforce.menu_setup import patch_renderer
+        host = self.tools / "host/hos_main.c"
+        menu = self.tools / "gpu/vk/vk_menu.cpp"
+        host.write_bytes(service.native_setup.patch_source(host.read_bytes()))
+        menu.write_bytes(patch_renderer(menu.read_bytes()))
+        before = {path: path.read_bytes() for path in self.root.rglob("*") if path.is_file()}
+        self.assertTrue(service.inspect_installation(self.request)["valid"])
+        self.assertEqual(before, {path: path.read_bytes() for path in self.root.rglob("*") if path.is_file()})
+        self.assertFalse(list(self.tools.rglob("*.bak")))
         self.tools_install.assert_not_called()
 
     def test_hookshot_preflight_detects_tools_from_the_selected_game_without_installing(self):

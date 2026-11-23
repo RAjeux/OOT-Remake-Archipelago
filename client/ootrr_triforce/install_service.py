@@ -96,6 +96,20 @@ def _tools_for(game, value, host):
     return Path(value or "").expanduser().resolve()
 
 
+def _validate_triforce_sources(tools):
+    """Check the installer's source hooks without changing the selected tools."""
+    from .menu_setup import patch_renderer
+    try:
+        native_setup.patch_source((tools / "host/hos_main.c").read_bytes())
+        patch_renderer((tools / "gpu/vk/vk_menu.cpp").read_bytes())
+        if ("HOS_SHARE_NOTICE" not in (tools / "gpu/vk/vk_api.h").read_text(encoding="utf-8")
+                or "const char *hos_desired_language(void)" not in
+                (tools / "host/nn_applet.c").read_text(encoding="utf-8")):
+            raise ValueError("missing host exports")
+    except (OSError, ValueError):
+        raise InstallError(tr("Choose compatible Triforce build tools or update this application before preparing the room.")) from None
+
+
 def _validate_installation(game, romfs, tools, host):
     if (not any((folder / _executable_name(host)).is_file() for folder in (game, game / "bin"))
             or not (game / "image.bin").is_file()):
@@ -110,8 +124,10 @@ def _validate_installation(game, romfs, tools, host):
         validate = getattr(_adapter(host), "validate_installation", None)
         if validate:
             validate(game, tools)
-    elif not (tools / "host/hos_main.c").is_file() or not (tools / "nx2/build.py").is_file():
-        raise InstallError(tr("Install Triforce's build tools in Triforce Setup first."))
+    else:
+        if not (tools / "host/hos_main.c").is_file() or not (tools / "nx2/build.py").is_file():
+            raise InstallError(tr("Install Triforce's build tools in Triforce Setup first."))
+        _validate_triforce_sources(tools)
 
 
 def inspect_installation(request):

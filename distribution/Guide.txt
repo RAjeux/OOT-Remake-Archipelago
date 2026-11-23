@@ -1,9 +1,9 @@
-OOT Remake Archipelago · 0.9.0-alpha.1
+OOT Remake Archipelago · 0.9.1-alpha.1
 One Windows x64 application for Triforce and experimental Hookshot 3.0.1.
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
 Before you start
-Download OOT-Remake-Archipelago-0.9.0-alpha.1.exe from the project releases.
+Download OOT-Remake-Archipelago-0.9.1-alpha.1.exe from the project releases.
 Python and Node.js are included. The compatible OOTRR 0.8.1 builder is
 downloaded automatically when first needed; an internet connection is
 required for that download. No separate runtime or randomizer installation
@@ -88,6 +88,12 @@ is replaced. Network checks cover the catalogued chests and, when enabled,
 selected special deals across all eight shops, supported Gold Skulltulas
 and eleven adult trades. Old rooms keep their original Kokiri purchases.
 Other shuffled sources retain OOTRR's native local handling.
+
+Triforce 0.7.0 setup
+Version 0.9.1 supports the updated Achievements page and Mods input transition.
+The required source hooks are checked before room preparation. If an older
+installer rejected these tools, retry with this application and the same
+.apootrr file. A new room is not required for this installer correction.
 
 Items received while Zelda is closed remain on the server. They arrive
 in order after reconnecting and loading a save. Each grant is committed

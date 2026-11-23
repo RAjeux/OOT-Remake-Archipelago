@@ -1,5 +1,22 @@
 # Stability fixes and upgrade scope
 
+## 0.9.1: Triforce 0.7.0 menu compatibility
+
+Triforce 0.7.0 adds an Achievements page before the options fallback and gates
+Mods input on its native transition state. The earlier AP installer required
+both older dispatch blocks verbatim and rejected these tools after preparing
+the room's resources. The renderer patch now attaches to the unique options
+fallback and input branch, preserving both native changes. Already patched
+older renderers remain accepted without changes.
+
+The desktop preflight now validates the host, renderer, notification and game
+language hooks before connecting to AP or preparing the mod. Unsupported tools
+produce an actionable message at that stage. This check is read-only.
+
+Player files, AP identities, gameplay resources, the native DLL and the engine
+are unchanged. A room generated with the preceding compatible APWorld can be
+prepared again; regenerating its placements is unnecessary.
+
 ## 0.9.0: setup and independent option rolls
 
 Archipelago's Random? control rolls each field separately. Previously an unused
