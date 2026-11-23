@@ -1,9 +1,9 @@
-OOT Remake Archipelago · 0.9.1-alpha.1
+OOT Remake Archipelago · 0.9.2-alpha.1
 One Windows x64 application for Triforce and experimental Hookshot 3.0.1.
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
 Before you start
-Download OOT-Remake-Archipelago-0.9.1-alpha.1.exe from the project releases.
+Download OOT-Remake-Archipelago-0.9.2-alpha.1.exe from the project releases.
 Python and Node.js are included. The compatible OOTRR 0.8.1 builder is
 downloaded automatically when first needed; an internet connection is
 required for that download. No separate runtime or randomizer installation

@@ -1,5 +1,21 @@
 # Stability fixes and upgrade scope
 
+## 0.9.2: ammunition requires its equipment
+
+Native bomb, arrow and seed grants can create usable equipment when called
+without its capacity upgrade. Ordinary OOTRR rewards guard these pickups, but
+AP receipts previously bypassed that guard. AP now selects a native green rupee
+before the presentation when the required bag, quiver or seed bag is absent.
+Owning any supported tier keeps the original ammunition reward. Bombchus retain
+OOTRR's separate behavior. Receipts still acknowledge once and do not block the
+next item in the queue.
+
+The same selection applies to catalogued personal physical rewards and
+older-save restoration. The displayed pickup, native effect and sound use the
+selected actor. Prepare an existing player file again to install the corrected
+event flows; no new room or native host rebuild is required. Previously created
+equipment is not removed automatically from saves.
+
 ## 0.9.1: Triforce 0.7.0 menu compatibility
 
 Triforce 0.7.0 adds an Achievements page before the options fallback and gates

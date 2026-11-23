@@ -284,8 +284,8 @@ class GroundStyleReceiptTests(unittest.TestCase):
             flow.read(raw)
             cls.charts[name] = flow.flowchart
 
-    def execute(self, name, *, important=True):
-        run = SceneRun(self.charts, native_info=self.native_info, important=important)
+    def execute(self, name, *, important=True, owned=None):
+        run = SceneRun(self.charts, native_info=self.native_info, important=important, owned=owned)
         run.run("GetPouchContent", event_name(ITEM_IDS[name]))
         ack = [index for index, (command, params) in enumerate(run.trace)
                if command == "EventTriggerAddOrSubGameDataInt" and params["GameDataName"] == CURSOR]
@@ -295,6 +295,31 @@ class GroundStyleReceiptTests(unittest.TestCase):
         self.assertFalse(any(command in {"EventOpenRupeeDisplay", "EventCloseRupeeDisplay"}
                              for command, params in run.trace))
         return run, ack[0]
+
+    def test_ammo_without_a_bag_shows_and_grants_only_a_native_green_rupee(self):
+        cases = (("Bombs (20)", "Item_BombBag_Small"),
+                 ("Arrows (30)", "Item_Quiver_Large"),
+                 ("Deku Seeds (30)", "Item_BulletBag_Medium"),
+                 ("Buy Bombs (20)", "Item_BombBag_Large"),
+                 ("Buy Arrows (10)", "Item_Quiver_Small"),
+                 ("Buy Deku Seeds (30)", "Item_BulletBag_Large"))
+        for name, bag in cases:
+            for owned in (set(), {"Item_Hookshot"}, {bag}):
+                with self.subTest(item=name, owned=owned):
+                    run, ack = self.execute(name, owned=set(owned))
+                    expected = ITEM_DATA[name]["actor"] if bag in owned else "TBox_Rupee_Green"
+                    grants = [(index, params["Actor"]) for index, (command, params) in enumerate(run.trace)
+                              if command == "EventTriggerAddOrRemovePouchContent"]
+                    self.assertEqual([actor for index, actor in grants], [expected])
+                    self.assertLess(grants[0][0], ack)
+                    pickups = [params["ActorName"] for command, params in run.trace
+                               if command == "EventTriggerRequestOpenPickUpWindow"]
+                    self.assertEqual(pickups, [expected])
+                    self.assertFalse(any("Camera" in command or "Wait" in command or command == "FixtureNativeModel"
+                                         for command, params in run.trace))
+                    self.assertFalse(any("BombBag" in params.get("GameDataName", "")
+                                         for command, params in run.trace))
+                    self.assert_pickup_ui_only(run, ack)
 
     def test_all_rupees_keep_only_centered_pickup_without_get_scene_or_camera(self):
         for name in ("Rupee (1)", "Rupees (5)", "Rupees (20)", "Rupees (50)", "Rupees (200)"):

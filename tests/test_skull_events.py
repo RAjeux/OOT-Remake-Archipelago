@@ -20,7 +20,7 @@ from oot_rando.patching.event_patch import _flow
 from oot_rando.patching.progressive import FlowEditor, link
 from ootrr_triforce.ap_skulls import PREFIX, SCRATCH, NATIVE_SCRATCH, patch_skull_flow, patch_pickup_presentation, skull_records
 from ootrr_triforce.catalog import AP_SKULL_CHECKS, ITEM_DATA, ITEM_IDS
-from ootrr_triforce.native_presentations import is_cure
+from ootrr_triforce.native_presentations import AMMO_BAGS, NO_AMMO_BAG, is_cure
 from ootrr_triforce.receipt_events import DUNGEONS, OWNERS
 
 
@@ -225,7 +225,8 @@ class SkullEventTests(unittest.TestCase):
                     if metadata["mode"] == "generic" or metadata["kind"] == "TCGSmallKey" or is_cure(metadata):
                         self.assertFalse(pouch)
                     else:
-                        self.assertEqual(pouch, [metadata["actor"]])
+                        expected = NO_AMMO_BAG if metadata["actor"] in AMMO_BAGS else metadata["actor"]
+                        self.assertEqual(pouch, [expected])
                         effects = [args for command, args in run.trace
                                    if command == "EventTriggerAddOrRemovePouchContent"]
                         self.assertTrue(all(args["IsGetEvent"] is False for args in effects))

@@ -237,7 +237,8 @@ def build_receipt_flow(raw, token, names=None):
         else:
             # Bundle actors already encode their yield. Giving quantity copies
             # here would multiply a 20-Bombchu pickup into 400 Bombchus.
-            root = grant(stem, metadata["actor"])
+            from .native_presentations import append_tier_choice
+            root = append_tier_choice(editor, metadata, stem, grant)
         entry = EntryPoint(stem)
         entry.main_event = make_index(root)
         editor.chart.entry_points.append(entry)

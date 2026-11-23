@@ -14,6 +14,24 @@ LOCAL_CHEST_PREFIX = "OOTRR_APChestLocal_"
 BOTTLE_ITEMS = {"RedPotion": 0, "GreenPotion": 1, "BluePotion": 2, "BlueFire": 3,
                 "Fish": 4, "Letter": 5, "BigPoe": 6, "Poe": 7, "Bug": 8,
                 "Fairy": 9, "MaxMilk": 10, "HalfMilk": 11}
+# Match OOTRR's progressive::AMMO guard. The native pouch creates a usable
+# ammunition slot when given ammo without its bag, bypassing randomizer logic.
+# Select the replacement before presentation as well as the actual pouch add.
+AMMO_BAGS = {
+    "Item_Bomb": ("Item_BombBag_Small", "Item_BombBag_Medium", "Item_BombBag_Large"),
+    "Item_BombBundle_Small": ("Item_BombBag_Small", "Item_BombBag_Medium", "Item_BombBag_Large"),
+    "TBox_ArrowBundle_Medium": ("Item_Quiver_Small", "Item_Quiver_Medium", "Item_Quiver_Large"),
+    "TBox_ArrowBundle_Large": ("Item_Quiver_Small", "Item_Quiver_Medium", "Item_Quiver_Large"),
+    "Item_Arrow_Normal": ("Item_Quiver_Small", "Item_Quiver_Medium", "Item_Quiver_Large"),
+    "TBox_DekuSeedBundle": ("Item_BulletBag_Small", "Item_BulletBag_Medium", "Item_BulletBag_Large"),
+    "Item_DekuSeed": ("Item_BulletBag_Small", "Item_BulletBag_Medium", "Item_BulletBag_Large"),
+}
+# Shop-labelled AP items can also arrive as free network rewards; their native
+# purchase-time capacity check is absent on that path.
+AMMO_BAGS.update({"Shop_BombBundle_0" + str(index): AMMO_BAGS["Item_Bomb"] for index in range(1, 5)})
+AMMO_BAGS.update({"Shop_ArrowBundle_0" + str(index): AMMO_BAGS["Item_Arrow_Normal"] for index in range(1, 4)})
+AMMO_BAGS.update({"Shop_DekuSeedBundle_0" + str(index): AMMO_BAGS["Item_DekuSeed"] for index in range(1, 3)})
+NO_AMMO_BAG = "TBox_Rupee_Green"
 
 
 def is_cure(metadata):
@@ -182,8 +200,16 @@ def copy_receipt_presenter(editor, metadata, item_id, core_name, *, style="large
 
 
 def append_tier_choice(editor, metadata, stem, present):
-    """Select a concrete native model using OOTRR's ownership rules."""
+    """Select a native actor using OOTRR's tier and ammunition ownership rules."""
     from .receipt_events import OWNERS
+    bags = AMMO_BAGS.get(metadata["actor"])
+    if bags:
+        give = present(stem + "_Ammo", metadata["actor"])
+        root = present(stem + "_NoBag", NO_AMMO_BAG)
+        for index, bag in enumerate(bags):
+            root = editor.switch(stem + "_Bag" + str(index), "GameDataActor", "EventQueryCheckIsGet",
+                                 {"ActorName": bag}, give, root)
+        return root
     if metadata["mode"] != "tiers":
         return present(stem, metadata["actor"])
     tiers = metadata["tiers"]

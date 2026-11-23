@@ -142,8 +142,10 @@ class RestorationFlowTests(unittest.TestCase):
     def test_older_save_recovers_once_and_preserves_original_native_bag_hook(self):
         run = self.graph({CHEST: reward("Bombs (5)")})
         run.restore(CHEST)
-        actor = ITEM_DATA["Bombs (5)"]["actor"]
+        actor = "TBox_Rupee_Green"
         self.assertEqual(run.inventory[actor], 1, "The native bundle is granted once")
+        self.assertEqual(run.inventory["Item_BombBundle_Small"], 0)
+        self.assertEqual(run.inventory["Item_BombBag_Small"], 0)
         self.assertTrue(run.values["Fixture.NativeBagHook"])
         self.assertEqual(run.values[restore.RESULT], LOCATION_IDS[CHEST])
         self.assertEqual(run.trace[-2][0], "EventTriggerRequestAutoSave")
@@ -153,8 +155,11 @@ class RestorationFlowTests(unittest.TestCase):
         run.restore(CHEST)
         self.assertEqual(run.inventory[actor], 1)
         # A separate earlier save has no effect or flag; its recovery is needed.
-        older = self.graph({CHEST: reward("Bombs (5)")}).restore(CHEST)
-        self.assertEqual(older.inventory[actor], 1)
+        older = self.graph({CHEST: reward("Bombs (5)")})
+        older.inventory["Item_BombBag_Small"] = 1
+        older.restore(CHEST)
+        self.assertEqual(older.inventory["Item_BombBundle_Small"], 1)
+        self.assertEqual(older.inventory[actor], 0)
 
     def test_one_existing_reference_prevents_a_second_grant_and_completes_all_flags(self):
         run = self.graph({MULTI: reward("Rupees (20)")})
