@@ -86,10 +86,11 @@ class HookshotTests(unittest.TestCase):
                 self.assertTrue(line.endswith('nullptr, false, true},'),line)
 
     def test_actual_native_menu_include_handles_desktop_refresh_edit_errors_and_password_erasure(self):
-        compiler = (os.environ.get("CXX") or shutil.which("clang++") or shutil.which("g++"))
         local = REAL / "llvm-mingw/bin/x86_64-w64-mingw32-clang++.exe"
-        if not compiler and local.is_file():
-            compiler = str(local)
+        # Prefer the host's own toolchain or MinGW. An unrelated LLVM on PATH
+        # can select a newer Visual Studio STL that its compiler cannot use.
+        compiler = (os.environ.get("CXX") or (str(local) if local.is_file() else None)
+                    or shutil.which("g++") or shutil.which("clang++"))
         if not compiler:
             self.skipTest("A C++ compiler is needed for the actual menu-state helper")
         with tempfile.TemporaryDirectory() as temporary:
