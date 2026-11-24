@@ -59,6 +59,7 @@ class SafeLiveDelivery(LiveDelivery):
         super().__init__(manifest, live=shared, clock=clock)
         metadata = manifest.get("external_readiness") or (manifest.get("archipelago") or {}).get("readiness") or {}
         flag = readiness_flag or (metadata.get("flag") if isinstance(metadata, dict) else metadata)
+        self.readiness_version = metadata.get('version') if isinstance(metadata, dict) else None
         self.readiness = murmur3(flag) if isinstance(flag, str) and flag.startswith("Archipelago.Ready.") else None
         self.events = event_state or live_memory.LiveEventState(memory=shared.memory)
         self.deliverer = OrderedDeliverer(self.records, murmur3)
@@ -67,6 +68,9 @@ class SafeLiveDelivery(LiveDelivery):
         self.spent = {murmur3(record['spent']): record['consumed_by_location_id']
                       for record in self.records if record.get('spent')}
         self._confirmed = None
+        deathlink = manifest.get('external_deathlink') or {}
+        death_flags = deathlink.get('flags') or {}
+        self.death_gate = tuple(murmur3(death_flags[name]) for name in ('dead', 'request', 'fired') if name in death_flags)
 
     def confirm_checks(self, checked):
         """Called only after Connected validates the exact room, token and catalog."""
@@ -93,7 +97,9 @@ class SafeLiveDelivery(LiveDelivery):
                 return None
             try:
                 flags = self.live.snapshot()["bool"]
+                self.waiting = len(self.deliverer.pending(keys, flags))
                 required = set(self.deliverer.recv.values()) | set(self.deliverer.got.values())
+                required.update(self.death_gate)
                 if self.signal is not None:
                     required.add(self.signal)
                 if self.session is not None:
@@ -101,6 +107,9 @@ class SafeLiveDelivery(LiveDelivery):
                     required.update(self.spent)
                 if not required <= flags.keys():
                     self.status = "native mailbox flags unavailable; check the prepared game version"
+                    return None
+                if any(flags[key] for key in self.death_gate):
+                    self.status = 'waiting for the native DeathLink request to finish'
                     return None
                 if self.session is not None:
                     if self._confirmed is None or flags.get(self.marker) is not True:
@@ -113,7 +122,10 @@ class SafeLiveDelivery(LiveDelivery):
                                 raise live_memory.LiveUnavailable('the trade replay flag is missing')
                 if (flags.get(self.readiness) is not True or flags.get(murmur3(PAUSE)) is not False
                         or flags.get(murmur3(LOADING)) is not False or self.events.playing()):
-                    self.status = "waiting for normal player control"
+                    self.status = ("Prepare this room again to update its native receipt safety gate."
+                                   if self.readiness_version == 1 and flags.get(self.readiness) is False
+                                   and flags.get(murmur3(PAUSE)) is False and flags.get(murmur3(LOADING)) is False
+                                   and not self.events.playing() else "waiting for normal player control")
                     return None
                 if self.session is not None and flags.get(self.session) is not True:
                     if not live_memory.set_bool_in(self.live, self.session, True):
@@ -140,12 +152,16 @@ class ExternalRuntime:
         self.delivery = SafeLiveDelivery(manifest, self.live)
         info = manifest.get("archipelago") or {}
         selected_slot = slot or info.get("slot_name") or "Link"
+        from .upgrade_deathlink import ExternalDeathLink
+        self.deathlink = ExternalDeathLink(manifest, self.live, event_state=self.delivery.events, slot=selected_slot)
         self.tracker = TrackerSession(self.directory, selected_slot, save_path=str(save_path), live=self.live,
                                       manual_directory=Path(local_data) if local_data else self.directory / ".tracker")
         self.client = ArchipelagoClient(manifest, address, password=password, slot=slot,
-                                         on_change=self.on_change, connect=connect, delivery=self.delivery)
+                                         on_change=self.on_change, connect=connect, delivery=self.delivery,
+                                         deathlink=self.deathlink)
         self._stop = threading.Event()
         self._thread = None
+        self._death_thread = None
         self.poll_seconds = max(0.1, float(poll_seconds))
         self.status = "Not connected"
 
@@ -154,6 +170,27 @@ class ExternalRuntime:
             self.client.start()
             self._thread = threading.Thread(target=self._poll, name="archipelago-tracker", daemon=True)
             self._thread.start()
+            if self.deathlink.enabled:
+                self._death_thread = threading.Thread(target=self._poll_death, name="archipelago-deathlink", daemon=True)
+                self._death_thread.start()
+
+    def _poll_death(self):
+        while not self._stop.wait(0.1):
+            with self.client._lock:
+                authenticated = self.client.connected and self.client._history_synced
+                epoch = self.client._connection_epoch
+            try:
+                packet = self.deathlink.step(authenticated)
+            except Exception as error:  # keep an unavailable game mailbox closed
+                self.deathlink.suspend()
+                self.deathlink.status = 'DeathLink unavailable (' + str(error) + ')'
+                continue
+            if packet is not None:
+                with self.client._lock:
+                    if (authenticated and self.client.connected and self.client._history_synced
+                            and self.client._connection_epoch == epoch):
+                        self.client._outbox.append(packet)
+                self.client._wake.set()
 
     def _poll(self):
         while not self._stop.is_set():
@@ -170,8 +207,11 @@ class ExternalRuntime:
         self._stop.set()
         self.client.stop()
         self.delivery.suspend()
+        self.deathlink.suspend()
         if self._thread is not None:
             self._thread.join(timeout=3)
+        if self._death_thread is not None:
+            self._death_thread.join(timeout=3)
         self.live.close()
 
     def say(self, text):
@@ -190,7 +230,7 @@ class ExternalRuntime:
         self.client._wake.set()
 
     def summary(self):
-        return dict(self.client.summary(), tracking=self.status)
+        return dict(self.client.summary(), tracking=self.status, deathlink=self.deathlink.status)
 
 
 def supported_platform():

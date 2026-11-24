@@ -16,7 +16,7 @@ from ootrr_full.patching.soul_adapter import murmur3
 
 def walk_ai(nodes, *, verb, fishing=False, paused=False, loading=False, minigame=False):
     """Interpret selector edges, independently of the publisher's builder."""
-    values = {"QueryPlayerGetCurrentActionVerb": verb,
+    values = {"QueryBSAGetActionVerb": verb,
               "QueryNaviIsWaitPlayerStateDrawnFishingRod": fishing,
               "QueryPlayerIsEquipMiniGameItem": minigame}
     current = 0

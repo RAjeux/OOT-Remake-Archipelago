@@ -18,6 +18,31 @@ REAL = Path(os.environ.get("HOOKSHOT_TOOLS") or setup.discover().get("native_too
 
 
 class HookshotTests(unittest.TestCase):
+    def test_header_only_update_and_old_host_revision_cannot_certify_a_ready_game(self):
+        from ootrr_triforce.native_setup import BUILD_MARK
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary); bundle=root/'native';tools=root/'tools';game=root/'game'
+            bundle.mkdir();(tools/'host').mkdir(parents=True);(tools/'gpu/vk').mkdir(parents=True)
+            game.mkdir();(game/'romfs').mkdir()
+            module=b'test network library';(bundle/'archipelago.dll').write_bytes(module)
+            for name in (*setup.FILES,setup.MENU):
+                raw=(ROOT/'native'/name).read_bytes()
+                (bundle/name).write_bytes(raw)
+                installed=setup.isolated_bridge(raw) if name=='ootrr_archipelago.inc' else raw
+                target=tools/('gpu/vk' if name==setup.MENU else 'host')/name
+                target.write_bytes(installed);os.utime(target,ns=(1_000_000_000,1_000_000_000))
+            executable=game/'hookshot.exe';renderer=game/'hookshot_vk.dll'
+            digest=hashlib.sha256(module).digest();profile_mark='OOTRR_AP_BASE'.encode('utf-16-le')
+            renderer.write_bytes(b'ootrr_ap_menu16 AP Connect')
+            with patch.object(setup,'_bundle',return_value=bundle):
+                executable.write_bytes(b'OOTRR-AP native ABI 1'+digest+profile_mark)
+                self.assertIsNone(setup.compiled_executable(game/'romfs',tools))
+                executable.write_bytes(BUILD_MARK+digest+profile_mark)
+                self.assertEqual(setup.compiled_executable(game/'romfs',tools),executable)
+                packaged=bundle/'ootrr_archipelago.inc'
+                packaged.write_bytes(packaged.read_bytes()+b'\n/* header-only correction */\n')
+                self.assertIsNone(setup.compiled_executable(game/'romfs',tools))
+
     def test_profile_override_and_manual_start_fallback_never_use_triforce_profiles(self):
         original = (ROOT / "native/ootrr_archipelago.inc").read_bytes()
         changed = setup.isolated_bridge(original)

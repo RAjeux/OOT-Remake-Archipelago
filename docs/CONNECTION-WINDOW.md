@@ -1,6 +1,6 @@
 # Desktop connection window
 
-Open **OOT-Remake-Archipelago-0.10.0-alpha.1.exe** and choose **Connection** from
+Open the **OOT Remake Archipelago** application and choose **Connection** from
 the home screen. The controls open inside the same application, without a
 console or a separate Python installation.
 
@@ -41,9 +41,12 @@ The native installer supports **Triforce on Windows x64** and the pinned,
 experimental **Hookshot 3.0.1 Windows** adapter. An updated
 AP bridge is required for live desktop controls; use **Set up a room** in the
 updated application to install it and perform any required game build. Offline
-settings can be saved after closing the game. Other ports and emulators still
-need their own gameplay bridge;
-this window alone does not add real-time item or DeathLink support to Fritchii.
+settings can be saved after closing the game. For an emulator or another
+compatible process, use the separate **Other ports and emulators…** setup and
+keep its window open. That runtime owns the external AP connection and uses
+prepared native receipt/DeathLink resources. The native Connection page does
+not control it. See [port compatibility](PORT-COMPATIBILITY.md) for the actual
+Fritchii validation and the limits of other revisions.
 
 ## Development
 

@@ -97,11 +97,17 @@ def verify(nup_path, seed_dir):
                                   seed_key=(manifest['settings'].get('archipelago') or {}).get('seed_key')
                                   or manifest['seed_id'])
     tokens, natives = plan['progressive']['tokens'], plan['progressive']['natives']
+    from ootrr_full.patching.key_adapter import individual_key_plan, small_key_folder
+    small_tokens = (individual_key_plan({p['id']: p['ap_item'] for p in full})
+                    if manifest['settings']['full'].get('individual_smallkeys', False) else {})
     for placement in full:
         reward = placement.get('reward_actor', placement['actor'])
         canonical = canonical_of(reward) if is_derived(reward) else reward
         if canonical != tokens.get(placement['id'], canonical) or (is_token(canonical) and placement['id'] not in tokens):
             raise ValueError('Progressive copy without its own token: ' + placement['id'])
+        if (canonical != small_tokens.get(placement['id'], canonical)
+                or (small_key_folder(canonical) and placement['id'] not in small_tokens)):
+            raise ValueError('Dungeon small-key copy without its own source token: ' + placement['id'])
     # Expected edits, rebuilt from the original game and the spoiler only.
     map_edits = defaultdict(dict)     # resource -> actor index -> {field: actor}
     event_edits = defaultdict(dict)   # resource -> (event, param) -> actor
@@ -192,6 +198,10 @@ def verify(nup_path, seed_dir):
         if watch:
             from ootrr_full.patching import progressive
             main_update = progressive.patch_main_update(main_update, watch['tokens'])
+        small_watch = manifest.get('skips', {}).get('small_key_watch')
+        if small_watch:
+            from ootrr_full.patching.key_adapter import small_key_watch
+            main_update = small_key_watch(main_update, small_watch['tokens'])
         if (seed_dir / 'romfs' / ap_mailbox.MAIN_UPDATE).read_bytes() != main_update:
             raise ValueError('Unexpected global sequence (Archipelago reception).')
         rows = {r['__RowId']: r for r in Byml(out(ap_mailbox.EVENT_SETTINGS)).root}
@@ -215,14 +225,33 @@ def verify(nup_path, seed_dir):
         if watch['tokens'] != all_tokens:
             raise ValueError('Progressive token watchers differ from the spoiler.')
         if mailbox is None:
-            if (seed_dir / 'romfs' / progressive.MAIN_UPDATE).read_bytes() != progressive.patch_main_update(
-                    nup.read(members[progressive.MAIN_UPDATE]), all_tokens):
+            expected_update = progressive.patch_main_update(nup.read(members[progressive.MAIN_UPDATE]), all_tokens)
+            small_watch = manifest.get('skips', {}).get('small_key_watch')
+            if small_watch:
+                from ootrr_full.patching.key_adapter import small_key_watch
+                expected_update = small_key_watch(expected_update, small_watch['tokens'])
+            if (seed_dir / 'romfs' / progressive.MAIN_UPDATE).read_bytes() != expected_update:
                 raise ValueError('Unexpected global sequence (progressive tokens).')
         row = {r['__RowId']: r for r in Byml(out(progressive.EVENT_SETTINGS)).root}.get(progressive.WATCH_EVENT)
         if not row or row.get('EntryPointName') != progressive.CONVERTER_ENTRY or not row.get(
                 'FlowchartFileName', '').endswith('/' + progressive.ACTION_GUIDE + '.evfc'):
             raise ValueError('Missing progressive converter event row.')
         report['progressive_watch'] = len(all_tokens)
+    small_watch = manifest.get('skips', {}).get('small_key_watch')
+    if small_watch:
+        from ootrr_full.patching.key_adapter import SMALL_ENTRY, small_key_watch
+        small_records = [r for r in manifest.get('skips', {}).get('key_items', {}).get('records', ())
+                         if r['kind'] == 'small']
+        if small_watch['tokens'] != sorted(r['actor'] for r in small_records):
+            raise ValueError('Small-key watchers differ from the key records.')
+        if mailbox is None and not watch:
+            if (seed_dir / 'romfs' / 'Sequence/MainUpdate.module.ainb').read_bytes() != small_key_watch(
+                    nup.read(members['Sequence/MainUpdate.module.ainb']), small_watch['tokens']):
+                raise ValueError('Unexpected global sequence (dungeon small keys).')
+        row = {r['__RowId']: r for r in Byml(out('RSDB/EventSetting.Product.111.rstbl.byml.zs')).root}.get(SMALL_ENTRY)
+        if not row or row.get('EntryPointName') != SMALL_ENTRY:
+            raise ValueError('Missing dungeon small-key converter event row.')
+        report['small_key_watch'] = len(small_records)
     from ootrr_full.patching import blue_fire_arrows
     blue_arrows = bool((manifest['settings'].get('full') or {}).get('blue_fire_arrows', False))
     if bool(manifest.get('skips', {}).get('blue_fire_arrows')) != blue_arrows:
@@ -445,7 +474,10 @@ def verify(nup_path, seed_dir):
                           if p['ap_item'].startswith('Small Key Ring (')
                           or is_key_actor(p.get('reward_actor', p['actor']).removeprefix('Obj_Rando_').removeprefix('Obj_RandoWater_')
                                           .removeprefix('Shop_Rando_'))}
-                records = key_records(received | placed)
+                placed_actors = {p.get('reward_actor', p['actor']).removeprefix('Obj_Rando_')
+                                 .removeprefix('Obj_RandoWater_').removeprefix('Shop_Rando_') for p in full}
+                received_actors = {r['actor'] for r in (skips.get('ap_mailbox') or {}).get('items', [])}
+                records = key_records(received | placed, placed_actors | received_actors)
                 if records != skips['key_items']['records']:
                     raise ValueError('Dungeon keys differ from the spoiler.')
                 original = add_key_hook(original, records)[0]
@@ -845,6 +877,9 @@ def verify(nup_path, seed_dir):
         soul_actors.add(native['token'])
         if is_derived(native['after']):
             derived.add(native['after'])
+    for record in (manifest.get('skips', {}).get('ap_mailbox') or {}).get('items', ()):
+        if is_key_actor(record['actor']):
+            soul_actors.add(record['actor'])
     source_actors = {variant['textured_actor'] for variants in textured_sources.values()
                      for variant in variants.values()}
     generated = soul_actors | derived | master_actors | source_actors
@@ -863,7 +898,7 @@ def verify(nup_path, seed_dir):
             if missing:
                 raise ValueError('Missing soul condition: ' + missing[0])
         for record in manifest.get('skips', {}).get('key_items', {}).get('records', []):
-            if record['kind'] == 'ring' and murmur3(record['applied']) not in flags:
+            if record['kind'] in ('ring', 'small') and murmur3(record['applied']) not in flags:
                 raise ValueError('Missing key ring flag: ' + record['folder'])
         for actor in sorted(a for a in soul_actors if is_token(a)):
             if murmur3(applied_flag(actor)) not in flags:

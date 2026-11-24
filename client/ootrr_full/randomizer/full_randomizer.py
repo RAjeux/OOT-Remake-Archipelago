@@ -33,7 +33,7 @@ HEARTS = ('Heart Container', 'Piece of Heart')
 MINIMAL_REMOVED = HEARTS + ('Double Defense', 'Deku Nut Capacity', 'Deku Stick Capacity')
 
 
-def apply_item_pool(pool, value, relevant, never_extra=()):
+def apply_item_pool(pool, value, relevant, never_extra=(), protect_hearts=False):
     """OoTR-style item pool on the shuffled locations (their number never changes).
 
     * plentiful: one extra copy of each major non-progressive item, replacing filler;
@@ -61,11 +61,12 @@ def apply_item_pool(pool, value, relevant, never_extra=()):
 
     if value == 'scarce':
         keep_at_most(EMPTY_BOTTLES, 3)
-        for heart in HEARTS:
-            keep_at_most((heart,), pool.count(heart) // 2)
+        if not protect_hearts:
+            for heart in HEARTS:
+                keep_at_most((heart,), pool.count(heart) // 2)
     elif value == 'minimal':
         keep_at_most(EMPTY_BOTTLES, 1)
-        keep_at_most(MINIMAL_REMOVED, 0)
+        keep_at_most(tuple(item for item in MINIMAL_REMOVED if not protect_hearts or item not in HEARTS), 0)
     return pool
 
 
@@ -135,7 +136,12 @@ def enabled_sources(options):
                                 ('song', 'shuffle_song_items', 'song')):
         value = options.get(option, off)
         if value != off:
-            result[source] = value if value in ('dungeons', 'overworld') else 'all'
+            if source == 'boss' and options.get('dungeon_reward_placement') == 'vanilla':
+                continue
+            scope_key = {'pots': 'pot_scope', 'crates': 'crate_scope', 'rocks': 'rock_scope',
+                         'bushes': 'bush_scope'}.get(source)
+            scope = options.get(scope_key, 'all') if scope_key else 'all'
+            result[source] = scope if scope != 'all' else value if value in ('dungeons', 'overworld', 'pieces') else 'all'
     return result
 
 
@@ -147,6 +153,8 @@ def source_in_scope(entry, sources):
         return entry['folder'] in FOLDER_DUNGEON
     if scope == 'overworld':
         return entry['folder'] not in FOLDER_DUNGEON
+    if scope == 'pieces':
+        return entry['vanilla'] in ('Piece of Heart', 'Piece of Heart (Treasure Chest Game)')
     return True
 
 
@@ -231,6 +239,14 @@ def ap_settings(options, open_forest):
                                                'skip_child_zelda')}
     values['plant_beans'] = bool(options.get('plant_beans'))
     values['ap_individual_beans'] = bool(options.get('shuffle_bean_merchant'))
+    from ootrr_full.game.goal_settings import NEW_DEFAULTS
+    values.update({name: options[name] for name in NEW_DEFAULTS})
+    values.update(jabu_open=bool(options.get('jabu_open')),
+                  skip_epona_race=bool(options.get('skip_epona_race')),
+                  complete_mask_quest=bool(options.get('skip_mask_quest')),
+                  early_beds=bool(options.get('early_beds')),
+                  enemy_gates=bool(options.get('enemy_gates')),
+                  no_ammo_drops=bool(options.get('no_ammo_drops')))
     values['open_forest'] = 'closed_deku' if open_forest else 'closed'
     # AP rules' ``keysanity``: false lets one Fire Temple door open without its key
     # ("Fire Temple Lower Locked Door": (Small Key, 8) or not keysanity), OoTR's
@@ -238,6 +254,10 @@ def ap_settings(options, open_forest):
     # here (one item, every key at once): the ring itself could go behind that door
     # (Discord 16/11: Fire Temple ring on Volvagia, boss key chest past the door).
     values['keysanity'] = options.get('shuffle_smallkeys', 'vanilla') != 'vanilla'
+    from ootrr_full.game.spirit_layout import native_keys
+    values['native_spirit_keys'] = native_keys(options)
+    from ootrr_full.game.native_key_limits import enabled as native_key_limits
+    values['native_key_limits'] = native_key_limits(options)
     return values
 
 
@@ -259,6 +279,29 @@ class FillError(ValueError):
 
 def prepare(data, options, groups, enemies, seed_key, open_forest=True, progress=None, forced=None,
             extra=None):
+    """Choose entrances against actual native pickups before publishing the pool.
+
+    The broad entrance proof assumes every item is owned. Unshuffled gifts must
+    also remain obtainable: an ocarina behind a dungeon cannot open that same
+    dungeon's new entrance. Retry only layouts, retaining the room's seed and
+    every item/source setting.
+    """
+    if options.get('shuffle_entrances', 'off') != 'dungeons':
+        return _prepare(data, options, groups, enemies, seed_key, open_forest, progress, forced, extra)
+    import copy
+    from ootrr_full.game.dungeon_entrances import layout_candidates
+    settings = ap_settings(rando_options.validate(options, supported_only=True), open_forest)
+    for layout in layout_candidates(data, settings, seed_key):
+        result = _prepare(data, options, copy.deepcopy(groups), copy.deepcopy(enemies), seed_key,
+                          open_forest, progress, forced, copy.deepcopy(extra), entrance_layout=layout)
+        state, collected, _ = result.sweep({}, Counter(result.pool))
+        if state.has('Triforce') and all(vname(gid) in collected for gid in result.logic_locations):
+            return result
+    raise ValueError('No paired dungeon layout preserves acquisition of the native, unshuffled items.')
+
+
+def _prepare(data, options, groups, enemies, seed_key, open_forest=True, progress=None, forced=None,
+             extra=None, *, entrance_layout=None):
     """Everything before the fill: matched sources, shuffled locations, item pool and rules.
 
     Shared by :func:`plan` (built-in fill) and the Archipelago world (AP fill).
@@ -267,6 +310,11 @@ def prepare(data, options, groups, enemies, seed_key, open_forest=True, progress
     report = progress or (lambda message: None)
     options = rando_options.validate(options, supported_only=True)
     settings = ap_settings(options, open_forest)
+    entrances = {}
+    if options.get('shuffle_entrances', 'off') == 'dungeons':
+        from ootrr_full.game.dungeon_entrances import choose
+        entrances = entrance_layout if entrance_layout is not None else choose(data, settings, seed_key)
+        settings['dungeon_entrances'] = entrances
     probe = Logic(data, settings)
     matches, unmatched_ap = match_locations(groups, data, probe, options['chest_matching'])
     for entry in matches.values():
@@ -279,7 +327,10 @@ def prepare(data, options, groups, enemies, seed_key, open_forest=True, progress
         chosen = {gid: _copy.deepcopy(e) for gid, e in extra.items()
                   if gid not in UNSUPPORTED_CHILD_SOURCES
                   and not (options.get('adult_trade_shuffle') and gid == 'quest#DMT Biggoron')
-                  and source_in_scope(e, sources)}
+                  and (source_in_scope(e, sources) or e['vanilla'] in HEARTS)}
+        for entry in chosen.values():
+            if not source_in_scope(entry, sources):
+                entry['health_native_only'] = True
         used = {l for e in matches.values() if e['kind'] in ('exact', 'group') for l in e['ap']}
         match_sources(chosen, data, probe, used)
         for gid, entry in chosen.items():
@@ -295,6 +346,12 @@ def prepare(data, options, groups, enemies, seed_key, open_forest=True, progress
         matches.update(trade_entries())
     from ootrr_full.game.native_extras import entries as native_entries
     matches.update(native_entries(options))
+    from ootrr_full.game.loose_keys import entries as loose_entries
+    matches.update(loose_entries(options))
+    for gid, entry in native_entries(dict(options, shuffle_frog_bug_heart=True)).items():
+        if entry['vanilla'] in HEARTS and gid not in matches:
+            entry['health_native_only'] = True
+            matches[gid] = entry
     if options.get('shuffle_cows'):
         from ootrr_full.game.cows import entries as cow_entries
         matches.update(cow_entries())
@@ -305,16 +362,23 @@ def prepare(data, options, groups, enemies, seed_key, open_forest=True, progress
             if entry['id'] == 'npc#ZR Frogs Ocarina Game':
                 entry['ap'] = ['ZR Frogs in the Rain']
     souls = plan_souls(options['shuffle_enemy_spawns'], enemies, data.regions)
+    if options.get('enemy_gates'):
+        from ootrr_full.game.enemy_gates import forest_souls
+        settings['enemy_gate_souls'] = forest_souls(souls)
     location_requirements = {k: set(v) for k, v in souls['location_requirements'].items()}
     # Scrubs keep their remake price with 'regular': above the child wallet, buying
     # needs the first wallet upgrade (the AP rules do not know these prices).
-    from ootrr_full.game.extra_sources import scrub_price, CHILD_WALLET
+    from ootrr_full.game.economy_settings import scrub_price, source_price, wallet, shop_wallet
+    from ootrr_full.game.extra_sources import CHILD_WALLET
     for gid, entry in matches.items():
         if entry['source'] == 'scrub' and entry['kind'] != 'junk':
-            entry['price_after'] = scrub_price(options['shuffle_scrubs'], seed_key, entry)
+            entry['price_after'] = scrub_price(options, seed_key, entry)
             if entry['price_after'] > CHILD_WALLET:
                 for location in entry['ap']:
                     location_requirements.setdefault(location, set()).add('Progressive Wallet')
+        price = entry.get('price_after') if entry['source'] == 'scrub' else source_price(options, entry)
+        if price is not None and wallet(price):
+            entry['guards'] = list(entry['guards']) + ['Wallet|' + str(wallet(price))]
     if options['shuffle_chests']:
         # Upgrades given by NPCs (bullet bag, bomb bag, quiver…) need the base
         # item in the remake: the logic must not treat them as the first copy.
@@ -369,12 +433,19 @@ def prepare(data, options, groups, enemies, seed_key, open_forest=True, progress
     from ootrr_full.patching.key_adapter import RING_DUNGEONS, BOSS_KEY_DUNGEONS, ring_item, small_key_item
     ring_folders = key_ring_folders(options, seed_key)
     ring_keys = {small_key_item(folder): ring_item(folder) for folder in ring_folders}
-    specific_boss = options['shuffle_bosskeys'] in ('any_dungeon', 'keysanity')
+    specific_boss = options['shuffle_bosskeys'] in ('any_dungeon', 'overworld', 'regional', 'keysanity')
     boss_keys = ({f'Boss Key ({FOLDER_DUNGEON[f]})' for f in BOSS_KEY_DUNGEONS} if specific_boss else set())
+    from ootrr_full.game.goal_settings import GANON_KEY, LACS_SOURCE
+    ganon_mode = options['shuffle_ganon_bosskey']
+    if ganon_mode not in ('vanilla', 'remove'):
+        boss_keys.add(GANON_KEY)
     # A ring counts as every small key of its dungeon (logic.bundles).
     logic.bundles.update({ring_item(f): (small_key_item(f), RING_DUNGEONS[f]) for f in ring_folders})
     relevant |= set(ring_keys.values())
     ring_dungeon_keys = {small_key_item(folder) for folder in RING_DUNGEONS}
+    individual_keys = (ring_dungeon_keys - set(ring_keys) if options.get('individual_smallkeys')
+                       and options['shuffle_chests'] and options['shuffle_smallkeys'] not in ('vanilla', 'remove')
+                       else set())
     # "Removed" keys: every key is held from the start (start_dungeon_values), the
     # key chests hold filler instead.
     from ootrr_full.patching.key_adapter import start_logic_items
@@ -382,25 +453,42 @@ def prepare(data, options, groups, enemies, seed_key, open_forest=True, progress
 
     def in_scope(entry):
         item = entry['vanilla']
+        if entry.get('health_native_only'):
+            return False
+        if entry.get('native_loose_key'):
+            return bool(options['shuffle_chests'] and options['shuffle_smallkeys'] != 'vanilla')
+        if options['gerudo_fortress'] == 'open' and entry['source'] == 'gerudo_card':
+            return False  # All rescued: the final rescue event can no longer run.
         if entry['source'] != 'chest':
             if kept_for_child_trade(entry, options):
                 return False
             return entry['kind'] != 'junk' or entry['reason'] in SAFE_JUNK
+        if entry['id'] == TREASURE_GAME_REWARD:
+            mode = options.get('shuffle_treasure_reward', 'inherit')
+            if mode != 'inherit':
+                return mode == 'shuffled'
         if not options['shuffle_chests']:
+            return False
+        scope = options.get('chest_scope', 'all')
+        if scope == 'overworld' and entry['folder'] in FOLDER_DUNGEON:
+            return False
+        if scope == 'dungeons' and entry['folder'] not in FOLDER_DUNGEON:
             return False
         if item in ring_keys:
             return True       # the ring replaces every small key of the dungeon
         if item in ring_dungeon_keys:
-            return item in removed_keys   # no ring for this dungeon: generic keys stay in place
+            return item in removed_keys or item in individual_keys
         if item.startswith('Small Key ('):
             return item in key_dungeons or item in removed_keys
         if item in boss_keys:
             return True
+        if item == GANON_KEY:
+            return item in removed_keys
         if item.startswith('Boss Key ('):
-            return (item in key_dungeons or item in removed_keys) and 'Ganons Castle' not in item
+            return item in key_dungeons or item in removed_keys
         if is_mapcompass(item):
             return options['shuffle_mapcompass'] in ('dungeon', 'remove', 'startwith', 'any_dungeon',
-                                                     'overworld', 'keysanity')
+                                                     'overworld', 'regional', 'keysanity')
         if item == 'Kokiri Sword':
             return options['shuffle_kokiri_sword']
         if item.startswith('Remake: '):
@@ -419,6 +507,11 @@ def prepare(data, options, groups, enemies, seed_key, open_forest=True, progress
     elif shop_slots:
         keep_purchases = options['shopsanity'] != 'all'
         referenced = {shop_purchase(i) for i in probe.referenced}
+        if options.get('no_ammo_drops'):
+            # Without enemy/pot refills, retain a real renewable vendor for
+            # each ammunition purchase still present in the native catalogue.
+            referenced.update(shop_purchase(shuffled[gid]['vanilla']) for gid in shop_slots
+                              if shuffled[gid]['before'].startswith(('Shop_Arrow', 'Shop_Bomb', 'Shop_Deku')))
         copies = Counter(shop_purchase(shuffled[g]['vanilla']) for g in shop_slots)
         # Counted per shop, not per map folder (the Market has three shops).
         from ootrr_full.game.extra_sources import shop_groups
@@ -440,11 +533,17 @@ def prepare(data, options, groups, enemies, seed_key, open_forest=True, progress
     for gid in shop_slots:
         if gid not in selected_shops:
             del shuffled[gid]
+        elif shop_wallet(options):
+            shuffled[gid]['guards'] = list(shuffled[gid]['guards']) + ['Wallet|' + str(shop_wallet(options))]
     report(f'Shuffled chests: {len(shuffled)} groups ({sum(e["kind"] != "junk" for e in shuffled.values())} in logic).')
     natives = native_sources(matches, shuffled, extra)
 
     # --- logic placements --------------------------------------------------
     base = vanilla_placements(data, logic)
+    if ganon_mode != 'vanilla':
+        # Conditional-key event exists only in the AP model. The actual key
+        # comes from its real shuffled source, never the synthetic event.
+        base['Gift from Sages'] = None
     if options.get('adult_trade_shuffle'):
         # The actual sword now belongs to our final Claim Check handover.
         base['DMT Biggoron'] = None
@@ -452,8 +551,9 @@ def prepare(data, options, groups, enemies, seed_key, open_forest=True, progress
         base['ZR Magic Bean Salesman'] = None
     moved_boss = {e['vanilla'] for g, e in shuffled.items() if e['vanilla'] in boss_keys}
     for entry in matches.values():
-        vanilla_key = is_key(entry['vanilla']) and entry['vanilla'] not in key_dungeons
-        if entry['vanilla'] in ring_keys or entry['vanilla'] in moved_boss:
+        vanilla_key = (is_key(entry['vanilla'])
+                       and (entry['id'] not in shuffled or entry['vanilla'] not in key_dungeons))
+        if entry['vanilla'] in ring_keys or entry['vanilla'] in moved_boss or entry['vanilla'] in individual_keys:
             vanilla_key = False   # mapped like any location: its key comes from the ring / own item
         if entry['kind'] == 'junk' or (vanilla_key and entry['kind'] == 'group'):
             continue  # invisible to the logic: the AP model keeps its own location(s)
@@ -469,24 +569,30 @@ def prepare(data, options, groups, enemies, seed_key, open_forest=True, progress
         if item and item in relevant and not is_key(item):
             base[location] = None  # chest absent from the remake: no phantom progression
     for location in list(base):
-        if base[location] in ring_keys or base[location] in moved_boss:
+        if base[location] in ring_keys or base[location] in moved_boss or base[location] in individual_keys:
             # Rings: the remake's own small keys (unshuffled sources) only add spare keys.
             base[location] = None
     # Souls for conditional chests and named enemy checks.
     for gid, entry in matches.items():
         name = vname(gid)
         if name in logic.virtual:
-            extra = chest_requirements(souls, entry, entry['ap'])
-            if extra:
-                logic.virtual[name] = logic.virtual[name] + ['Souls|' + '|'.join(sorted(extra))]
+            soul_guards = chest_requirements(souls, entry, entry['ap'])
+            if soul_guards:
+                logic.virtual[name] = logic.virtual[name] + ['Souls|' + '|'.join(sorted(soul_guards))]
 
     # Area fallbacks only keep members the logic can reach with every item.
     everything = Counter({item: 9 for item in relevant})
     # Nine copies is not a maximum inventory for token thresholds. The native
     # scan includes the actual token sites; use their attainable quantity when
     # deciding whether the 10/20/30/40/50-token NPC rules belong in fill logic.
+    token_sources = dict(extra or {})
+    token_sources.update(matches)
     everything['Gold Skulltula Token'] = sum(entry['vanilla'] == 'Gold Skulltula Token'
-                                           for entry in matches.values())
+                                           for entry in token_sources.values())
+    # The physical goal/native-location probe is a capability check. Nine
+    # heart containers are not maximum health when starting with one heart;
+    # explicit20-heart goals receive their real pool compensation below.
+    everything['Heart Container'] = 20
     everything_state, reachable_all, _ = logic.sweep({l: None for l in logic.location_names()},
                                                      logic.new_state(everything))
     for gid, entry in matches.items():
@@ -536,7 +642,18 @@ def prepare(data, options, groups, enemies, seed_key, open_forest=True, progress
         entry.update(kind='junk', reason='no_reliable_ap_match')
         logic.virtual.pop(name, None)
         base.pop(name, None)
+    # The inherited N64 catalogue contains extra/alias heart rewards absent
+    # from the remake. Health comes only from unique real native sources (the
+    # virtual entries above) or final AP items, never those access-probe nodes.
+    for location, item in list(base.items()):
+        if item in HEARTS + ('Piece of Heart (Treasure Chest Game)',) and not location.startswith('Remake|'):
+            base[location] = None
     # --- item pool ------------------------------------------------------------
+    if options['gerudo_fortress'] == 'open':
+        base['Hideout Gerudo Membership Card'] = None
+        for gid, entry in matches.items():
+            if entry['source'] == 'gerudo_card':
+                base.pop(vname(gid), None)
     pool = []
     for gid, entry in shuffled.items():
         item = entry['vanilla']
@@ -566,12 +683,26 @@ def prepare(data, options, groups, enemies, seed_key, open_forest=True, progress
     # (then other filler) out so that the pool matches the shuffled checks.
     pool.extend(sorted(ring_keys.values()))
     pool.extend(souls['items'])
+    if options['shopsanity'] == 'all':
+        # Native shield chests can lie behind Mido or later combat. Removing
+        # every vendor must not remove the world's only early shield access.
+        # Existing shuffled shield copies already provide that AP access.
+        for purchase, item in (('Buy Deku Shield', 'Deku Shield'), ('Buy Hylian Shield', 'Hylian Shield')):
+            if item not in pool and any(entry['source'] == 'shop' and entry['vanilla'] == purchase
+                                        for entry in shuffled.values()):
+                pool.append(item)
+    if options['gerudo_fortress'] == 'open' and options['shuffle_gerudo_card']:
+        pool.append('Gerudo Membership Card')
     pool = balance_pool(pool, len(shuffled), removable)
+    from ootrr_full.game.goal_settings import REWARD_ITEMS
+    unique_rewards = set(REWARD_ITEMS) if options.get('dungeon_reward_placement') == 'dungeons' else set()
     pool = apply_item_pool(pool, options['item_pool_value'], relevant,
-                           never_extra=set(ring_keys.values()) | set(souls['items']))
+                           never_extra=set(ring_keys.values()) | set(souls['items']) | unique_rewards,
+                           protect_hearts=options['bridge'] == 'hearts' or options['lacs_condition'] == 'hearts')
     # Starting inventory: each copy found in the pool is taken out of it (OoTR /
     # AP start_inventory_from_pool); progressive copies take the lowest levels.
-    start_items = []
+    start_items = (['Gerudo Membership Card'] if options['gerudo_fortress'] == 'open'
+                   and not options['shuffle_gerudo_card'] else [])
     from_pool = Counter()
     for item, count in sorted(options['start_inventory_from_pool'].items()):
         for _ in range(count):
@@ -600,23 +731,48 @@ def prepare(data, options, groups, enemies, seed_key, open_forest=True, progress
         # Every shuffled castle check holds a green rupee, reserved in the pool.
         castle_junk = sorted(g for g in shuffled if skipped_castle_check(shuffled[g]))
         pool.extend([CASTLE_JUNK] * len(castle_junk))
+    # Explicit heart goals require genuine native capacity. The remake has 33
+    # shuffled quarter-hearts by default, rather than the N64's assumed 36.
+    # Replace filler with only the missing quarter-hearts, before the AP fill;
+    # their recipient and location remain subject to the normal global fill.
+    heart_goal = max((options[prefix + '_hearts'] for prefix, mode in
+                      (('bridge', options['bridge']), ('lacs', options['lacs_condition'])) if mode == 'hearts'), default=0)
+    health_added = 0
+    if heart_goal:
+        def quarters(items):
+            counts = Counter(items)
+            return 4 * counts['Heart Container'] + counts['Piece of Heart'] + counts['Piece of Heart (Treasure Chest Game)']
+        capacity = options['starting_hearts'] * 4 + quarters(pool) + quarters(start_items) + quarters(base.values())
+        health_added = max(0, heart_goal * 4 - capacity)
+        pool.extend(['Piece of Heart'] * health_added)
     # Whatever was added or replaced above: exactly one item per shuffled check.
-    pool = balance_pool(pool, len(shuffled), removable, keep={CASTLE_JUNK: len(castle_junk)})
+    keep = {CASTLE_JUNK: len(castle_junk)}
+    if heart_goal:
+        keep['Piece of Heart'] = Counter(pool)['Piece of Heart']
+    pool = balance_pool(pool, len(shuffled), removable, keep=keep)
     logic_locations =sorted(g for g in shuffled if vname(g) in logic.virtual)
     restricted_dungeon = {}   # item -> (zone rule, dungeon)
     for item in set(pool):
-        if item in ring_keys.values():
+        if item in ('Kokiri Emerald', 'Goron Ruby', 'Zora Sapphire', 'Light Medallion',
+                     'Forest Medallion', 'Fire Medallion', 'Water Medallion', 'Shadow Medallion',
+                     'Spirit Medallion') and options.get('dungeon_reward_placement') == 'dungeons':
+            rule = 'boss_reward'
+        elif item == GANON_KEY:
+            rule = 'keysanity' if ganon_mode == 'keysanity' else ('dungeon' if ganon_mode.startswith('lacs_') else ganon_mode)
+        elif item in ring_keys.values():
+            rule = options['shuffle_smallkeys']
+        elif item in individual_keys:
             rule = options['shuffle_smallkeys']
         elif item in moved_boss:
             rule = options['shuffle_bosskeys']
         elif is_key(item) or (is_mapcompass(item) and options['shuffle_mapcompass'] == 'dungeon'):
             rule = 'dungeon'
-        elif is_mapcompass(item) and options['shuffle_mapcompass'] in ('any_dungeon', 'overworld'):
+        elif is_mapcompass(item) and options['shuffle_mapcompass'] in ('any_dungeon', 'overworld', 'regional'):
             rule = options['shuffle_mapcompass']
         else:
             continue
         if rule != 'keysanity':
-            restricted_dungeon[item] = (rule, item[item.index('(') + 1:-1])
+            restricted_dungeon[item] = (rule, item[item.index('(') + 1:-1] if '(' in item else '')
     progression = [i for i in pool if i in relevant]
     if len(progression) > len(logic_locations):
         raise FillError(f'{len(progression)} progression items for {len(logic_locations)} chests in logic: '
@@ -629,21 +785,33 @@ def prepare(data, options, groups, enemies, seed_key, open_forest=True, progress
     def canonical(item, gid):
         key = (item, shuffled[gid]['folder'])
         if key not in canonical_cache:
-            canonical_cache[key] = item_actor(item, shuffled[gid]['folder'])
+            if item in individual_keys:
+                from ootrr_full.patching.key_adapter import specific_actor
+                canonical_cache[key] = specific_actor(item)
+            else:
+                canonical_cache[key] = item_actor(item, shuffled[gid]['folder'])
         return canonical_cache[key]
 
     castle_junk_set = set(castle_junk) if options.get('skip_child_zelda') else None
 
     def allowed(item, gid):
+        if ganon_mode.startswith('lacs_') and (item == GANON_KEY or gid == LACS_SOURCE):
+            return item == GANON_KEY and gid == LACS_SOURCE
         if castle_junk_set and gid in castle_junk_set:
             return item == CASTLE_JUNK
         rule, dungeon = restricted_dungeon.get(item, (None, None))
+        if rule == 'boss_reward' and shuffled[gid]['source'] != 'boss':
+            return False
         if rule == 'dungeon' and folder_dungeon[gid] != dungeon:
             return False
         if rule == 'any_dungeon' and folder_dungeon[gid] is None:
             return False
         if rule == 'overworld' and folder_dungeon[gid] is not None:
             return False
+        if rule == 'regional':
+            from ootrr_full.patching.key_adapter import regional_folder
+            if folder_dungeon[gid] != dungeon and not regional_folder(item, shuffled[gid]['folder']):
+                return False
         actor = canonical(item, gid)
         song_mode = options.get('shuffle_song_items', 'song')
         if castle_junk_set is not None and item == CASTLE_SONG:
@@ -660,7 +828,7 @@ def prepare(data, options, groups, enemies, seed_key, open_forest=True, progress
     # OoTR/AP vanilla-key compensation: with vanilla Fire Temple keys the logic
     # starts with one extra key (the vanilla layout expects the hammer door order).
     starting = Counter(removed_keys) + Counter(start_items)
-    if ('Small Key (Fire Temple)' not in key_dungeons and 'Small Key (Fire Temple)' not in ring_keys
+    if ('Small Key (Fire Temple)' not in individual_keys and 'Small Key (Fire Temple)' not in ring_keys
             and 'Small Key (Fire Temple)' not in removed_keys):
         starting['Small Key (Fire Temple)'] += 1
 
@@ -687,6 +855,8 @@ def prepare(data, options, groups, enemies, seed_key, open_forest=True, progress
         restricted_dungeon=restricted_dungeon, allowed=allowed, sweep=sweep, base=base, souls=souls,
         unmatched_ap=unmatched_ap, natives=natives, starting=starting, report=report,
         start_items=start_items, start_actors=start_actors, castle_junk=castle_junk,
+        entrances=entrances, health_goal_added=health_added,
+        individual_keys=individual_keys,
         is_key=is_key, is_mapcompass=is_mapcompass)
 
 
@@ -801,7 +971,8 @@ def child_door_missing(c, placed):
         return []
     stones = {'song': (), 'vanilla': ('Goron Ruby', 'Zora Sapphire'),
               'all': ('Kokiri Emerald', 'Goron Ruby', 'Zora Sapphire')}
-    required = ('Ocarina', 'Song of Time') + stones[c.settings['door_of_time_requirement']]
+    song = ('Ocarina', 'Song of Time') if c.settings.get('door_of_time_song', True) else ()
+    required = song + stones[c.settings['door_of_time_requirement']]
     state, _, _ = c.sweep(placed, before_adult=True)
     return [item for item in required if not state.has(item)]
 
@@ -834,8 +1005,8 @@ def covered_by_start_values(item, options):
         return options['shuffle_mapcompass'] == 'startwith'
     if item.startswith('Small Key ('):
         return options['shuffle_smallkeys'] == 'remove'
-    if item.startswith('Boss Key (') and 'Ganons Castle' not in item:
-        return options['shuffle_bosskeys'] == 'remove'
+    if item.startswith('Boss Key ('):
+        return options['shuffle_ganon_bosskey' if 'Ganons Castle' in item else 'shuffle_bosskeys'] == 'remove'
     return False
 
 
@@ -887,6 +1058,10 @@ def plan_assigned(data, options, groups, enemies, seed_key, assigned, open_fores
     # Maps, compasses and keys of the "start with" / "removed" modes are written at
     # the start (key_adapter.start_dungeon_values), not handed over as pouch items.
     starting = [item for item in starting if not covered_by_start_values(item, c.options)]
+    # Full/AP automatic starts (for example an unshuffled card with the
+    # fortress already rescued) need the same real pouch actor as standalone
+    # generation. Avoid double-granting an explicitly precollected copy.
+    starting += list((Counter(c.start_items) - Counter(starting)).elements())
     start_actors = starting_actors(starting)
     state, collected, spheres = c.sweep(placed, Counter(starting))
     sphere_of = {loc: index for index, sphere in enumerate(spheres) for loc in sphere}
@@ -996,20 +1171,24 @@ def _result(data, logic, options, matches, shuffled, placed, natives, sphere_of,
     placements, checks, spoiler = [], [], []
     progressive = progressive_plan(placed, natives)
     tokens = progressive['tokens']
+    from ootrr_full.patching.key_adapter import individual_key_plan
+    small_tokens = individual_key_plan(placed) if options.get('individual_smallkeys', False) else {}
     for gid in sorted(shuffled):
         entry = shuffled[gid]
         item = placed[gid]
         source = entry.get('source', 'chest')
-        canonical = tokens[gid] if gid in tokens else item_actor(item, entry['folder'])
+        canonical = small_tokens.get(gid) or (tokens[gid] if gid in tokens else item_actor(item, entry['folder']))
         if entry.get('form', 'chest') != 'world':
             from ootrr_full.patching.ammo_quantities import quantity_actor
             canonical = quantity_actor(item) or canonical
-        if (item.startswith('Boss Key (') and 'Ganons Castle' not in item
-                and options['shuffle_bosskeys'] in ('any_dungeon', 'keysanity')):
+        if (item.startswith('Boss Key (') and
+                (('Ganons Castle' in item and options['shuffle_ganon_bosskey'] != 'vanilla') or
+                 ('Ganons Castle' not in item and options['shuffle_bosskeys'] in
+                  ('any_dungeon', 'overworld', 'regional', 'keysanity')))):
             from ootrr_full.patching.key_adapter import boss_actor, item_folder
             canonical = boss_actor(item_folder(item))   # opens its own dungeon's boss door anywhere
         if (item.startswith(('Map (', 'Compass (')) and 'Ganons Castle' not in item
-                and options['shuffle_mapcompass'] in ('any_dungeon', 'overworld', 'keysanity')):
+                and options['shuffle_mapcompass'] in ('any_dungeon', 'overworld', 'regional', 'keysanity')):
             from ootrr_full.patching.key_adapter import specific_actor
             canonical = specific_actor(item)   # sets its own dungeon's map / compass anywhere
         actor = _spot_actor(form_actor(canonical, entry.get('form', 'chest'), skulltula_drop=source == 'skulltula'),

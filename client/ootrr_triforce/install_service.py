@@ -235,6 +235,9 @@ def discover(base=None, host=None):
                      and _compiled_game(host, game / "romfs", tools))
     except (OSError, ValueError):
         ready = False
+    from .room_updates import requires_reprepare
+    reprepare = requires_reprepare(mods / 'Archipelago')
+    ready = ready and not reprepare
     return dict(base=str(base), app_base=str(app_base), host=host, game=str(game), romfs=str(romfs),
                 tools="" if host == "hookshot" and tools == Path(".") else str(tools), mods=str(mods),
                 builder=builder, node=str(node), manifest=cfg.get("manifest", ""),
@@ -242,7 +245,7 @@ def discover(base=None, host=None):
                 auto_connect=bool(session.get("AutoConnect", True)),
                 room=session.get("Room", ""), slot=session.get("Slot", ""), token=session.get("Token", ""),
                 language=detect_language(profile or base, dict(cfg, exe=str(game / _executable_name(host)), romfs=str(romfs))),
-                ready=ready, build_required=not ready,
+                ready=ready, build_required=not ready, reprepare_required=reprepare,
                 prepared_source=cfg.get("prepared_source", ""), tracker_source=cfg.get("tracker_source", ""),
                 diagnostic_log=str(base / "setup-diagnostic.log"))
 
@@ -679,6 +682,9 @@ def launch(result):
     romfs = Path(result.get("romfs") or game / "romfs").resolve()
     tools = Path(result["tools"]).resolve()
     mods = Path(result.get("mods") or game / "mods").resolve()
+    from .room_updates import requires_reprepare
+    if requires_reprepare(mods / 'Archipelago'):
+        raise InstallError(tr('Update this room with the same player file before launching. Your save and room stay unchanged.'))
     profile = Path(result["profile"]).resolve()
     session = _json(profile / "native-session.json", {})
     executable = _adapter(host).compiled_executable(game / "romfs", tools)

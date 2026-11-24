@@ -114,7 +114,9 @@ class SaveRun:
                     result = self.inventory[OWNERS.get(params["Actor"], params["Actor"])] >= params["Num"]
                 else:
                     raise AssertionError("Unexpected restoration query: " + query)
-                node = data.cases[0 if result else 1].v
+                # A missing branch is a normal terminal return in native EVFL.
+                branch = data.cases.get(0 if result else 1)
+                node = branch.v if branch is not None else None
             elif isinstance(data, SubFlowEvent):
                 assert data.res_flowchart_name == "", "Quiet restoration must not call UI/camera events"
                 assert params.get("IsShowNumDisplay", False) is False

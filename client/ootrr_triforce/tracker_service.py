@@ -5,6 +5,14 @@ from pathlib import Path
 from .room_library import room_progress
 
 
+def _inventory_rows(tracker):
+    counts, known, tracked = tracker.inventory()
+    observations = tracker.inventory_observations()
+    return [{"name": name, "count": counts.get(name, 0), "known": name in known,
+             "observation": observations.get(name, "Recorded progression")}
+            for name in sorted(tracked)]
+
+
 class ProfileTracker:
     def __init__(self, profile, artifact=None):
         self.profile = Path(profile).resolve()
@@ -60,9 +68,7 @@ class ProfileTracker:
             state = states.get(row["name"], {})
             row["access"] = state.get("access", "unknown")
             row["observed"] = bool(state.get("observed"))
-        counts, known, tracked = self.tracker.inventory()
-        result["inventory"] = [{"name": name, "count": counts.get(name, 0), "known": name in known}
-                               for name in sorted(tracked)]
+        result["inventory"] = _inventory_rows(self.tracker)
         result["keys"], result["souls"] = self.tracker.keys(), self.tracker.souls()
         return result
 
@@ -85,9 +91,8 @@ class RuntimeTracker:
             state = tracker.check_state(check["id"])
             rows.append({"id": ident, "name": check["name"], "checked": ident in checked or bool(state.get("observed")),
                          "access": state.get("access", "unknown")})
-        counts, known, tracked = tracker.inventory()
         snapshot = self.runtime.summary()
         return {"slot": client.slot_name, "room": "", "checked": sum(row["checked"] for row in rows), "total": len(rows),
                 "won": tracker.goal_reached, "locations": rows, "saves": [], "keys": tracker.keys(), "souls": tracker.souls(),
                 "tracking_status": snapshot.get("tracking", ""),
-                "inventory": [{"name": name, "count": counts.get(name, 0), "known": name in known} for name in sorted(tracked)]}
+                "inventory": _inventory_rows(tracker)}

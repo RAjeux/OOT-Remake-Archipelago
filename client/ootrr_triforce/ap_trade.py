@@ -113,6 +113,14 @@ def build_trade_rewards(pouch_raw, presenter_raw, roster, *, native_info=None, g
         stem = event_stem(record["id"])
         metadata = (recipes[record["item"]] if record["local"]
                     else dict(actor=record["actor"], mode="actor", kind="Item"))
+        if record.get('small_key_token'):
+            from ootrr_full.patching.key_adapter import key_actor_item, small_applied_flag
+            token = record['small_key_token']
+            if (not record['local'] or not isinstance(token, dict)
+                    or key_actor_item(token.get('actor', '')) != record['item']
+                    or token.get('applied') != small_applied_flag(token['actor'])):
+                raise _invalid()
+            metadata = dict(metadata, mode='small_keys', actor=token['actor'], small_key_tokens=[token['actor']])
         style = receipt_style(metadata, native_info) if record["local"] else "large"
         core_name = stem + "_Pouch"
         save = pouch.action(stem + "_Save", "GameSystemActor", "EventTriggerRequestAutoSave", None)

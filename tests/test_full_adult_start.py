@@ -1,15 +1,82 @@
 """Adult start retains the native first-draw rewards and quest initialization."""
 from collections import Counter
+import ast
 import importlib.util
+import json
 import os
 from pathlib import Path
 import sys
+import tempfile
+import types
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'client'))
 from ootrr_full.patching import adult_start
 from ootrr_triforce.full_ap import full_defaults, new_world
+
+
+class PlayableStartBoundaryTests(unittest.TestCase):
+    def test_child_is_available_and_adult_files_remain_inspectable(self):
+        from ootrr_triforce import full_ap
+        values = full_defaults()
+        full_ap.require_playable_start(values)
+        values['full_starting_age'] = 'adult'
+        self.assertEqual(full_ap.validate_full_options(values)['full_starting_age'], 'adult')
+        for configuration in (values, {'starting_age': 'adult'},
+                              {'full_patch': {'options': {'starting_age': 'adult'}}}):
+            with self.assertRaisesRegex(ValueError, '^' + full_ap.ADULT_START_UNAVAILABLE + '$'):
+                full_ap.require_playable_start(configuration)
+        spec = next(row for row in full_ap.full_option_specs() if row['id'] == 'full_starting_age')
+        self.assertEqual(spec['description'], full_ap.ADULT_START_UNAVAILABLE)
+
+    def test_native_and_external_build_and_prepare_cannot_reuse_an_adult_cache(self):
+        from ootrr_triforce import full_ap, full_mod
+        data = {'token': 'unchanged-adult-room', 'full_patch': {'options': {'starting_age': 'adult'}}}
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            cached = root / 'mods/Archipelago'
+            cached.mkdir(parents=True)
+            marker = cached / 'full-player.json'
+            marker.write_text(json.dumps(data), encoding='utf-8')
+            before = marker.read_bytes()
+            with patch.object(full_mod, 'refresh_small_key_poses', side_effect=AssertionError('cache touched')):
+                for native in (False, True):
+                    for worker in (False, True):
+                        settings = {'native': native, 'generation_process': worker}
+                        for function, arguments in (
+                                (full_mod.build, (root, settings, data)),
+                                (full_mod._build_cached, (root, settings, data)),
+                                (full_mod.prepare, (root, settings, {}, data)),
+                                (full_mod._prepare_cached, (root, settings, {}, data))):
+                            with self.subTest(native=native, worker=worker, function=function.__name__):
+                                with self.assertRaisesRegex(ValueError, '^' + full_ap.ADULT_START_UNAVAILABLE + '$'):
+                                    function(*arguments)
+            self.assertEqual(marker.read_bytes(), before)
+            self.assertEqual(sorted(path.relative_to(root).as_posix() for path in root.rglob('*') if path.is_file()),
+                             ['mods/Archipelago/full-player.json'])
+
+    def test_ap_generation_rejects_adult_before_creating_a_world_or_starting_items(self):
+        # Execute the actual APWorld method without requiring AP's application
+        # dependencies. Its imports still use the real shared execution guard.
+        from ootrr_triforce import full_ap
+        source = ast.parse((ROOT / 'apworld/ootrr_remake/__init__.py').read_text(encoding='utf-8'))
+        world = next(node for node in source.body if isinstance(node, ast.ClassDef) and node.name == 'RemakeWorld')
+        method = next(node for node in world.body if isinstance(node, ast.FunctionDef)
+                      and node.name == '_generate_full_network')
+        module = ast.fix_missing_locations(ast.Module(body=[method], type_ignores=[]))
+        namespace = {'__package__': '_adult_boundary_probe'}
+        exec(compile(module, 'APWorld._generate_full_network', 'exec'), namespace)
+        values = full_defaults()
+        values['full_starting_age'] = 'adult'
+        fake_options = types.ModuleType('_adult_boundary_probe.options')
+        fake_options.full_option_values = lambda _: values
+        with patch.dict(sys.modules, {'_adult_boundary_probe.options': fake_options,
+                                      '_adult_boundary_probe.full_ap': full_ap}):
+            with patch.object(full_ap, 'new_world', side_effect=AssertionError('world was allocated')):
+                with self.assertRaisesRegex(ValueError, '^' + full_ap.ADULT_START_UNAVAILABLE + '$'):
+                    namespace['_generate_full_network'](types.SimpleNamespace(options=object()))
 
 
 class AdultLogicTests(unittest.TestCase):

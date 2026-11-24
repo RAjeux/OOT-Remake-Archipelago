@@ -96,7 +96,7 @@ class ExternalWindow:
         automatic = ttk.Checkbutton(form, text=self.text("Connect automatically after launching"), variable=self.automatic)
         automatic.grid(row=11, column=0, sticky="w")
         self.widgets.extend((clear, automatic))
-        ttk.Label(form, text=self.text("DeathLink currently requires native Triforce or Hookshot setup."),
+        ttk.Label(form, text=self.text("DeathLink follows the player file setting. Prepare older rooms again to add its native safety mailbox."),
                   wraplength=740).grid(row=12, column=0, sticky="ew", pady=(12, 0))
         self.chat_pane = ttk.Frame(notebook, padding=12)
         self.chat_pane.columnconfigure(0, weight=1)
@@ -193,7 +193,12 @@ class ExternalWindow:
                 self.status.configure(text=self.text("Choose a full-network player file and your game installation."))
             elif kind in {"open", "prepare"}:
                 self.populate(result)
-                self.status.configure(text=self.text("The external room is ready. Launch the game, then connect."))
+                if result.get('reprepare_required'):
+                    self.status.configure(text=self.text("Update this prepared room using the same player file. Your room identity and existing saves are preserved."))
+                elif result.get('ready'):
+                    self.status.configure(text=self.text("The external room is ready. Launch the game, then connect."))
+                else:
+                    self.status.configure(text=self.text("Prepare this external room again before launching."))
             elif kind == "connect":
                 self.runtime = result
                 self.status.configure(text=self.text("Connecting…"))
@@ -233,6 +238,7 @@ class ExternalWindow:
                 widget.configure(state="disabled")
         ready = bool(self.current.get("ready"))
         self.prepare_button.configure(state="disabled" if self.busy or self.runtime else "normal")
+        self.prepare_button.configure(text=self.text('Update prepared room' if self.current.get('reprepare_required') else 'Install and prepare'))
         for button in (self.play_button, self.connect_button):
             button.configure(state="normal" if ready and not self.busy else "disabled")
         self.disconnect_button.configure(state="normal" if self.runtime and not self.busy else "disabled")
@@ -356,7 +362,8 @@ class ExternalWindow:
             if not self.busy:
                 self.status.configure(text=self.text(snapshot.get("status", "")) + " · " +
                     self.text("{checked}/{total} checks · {received} items received", checked=snapshot.get("checks", 0),
-                              total=snapshot.get("total", 0), received=snapshot.get("received", 0)))
+                              total=snapshot.get("total", 0), received=snapshot.get("received", 0)) +
+                    (" · " + self.text(snapshot['deathlink']) if snapshot.get('deathlink') else ""))
             client = self.runtime.client
             if client.log_count != self.log_count:
                 try:

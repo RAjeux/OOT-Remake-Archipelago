@@ -167,6 +167,24 @@ class APChoiceContractTests(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 type("ForbiddenReservedValue", (self.ap.Choice,), {prefix + "random": 1})
 
+    def test_percentage_choices_keep_actual_values_and_one_hundred_random_rolls_on_native_steps(self):
+        specs = list(settings.OPTION_SPECS) + list(full_ap.full_option_specs())
+        for spec in specs:
+            if spec['kind'] != 'range' or spec.get('step', 1) == 1:
+                continue
+            option = self.world.OPTION_TYPES[spec['id']]
+            allowed = set(range(spec['min'], spec['max'] + 1, spec['step']))
+            with self.subTest(option=spec['id']):
+                self.assertTrue(issubclass(option, self.ap.Choice))
+                for value in (spec['min'], spec['default'], spec['max']):
+                    self.assertEqual(option.from_any(value).value, value)
+                    self.assertEqual(option.from_any(str(value)).value, value)
+                for _ in range(100):
+                    self.assertIn(option.from_any('random').value, allowed)
+                for style in ('random-low', 'random-middle', 'random-high'):
+                    for _ in range(10):
+                        self.assertIn(option.from_any(style).value, allowed)
+
     def test_explicit_random_deals_keeps_its_id_and_native_mode_without_a_roll(self):
         option = self.world.OPTION_TYPES["shuffle_shops"]
         self.assertEqual(option.option_random_deals, 6)

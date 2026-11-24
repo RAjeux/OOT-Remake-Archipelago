@@ -54,6 +54,8 @@ def recovery_records(data, artifact, schema):
                        'restore_location_id': row['id'], 'restore_only': not row['local']}
         if row.get('progressive_token'):
             record['progressive_token'] = copy.deepcopy(row['progressive_token'])
+        if row.get('small_key_token'):
+            record['small_key_token'] = copy.deepcopy(row['small_key_token'])
         result.append(record)
     return result
 
@@ -183,7 +185,19 @@ def bind_records(raw, records, item_entries):
             tail = mark
         calls = []
         if not record.get('restore_only'):
-            give = editor.subflow(stem + '_Give', 'GetPouchContent', item_entries[record['item']], None)
+            if record.get('small_key_token'):
+                from ootrr_full.patching.key_adapter import append_small_key_grant, key_actor_item, small_applied_flag
+                token = record['small_key_token']
+                if (not isinstance(token, dict) or key_actor_item(token.get('actor', '')) != record['item']
+                        or token.get('applied') != small_applied_flag(token['actor'])):
+                    raise ValueError('Invalid external dungeon small-key source token.')
+                source_entry = stem + '_SmallKey'
+                point = EntryPoint(source_entry)
+                point.main_event = make_index(append_small_key_grant(editor, token['actor'], source_entry, None))
+                editor.chart.entry_points.append(point)
+                give = editor.subflow(stem + '_Give', '', source_entry, None)
+            else:
+                give = editor.subflow(stem + '_Give', 'GetPouchContent', item_entries[record['item']], None)
             link(give, tail)
             calls = [give]
             if record.get('spent'):
@@ -231,8 +245,11 @@ def bind_records(raw, records, item_entries):
                             or event.data.cases[0].v.name != PREFIX + record['key'] + '_Flag0'):
                         raise ValueError('Spent trade receipt guard is invalid.')
                     event = event.data.cases[1].v
-            if (type(event.data).__name__ != 'SubFlowEvent' or event.data.res_flowchart_name != 'GetPouchContent'
-                    or event.data.entry_point_name != item_entries[record['item']]):
+            expected_flow = '' if record.get('small_key_token') else 'GetPouchContent'
+            expected_entry = (PREFIX + record['key'] + '_SmallKey' if record.get('small_key_token')
+                              else item_entries[record['item']])
+            if (type(event.data).__name__ != 'SubFlowEvent' or event.data.res_flowchart_name != expected_flow
+                    or event.data.entry_point_name != expected_entry):
                 raise ValueError('External receipt does not begin with its native effect.')
             event = event.data.nxt.v
         for flag in [record['got'], *record.get('also_set', ())]:

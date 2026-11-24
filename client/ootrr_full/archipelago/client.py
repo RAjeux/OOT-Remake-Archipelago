@@ -117,7 +117,8 @@ def render(parts, names):
 class ArchipelagoClient:
     """One connection to one slot. ``on_change()`` is called from the network thread."""
 
-    def __init__(self, manifest, address, password='', slot=None, on_change=None, connect=None, delivery=None):
+    def __init__(self, manifest, address, password='', slot=None, on_change=None, connect=None, delivery=None,
+                 deathlink=None):
         self.slot_name, location_ids, self.seed_key = archipelago_info(manifest)
         info = manifest.get('archipelago') or {}
         patch = (manifest.get('settings') or {}).get('archipelago') or {}
@@ -157,6 +158,8 @@ class ArchipelagoClient:
         self.room_seed = None
         # Items handed to the running game (None: not on this system, or disabled).
         self.delivery = delivery
+        self.deathlink = deathlink
+        self._connection_epoch = 0
         from ootrr_full.tracker import live_memory
         if self.delivery is None and live_memory.supported():
             from ootrr_full.archipelago.receive import LiveDelivery
@@ -347,6 +350,11 @@ class ArchipelagoClient:
                 pass
             with self._lock:
                 self.connected = False
+                self._history_synced = False
+                self._connection_epoch += 1
+                self._outbox.clear()
+            if self.deathlink is not None:
+                self.deathlink.suspend()
 
     def _send(self, socket, *packets):
         socket.send(json.dumps(list(packets)))
@@ -379,7 +387,8 @@ class ArchipelagoClient:
             self._send(socket, {'cmd': 'GetDataPackage', 'games': games},
                        {'cmd': 'Connect', 'password': self.password, 'game': GAME, 'name': self.slot_name,
                         'uuid': self.uuid, 'version': VERSION, 'items_handling': ITEMS_HANDLING,
-                        'tags': [], 'slot_data': True})
+                        'tags': ['AP', 'DeathLink'] if self.deathlink is not None and self.deathlink.enabled else [],
+                        'slot_data': True})
             self._set_status('Room found, joining as ' + self.slot_name + '...')
         elif cmd == 'ConnectionRefused':
             errors = packet.get('errors') or ['refused']
@@ -404,6 +413,7 @@ class ArchipelagoClient:
                 self.reporter.reset_connection(packet.get('checked_locations') or [])
                 self.received = []
                 self._history_synced = False
+                self._connection_epoch += 1
                 self.connected = True
             self._set_status(f'Connected as {self.slot_name}'
                              + ('' if self.encrypted else ' (not encrypted)'), connected=True)
@@ -458,6 +468,12 @@ class ArchipelagoClient:
             with self._lock:
                 self._log('Server rejected a packet: ' + str(packet.get('text', '')))
             self.on_change()
+        elif cmd == 'Bounced' and self.deathlink is not None:
+            with self._lock:
+                authenticated = self.connected and self._history_synced
+                aliases = (self.players.get(self.slot),)
+            if authenticated:
+                self.deathlink.receive(packet, aliases=aliases)
 
     # -------------------------------------------------------------- helpers
     @staticmethod
@@ -505,6 +521,8 @@ class ArchipelagoClient:
             suspend = getattr(self.delivery, 'suspend', None)
             if suspend is not None:
                 suspend()
+            if self.deathlink is not None:
+                self.deathlink.suspend()
         self.on_change()
 
 

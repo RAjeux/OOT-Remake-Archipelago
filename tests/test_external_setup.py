@@ -51,8 +51,10 @@ class SetupTests(unittest.TestCase):
             target = Path(root) / "mods/Archipelago"
             (target / "romfs").mkdir(parents=True)
             (target / "romfs/resource").write_bytes(b"prepared mod")
-            (target / "manifest.json").write_text(json.dumps({"archipelago": {"token": TOKEN},
-                "external_readiness": {"flag": "Archipelago.Ready." + TOKEN}}), encoding="utf-8")
+            from ootrr_triforce.upgrade_deathlink import metadata
+            (target / "manifest.json").write_text(json.dumps({"archipelago": {"token": TOKEN, 'generation_mode': 'full_network'},
+                "resource_allocations": {'version': 1}, 'external_deathlink': metadata(TOKEN, enabled=False),
+                "external_readiness": {"flag": "Archipelago.Ready." + TOKEN, 'version': 2}}), encoding="utf-8")
         def artifact(directory, token):
             setup._no_native(directory)
             value = json.loads((Path(directory) / "manifest.json").read_text())
@@ -94,6 +96,35 @@ class SetupTests(unittest.TestCase):
         self.assertEqual((backup / "previous-resource").read_bytes(), b"old managed mod")
         self.assertEqual(first["token"], second["token"])
         self.assert_preserved()
+
+    def test_old_profile_offers_same_player_reprepare_and_blocks_game_or_connection(self):
+        first = setup.configure(self.request)
+        path = self.mods / 'Archipelago/manifest.json'
+        document = json.loads(path.read_text(encoding='utf8'))
+        document.pop('resource_allocations')
+        document['external_readiness']['version'] = 1
+        path.write_text(json.dumps(document), encoding='utf8')
+        before = path.read_bytes()
+        opened = setup.open_profile(first['profile'])
+        self.assertFalse(opened['ready'])
+        self.assertTrue(opened['reprepare_required'])
+        self.assertEqual(opened['profile'], first['profile'])
+        self.assertFalse(opened['deathlink_supported'])
+        with patch.object(setup.subprocess, 'Popen') as popen:
+            with self.assertRaisesRegex(ValueError, 'same player file'): setup.launch(first['profile'])
+            popen.assert_not_called()
+        with self.assertRaisesRegex(ValueError, 'same player file'): setup.connect(first['profile'])
+        self.assertEqual(path.read_bytes(), before)
+        self.assert_preserved()
+
+    def test_deathlink_support_reflects_enabled_prepared_metadata(self):
+        first = setup.configure(self.request)
+        self.assertFalse(first['deathlink_supported'])
+        path = self.mods / 'Archipelago/manifest.json'
+        document = json.loads(path.read_text(encoding='utf8'))
+        document['external_deathlink']['enabled'] = True
+        path.write_text(json.dumps(document), encoding='utf8')
+        self.assertTrue(setup.open_profile(first['profile'])['deathlink_supported'])
 
     def test_failure_after_backup_restores_the_original_mod_and_profile(self):
         first = setup.configure(self.request)

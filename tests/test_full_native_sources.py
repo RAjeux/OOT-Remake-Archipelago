@@ -20,6 +20,15 @@ def extra_plan():
 
 
 class SourceIdentityTests(unittest.TestCase):
+    def test_structural_reward_adapter_leaves_loose_key_pickups_to_their_own_adapter(self):
+        from ootrr_full.game.loose_keys import entries as loose_keys
+        plan = extra_plan()
+        expected = _operations(plan)
+        for gid, row in loose_keys({'individual_smallkeys': True}).items():
+            plan['matches'][gid] = row
+            plan['placements'].append({'id': gid, 'after': 'Item_AP_ForeignKeyPickup'})
+        self.assertEqual(_operations(plan), expected)
+
     def test_physical_handover_targets_are_unique_except_the_explicit_ten_case_bean_dispatcher(self):
         world = new_world(full_defaults(), 'physical-source-identity')
         targets = defaultdict(set)

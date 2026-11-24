@@ -83,14 +83,14 @@ def _template(files, name):
 
 
 def native_templates(global_files, navi_files):
-    names = ("QueryPlayerGetCurrentActionVerb", "QueryPlayerIsEquipMiniGameItem",
+    names = ("QueryBSAGetActionVerb", "QueryPlayerIsEquipMiniGameItem",
              "QueryGetNonStructGameDataBool", "OneShotSetNonStructGameDataBool")
     result = {name: _template(global_files, name) for name in names}
     result["QueryNaviIsWaitPlayerStateDrawnFishingRod"] = _template(
         navi_files, "QueryNaviIsWaitPlayerStateDrawnFishingRod")
-    action = result["QueryPlayerGetCurrentActionVerb"]
+    action = result["QueryBSAGetActionVerb"]
     if (action["Parameters"]["Inputs"].get("Int", [{}])[0].get("Name") != "ActionSlot"
-            or action["Parameters"]["Outputs"].get("Int", [{}])[0].get("Name") != "CurrentActionVerb"):
+            or action["Parameters"]["Outputs"].get("Int", [{}])[0].get("Name") != "ActionVerb"):
         raise ValueError("Unexpected native action-verb query.")
     for name in ("QueryPlayerIsEquipMiniGameItem", "QueryNaviIsWaitPlayerStateDrawnFishingRod"):
         if result[name]["Parameters"]["Inputs"]:
@@ -114,7 +114,10 @@ def patch_player_brain(raw, flag, templates):
     # Root -> action whitelist -> rod check -> minigame check -> pause -> load.
     # Every failure writes false. The native setters run every frame, including
     # while the same branch stays selected (there is no timing-only retry).
-    action = copy.deepcopy(templates["QueryPlayerGetCurrentActionVerb"])
+    # QueryPlayerGetCurrentActionVerb asks an NPC's BSA target for the player's
+    # action; a Player brain has no such target. This own-actor query directly
+    # reads its native current controller and unwraps its 0x11a action wrapper.
+    action = copy.deepcopy(templates["QueryBSAGetActionVerb"])
     action.update({"Node Index": 1, "GUID": _guid(flag, 1), "Plugs": {}, "Queries": []})
     action["Parameters"]["Inputs"]["Int"][0] = _default("ActionSlot", 0)
     root = _node("Element_S32Selector", 0, flag, inputs={"Int": [_from_query("Input", 1, "Int")]}, queries=(1,))
@@ -340,5 +343,5 @@ def prepare_external_readiness(romfs, mod, token):
         target = mod / path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(raw)
-    return {"flag": flag, "version": 1, "safe_verbs": sorted(SAFE_VERBS),
+    return {"flag": flag, "version": 2, "safe_verbs": sorted(SAFE_VERBS),
             "resources": {path: hashlib.sha256(raw).hexdigest() for path, raw in modified.items()}}

@@ -56,6 +56,7 @@ header = r'''
 typedef int Ctx;
 enum { OOT_GAMEDATA_SLOT = 20, OOT_EVENTMGR_SLOT = 21 };
 static uint64_t core[1024], components_memory[128], controller_memory[64], action_memory[16], actor_memory, event_manager[16];
+static uint64_t player_manager[256], player_table[16], player_entries[48], player_extension[512];
 static struct Life { uint64_t type; int32_t current; uint32_t hash; } life, max_life;
 static int manager_exists, save_exists, pouch_count, loading, valid_core, paused, pause_known;
 static int remote_pending, states[32], state_count, gd_count, marks, log_count;
@@ -81,6 +82,10 @@ static void *guest_pointer(uint64_t address, size_t length) {
            contains(controller_memory, sizeof controller_memory, address, length) ||
            contains(action_memory, sizeof action_memory, address, length) ||
            contains(event_manager, sizeof event_manager, address, length) ||
+           contains(player_manager, sizeof player_manager, address, length) ||
+           contains(player_table, sizeof player_table, address, length) ||
+           contains(player_entries, sizeof player_entries, address, length) ||
+           contains(player_extension, sizeof player_extension, address, length) ||
            contains(&life, sizeof life, address, length) ||
            contains(&max_life, sizeof max_life, address, length));
     return (void *)(uintptr_t)address;
@@ -102,8 +107,9 @@ static uint32_t recomp_load32(Ctx *c, uint64_t address) {
     memcpy(&value, guest_pointer(address, sizeof value), sizeof value);
     return value;
 }
-static uint64_t oot_singleton(Ctx *c, int slot) {
+static uint64_t oot_singleton(Ctx *c, uint64_t slot) {
     (void)c;
+    if (slot == 0x84c9e178ULL) return (uintptr_t)player_manager;
     if (slot == OOT_EVENTMGR_SLOT) return (uintptr_t)event_manager;
     assert(slot == OOT_GAMEDATA_SLOT);
     return manager_exists ? 123 : 0;
@@ -151,6 +157,16 @@ static void reset(void) {
     memset(controller_memory, 0, sizeof controller_memory);
     memset(action_memory, 0, sizeof action_memory);
     memset(event_manager, 0, sizeof event_manager);
+    memset(player_manager, 0, sizeof player_manager);
+    memset(player_table, 0, sizeof player_table);
+    memset(player_entries, 0, sizeof player_entries);
+    memset(player_extension, 0, sizeof player_extension);
+    player_manager[0] = 0x84c89f98ULL;
+    player_manager[0x1f0 / 8] = (uintptr_t)player_table;
+    player_table[0x50 / 8] = 41;
+    player_table[0x58 / 8] = (uintptr_t)player_entries;
+    player_entries[0x110 / 8] = (uintptr_t)player_extension;
+    player_extension[0] = 0x84bc16e0ULL;
     life = (struct Life){0x84b83438ULL, 12, 0x31ab5580u};
     max_life = (struct Life){0x84b83438ULL, 20, 0xfbe01da1u};
     core[7184 / 8] = (uintptr_t)&life;
@@ -281,7 +297,13 @@ int main(void) {
     assert(ap_player16(&c,actor,components,1000000000) && !ap_delivery_ready16 && states[0]==2);
     reset(); controller_memory[0x1c0 / 8]=0;
     assert(ap_player16(&c,actor,components,1000000000) && !ap_delivery_ready16 && states[0]==2);
-    reset(); core[0xa38 / 8]=0x400; /* rod drawn even between casts */
+    reset(); player_extension[0xa38 / 8]=0x400; /* rod drawn even between casts */
+    assert(ap_player16(&c,actor,components,1000000000) && !ap_delivery_ready16 && states[0]==2);
+    reset(); core[0xa38 / 8]=0x400; /* movement/life core is not the fishing extension */
+    assert(ap_player16(&c,actor,components,1000000000) && ap_delivery_ready16 && states[0]==0);
+    reset(); player_extension[0]=0;
+    assert(ap_player16(&c,actor,components,1000000000) && !ap_delivery_ready16 && states[0]==2);
+    reset(); player_table[0x50 / 8]=0x22;
     assert(ap_player16(&c,actor,components,1000000000) && !ap_delivery_ready16 && states[0]==2);
     reset(); action_memory[0x28 / 8]=0x11a;
     ((uint32_t*)action_memory)[0x4c / 4]=0x28;

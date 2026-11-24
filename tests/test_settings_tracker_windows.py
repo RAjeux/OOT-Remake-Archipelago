@@ -88,6 +88,8 @@ class SettingsAndTrackerWidgets(unittest.TestCase):
         self.window = ProgressWindow(self.root, self.profile, provider_factory=Provider)
         self.pump(lambda: len(self.window.list.get_children()) == 2)
         self.assertEqual(len(self.window.inventory.get_children()), 1)
+        first = self.window.inventory.get_children()[0]
+        self.assertEqual(self.window.inventory.item(first, 'values'), ('1', 'Recorded progression'))
         self.window.hide_completed.set(True)
         self.window.render()
         self.assertEqual(self.window.list.get_children(), ("2",))
@@ -95,6 +97,23 @@ class SettingsAndTrackerWidgets(unittest.TestCase):
         self.assertEqual(self.window.list.get_children(), ())
         self.assertEqual(save.read_bytes(), b"unchanged-save")
         self.assertTrue(all(thread != threading.get_ident() for _operation, thread in calls))
+
+    def test_tracker_distinguishes_saved_stock_and_recorded_progression_in_french(self):
+        class Provider:
+            def __init__(self, *_args):
+                pass
+            def refresh(self, _path):
+                return {'slot': 'Link', 'checked': 0, 'total': 0, 'locations': [], 'saves': [],
+                        'keys': [], 'souls': [], 'tracking_status': '', 'inventory': [
+                            {'name': 'Deku Shield', 'count': 0, 'known': True, 'observation': 'Observed stock'},
+                            {'name': 'Hylian Shield', 'count': 0, 'known': False, 'observation': 'Stock unavailable'},
+                            {'name': 'Bow', 'count': 1, 'known': True, 'observation': 'Recorded progression'}]}
+        self.window = ProgressWindow(self.root, self.profile, language='fr', provider_factory=Provider)
+        self.pump(lambda: len(self.window.inventory.get_children()) == 3)
+        rows = [self.window.inventory.item(ident, 'values') for ident in self.window.inventory.get_children()]
+        self.assertEqual(rows, [('0', 'Stock observé'), ('Inconnu', 'Stock non disponible'),
+                                ('1', 'Progression enregistrée')])
+        self.assertEqual(self.window.inventory.heading('observation', 'text'), 'Observation')
 
 
 if __name__ == "__main__":

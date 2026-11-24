@@ -26,6 +26,8 @@ class FakeTracker:
         return {"completed": True, "observed": False, "reward": "Secret planned Bow", "access": "blocked"}
     def inventory(self):
         return Counter({"Kokiri Sword": 1}), {"Kokiri Sword", "Bow"}, {"Kokiri Sword", "Bow"}
+    def inventory_observations(self):
+        return {"Kokiri Sword": "Recorded progression", "Bow": "Recorded progression"}
     def keys(self):
         return []
     def souls(self):
@@ -58,6 +60,7 @@ class TrackerServiceTests(unittest.TestCase):
         self.assertFalse(result["locations"][0]["observed"])
         self.assertNotIn("Secret planned", json.dumps(result))
         self.assertEqual({row["name"]: row["count"] for row in result["inventory"]}, {"Bow": 0, "Kokiri Sword": 1})
+        self.assertEqual({row["observation"] for row in result["inventory"]}, {"Recorded progression"})
         self.assertEqual(save.read_bytes(), b"untouched")
 
     def test_wrong_artifact_token_or_foreign_save_cannot_supply_inventory(self):

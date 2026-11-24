@@ -38,6 +38,20 @@ class SteppedRange(Range):
         return cls(cls.range_start + cls.step * random_weighted_range(style, first, last))
 
 
+class SteppedNumericChoice(Choice):
+    """Actual numeric IDs keep every AP random roll on the native increments."""
+    step = 1
+
+    @classmethod
+    def from_text(cls, text):
+        # Retain AP's biased/range syntax as a convenience, while ordinary
+        # "random" uses Choice's actual finite native values rather than
+        # Range.random_range's arbitrary integer between the endpoints.
+        if text.casefold().startswith('random-'):
+            return SteppedRange.weighted_range.__func__(cls, text.casefold())
+        return super().from_text(text)
+
+
 def _option_type(spec):
     name = "".join(part.title() for part in spec["id"].split("_"))
     attrs = {"__module__": __name__, "__doc__": spec["description"],
@@ -51,8 +65,11 @@ def _option_type(spec):
                       for index, value in enumerate(spec["choices"])})
         attrs["default"] = spec["choices"].index(spec["default"])
     elif kind == "range":
-        base = SteppedRange if spec["step"] > 1 else Range
+        base = SteppedNumericChoice if spec["step"] > 1 else Range
         attrs.update(default=spec["default"], range_start=spec["min"], range_end=spec["max"], step=spec["step"])
+        if spec['step'] > 1:
+            attrs.update({'option_' + str(value): value
+                          for value in range(spec['min'], spec['max'] + 1, spec['step'])})
     elif kind == "set":
         base = OptionSet
         attrs.update(default=frozenset(spec["default"]), valid_keys=frozenset(spec["choices"]))

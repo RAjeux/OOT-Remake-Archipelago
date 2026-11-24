@@ -27,6 +27,7 @@ TEXT = {
     "home": "Home",
     "play": "Play",
     "setup": "Set up a room",
+    "update_room": "Update prepared room",
     "yaml": "Create YAML",
     "connection": "Connection",
     "rooms": "My rooms",
@@ -86,6 +87,7 @@ TEXT = {
     "update_title": "Room update required.",
     "prepare_first": "Prepare a room to enable Play.",
     "update_needed": "This room needs an update. Choose Set up a room to prepare it.",
+    "resource_update": "Update this room with the same player file. Its save and room are preserved; a new seed is not required.",
     "finding": "Finding your game and prepared room…",
     "player_room": "{slot} · Room {room}",
     "setup_intro": "Choose the player file generated for you by Archipelago. Your existing saves are kept.",
@@ -716,7 +718,10 @@ class AppWindow:
                       if ready else self._text("update_needed"))
         else:
             detail = self._text("prepare_first")
+        if self.current.get('reprepare_required'):
+            detail = self._text('resource_update')
         self.home_room.configure(text=detail)
+        self.setup_button.configure(text=self._text('update_room' if self.current.get('reprepare_required') else 'setup'))
         self.play_button.configure(state="normal" if ready and not self.busy else "disabled")
         self.connection_button.configure(state="normal" if self.current.get("profile") and not self.busy else "disabled")
         self.tracker_button.configure(state="normal" if self.current.get("profile") and not self.busy else "disabled")

@@ -20,7 +20,7 @@ from .save_bridge import atomic, write_json
 
 GAME_DATA = "GameData/GameDataList.Product.110.byml.zs"
 MARKER = "Archipelago/room-v1.txt"
-BUILD_MARK = b"OOTRR-AP native ABI 1"
+BUILD_MARK = b"OOTRR-AP native ABI 1: host revision 2"
 RT_FILES = ("ootrr_archipelago.inc", "ootrr_ap_items.inc", "ootrr_ap_digest.h")
 MENU_FILES = ("ootrr_ap_menu.inc",)
 MENU_BUILD_MARK = b"ootrr_ap_menu16"
@@ -259,6 +259,14 @@ def compiled_executable(romfs, tools=None):
                     if tools else [])
     if any(not helper.is_file() for helper in (*helpers,*menu_helpers)):
         return None
+    if tools:
+        try:
+            bundle_sources = {Path(tools)/"host"/name: resource_root()/"native"/name for name in RT_FILES}
+            bundle_sources.update({Path(tools)/"gpu/vk"/name: resource_root()/"native"/name for name in MENU_FILES})
+            if any(installed.read_bytes()!=packaged.read_bytes() for installed,packaged in bundle_sources.items()):
+                return None
+        except OSError:
+            return None
     for path in (romfs.parent/"Triforce.exe",romfs.parent/"bin/Triforce.exe"):
         renderer=path.parent/"triforce_vk.dll"
         if path.is_file() and path.stat().st_size and renderer.is_file() and renderer.stat().st_size:

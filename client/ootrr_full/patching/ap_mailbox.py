@@ -57,12 +57,21 @@ def records(remote):
     from ootrr_full.game.item_forms import form_actor
     from ootrr_full.game.remake_world import PROGRESSIVE
     from ootrr_full.patching.ammo_quantities import exact_ammunition_grant, ammunition_capacity, quantity_spec
-    result, seen = [], set()
+    result, seen, small_counts = [], set(), {}
     for entry in remote:
         key = record_key(entry['player'], entry['location'])
         if key in seen:
             raise ValueError('Two remote items share a key: ' + key)
         seen.add(key)
+        from ootrr_full.patching.key_adapter import is_small_key, item_folder, small_key_actor
+        if is_small_key(entry['item']):
+            folder = item_folder(entry['item'])
+            small_counts[folder] = small_counts.get(folder, 0) + 1
+            actor = small_key_actor(folder, small_counts[folder], remote=True)
+            result.append({'key': key, 'item': entry['item'], 'player': entry['player'],
+                           'location': entry['location'], 'actor': actor, 'style': 'get',
+                           'event': PREFIX + key, 'recv': RECV + key, 'got': GOT + key})
+            continue
         if entry['item'] in PROGRESSIVE:
             # Tier chosen in game: the one above the highest Link holds (see add_entries).
             tiers = list(PROGRESSIVE[entry['item']])
@@ -120,9 +129,12 @@ def remote_actor(item):
     """
     from ootrr_full.game.remake_world import item_actor
     from ootrr_full.patching.key_adapter import BOSS_KEY_DUNGEONS, DUNGEON_FOLDER, boss_actor
+    from ootrr_full.patching.key_adapter import is_small_key, item_folder, small_key_actor
+    if is_small_key(item):
+        return small_key_actor(item_folder(item), 1, remote=True)
     if item.startswith('Boss Key ('):
         folder = DUNGEON_FOLDER.get(item[len('Boss Key ('):-1])
-        if folder in BOSS_KEY_DUNGEONS:
+        if folder in (*BOSS_KEY_DUNGEONS, 'InsideGanonCastle'):
             return boss_actor(folder)
     try:
         actor = item_actor(item, None)

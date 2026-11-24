@@ -525,26 +525,26 @@ WATCH_NODES = ['SeqQueryGetNonStructGameDataBool', 'Element_BoolSelector', 'SeqQ
                'SeqExecuteGenericDummyAction']
 
 
-def watch_event_row(settings_raw):
+def watch_event_row(settings_raw, *, event_name=WATCH_EVENT, entry_name=CONVERTER_ENTRY):
     """EventSetting row requesting the converter entry of ActionGuide (no actor)."""
     import copy
     from ootrr_full.formats import byml_codec
     document = byml_codec.load(settings_raw)
     rows = document['root']
     by_id = {row['__RowId']: row for row in rows}
-    if WATCH_EVENT in by_id:
-        raise ValueError('EventSetting row already present: ' + WATCH_EVENT)
+    if event_name in by_id:
+        raise ValueError('EventSetting row already present: ' + event_name)
     row = copy.deepcopy(by_id[WATCH_TEMPLATE_ROW])
     row.pop('EventEffectSetting', None)
-    row['__RowId'] = WATCH_EVENT
+    row['__RowId'] = event_name
     row['FlowchartFileName'] = f'Work/Event/EventFlow/{ACTION_GUIDE}.evfc'
-    row['EntryPointName'] = CONVERTER_ENTRY
+    row['EntryPointName'] = entry_name
     rows.append(row)
     rows.sort(key=lambda r: r['__RowId'])
     return byml_codec.dump(document)
 
 
-def watch_analyzed_row(info_raw, current):
+def watch_analyzed_row(info_raw, current, *, event_name=WATCH_EVENT, entry_name=CONVERTER_ENTRY):
     """GameAnalyzedEventInfo row listing everything the converter calls. ``current(name)``: raw of a flow."""
     import copy
     from ootrr_full.formats import byml_codec
@@ -552,10 +552,10 @@ def watch_analyzed_row(info_raw, current):
     document = byml_codec.load(info_raw)
     rows = document['root']
     by_id = {row['__RowId']: row for row in rows}
-    if WATCH_EVENT in by_id:
-        raise ValueError('GameAnalyzedEventInfo row already present: ' + WATCH_EVENT)
+    if event_name in by_id:
+        raise ValueError('GameAnalyzedEventInfo row already present: ' + event_name)
     current = _cached_charts(current)
-    call = (ACTION_GUIDE, CONVERTER_ENTRY)
+    call = (ACTION_GUIDE, entry_name)
     row = copy.deepcopy(by_id[WATCH_TEMPLATE_ANALYZED])
     flows = closure({call}, current) - {ACTION_GUIDE}
     if flows:
@@ -565,13 +565,14 @@ def watch_analyzed_row(info_raw, current):
         children.update((by_id.get(child) or {}).get('ChildEventList') or [])
     if children:
         row['ChildEventList'] = sorted(children, key=str.lower)
-    row['__RowId'] = WATCH_EVENT
+    row['__RowId'] = event_name
     rows.append(row)
     rows.sort(key=lambda r: r['__RowId'])
     return byml_codec.dump(document), {'subflows': row.get('SubFlowList', []), 'children': row.get('ChildEventList', [])}
 
 
-def patch_main_update(raw, tokens):
+def patch_main_update(raw, tokens, *, event_name=WATCH_EVENT, got_name=got_flag, applied_name=applied_flag,
+                      guid_prefix='0a9a9b00'):
     """The global sequence with one watcher per token (7 nodes each, in groups under the root)."""
     import copy
     import ainb
@@ -588,7 +589,7 @@ def patch_main_update(raw, tokens):
     tokens = sorted(tokens)
 
     def guid(index):
-        return f'0a9a9b00-0000-4000-8000-{index:012x}'
+        return f'{guid_prefix}-0000-4000-8000-{index:012x}'
 
     def user(index, name, inputs, outputs=None, flags=(), properties=None):
         return {'Node Type': 'UserDefined', 'Node Index': index, 'Name': name, 'GUID': guid(index),
@@ -622,7 +623,7 @@ def patch_main_update(raw, tokens):
             groups.append(group)
         got_q, got_s, applied_q, applied_s, request_i, idle_a, idle_b = range(len(nodes), len(nodes) + 7)
         request = user(request_i, 'SeqOneShotRequestEvent', {
-            'Bool': [_input('IsBancParamValue', False, True)], 'String': [_input('EventName', WATCH_EVENT)]},
+            'Bool': [_input('IsBancParamValue', False, True)], 'String': [_input('EventName', event_name)]},
             properties=once)
         idle = []
         for index in (idle_a, idle_b):
@@ -630,8 +631,8 @@ def patch_main_update(raw, tokens):
             node.update({'Node Index': index, 'GUID': guid(index)})
             idle.append(node)
         # Got and not yet converted: request; any other state does nothing.
-        nodes.extend([query(got_q, got_flag(token)), selector(got_s, got_q, applied_s, idle_a),
-                      query(applied_q, applied_flag(token)), selector(applied_s, applied_q, idle_b, request_i),
+        nodes.extend([query(got_q, got_name(token)), selector(got_s, got_q, applied_s, idle_a),
+                      query(applied_q, applied_name(token)), selector(applied_s, applied_q, idle_b, request_i),
                       request, idle[0], idle[1]])
         groups[-1]['Plugs']['Child'].append({'Node Index': got_s, 'Name': ''})
     result = ainb_to_binary(document)
@@ -644,7 +645,7 @@ def patch_main_update(raw, tokens):
                 n['Name'] or n['Node Type'] for n in check[base:base + 7]] != WATCH_NODES:
             raise ValueError('MainUpdate token watcher not written as expected: ' + token)
         names = [check[base + k]['Parameters']['Inputs']['String'][0]['Default Value'] for k in (0, 2, 4)]
-        if names != [got_flag(token), applied_flag(token), WATCH_EVENT]:
+        if names != [got_name(token), applied_name(token), event_name]:
             raise ValueError('MainUpdate token watcher misread: ' + token)
         if check[group]['Plugs']['Child'][slot]['Node Index'] != base + 1:
             raise ValueError('MainUpdate token watcher not attached: ' + token)
@@ -680,12 +681,12 @@ def pose_lender(family):
     return SAME_MODEL.get(model, model)
 
 
-def pose_parts(read_raw, family):
+def pose_parts(read_raw, family=None, *, lender=None):
     """``(files, components, actor_info)`` posing a token like its first level, or None."""
     from ootrr_full.formats import byml_codec
     from ootrr_full.formats.inspect_resources import sarc
     from ootrr_full.game.item_forms import _copy_ref, _pack_path, resolve_components
-    lender = pose_lender(family)
+    lender = pose_lender(family) if lender is None else lender
     pack = sarc(read_raw(f'Pack/Actor/{lender}.pack.zs'))
     components = resolve_components(pack, lender, byml_codec)
     refs = {key: components.get(key) for key in POSE_KEYS}

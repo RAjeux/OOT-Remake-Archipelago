@@ -1,10 +1,10 @@
-OOT Remake Archipelago · 0.11.0-alpha.1
+OOT Remake Archipelago · 0.12.0-alpha.1
 English player guide — French: Guide-FR.txt
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
 GET STARTED
 
-Download OOT-Remake-Archipelago-0.11.0-alpha.1.exe from project Releases.
+Download OOT-Remake-Archipelago-0.12.0-alpha.1.exe from project Releases.
 Keep this Windows x64 application wherever you prefer. Python and Node.js
 are included; normal use needs no console.
 
@@ -42,12 +42,39 @@ advanced AP common fields, weighted values and unknown fields. Export can
 also write JSON. Cancel in Settings keeps the previous configuration.
 
 Full network uses generation_mode: full_network and full_* settings. Its
-defaults create 1,104 real AP checks, including 98 Gold Skulltulas and 64
+119 controls cover supported shuffles, goals, entrances, economy, starting
+state, native quality-of-life and difficulty options. The new defaults create
+1,106 real AP checks, including 98 Gold Skulltulas and 64
 slots across eight shops. Enabled supported sources use AP placements
 instead of separate local randomized rewards. Locations with approximate
 access hold filler; progression uses precise access. Dungeon-item rules
 still apply. AP can place ordinary progression in other players' games,
 without promising identical counts or progression timing for each world.
+
+Individual dungeon keys can travel through AP and always credit their own
+dungeon. Selected key-ring dungeons use one complete ring; others use
+individual keys when enabled. The real native supply has 39 keys, including
+two newly supported loose-key checks. Spending/reconnecting does not refund
+a key. Older player files retain their original 1,104 checks and key behavior.
+Water/Well/Ganon logic uses the real 4/2/1-key supplies in every mode, without
+adding keys or increasing a lower requirement.
+
+Bridge and Ganon boss-key/LACS conditions follow their selected thresholds;
+trials can range from zero to six. Heart goals use the remake's actual health
+supply and add missing heart pieces to the normal AP pool when necessary.
+Prices and wallet requirements match the native 200/500/1,000-rupee wallets.
+Dungeon entrance shuffle keeps paired doors, age rules and return routes.
+Overworld/interior entrance shuffle, silver-rupee shuffle and Triforce Hunt
+are not offered. Read descriptions for each supported mode and limitation.
+
+Two challenges need compatible settings. Losing a heart after Game Over
+cannot accompany an active bridge/LACS requirement above three hearts.
+No random ammunition drops requires renewable stock: leave shops unshuffled
+or use numbered Shopsanity instead of shuffling every shop slot. Placed AP
+ammunition, sticks and nuts remain usable. Validation explains conflicts.
+Entrance layouts also check access to real unshuffled equipment. A shield
+displaced by whole-shop shuffle can enter the ordinary AP pool when needed;
+this does not give starting equipment or force the item into your own world.
 
 Legacy retains the previous native OOTRR options and narrower AP catalogue.
 Imported old YAMLs keep that engine. It downloads OOTRR 0.8.1 when needed;
@@ -59,11 +86,10 @@ or reconnecting cannot change a seed. Existing player files remain readable.
 Random? rolls options independently; dependencies still apply. Read each
 option's description before randomizing everything.
 
-Experimental adult start plays the native first-pedestal and Rauru prologue
-before giving control in the Temple of Time. Both real reward sources run
-once. A shuffled Master Sword must be received as its actual item; the
-adapted pedestal still permits returning to childhood without it. A new
-save and gameplay confirmation are required for this option.
+Choose Child as the starting age in Full network. Adult start is temporarily
+unavailable because its native opening transition can stall; generation and
+preparation reject this mode. Existing adult player files remain readable
+for diagnosis. Changing the starting age requires a new room and fresh save.
 
 CONNECTION AND DEATHLINK
 
@@ -82,9 +108,10 @@ archipelago.gg uses TLS automatically. 127.0.0.1:38281 is the usual local
 address on the computer hosting the server.
 
 Enable death_link in the player settings before generation to share deaths
-through the native bridge. Observed paused or busy actions defer incoming
-deaths until suitable control resumes. External DeathLink is unavailable.
-Not every menu transition or host revision has been tested in-game.
+through the native bridge or a newly prepared external runtime. Observed
+paused or busy actions defer incoming deaths until suitable control resumes.
+Loading/reconnection does not replay old deaths. Not every menu transition
+or host revision has been tested in-game.
 
 REWARDS AND SAVES
 
@@ -110,6 +137,11 @@ equipment gives nothing: no substitute rupee or popup; the index advances.
 The entire catalogue and every constrained action have not been manually
 played through. Presentation remains an area for regression testing.
 
+Actual private Hookshot tests received two individual Forest keys through
+a real AP server outside their dungeon. Only Forest held/found counters
+advanced, from 0 to 1 to 2; duplicate checks gave no additional key. Child
+and adult models fit the native presentation without camera overrides.
+
 ROOMS, BACKUPS, TRACKER AND CHAT
 
 My rooms lists prepared profiles. Rename them, open an external room or
@@ -128,6 +160,13 @@ inventory, keys, souls and estimated access from an observed save. Select
 a save when there are several. Estimates may wait until saving and remain
 informational. The tracker sends no manual checks or planned reward spoilers.
 
+The Observation column separates Observed stock from Recorded progression.
+New shield tracking reads saved pouch quantities: a burned Deku Shield can
+remain historically obtained with zero stock. Stock unavailable means the
+live bool-only tracker needs a saved snapshot. It never refunds the shield
+or changes an AP receipt. Ordinary recorded progression is not a promise of
+an exact current consumable inventory.
+
 Archipelago chat uses the existing connection. Only Send sends a message.
 Recent history is bounded and kept in memory. Native chat creates no second
 AP login and does not queue messages for another room.
@@ -145,16 +184,20 @@ Opening a library profile does not connect automatically. Disconnect before
 changing installation inputs. Live tracking before the first save requires
 verification of the running game's seed.
 
-Seed and receipt-readiness checks guard delivery. Protocol/setup tests do
-not establish every port or emulator version. External DeathLink is not
-implemented; no Linux executable is packaged. Historical Fritchii tests
-proved RomFS loading and the AP title badge only. Native Triforce remains
-the established gameplay path. See docs/PORT-COMPATIBILITY.md for evidence.
+Seed and native receipt-readiness checks guard delivery. Actual Fritchii
+5.8.4/game 1.1.1 tests now verify offline items, native Bow reception,
+pause/ladder deferral and DeathLink in both directions with a real AP room
+and second player. Keep this window open for the external connection.
+Other emulator revisions still need their own validation; no Linux
+executable is packaged. See docs/PORT-COMPATIBILITY.md for exact evidence.
 
 The external runtime reconciles server-confirmed checks into older saves.
 Personal rewards recover once; foreign checks restore completion without
-resending. Spent adult trade items are acknowledged quietly. These paths
-have local-server and native-resource model tests, not a port playthrough.
+resending. Spent adult trade items are acknowledged quietly. Actual native
+Load-menu recovery was verified for an owned Fire Medallion and its chest.
+This source and natural outgoing death used private relocated chest/enemy
+fixtures. They prove the actual transactions, not their original routes or
+a complete playthrough of all 1,106 checks.
 
 UPDATES, LANGUAGE AND HELP
 
@@ -167,6 +210,11 @@ application does not modify games, saves or prepared rooms.
 
 To install mod changes, save and close Zelda, wait for host updates to
 finish, then prepare the same player file with the new application.
+Choose Update prepared room; the saved player file is filled in for you.
+This refreshes resource budgets, native host helpers
+and external safety resources while keeping the same room, placements and
+saves. Outdated prepared resources are detected before supported launching.
+No new seed is needed for that repair. New settings/checks need a new room.
 Data remains under %LOCALAPPDATA%\OOTRR-Archipelago. Native Hookshot uses
 hosts\hookshot and external sessions use hosts\external\profiles. Moving
 or replacing the executable leaves this data in place.

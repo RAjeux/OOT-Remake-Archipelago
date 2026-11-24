@@ -222,8 +222,9 @@ with open(sys.argv[2],encoding='utf-8') as source: validate_manifest(json.load(s
         self.assertEqual(changed["full_tokensanity"], "all")
         self.assertFalse(changed["full_shuffle_cows"])
         self.assertEqual(validate_full_options(changed), changed)
+        self.assertEqual(translate_legacy_options({"enemy_damage": 200})['full_enemy_damage'], 200)
         with self.assertRaisesRegex(ValueError, "legacy"):
-            translate_legacy_options({"enemy_damage": 200})
+            translate_legacy_options({"not_a_native_setting": True})
         explicit = full_defaults()
         explicit["full_shopsanity"] = "2"
         with self.assertRaisesRegex(ValueError, "Conflicting"):

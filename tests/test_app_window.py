@@ -168,6 +168,15 @@ class AppWindowTests(unittest.TestCase):
         window.setup_button.invoke()
         self.assertEqual(window.page, "setup")
 
+    def test_existing_room_resource_update_offers_same_player_setup_before_play(self):
+        self.service.discovery.update(ready=False, profile=str(self.base/'room'), reprepare_required=True)
+        window = self.open()
+        self.assertEqual(window.setup_button.cget('text'), tr(TEXT['update_room']))
+        self.assertEqual(str(window.play_button.cget('state')), 'disabled')
+        self.assertEqual(window.home_room.cget('text'), tr(TEXT['resource_update']))
+        window.setup_button.invoke()
+        self.assertEqual(window.page, 'setup')
+
     def test_discovery_preserves_text_entered_while_it_is_running(self):
         self.service.discover_gate = threading.Event()
         window = self.open(wait=False)

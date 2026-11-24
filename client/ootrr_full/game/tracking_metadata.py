@@ -76,6 +76,14 @@ DUNGEON_LABELS = {
     'Thieves Hideout': 'Thieves\' Hideout',
 }
 
+# IsGet is historical: a Deku shield remains obtained after fire burns it.
+# StockNum is the saved native pouch quantity, verified in the supported schema.
+SHIELD_POUCH_ACTORS = {
+    'Deku Shield': 'Weapon_Shield_Deku',
+    'Hylian Shield': 'Weapon_Shield_Hylian',
+    'Mirror Shield': 'Weapon_Shield_Mirror',
+}
+
 
 def reward_label(item, actor=''):
     if item.startswith('Soul ('):
@@ -166,10 +174,17 @@ def build_tracking(seed_id, checks, full, read_raw):
             'Item_GlassTruth': ['Armor_Child_GlassTruth', 'Armor_Adult_GlassTruth'],
         }
         level = PROGRESSIVE[item].index(actor) + 1 if actor in PROGRESSIVE.get(item, []) else 1
+        stock = {}
+        if item in SHIELD_POUCH_ACTORS:
+            stock_key = murmur3('PouchData.' + SHIELD_POUCH_ACTORS[item] + '.StockNum')
+            for native_type, snapshot_type in (('Int', 'int'), ('UInt', 'uint')):
+                if stock_key in keys.get(native_type, set()):
+                    stock = {'stock_hash': str(stock_key), 'stock_type': snapshot_type}
+                    break
         for candidate in set([canonical] + aliases.get(actor, [])):
             key = murmur3('IsGet.' + candidate)
             if key in keys.get('Bool', set()):
-                inventory.append({'item': item, 'hash': str(key), 'count': level})
+                inventory.append({'item': item, 'hash': str(key), 'count': level, **stock})
     # Zones (map folders) where the enemies of each soul appear, for the tracker.
     families = (full or {}).get('souls', {}).get('families', {})
     souls = [{'item': soul_item(key), 'zones': list(folders)} for key, folders in sorted(families.items())]

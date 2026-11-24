@@ -24,6 +24,7 @@ AP_VANILLA_SETTINGS = {
     'logic_rules': 'glitchless', 'open_forest': 'closed', 'open_kakariko': 'closed',
     'open_door_of_time': False, 'spiritual_stones': rando_options.UNRECORDED['spiritual_stones'], 'zora_fountain': 'closed', 'gerudo_fortress': 'normal',
     'door_of_time_requirement': rando_options.UNRECORDED['door_of_time_requirement'],
+    'door_of_time_song': True,
     'open_gerudo_valley_bridge': False,
     'bridge': 'vanilla', 'bridge_stones': 3, 'bridge_medallions': 6, 'bridge_rewards': 9,
     'bridge_tokens': 100, 'bridge_hearts': 20, 'trials': 6,
@@ -40,6 +41,7 @@ AP_VANILLA_SETTINGS = {
     'hints': 'none', 'keysanity': False, 'shuffle_scrubs': 'off', 'shuffle_pots': 'off',
     'shuffle_child_trade': 'vanilla', 'blue_fire_arrows': False, 'had_night_start': False,
     'shuffle_master_sword': False, 'shuffle_gerudo_card': False, 'skip_child_zelda': False,
+    'no_ammo_drops': False,
 }
 
 # Zelda's escape (the Ocarina of Time and the Song of Time), by value of ``spiritual_stones``.
@@ -180,6 +182,21 @@ class Logic:
             match = re.fullmatch(r'(\w+)(?:\((\w+(?:,\s*\w+)*)\))?', key)
             params = [p.strip() for p in match.group(2).split(',')] if match.group(2) else []
             self.helpers[match.group(1)] = (params, self._parse(body))
+        if self.settings.get('skip_epona_race'):
+            self.helpers['can_ride_epona'] = ([], self._parse('is_adult and can_play(Eponas_Song)'))
+        # AP can award real shields directly. The upstream helper aliases only
+        # mention refill purchases/drop events, so they otherwise hide these
+        # equipment items from both access checks and progression classification.
+        self.helpers['Deku_Shield'] = ([], self._parse("'Deku Shield' or Buy_Deku_Shield or Deku_Shield_Drop"))
+        self.helpers['Hylian_Shield'] = ([], self._parse("'Hylian Shield' or Buy_Hylian_Shield"))
+        if self.settings.get('no_ammo_drops'):
+            # The native challenge removes these actual Baba/pot drop tables.
+            # A received AP consumable or retained vendor still supplies stock.
+            self.helpers['Sticks'] = ([], self._parse("'Deku Stick (1)' or Buy_Deku_Stick_1"))
+            self.helpers['Nuts'] = ([], self._parse("'Deku Nuts (5)' or 'Deku Nuts (10)' or Buy_Deku_Nut_5 or Buy_Deku_Nut_10"))
+            self.helpers['has_bombchus'] = ([], self._parse(
+                "('Bombchus (5)' or 'Bombchus (10)' or 'Bombchus (20)' or Buy_Bombchu_5 or Buy_Bombchu_10 or Buy_Bombchu_20) "
+                "and (bombchus_in_logic or Bomb_Bag)"))
         names = {}
         for item in data.item_table:
             names[escape_name(item)] = item
@@ -226,6 +243,12 @@ class Logic:
             self.region_dungeon[name] = region.get('dungeon')
             if region.get('time_passes'):
                 self.time_regions.add(name)
+        if self.settings.get('early_beds'):
+            self.time_regions.add('KF Links House')
+        entrance_targets = {}
+        if self.settings.get('dungeon_entrances'):
+            from ootrr_full.game.dungeon_entrances import region_targets
+            entrance_targets = region_targets(self.settings['dungeon_entrances'])
         moved = defaultdict(dict)
         for region in data.regions:
             for location, rule in region.get('locations', {}).items():
@@ -238,12 +261,34 @@ class Logic:
             compiled = {'exits': [], 'locations': [], 'events': []}
             for target, rule in region.get('exits', {}).items():
                 rule = REMAKE_EXIT_RULES.get(f'{name} -> {target}', rule)
+                if target == 'Ganons Castle Tower' and self.settings['trials'] != 6:
+                    from ootrr_full.game.goal_settings import trial_rule
+                    rule = trial_rule(self.settings['trials'])
+                if ((name, target) == ('Ganons Castle Tower', 'Ganons Castle Tower Below Boss')
+                        and self.settings['shuffle_ganon_bosskey'] != 'vanilla'):
+                    # The AP N64 rule assumes a vanilla tower-pot boss key
+                    # whenever pots are shuffled. A full AP pot can hold an
+                    # unrelated reward; a shuffled Ganon key must be owned.
+                    rule = '(has_adult_sword or can_use(Kokiri_Sword)) and Boss_Key_Ganons_Castle'
+                if (name, target) == ('Zoras Fountain', 'Jabu Jabus Belly Beginning') and self.settings.get('jabu_open'):
+                    rule = 'is_child'
                 if (name, target) == ('Temple of Time', 'Beyond Door of Time'):
                     stones = {'all': 'has_all_stones', 'vanilla': 'Goron_Ruby and Zora_Sapphire',
                               'song': 'True'}[self.settings['door_of_time_requirement']]
-                    rule = f'open_door_of_time or (can_play(Song_of_Time) and ({stones}))'
+                    song = 'can_play(Song_of_Time)' if self.settings.get('door_of_time_song', True) else 'True'
+                    rule = f'open_door_of_time or (({song}) and ({stones}))'
+                if (name, target) == ('Spirit Temple Central Chamber', 'Desert Colossus'):
+                    from ootrr_full.game.spirit_layout import child_route
+                    route = child_route(self.settings)
+                    if route:
+                        rule = f'({rule}) or ({route})'
+                if self.settings.get('enemy_gates'):
+                    from ootrr_full.game.enemy_gates import requirement as gate_requirement
+                    combat = gate_requirement(name, target, self.settings)
+                    if combat:
+                        rule = f'({rule}) and ({combat})'
                 requirement = extra_exit_requirements.get((name, target))
-                compiled['exits'].append((target, self.compile(rule, requirement)))
+                compiled['exits'].append((entrance_targets.get((name, target), target), self.compile(rule, requirement)))
             own = {l: r for l, r in region.get('locations', {}).items()
                    if REMAKE_LOCATION_REGIONS.get(l, (None,))[0] != name}
             for location, rule in dict(own, **moved.get(name, {})).items():
@@ -252,6 +297,11 @@ class Logic:
                 if location == 'ToT Master Sword':
                     rule = REMAKE_LOCATION_RULES.get('Master Sword Pedestal', rule)
                 rule = REMAKE_LOCATION_RULES.get(location, rule)
+                if location == 'Spirit Temple Silver Gauntlets Chest':
+                    from ootrr_full.game.spirit_layout import child_route
+                    route = child_route(self.settings)
+                    if route:
+                        rule = f'({rule}) or ({route})'
                 rule = self._escape_rule(location, rule)
                 extra_rule = shop_rule(data.vanilla_item(location))
                 if extra_rule:
@@ -437,7 +487,9 @@ class Logic:
                 raise ValueError('Non-constant rule quantity.')
             name = item.value if isinstance(item, ast.Constant) else self._item(item.id)
             self.referenced.add(name)
-            return f'c.get({name!r},0)>={int(amount.value)}'
+            from ootrr_full.game.native_key_limits import quantity
+            count = quantity(name, int(amount.value), self.settings)
+            return f'c.get({name!r},0)>={count}'
         if isinstance(node, ast.Call):
             name = node.func.id
             if name == 'at':
@@ -574,6 +626,8 @@ class Logic:
     def accessible(self, state, location):
         if location == 'Bottle|':
             return state.has_bottle()
+        if location.startswith('Wallet|'):
+            return state.counts.get('Progressive Wallet', 0) >= int(location.split('|')[1])
         if location.startswith('Region|'):
             _, age, region = location.split('|', 2)
             return age in ('child', 'adult') and region in state.reached[age]
@@ -611,7 +665,7 @@ class _SearchState(State):
 
     def hearts(self):
         pieces = self.counts.get('Piece of Heart', 0) + self.counts.get('Piece of Heart (Treasure Chest Game)', 0)
-        return 3 + self.counts.get('Heart Container', 0) + pieces // 4
+        return min(20, self.logic.settings.get('starting_hearts', 3) + self.counts.get('Heart Container', 0) + pieces // 4)
 
     def at(self, region, rule):
         for age in ('child', 'adult'):
@@ -632,6 +686,8 @@ def vanilla_placements(data, logic, locations=None):
     for location in locations if locations is not None else logic.location_names():
         item = data.vanilla_item(location)
         kind = data.location_type(location)
+        if logic.settings.get('no_ammo_drops') and item in ('Deku Stick Drop', 'Deku Nut Drop', 'Bombchu Drop'):
+            item = None
         if kind in ('HintStone', 'Hint') or item is None:
             result[location] = None
             continue

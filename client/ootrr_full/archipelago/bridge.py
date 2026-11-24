@@ -233,7 +233,9 @@ class PlayerWorld:
         # Dungeon-bound items stay in this world: keys are generic per dungeon.
         # Progressive copies can go anywhere: found here or received, each one gives
         # the level above the one Link holds (patching.progressive, patching.ap_mailbox).
-        self.restricted = set(self.c.restricted_dungeon) & set(self.pool)
+        self.boss_rewards = {item for item in self.pool
+                             if self.c.restricted_dungeon.get(item, (None,))[0] == 'boss_reward'}
+        self.restricted = (set(self.c.restricted_dungeon) & set(self.pool)) - self.boss_rewards
         self.local_only = set(self.restricted)
         self.tracker_members = self._tracker_members()
         self._cache = {}
@@ -335,6 +337,10 @@ class PlayerWorld:
         from ootrr_full.patching.ap_item import ap_item
         return self.c.allowed(ap_item('?') if item is None else item, gid)
 
+    def can_hold_foreign(self, gid, item, game):
+        """Typed foreign eligibility; ownership never changes the physical AP medal."""
+        return self.can_hold(gid, None)
+
     def reach(self, counts):
         """(reachable locations, victory), including conservative filler estimates. Cached."""
         key = frozenset((k, v) for k, v in counts.items() if v > 0 and k in self.progression)
@@ -370,13 +376,16 @@ class PlayerWorld:
         # (patching.ap_mailbox): fail at generation, not with a softlock in game.
         from ootrr_full.patching.ap_mailbox import records
         records(remote)
-        return {'format': PATCH_FORMAT, 'version': PATCH_VERSION, 'game': GAME, 'game_build': game_build,
+        result = {'format': PATCH_FORMAT, 'version': PATCH_VERSION, 'game': GAME, 'game_build': game_build,
                 'world': self.catalog['world'], 'scan': self.catalog['scan'],
                 'seed_name': seed_name, 'slot_name': slot_name, 'player': player, 'seed_key': self.seed_key,
                 'options': self.options, 'open_forest': self.open_forest,
                 'placements': {gid: placements[gid] for gid in sorted(placements)},
                 'remote': remote, 'precollected': list(precollected),
                 'location_ids': {gid: stable_id('location', self.names[gid]) for gid in sorted(self.names)}}
+        if self.c.entrances:
+            result['dungeon_entrances'] = self.c.entrances
+        return result
 
 
 # ------------------------------------------------------------------ patch, application side
@@ -427,6 +436,11 @@ def check_patch(patch):
         raise ValueError('Invalid Archipelago patch: options.')
     if 'player' in patch and patch['player'] is not None and type(patch['player']) is not int:
         raise ValueError('Invalid Archipelago patch: player.')
+    if 'dungeon_entrances' in patch:
+        from ootrr_full.game.dungeon_entrances import normalize, age_errors
+        layout = normalize(patch['dungeon_entrances'])
+        if age_errors(layout):
+            raise ValueError('The Archipelago dungeon entrance layout has an unsafe arrival age.')
     placements, remote = patch['placements'], patch['remote']
     if not isinstance(placements, dict) or len(placements) > MAX_ENTRIES:
         raise ValueError('Invalid Archipelago patch: placements.')
@@ -469,7 +483,7 @@ def settings_from_patch(patch, skulltulas_always_present=False):
     check_patch(patch)
     patch = canonical_patch(patch)
     from ootrr_full.logic import rando_options
-    options = dict(patch['options'])
+    options = dict(rando_options.UNRECORDED, **patch['options'])
     options.setdefault('spiritual_stones', rando_options.UNRECORDED['spiritual_stones'])
     seed = f'AP {patch.get("seed_name", "")} {patch.get("slot_name", "")}'.strip()[:256]
     return Settings(seed=seed, randomize_chests=False, open_forest=bool(patch['open_forest']),

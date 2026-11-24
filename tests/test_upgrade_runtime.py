@@ -71,6 +71,7 @@ class RuntimeTests(unittest.TestCase):
                 else:
                     self.live.flags[murmur3(name)] = value
                 self.assertIsNone(self.delivery.step(["first"]))
+                self.assertEqual(self.delivery.waiting, 1)
                 self.assertFalse(self.writes)
                 self.live.flags = original
         self.events.busy = True
@@ -108,6 +109,22 @@ class RuntimeTests(unittest.TestCase):
         # Loading a prior save makes its receipt false; replay then works.
         self.live.flags[murmur3(RECORDS[0]["got"])] = False
         self.assertEqual(self.delivery.step(["first"])["key"], "first")
+
+    def test_linked_death_prevents_a_new_receipt_until_native_acknowledgement(self):
+        from ootrr_triforce.upgrade_deathlink import metadata
+        import copy
+        manifest = copy.deepcopy(MANIFEST)
+        manifest['external_deathlink'] = metadata('a' * 64)
+        fields = manifest['external_deathlink']['flags']
+        for name in ('dead', 'request', 'fired'):
+            self.live.flags[murmur3(fields[name])] = False
+        delivery = runtime.SafeLiveDelivery(manifest, self.live, event_state=self.events)
+        for name in ('dead', 'request', 'fired'):
+            self.live.flags[murmur3(fields[name])] = True
+            self.assertIsNone(delivery.step(['first']))
+            self.assertFalse(self.writes)
+            self.live.flags[murmur3(fields[name])] = False
+        self.assertEqual(delivery.step(['first']), RECORDS[0])
 
     def session_delivery(self):
         import copy

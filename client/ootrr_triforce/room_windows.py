@@ -155,7 +155,7 @@ class ProgressWindow:
         scrollbar = ttk.Scrollbar(area, orient="vertical", command=self.list.yview)
         scrollbar.grid(row=0, column=1, sticky="ns")
         self.list.configure(yscrollcommand=scrollbar.set)
-        self.inventory = self._table(notebook, "Inventory", (("count", "Amount"),))
+        self.inventory = self._table(notebook, "Inventory", (("count", "Amount"), ("observation", "Observation")))
         self.keys = self._table(notebook, "Dungeon keys", (("small", "Small keys"), ("boss", "Boss key")))
         self.souls = self._table(notebook, "Enemy souls", (("owned", "Status"),))
         self.detail = ttk.Label(master, wraplength=790, padding=(16, 12, 16, 0))
@@ -265,7 +265,8 @@ class ProgressWindow:
         self.inventory.delete(*self.inventory.get_children())
         for row in self.inventory_rows:
             self.inventory.insert("", "end", text=item_name(row["name"], self.language),
-                                  values=(row["count"] if row["known"] else self.text("Unknown"),))
+                                  values=(row["count"] if row["known"] else self.text("Unknown"),
+                                          self.text(row.get("observation", "Recorded progression"))))
         self.keys.delete(*self.keys.get_children())
         for dungeon, small, boss in self.key_rows:
             self.keys.insert("", "end", text=dungeon,

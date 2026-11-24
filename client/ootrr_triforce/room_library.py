@@ -210,6 +210,11 @@ class RoomLibrary:
         except OSError:
             pass
         source = Path(record.get("prepared_source") or "")
+        from .room_updates import requires_reprepare
+        artifact = mods / 'Archipelago' if matches else source / 'Archipelago'
+        if requires_reprepare(artifact):
+            record['reprepare_required'] = True
+            return record
         if not matches and not record.get("prepared_source"):
             return record
         if not matches:

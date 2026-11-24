@@ -117,6 +117,17 @@ class ExternalWidgets(unittest.TestCase):
         self.assertFalse(any(row[0] == "connect" for row in self.service.calls))
         self.assertTrue(all(row[2] != threading.get_ident() for row in self.service.calls))
 
+    def test_old_room_prefills_original_player_and_exposes_update_without_launch(self):
+        self.service.data.update(ready=False, reprepare_required=True)
+        window = self.open(self.service.data['profile'])
+        self.assertEqual(window.fields['player_file'].get(), str(Path(self.service.data['profile']) / 'player.apootrr'))
+        self.assertEqual(str(window.play_button.cget('state')), 'disabled')
+        self.assertEqual(str(window.connect_button.cget('state')), 'disabled')
+        self.assertEqual(str(window.prepare_button.cget('state')), 'normal')
+        self.assertIn('Update', window.prepare_button.cget('text'))
+        self.assertIn('same player file', window.status.cget('text'))
+        self.assertFalse(any(row[0] in ('connect', 'launch') for row in self.service.calls))
+
     def test_launch_connect_chat_and_close_share_one_runtime(self):
         window = self.open(self.service.data["profile"])
         window.play_button.invoke()

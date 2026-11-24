@@ -103,6 +103,23 @@ def append_recipe(editor, metadata, stem, grant_entry, commit, *, pickup=False):
         link(node, after)
         return node
 
+    if metadata['mode'] == 'small_keys':
+        from ootrr_full.patching.key_adapter import append_small_key_grant, small_applied_flag, small_key_folder
+        tokens = metadata.get('small_key_tokens')
+        if (not isinstance(tokens, list) or any(not isinstance(actor, str) for actor in tokens)
+                or len(tokens) != len(set(tokens))
+                or any(small_key_folder(actor) is None for actor in tokens)):
+            raise ValueError('Invalid dungeon small-key receipt tokens.')
+        folders = {small_key_folder(actor) for actor in tokens}
+        if len(folders) > 1:
+            raise ValueError('A dungeon small-key receipt mixes dungeons.')
+        root = commit
+        for index, actor in reversed(list(enumerate(tokens))):
+            grant = append_small_key_grant(editor, actor, stem + '_Token' + str(index), commit)
+            root = editor.switch(stem + '_Next' + str(index), 'GameDataActor', 'EventQueryIsGameDataBool',
+                                 {'GameDataName': small_applied_flag(actor), 'Index': -1}, root, grant)
+        return root
+
     if metadata["kind"] == "TCGSmallKey":
         return integer("_Key", "MiniGame_SmallKeyNum",
                        boolean("_Once", "UI_MiniGameGetSmallKeyOnce", commit))

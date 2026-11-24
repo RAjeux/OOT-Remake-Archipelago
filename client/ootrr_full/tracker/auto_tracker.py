@@ -219,11 +219,22 @@ class TrackerSession:
         return self._logic
 
     def inventory(self):
-        """Observed inventory: ({item: level}, items readable in the save, items the seed tracks)."""
+        """Observed stock/progression: counts, readable items, and tracked items.
+
+        Historical metadata keeps its IsGet semantics; stock-aware rules use
+        the saved pouch quantity instead, without altering collection history.
+        """
         with self._lock:
             counts, known = self._inventory
             tracked = {rule['item'] for rule in (self.metadata or {}).get('inventory', [])}
             return dict(counts), set(known), tracked
+
+    def inventory_observations(self):
+        """Explain stock observations separately from historical obtained flags."""
+        _, known, tracked = self.inventory()
+        stock = {rule['item'] for rule in (self.metadata or {}).get('inventory', []) if 'stock_hash' in rule}
+        return {item: ('Observed stock' if item in known else 'Stock unavailable')
+                if item in stock else 'Recorded progression' for item in tracked}
 
     def keys(self):
         """``[(dungeon, (found, total) or None, boss key or None)]`` at the latest read."""
@@ -238,8 +249,21 @@ class TrackerSession:
     @staticmethod
     def observed_inventory(snapshot, metadata):
         counts, known = Counter(), set()
-        for rule in metadata.get('inventory', []):
+        rules = metadata.get('inventory', [])
+        stock_items = {rule['item'] for rule in rules if 'stock_hash' in rule}
+        for rule in rules:
             key, item = int(rule['hash']), rule['item']
+            if item in stock_items:
+                # A historical alias must not override a missing/zero current
+                # stock. Live bool-only snapshots cannot prove pouch quantity.
+                if 'stock_hash' not in rule:
+                    continue
+                kind = rule.get('stock_type', 'int')
+                value = snapshot.get(kind, {}).get(int(rule['stock_hash'])) if kind in ('int', 'uint') else None
+                if type(value) is int and value >= 0:
+                    known.add(item)
+                    counts[item] = max(counts[item], value)
+                continue
             if key in snapshot['bool']:
                 known.add(item)
                 if snapshot['bool'][key]:

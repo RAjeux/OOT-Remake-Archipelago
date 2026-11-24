@@ -21,6 +21,10 @@ LEGACY_MODE = "legacy"
 PREFIX = "full_"
 CATALOG_PATH = Path(__file__).with_name("full_catalog.json")
 _CATALOG = None
+ADULT_START_UNAVAILABLE = (
+    "Adult start is temporarily unavailable in Full network because its native opening transition can stall. "
+    "Choose Child when generating a new room. Existing adult player files remain readable for diagnosis."
+)
 
 # Archipelago adds only the world's package to its loader search path. The
 # separately named pure-Python engine lives at this archive's root so it cannot
@@ -61,6 +65,10 @@ def load_catalog():
         _CATALOG['extensions'].update(cow_entries())
         _CATALOG['locations'].update({gid: entry['cow_name'] for gid, entry in cow_entries().items()})
         _CATALOG['locations'].update({gid: entry['extra_name'] for gid, entry in extra_entries().items()})
+        from ootrr_full.game.loose_keys import entries as loose_entries
+        loose = loose_entries({'individual_smallkeys': True})
+        _CATALOG['extensions'].update(loose)
+        _CATALOG['locations'].update({gid: entry['extra_name'] for gid, entry in loose.items()})
         _CATALOG['items'] = sorted(set(_CATALOG['items']) | {item for item, _ in TRADE_ITEMS})
         locations = list(_CATALOG["locations"].values())
         # The final sword handover is the same physical location in vanilla
@@ -116,13 +124,16 @@ def full_option_specs():
             spec.update(kind="set", choices=tuple(source["values"]), default=list(default))
         elif kind == "int":
             allowed = tuple(source["values"])
-            if allowed != tuple(range(min(allowed), max(allowed) + 1)):
-                raise ValueError("Non-contiguous full-network integer setting: " + name)
-            spec.update(kind="range", min=min(allowed), max=max(allowed), step=1)
+            steps = {b - a for a, b in zip(allowed, allowed[1:])}
+            if len(steps) > 1 or (steps and min(steps) < 1):
+                raise ValueError("Irregular full-network integer setting: " + name)
+            spec.update(kind="range", min=min(allowed), max=max(allowed), step=next(iter(steps), 1))
         else:
             spec.update(kind="choice", choices=tuple(_public_value(v) for v in source["values"]),
                         default=_public_value(default))
-        if option and option.experimental:
+        if name == 'starting_age':
+            spec['description'] = ADULT_START_UNAVAILABLE
+        elif option and option.experimental:
             spec["description"] += " Experimental game adapter: automated checks do not replace gameplay validation."
         specs.append(spec)
     return tuple(specs)
@@ -130,6 +141,17 @@ def full_option_specs():
 
 def full_defaults():
     return {spec["id"]: copy.deepcopy(spec["default"]) for spec in full_option_specs()}
+
+
+def require_playable_start(values):
+    """Reject the stalled opening at execution boundaries, keeping files readable.
+
+    Accept public full options, native options, or a player manifest. Validation
+    and world reconstruction deliberately remain available to diagnose old files.
+    """
+    options = values.get('full_patch', {}).get('options', values)
+    if options.get('full_starting_age', options.get('starting_age', 'child')) == 'adult':
+        raise ValueError(ADULT_START_UNAVAILABLE)
 
 
 def validate_full_options(values):
@@ -144,7 +166,8 @@ def validate_full_options(values):
     for spec in full_option_specs():
         value, kind = result[spec["id"]], spec["kind"]
         valid = ((type(value) is bool) if kind == "toggle" else
-                 (type(value) is int and spec["min"] <= value <= spec["max"]) if kind == "range" else
+                 (type(value) is int and spec["min"] <= value <= spec["max"]
+                  and (value - spec['min']) % spec.get('step', 1) == 0) if kind == "range" else
                  (isinstance(value, (list, tuple, set, frozenset)) and set(value) <= set(spec["choices"])) if kind == "set" else
                  (isinstance(value, str) and value in spec["choices"]))
         if not valid:
@@ -201,33 +224,52 @@ def translate_legacy_options(changed, values=None):
     result = copy.deepcopy(values or full_defaults())
     direct = {"open_kakariko", "zora_fountain", "shuffle_master_sword", "shuffle_kokiri_sword", "adult_trade_shuffle",
               "shuffle_mapcompass", "shuffle_bosskeys", "shuffle_smallkeys", "gerudo_fortress", "plant_beans",
-              "shuffle_cows"}
+              "shuffle_cows", "bridge", "bridge_rewards", "trials", "shuffle_ganon_bosskey", "lacs_rewards",
+              "starting_hearts", "shopsanity_prices", "scrub_prices", "scrub_price_fixed",
+              "merchant_prices", "merchant_price_fixed", "fairy_prices", "fairy_price_fixed", "scrub_hint_text"}
+    direct.update(('shuffle_entrances', 'door_of_time_song'))
+    from ootrr_full.game.portable_options import unrecorded as portable_defaults
+    direct.update(portable_defaults())
     aliases = {"gerudo_bridge_open": "open_gerudo_valley_bridge", "faster_chests": "fast_chests",
                "shuffle_boss_hearts": "shuffle_boss_rewards", "shuffle_ocarinas": "shuffle_quest_rewards"}
-    family = {"shuffle_pots", "shuffle_crates", "shuffle_rocks"}
     for name, value in changed.items():
         updates = {}
         if name in direct:
             updates[name] = value
-            if name == "shuffle_smallkeys" and value not in {"vanilla", "remove"}:
+            if (name == "shuffle_smallkeys" and value not in {"vanilla", "remove"}
+                    and not result.get('full_individual_smallkeys', False)):
                 updates["key_rings"] = "all"
+            elif name == 'shuffle_smallkeys' and value in {'vanilla', 'remove'}:
+                updates['key_rings'] = 'off'
+        elif name == 'skip_ganon_trials':
+            updates['trials'] = 0 if value else 6
+        elif name == 'shuffle_treasure_reward':
+            updates[name] = 'shuffled' if value else 'vanilla'
+        elif name == 'door_of_time_escape':
+            updates['spiritual_stones'] = {'vanilla': 'vanilla', 'stones': 'all', 'moat': 'song'}[value]
         elif name in aliases:
             updates[aliases[name]] = value
         elif name == "open_forest":
             updates[name] = value == "open"
-        elif name == "shuffle_chests" and value in {"all", "off"}:
-            updates[name] = value == "all"
+        elif name == "shuffle_chests":
+            updates[name] = value != 'off'
+            updates['chest_scope'] = value if value in {'overworld', 'dungeons'} else 'all'
+            if value == 'overworld':
+                updates.update(shuffle_smallkeys='vanilla', shuffle_bosskeys='vanilla',
+                               shuffle_ganon_bosskey='vanilla', shuffle_mapcompass='vanilla', key_rings='off')
         elif name == "shuffle_skulltulas":
             updates["tokensanity"] = "off" if value == "off" else "all"
         elif name == "shuffle_shops" and value in {"off", "random", "deals_1", "deals_2", "deals_3", "deals_4"}:
             updates["shopsanity"] = value.removeprefix("deals_")
-        elif name in family and value in {"all", "off"}:
-            updates[name] = value
-        elif name == "shuffle_grass" and value in {"all", "off"}:
-            updates["shuffle_bushes"] = value == "all"
+        elif name in {'shuffle_pots', 'shuffle_crates'}:
+            updates[name] = 'off' if value == 'off' else 'all'
+            updates['pot_scope' if name == 'shuffle_pots' else 'crate_scope'] = value if value in {'overworld', 'dungeons'} else 'all'
+        elif name in {'shuffle_grass', 'shuffle_rocks'}:
+            updates['shuffle_bushes' if name == 'shuffle_grass' else 'shuffle_rocks'] = value != 'off'
+            updates['bush_scope' if name == 'shuffle_grass' else 'rock_scope'] = value if value in {'overworld', 'dungeons'} else 'all'
         elif name == "shuffle_beehives":
             updates[name] = value
-        elif name == "shuffle_freestanding_items" and value != "pieces":
+        elif name == "shuffle_freestanding_items":
             updates[name] = value
         elif name == "shuffle_rewards":
             updates.update(shuffle_npc_gifts=value == "supported", shuffle_quest_rewards=value == "supported",
@@ -244,8 +286,9 @@ def translate_legacy_options(changed, values=None):
                 updates["shuffle_scrubs"] = "low"
         elif name == "shuffle_songs":
             updates["shuffle_song_items"] = {"off": "song", "own": "shuffled", "anywhere": "everywhere"}[value]
-        elif name == "shuffle_dungeon_rewards" and value == "anywhere":
+        elif name == "shuffle_dungeon_rewards":
             updates["shuffle_boss_rewards"] = True
+            updates['dungeon_reward_placement'] = value
         elif name == "anju_one_cucco":
             updates["chicken_count"] = 1 if value else 7
         elif name == "big_poe_one":
@@ -309,8 +352,21 @@ def _manifest_options(data, patch):
     """Normalize the stored native option summary to the public full settings."""
     raw = data.get('full_options')
     specs = [spec for spec in full_option_specs() if spec['id'].startswith(PREFIX)]
-    if not isinstance(raw, dict) or set(raw) != {spec['id'][len(PREFIX):] for spec in specs}:
+    from ootrr_full.logic import rando_options
+    from ootrr_full.game.goal_settings import NEW_DEFAULTS
+    optional = dict(NEW_DEFAULTS, bridge='vanilla', trials=6, shuffle_ganon_bosskey='vanilla')
+    from ootrr_full.game.economy_settings import DEFAULTS as ECONOMY_DEFAULTS
+    optional.update(ECONOMY_DEFAULTS)
+    try:
+        from ootrr_full.game import portable_options
+    except ImportError:
+        pass
+    else:
+        optional.update(portable_options.unrecorded())
+    expected = {spec['id'][len(PREFIX):] for spec in specs}
+    if not isinstance(raw, dict) or set(raw) - expected or expected - set(raw) - set(optional):
         raise ValueError('The full-network option summary is incomplete or invalid.')
+    raw = dict(optional, **raw)
     values = {'generation_mode': FULL_MODE, 'death_link': data['death_link']}
     for spec in specs:
         value = raw[spec['id'][len(PREFIX):]]
@@ -320,7 +376,8 @@ def _manifest_options(data, patch):
     current = validate_full_options(values)
     from ootrr_full.archipelago.bridge import full_options
     normalized, open_forest = full_options(native_options(current))
-    same = json.dumps(normalized, sort_keys=True) == json.dumps(patch['options'], sort_keys=True)
+    same = json.dumps(normalized, sort_keys=True) == json.dumps(
+        rando_options.validate(dict(rando_options.UNRECORDED, **patch['options']), supported_only=True), sort_keys=True)
     if not same or open_forest != patch['open_forest']:
         raise ValueError('The full-network option summary disagrees with its patch.')
     return current
@@ -372,6 +429,8 @@ def validate_manifest(data):
         raise ValueError("The full-network patch belongs to a different room or player.")
     values = _manifest_options(data, patch)
     world = _manifest_world(json.dumps(values, sort_keys=True), patch['seed_key'])
+    if patch.get('dungeon_entrances', {}) != world.c.entrances:
+        raise ValueError('The full-network dungeon entrance layout disagrees with its seed and logic.')
     if set(patch['placements']) != set(world.names):
         raise ValueError('The full-network sources disagree with their enabled settings.')
     pool = data.get('item_pool')
@@ -381,7 +440,9 @@ def validate_manifest(data):
     for gid, placement in patch['placements'].items():
         if placement['own'] and placement['item'] not in data['item_ids']:
             raise ValueError('The full-network reward is not a known physical item.')
-        if not world.can_hold(gid, placement['item'] if placement['own'] else None):
+        eligible = (world.can_hold(gid, placement['item']) if placement['own'] else
+                    world.can_hold_foreign(gid, placement['item'], placement.get('game')))
+        if not eligible:
             raise ValueError('The full-network source cannot grant its assigned reward.')
     # Kept at the native boundary: the mailbox verifies real physical recipes.
     # Avoid importing the physical resource codecs into Archipelago generation.

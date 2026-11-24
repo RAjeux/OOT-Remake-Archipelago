@@ -193,6 +193,14 @@ def build_restoration_flow(raw, roster, *, records=None, item_data=None):
         reward = commit
         if record["local"]:
             metadata = recipes[record["item"]]
+            if record.get('small_key_token'):
+                from ootrr_full.patching.key_adapter import key_actor_item, small_applied_flag
+                token = record['small_key_token']
+                if (not isinstance(token, dict) or key_actor_item(token.get('actor', '')) != record['item']
+                        or token.get('applied') != small_applied_flag(token['actor'])):
+                    raise ValueError('Invalid dungeon small-key source recovery metadata.')
+                metadata = dict(metadata, mode='small_keys', actor=token['actor'],
+                                small_key_tokens=[token['actor']])
             core_name = stem + "_Pouch"
             recipe = append_recipe(editor, metadata, core_name, grant_entry, reward_commit, pickup=True)
             if isinstance(recipe.data, SubFlowEvent) and recipe.data.entry_point_name == grant_entry:

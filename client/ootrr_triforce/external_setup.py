@@ -27,6 +27,7 @@ from .upgrade_recovery import required_resources as recovery_resources
 
 SESSION = "external-session.json"
 MARKER = ".external-install.json"
+UPDATE_REQUIRED = "Update this prepared room using the same player file. Your room identity and existing saves are preserved."
 RESOURCE_FILES = tuple(sorted(set(("Pack/ZsDic.pack.zs", "Pack/AI.Global.Product.111.pack.zs", "Pack/Actor/Npc_Navi.pack.zs",
                   "Pack/Actor/Player_Base.pack.zs", "Pack/Actor/Player_Child.pack.zs", "Pack/Actor/Player_Adult.pack.zs",
                   "GameData/GameDataList.Product.110.byml.zs", "Sequence/MainUpdate.module.ainb",
@@ -245,6 +246,12 @@ def _artifact(directory, token):
     if (recovery.get("version") != 1
             or recovery.get("session_flag") != 'Archipelago.ExternalSessionReady.' + token):
         raise ExternalSetupError("Prepare this room again to enable complete external item recovery.")
+    if manifest.get('external_deathlink') is not None:
+        from .upgrade_deathlink import validate_metadata
+        try:
+            validate_metadata(manifest['external_deathlink'], token)
+        except ValueError as error:
+            raise ExternalSetupError(str(error)) from error
     return manifest
 
 
@@ -409,16 +416,20 @@ def _session(profile):
 def open_profile(profile):
     """Safe GUI data: passwords and DPAPI ciphertext are never returned."""
     profile, data = _session(profile)
+    from .room_updates import requires_reprepare
+    reprepare_required = requires_reprepare(data['installed_mod'], external=True)
     ready = False
+    manifest = {}
     try:
-        _artifact(data["installed_mod"], data["token"])
-        ready = True
+        manifest = _artifact(data["installed_mod"], data["token"])
+        ready = not reprepare_required
     except (OSError, ValueError, KeyError):
         pass
     safe = {key: value for key, value in data.items() if key not in {"protected_password", "password"}}
     safe.update(profile=str(profile), mod=data["installed_mod"], prepared_source=data["artifact"],
                 tracker_source=data["installed_mod"], host="external", ready=ready,
-                deathlink_supported=False)
+                reprepare_required=reprepare_required,
+                deathlink_supported=bool((manifest.get('external_deathlink') or {}).get('enabled')))
     return safe
 
 
@@ -478,7 +489,10 @@ def connect(profile, *, password=None, on_change=None):
     for native in (base / data["token"], base / "hosts/hookshot" / data["token"]):
         if (native / "native-session.json").is_file() and Controller(native).info().get("running"):
             raise ExternalSetupError("Close the native client for this room before starting its external connection.")
-    if not open_profile(profile)["ready"]:
+    opened = open_profile(profile)
+    if opened.get('reprepare_required'):
+        raise ExternalSetupError(UPDATE_REQUIRED)
+    if not opened["ready"]:
         raise ExternalSetupError("Prepare this external room again before connecting.")
     if password is None:
         password = ""
@@ -496,7 +510,10 @@ def connect(profile, *, password=None, on_change=None):
 def launch(profile):
     """Open the selected executable normally, without input or save overrides."""
     _, data = _session(profile)
-    if not open_profile(profile)["ready"]:
+    opened = open_profile(profile)
+    if opened.get('reprepare_required'):
+        raise ExternalSetupError(UPDATE_REQUIRED)
+    if not opened["ready"]:
         raise ExternalSetupError("Prepare this external room again before launching.")
     command = [data["executable"]]
     if data.get("game_file"):

@@ -1,6 +1,7 @@
 """Game language changes display text without changing Archipelago identities."""
 import importlib.util
 import json
+import re
 from pathlib import Path
 import sys
 import tempfile
@@ -37,6 +38,44 @@ class LanguageTests(unittest.TestCase):
             self.assertEqual(i18n.normalize_language(code), "fr")
         for code in (None, "en-GB", "de", "ja", "invalid"):
             self.assertEqual(i18n.normalize_language(code), "en")
+
+    def test_every_full_control_has_utf8_french_labels_help_and_set_choices(self):
+        from ootrr_triforce.full_ap import full_option_specs
+        path = ROOT / 'client/ootrr_triforce/i18n_fr.json'
+        raw = path.read_bytes()
+        pairs = json.loads(raw, object_pairs_hook=list)
+        catalogue = dict(pairs)
+        self.assertEqual(len(catalogue), len(pairs), 'Duplicate translation key')
+        self.assertNotIn(b'\r', raw, 'Catalogue must use LF consistently')
+        for key, value in pairs:
+            self.assertNotIn('\ufffd', value, key)
+            self.assertIsNone(re.search(r'\w\?\w', value), key)
+            for broken in ('Ã©', 'Ã¨', 'Ãª', 'Ã ', 'â€™', 'â€“', 'Â '):
+                self.assertNotIn(broken, value, key)
+        for spec in full_option_specs():
+            for field in ('label', 'description', 'group'):
+                if spec.get(field):
+                    self.assertIn(spec[field], catalogue, (spec['id'], field))
+                    self.assertTrue(catalogue[spec[field]].strip())
+            if spec['kind'] == 'set':
+                for choice in spec['choices']:
+                    self.assertIn(choice.replace('_', ' ').title(), catalogue, spec['id'])
+        self.assertEqual(catalogue['Starting age'], 'Âge de départ')
+        self.assertEqual(catalogue['Starting wallet (1–200)'], 'Bourse de départ (1–200)')
+
+    def test_native_challenge_conflicts_have_actionable_french_errors(self):
+        from ootrr_triforce.settings_editor import ConfigurationError, PlayerConfiguration
+        conflicts = [
+            ({'full_bridge': 'hearts', 'full_bridge_hearts': 4, 'full_lose_heart_on_death': True},
+             "Une condition demandant plus de trois cœurs est incompatible avec la perte d'un cœur après un Game Over."),
+            ({'full_no_ammo_drops': True, 'full_shopsanity': 'all'},
+             "Supprimer les munitions aléatoires demande de conserver le réapprovisionnement des boutiques : choisis un nombre d'articles mélangés au lieu de tous les mélanger.")]
+        for changed, french in conflicts:
+            with self.subTest(changed=changed):
+                document = PlayerConfiguration.new('full_network')
+                with self.assertRaises(ConfigurationError) as raised:
+                    document.apply(changed)
+                self.assertEqual(i18n.tr(str(raised.exception), language='fr'), french)
 
     def test_game_language_precedence_and_legacy_profiles(self):
         with tempfile.TemporaryDirectory() as directory:

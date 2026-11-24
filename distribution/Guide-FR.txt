@@ -1,10 +1,10 @@
-OOT Remake Archipelago · 0.11.0-alpha.1
+OOT Remake Archipelago · 0.12.0-alpha.1
 Guide du joueur en français — English: Guide.txt
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
 COMMENCER
 
-Télécharge OOT-Remake-Archipelago-0.11.0-alpha.1.exe depuis les Releases.
+Télécharge OOT-Remake-Archipelago-0.12.0-alpha.1.exe depuis les Releases.
 Garde cet exécutable Windows x64 où tu le souhaites. Python et Node.js
 sont inclus ; aucune console n'est nécessaire pour l'utilisation normale.
 
@@ -45,13 +45,42 @@ valeurs pondérées et champs inconnus. L'export propose aussi JSON. Annuler
 dans l'éditeur garde la configuration précédente.
 
 Le moteur complet utilise generation_mode: full_network et les clés full_*.
-Par défaut, il active 1 104 checks AP, dont 98 Skulltulas d'or et 64 places
+Ses 119 réglages couvrent les mélanges pris en charge, objectifs, entrées,
+économie, état initial, confort et difficulté natifs. Les nouveaux réglages
+par défaut activent 1 106 checks AP, dont 98 Skulltulas d'or et 64 places
 dans huit boutiques. Les sources activées et prises en charge utilisent
 les placements AP au lieu d'un second gain randomisé local. Les accès
 approximatifs reçoivent du remplissage ; la progression utilise les accès
 précis. Les restrictions d'objets de donjon restent applicables. AP peut
 placer la progression ordinaire chez les amis, sans garantir les mêmes
 quantités ni le même rythme de progression pour chaque jeu.
+
+Les clés individuelles peuvent voyager dans AP et créditent toujours leur
+propre donjon. Les donjons sélectionnés utilisent un trousseau complet ; les
+autres ont des clés individuelles si l'option est activée. Le remake possède
+39 clés natives, dont deux nouveaux checks de clés posées. Dépenser une clé
+ou se reconnecter ne la rembourse pas. Les anciens fichiers joueur gardent
+leurs 1 104 checks et leur fonctionnement historique des clés.
+La logique Eau/puits/Ganon respecte les vrais totaux 4/2/1 dans tous les modes,
+sans ajouter de clés ni augmenter une condition déjà inférieure.
+
+Le pont et la Clé d'Or de Ganon/LACS suivent les seuils choisis ; le nombre
+d'épreuves va de zéro à six. Les objectifs de cœurs utilisent les vrais gains
+du remake et ajoutent si nécessaire les quarts manquants au mélange AP normal.
+Prix et conditions de bourse utilisent les capacités natives 200/500/1 000.
+Le mélange d'entrées de donjons conserve les portes appariées, les âges et les
+retours. Les entrées du monde/intérieurs, les rubis argentés et la chasse à la
+Triforce ne sont pas proposés. Lis les descriptions et limites des modes.
+
+Deux défis demandent des réglages compatibles. Perdre un cœur après un Game
+Over ne peut pas accompagner une condition active de pont/LACS supérieure
+à trois cœurs. Supprimer les munitions aléatoires demande de conserver le
+réapprovisionnement : laisse les boutiques non mélangées ou choisis un nombre
+d'articles mélangés au lieu de tous les mélanger. Les munitions, bâtons et noix
+AP restent utilisables. La validation explique les conflits. Les entrées vérifient aussi
+l'accès au véritable équipement non mélangé. Un bouclier déplacé par le mélange
+de toute une boutique peut rejoindre le mélange AP normal si nécessaire ;
+cela ne donne aucun équipement gratuit et ne le force pas dans ton monde.
 
 Le moteur historique conserve les paramètres OOTRR et son catalogue AP
 plus limité. Les anciens YAML importés restent dans ce mode. Il télécharge
@@ -64,12 +93,11 @@ Les anciens fichiers joueur restent lisibles. Random? tire les options
 indépendamment ; leurs dépendances restent obligatoires. Lis les descriptions
 avant de tout mettre en aléatoire.
 
-Le départ adulte expérimental joue le prologue natif du premier retrait au
-piédestal et de Rauru avant de rendre le contrôle au Temple du Temps. Les
-deux vraies sources de récompense s'exécutent une fois. L'Épée de Légende
-mélangée doit être reçue comme véritable objet ; le piédestal adapté permet
-de redevenir enfant sans elle. Cette option demande une nouvelle sauvegarde
-et une confirmation en jeu.
+Choisis Enfant comme âge de départ dans le mode réseau complet. Le départ
+adulte est temporairement indisponible : sa transition native initiale peut
+se bloquer. La génération et la préparation refusent ce mode. Les fichiers
+joueur adultes existants restent lisibles pour le diagnostic. Changer l'âge
+de départ demande une nouvelle salle et une sauvegarde neuve.
 
 CONNEXION ET DEATHLINK
 
@@ -87,10 +115,11 @@ Les adresses acceptent hôte:port, ws://hôte:port et wss://hôte:port.
 archipelago.gg utilise automatiquement TLS. 127.0.0.1:38281 est l'adresse
 locale habituelle sur le PC qui héberge le serveur.
 
-Active death_link avant génération pour partager les morts via le pont
-natif. Une action ou pause observée retarde une mort reçue jusqu'au retour
-du contrôle adapté. DeathLink externe est indisponible. Certaines transitions
-de menus et nouvelles versions de ports demandent encore des essais en jeu.
+Active death_link avant génération pour partager les morts via le pont natif
+ou un runtime externe nouvellement préparé. Une action ou pause observée
+retarde une mort reçue jusqu'au retour du contrôle adapté. Charger une partie
+ou se reconnecter ne rejoue pas les anciennes morts. Certaines transitions de
+menus et versions de ports demandent encore des essais en jeu.
 
 OBJETS ET SAUVEGARDES
 
@@ -116,6 +145,12 @@ sans leur équipement ne donnent rien : ni rubis de remplacement ni popup ;
 l'index avance. Le catalogue et toutes les actions contraignantes n'ont
 pas encore été joués manuellement. Les animations restent à surveiller.
 
+Sur un Hookshot privé, deux petites clés de la Forêt ont été reçues via un
+vrai serveur AP hors de leur donjon. Seuls les compteurs de clés possédées
+et trouvées de la Forêt sont passés de 0 à 1 puis 2 ; répéter le check ne
+redonnait pas de clé. Enfant et adulte, le modèle entier restait dans la
+présentation native, sans remplacement de la caméra.
+
 MES SALLES, COPIES DE SÉCURITÉ, SUIVI ET CHAT
 
 Mes salles liste les profils préparés. Renomme-les, ouvre une salle externe
@@ -136,6 +171,13 @@ sauvegarde observée. Choisis la sauvegarde s'il y en a plusieurs. Les données
 peuvent attendre la prochaine sauvegarde et restent indicatives. Le suivi
 n'envoie aucun check manuel et ne révèle pas les récompenses prévues.
 
+La colonne Observation distingue le Stock observé de la Progression
+enregistrée. Le nouveau suivi des boucliers lit leur quantité sauvegardée :
+un Bouclier Mojo brûlé peut rester obtenu historiquement avec un stock nul.
+Stock non disponible signifie que le suivi en direct, limité aux booléens,
+a besoin d'une sauvegarde. Il ne rembourse jamais l'objet et ne modifie aucun
+reçu AP. La progression enregistrée ne garantit pas le stock actuel exact.
+
 Le chat utilise la connexion existante. Seul Envoyer envoie un message.
 L'historique récent est limité et reste en mémoire. Le chat natif ne crée
 pas de second login AP et ne garde pas des messages pour une autre salle.
@@ -154,18 +196,22 @@ connexion. Ouvrir un profil ne connecte pas automatiquement. Déconnecte-toi
 avant de modifier les dossiers. Le suivi avant la première sauvegarde
 nécessite de vérifier la seed dans le jeu en cours.
 
-Les marqueurs de seed et de réception protègent la livraison. Les tests
-réseau et d'installation ne prouvent pas chaque port ou émulateur.
-DeathLink externe n'est pas implémenté et aucun exécutable Linux n'est
-distribué. Les anciens tests Fritchii prouvaient seulement le chargement
-RomFS et le logo AP au titre. Triforce natif reste le parcours établi.
-Les preuves sont détaillées dans docs/PORT-COMPATIBILITY.md du dépôt.
+Les marqueurs de seed et de réception native protègent la livraison. Les
+essais réels Fritchii 5.8.4/jeu 1.1.1 vérifient désormais les objets hors ligne,
+l'animation native de l'arc, l'attente en pause/sur une échelle et DeathLink
+dans les deux sens avec une vraie salle AP et un deuxième joueur. Garde cette
+fenêtre ouverte pour la connexion externe. Les autres versions d'émulateur
+restent à valider ; aucun exécutable Linux n'est distribué. Les preuves sont
+détaillées dans docs/PORT-COMPATIBILITY.md du dépôt.
 
 Le runtime externe restaure les checks confirmés par le serveur dans une
 ancienne sauvegarde. Tes gains reviennent une fois ; les checks pour un ami
 sont rétablis sans second envoi. Les objets d'échange déjà consommés sont
-acquittés silencieusement. Ces parcours ont des tests serveur local et
-modèles de ressources natives, sans constituer un playtest du port.
+acquittés silencieusement. Le menu Charger natif a réellement restauré un
+Médaillon du Feu personnel et son coffre. Cette source et la mort naturelle
+envoyée utilisaient des coffres/ennemis déplacés dans des scènes de test privées.
+Cela vérifie les transactions réelles, sans prouver les parcours d'origine
+ni une partie complète des 1 106 checks.
 
 MISES À JOUR, LANGUE ET AIDE
 
@@ -179,7 +225,13 @@ ni préparation de salle.
 
 Pour installer les changements du mod, sauvegarde et ferme Zelda, attends
 la fin des mises à jour du port, puis prépare le même fichier joueur avec
-la nouvelle application. Les données restent sous
+la nouvelle application. Choisis Mettre à jour la salle ; le fichier joueur
+conservé dans ton profil est déjà sélectionné.
+Cela actualise budgets de ressources, helpers natifs et sécurités externes
+en gardant la même salle, les placements et les sauvegardes. Les anciennes
+ressources sont détectées avant le lancement pris en charge. Pas besoin de
+nouvelle seed pour cette réparation ; de nouveaux réglages/checks demandent
+une nouvelle salle. Les données restent sous
 %LOCALAPPDATA%\OOTRR-Archipelago. Hookshot utilise hosts\hookshot et
 les sessions externes hosts\external\profiles. Déplacer ou remplacer
 l'exécutable laisse ces données en place.

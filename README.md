@@ -1,14 +1,14 @@
 # Ocarina of Time Remake × Archipelago
 
-**0.11.0-alpha.1 — a Windows application with a full-network randomizer, a settings editor and isolated room profiles.** Prepare the mod, connect to Archipelago and launch Zelda from one executable. Triforce keeps its in-game connection menu; the experimental Hookshot adapter has native controls too.
+**0.12.0-alpha.1 — a Windows application with a full-network randomizer, 119 configuration controls and isolated room profiles.** Prepare the mod, connect to Archipelago and launch Zelda from one executable. Triforce keeps its in-game connection menu; the experimental Hookshot adapter has native controls too.
 
-The new **Full network** engine adapts [Mozencaz/OotrR](https://github.com/Mozencaz/OotrR), retaining its attribution and MIT notice. Its default configuration creates **1,104 real AP checks**, including 98 Gold Skulltulas and 64 shop slots across eight shops. Enabled source families participate in the multiworld instead of receiving a separate local randomizer reward. The previous OOTRR engine remains available for existing configurations and player files.
+The **Full network** engine adapts [Mozencaz/OotrR](https://github.com/Mozencaz/OotrR), retaining its attribution and MIT notice. The new default catalogue has **1,106 real AP checks**, including 98 Gold Skulltulas, 64 shop slots across eight shops and two newly supported loose dungeon keys. Enabled source families participate in the multiworld instead of receiving a separate local randomizer reward. Individual dungeon keys can travel through AP, alongside optional key rings. The previous OOTRR engine remains available for existing configurations and player files.
 
-This is an alpha. Automated generation, resource, network and UI tests cover more than has been played manually. Earlier Triforce gameplay tests verified title-screen connection, offline items, personal and remote rewards, older-save recovery and bidirectional DeathLink. The complete new catalogue has not had a human playthrough. See [compatibility and evidence](docs/PORT-COMPATIBILITY.md).
+This is an alpha. Current private gameplay tests cover Triforce title-screen connection, rupees, native Bow reception and deferred incoming DeathLink; Hookshot includes Spirit Temple and fishing regressions; Fritchii includes actual external delivery, older-save recovery and bidirectional DeathLink. These tests used historical 1,104-check rooms where stated. Automated generation/resource tests cover additional settings and the new catalogue; no complete playthrough of all 1,106 checks is claimed. See [compatibility and evidence](docs/PORT-COMPATIBILITY.md).
 
 ## Play
 
-Download **`OOT-Remake-Archipelago-0.11.0-alpha.1.exe`** from [Releases](https://github.com/RAjeux/OOT-Remake-Archipelago/releases). Python and Node.js are included; normal setup needs no console or separate runtime installation.
+Download **`OOT-Remake-Archipelago-0.12.0-alpha.1.exe`** from [Releases](https://github.com/RAjeux/OOT-Remake-Archipelago/releases). Python and Node.js are included; normal setup needs no console or separate runtime installation.
 
 Supply Windows x64, your own **game version 1.1.1**, a working **Triforce installation with its build tools**, an active Archipelago room and your `.apootrr` player file. The experimental native Hookshot adapter requires **3.0.1**, its original tools and retained build files. No Nintendo files or game hosts are distributed here.
 
@@ -26,17 +26,21 @@ The organizer uses **Create YAML → Settings** to edit the configuration. Choos
 
 Choose **Install APWorld** on the generating computer, restart Archipelago, save the YAML and generate with the other players' configurations as usual. The application prepares Zelda; **Archipelago still generates and hosts the multiworld**. The APWorld requires Archipelago 0.6.7 or later and has been tested with 0.6.8.
 
-Full-network options use `generation_mode: full_network` and `full_*` keys. They cover chests, songs, NPC and quest rewards, boss rewards, fairies, shops, scrubs, Gold Skulltulas, freestanding items, selected breakables, dungeon items, adult trades, cows, beans and other supported sources. `death_link` remains a separate AP option. The editor displays supported values and descriptions. A disabled or unadapted source retains native behavior; enabling a family does not make every object of that type a check.
+Full-network options use `generation_mode: full_network` and `full_*` keys. The 119 controls cover supported source families, dungeon items, entrances, goals, economy, starting state, quality-of-life and difficulty settings. `death_link` remains a separate AP option. Labels and help follow English/French game language; YAML keys retain their stable English spelling. A disabled or unadapted source retains native behavior; enabling a family does not make every object of that type a check.
 
-The default catalogue has 995 locations with precise progression access and 109 with approximate access. Approximate locations are excluded from progression placement and may hold filler. Dungeon-local item modes retain their explicit restrictions. Ordinary progression can be placed in other players' games; no rule forces a share into Zelda. Randomization does not promise equal counts or progression timing between players.
+The default catalogue has 997 locations with precise progression access and 109 with approximate access. Approximate locations are excluded from progression placement and may hold filler. Dungeon-local item modes retain their explicit restrictions. Ordinary progression can be placed in other players' games; no rule forces a share into Zelda. Randomization does not promise equal counts or progression timing between players.
 
-See the [full-network catalogue, supported goal rules and validation](docs/FULL-NETWORK.md). Full mode currently uses the vanilla bridge, six trials and native Ganon boss key; the historical engine retains its other goal settings.
+Bridge conditions, zero to six trials and Ganon boss-key/LACS conditions now have matching native and AP logic. Heart goals use the remake's real heart supply and add any missing heart pieces to the normal AP pool. Economy uses the native 200/500/1,000-rupee wallets; shop and merchant prices match the advertised and charged amount. Dungeon entrance shuffle keeps paired doors, age restrictions and return routes. Overworld/interior entrance shuffle, Triforce Hunt and unimplemented silver-rupee modes are not offered. See the [catalogue and validation](docs/FULL-NETWORK.md) and [setting parity report](docs/full-settings-parity.md).
+
+Settings validation rejects incompatible challenges: permanent heart loss with an active heart goal above three, or no random ammunition drops with every shop slot shuffled. Numbered Shopsanity retains renewable ammunition stock. Entrance layouts also check that unshuffled native equipment remains obtainable. Displaced essential shields join the ordinary AP pool when necessary; no artificial starting equipment or recipient quota is added.
 
 Full-network preparation uses the bundled Python engine. **Legacy** uses the pinned OOTRR 0.8.1 builder, downloaded when first needed. Legacy retains its native setting names and narrower AP catalogue; the [legacy setting comparison](docs/SETTINGS-COMPATIBILITY.md) and [OoTR comparison](docs/OOTR-SETTINGS-COMPARISON.md) describe that engine. The schemas are distinct. Renaming keys does not convert a room.
 
 Settings are fixed at generation. Use a **new room and fresh save** to adopt the full-network engine or change placements. An application update or reconnection cannot convert an existing seed. Existing `.apootrr` files and legacy room identities remain readable.
 
-The experimental `full_starting_age: adult` plays the native first-pedestal and Rauru prologue before giving control in the Temple of Time. Those two real reward sources run once. A shuffled Master Sword must be received as its actual AP item; the adapted pedestal still allows returning to childhood without it. This option needs a new save and gameplay confirmation.
+For bug fixes in an existing full room, use **Update prepared room** with the **same player file** after saving and closing Zelda. It refreshes resource allocations, native host helpers and external readiness/DeathLink resources while preserving the room identity, placements and saves. Older 0.11 rooms keep their 1,104-check catalogue and historical key behavior. New settings and the two added checks require a new generation.
+
+Choose **Child** as the starting age in Full network. Adult start is temporarily unavailable because its native opening transition can stall. Generation and preparation reject that mode; existing adult player files remain readable for diagnosis. Changing the starting age requires a new room and fresh save.
 
 ## Items, checks and saves
 
@@ -46,7 +50,7 @@ Remote items remain on the server while Zelda is closed and arrive in order afte
 
 Major received items use the game's presentation pose and turn toward the camera. Small pickups use native displays and sounds. Receipts and recovery wait while Link is busy, including crawling, fishing, pause and events. Ammunition without its required equipment gives no ammunition, substitute reward or popup; the index still advances. Presentation and constrained-action behavior remain areas for gameplay regression testing.
 
-`death_link: true` shares deaths through the **native Triforce/Hookshot bridge**. A received death waits for suitable control after observed pause or constrained actions. Earlier gameplay tests established both directions on Triforce; not every menu transition or host revision has been played through. See [delivery safety](docs/DELIVERY-SAFETY.md).
+`death_link: true` shares deaths through the native Triforce/Hookshot bridge or a newly prepared external runtime. A received death waits for suitable control after observed pause or constrained actions. External deaths use fresh native Player AI and live life, with no saved-health inference or death replay after reconnection. See [delivery safety](docs/DELIVERY-SAFETY.md).
 
 ## Rooms, tracker and chat
 
@@ -56,15 +60,17 @@ Major received items use the game's presentation pose and turn toward the camera
 
 **Archipelago tracker** shows known checks and, for verified full-network artifacts, inventory, keys, souls and estimated access from an observed save. Select a save when there are several. Estimates are informational; the tracker does not send manual checks or expose planned rewards. The external tracker observes its existing runtime and can operate before the first save when the running seed can be verified.
 
+The inventory tab distinguishes **Observed stock** from **Recorded progression**. New shield tracking reads saved pouch stock, so a burned Deku Shield no longer appears owned merely because it was obtained earlier. Live-only stock is unknown until a save is available. Observation never refunds a consumed item or changes AP history.
+
 **Archipelago chat** shows recent server messages and sends only when you choose **Send**. Native chat uses Zelda's existing authenticated connection, without a second AP login. History is bounded and kept in memory. External chat shares the external runtime.
 
 ## Other ports and emulators
 
 **Other ports and emulators…** is a separate experimental path for compatible Windows/Linux processes. Supply a supported RomFS tree or NUP, dedicated mods folder, exact game/host executable, and optionally the ROM and `progress.sav`. The application prepares a full-network artifact and uses its desktop runtime for connection, observed checks and supported receipt signaling. Keep its window open while connected. Original saves are never imported or moved.
 
-The backend checks the seed and runtime readiness before delivery. Setup does not prove every port, emulator revision or presentation works. External DeathLink is not implemented. No Linux application is packaged yet. Historical Fritchii tests established RomFS loading and the AP title badge, not an AP playthrough; the new backend needs validation on each chosen host. Native Triforce remains the established path. See [port compatibility](docs/PORT-COMPATIBILITY.md).
+The backend checks the seed and native runtime readiness before delivery. Actual Fritchii 5.8.4/game 1.1.1 tests now verify offline items, native presentation, pause/ladder deferral, incoming DeathLink without echo and one natural outgoing death. Other emulator revisions still need their own validation; no Linux application is packaged. See [port compatibility](docs/PORT-COMPATIBILITY.md).
 
-The external runtime also recovers server-confirmed checks into older saves: personal rewards recover once, foreign checks restore completion without resending, and already-spent adult trade items are acknowledged quietly. These paths have real local-server and native-resource model tests; the actual host's game thread remains a separate gameplay validation.
+The external runtime also recovers server-confirmed checks into older saves: personal rewards recover once, foreign checks restore completion without resending, and already-spent adult trade items are acknowledged quietly. Actual Fritchii native Load-menu recovery restored a personal Fire Medallion and its open chest once. That source and natural enemy death used an explicitly private relocated chest/enemy fixture; the original physical route was not a playthrough.
 
 ## Updates, data and language
 
@@ -89,7 +95,7 @@ The vendored engine is `client/ootrr_full/`, with its pinned revision and origin
 | Native setup and menus | `install_service.py`, `native_setup.py`, `hookshot_setup.py`, `menu_setup.py`; `native/ootrr_ap_*` |
 | Native network, delivery and DeathLink | `native/client.go`, `game.go`, `connection.go`, `deathlink.go`, `ootrr_archipelago.inc` |
 | Desktop controls and chat | `connection_control.py`, `connection_window.py`, `chat_window.py`; `native/control.go`, `chat.go` |
-| Experimental external runtime | `external_setup.py`, `external_window.py`, `upgrade_runtime.py`, `upgrade_readiness.py` |
+| Experimental external runtime | `external_setup.py`, `external_window.py`, `upgrade_runtime.py`, `upgrade_readiness.py`, `upgrade_deathlink.py` |
 | Signed updates | `update_service.py`, `update_key.py`, `tools/sign_release.py` |
 | French display text | `i18n.py`, `i18n_fr.json`, `settings_fr.json`; `native/localization.go` |
 | Validation | `tests/`, `tests/fixtures/`, `tools/test.py` |
@@ -103,10 +109,10 @@ Use Windows x64 Python with Tcl/Tk support:
 ```powershell
 py -3 -m pip install -r requirements-app.txt
 py -3 tools/build_app.py
-py -3 tools/verify_app.py dist/OOT-Remake-Archipelago-0.11.0-alpha.1.exe
+py -3 tools/verify_app.py dist/OOT-Remake-Archipelago-0.12.0-alpha.1.exe
 ```
 
-The single executable bundles Python, Tk, Node.js, both engines, APWorld, bridge, adapters and notices. `VERSION` declares its version. The frozen selftest checks hashes, a real child-process Codec and Tk responsiveness while the child holds its GIL; it does not launch a game or server. Full preparation uses isolated workers with bounded progress/log transport and cancellation confined to private build caches.
+The single executable bundles Python, Tk, Node.js, both engines, APWorld, bridge, adapters and notices. `VERSION` declares its version. The 0.12.0-alpha.1 executable passed payload inspection covering 526 Python modules and its isolated selftest in 10.94 seconds with a Unicode profile and only Windows System32 on PATH. The selftest checks hashes, a real child-process Codec and Tk responsiveness while the child holds its GIL; it does not launch a game or server. Full preparation uses isolated workers with bounded progress/log transport and cancellation confined to private build caches.
 
 `py -3 tools/build.py` makes the separate advanced CLI ZIP. `--native` needs Go and a cgo-compatible x64 compiler (`CC`); reinstall and rebuild the host after changing its DLL. `--engine` needs Rust and `wasm32-wasip1`; legacy dependencies are vendored. `tools/check_catalog.py` checks protocol tables and `tools/generate_item_header.py` regenerates the item table. [Signing instructions](docs/SIGNED-UPDATES.md) keep private keys outside the repository.
 

@@ -803,6 +803,19 @@ def generate(nup_path, output, settings, progress=None, save_seed_id=None, saves
             main_update = plain_raw.get(progressive.MAIN_UPDATE) or read(progressive.MAIN_UPDATE)
             plain_raw[progressive.MAIN_UPDATE] = progressive.patch_main_update(main_update, full['progressive']['actors'])
             skips['progressive_watch'] = {'tokens': list(full['progressive']['actors']), 'row': watch_row}
+        if full is not None and any(r['kind'] == 'small' for r in full.get('key_items', ())):
+            from ootrr_full.patching import key_adapter, progressive
+            from ootrr_full.patching.event_info import GAME_ANALYZED_EVENT_INFO as info_path, flow_path as key_flow_path
+            key_raw = lambda path: extra_raw[path] if path in extra_raw else decompress(read(path), d)
+            key_flows = lambda name: key_raw(key_flow_path(name)) if key_flow_path(name) in members else None
+            small_actors = sorted(r['actor'] for r in full['key_items'] if r['kind'] == 'small')
+            extra_raw[EVENT_SETTINGS] = progressive.watch_event_row(
+                key_raw(EVENT_SETTINGS), event_name=key_adapter.SMALL_ENTRY, entry_name=key_adapter.SMALL_ENTRY)
+            extra_raw[info_path], key_row = progressive.watch_analyzed_row(
+                key_raw(info_path), key_flows, event_name=key_adapter.SMALL_ENTRY, entry_name=key_adapter.SMALL_ENTRY)
+            main_update = plain_raw.get(progressive.MAIN_UPDATE) or read(progressive.MAIN_UPDATE)
+            plain_raw[progressive.MAIN_UPDATE] = key_adapter.small_key_watch(main_update, small_actors)
+            skips['small_key_watch'] = {'tokens': small_actors, 'row': key_row}
         if full is not None:
             # Chests save no flag of their own: each chest, shuffled or left in place, runs
             # its own copy of its opening event, which sets a saved Bool first (tracking,
@@ -1131,8 +1144,10 @@ def _build_full(nup, dictionaries_, members, settings, raw_maps, sources, read, 
     key_items = {p['item'] for p in plan['placements'] if is_key_actor(_reward(p))}
     # Received from other worlds too: the mailbox hands over the same actors.
     from ootrr_full.patching.ap_mailbox import key_items as _mailbox_key_items
-    key_items = sorted(key_items | set(_mailbox_key_items(ap_records(settings))))
-    plan['key_items'] = key_records(key_items)
+    received_key_records = ap_records(settings)
+    key_items = sorted(key_items | set(_mailbox_key_items(received_key_records)))
+    key_actors = {_reward(p) for p in plan['placements']} | {r['actor'] for r in received_key_records}
+    plan['key_items'] = key_records(key_items, key_actors)
     if plan['key_items']:
         report("Building dungeon-specific items (key rings, boss keys, maps, compasses)…")
         messages = sorted(m for m in members if m.startswith('Mals/') and '.Product.110.' in m)

@@ -2,13 +2,36 @@
 
 The Windows x64 application provides native setup for **Triforce** and an **experimental Hookshot 3.0.1 adapter**. Loading a RomFS mod is a separate capability from connecting to Archipelago and safely granting its items.
 
-## Current 0.11 external backend
+## Current external backend (0.12.0-alpha.1)
 
 **Other ports and emulators…** provides a separate experimental setup/runtime for full-network rooms. It accepts a supported RomFS directory or NUP, dedicated mods folder, exact host/game executable, and optional ROM and save path. Profiles are separate from both native hosts. It never moves an original save, and opening a library profile does not automatically connect.
 
-The external window owns the AP runtime and must remain open while connected. Tracker and chat share that connection. The runtime verifies the seed and receipt-readiness markers before delivery; live inventory tracking can start before the first save when the process seed is verified. Windows and Linux process adapters exist in source, but the distributed desktop application is Windows x64. **External DeathLink is not implemented.**
+The external window owns the AP runtime and must remain open while connected. Tracker and chat share that connection. The runtime verifies the seed and receipt-readiness markers before delivery; live inventory tracking can start before the first save when the process seed is verified. Windows and Linux process adapters exist in source, but the distributed desktop application is Windows x64. Prepared full-network rooms now support external DeathLink when enabled in the player file.
 
-Automated resource, process-adapter and private real-server tests are separate evidence from gameplay on a particular emulator. No complete playthrough of the new full-network catalogue or universal port compatibility is claimed. The Fritchii and Hookshot observations below are historical tests of their stated revisions, not validation of every 0.11 source or new external receipt path. Native Triforce remains the established gameplay path.
+On 24 November 2026, a private portable Fritchii 5.8.4 installation ran game 1.1.1 with the full-network overlay, the actual external runtime, Archipelago 0.6.8 and a second player in a different game. Original saves and configuration were preserved: all nine original configuration/save hashes and the original file set were unchanged after cleanup.
+
+This actual gameplay test verified title-screen connection, items sent while the game was closed, native rupee and Bow effects, and deferral on a ladder. Bomb ammunition received without a bomb bag produced no ammunition, equipment or substitute reward. An incoming DeathLink waited during the inventory pause, then caused native Game Over after unpausing without an outgoing echo. Declarations of death use fresh native Player AI and live life, never a previously saved health value.
+
+Own-check rollback and natural outgoing DeathLink were also executed in the actual emulator, using an explicitly isolated map fixture. The existing Kokiri Sword Chest was relocated without changing its actor identity or its Fire Medallion AP placement; cloned vanilla Dekubabas supplied ordinary contact damage. After collecting the chest, loading a precheck save through Zelda's own Load menu restored the owned reward, its source and its open-chest state. The server still recorded one check. Six ordinary enemy hits then caused one outgoing DeathLink received by the real second client. No player health, position, inventory or save editing was used. The temporary private map was restored afterward; these fixture tests do not establish that the original physical routes were traversed.
+
+These observations are separate from automated resource/process tests and the modeled integration test below. They do not claim a complete catalogue playthrough, every action/item presentation, Linux gameplay or universal emulator compatibility. Other emulator builds must pass their own exact process/resource checks.
+
+Older full mods need **Update prepared room** using the **same player file**. This installs corrected resource allocations and the version 2 native readiness gate while retaining the room token, placements and saves. Opening an older profile offers that update and blocks Play/Connect until it is prepared; it does not silently launch outdated resources. A new seed is needed for changed settings or new locations, not for this same-room resource repair.
+
+## Current native-host gameplay checks
+
+Full-network generation and preparation currently require a Child start.
+Actual Triforce testing found a stall in the adult opening transition; adult
+player files remain readable, but that starting mode is blocked in this release.
+This restriction concerns the initial age, not ordinary age changes during play.
+
+The 0.12.0-alpha.1 native helpers were also exercised on actual private native hosts with historical 1,104-check full rooms. Triforce connected at the title screen, loaded a new four-heart save, held twenty rupees through pause, delivered a native Bow facing the camera, committed its receipt and deferred an incoming DeathLink through item/tutorial events before native Game Over without echo. Original hashes remained unchanged and the private game exited normally. This smoke test is distinct from validation of a newly generated 1,106-check room.
+
+Hookshot loaded the full resource set after the allocation repair and ran actual receipt, crawl and natural outgoing DeathLink tests. Its latest native helper was checked with child/adult player components and an adult fishing session: a major item waited during the cast and while the rod remained ready between casts, then arrived after putting the rod away. Travel and age-switch assistance were used to reach that private scenario, without editing health or inventory.
+
+A separate Spirit Temple fixture verified the child route's two native key doors and an actual AP reward at the Silver Gauntlets source. It restored vanilla Spirit map resources and used explicit position/combat assistance around non-key obstacles; neither key door was bypassed and no keys/ring/gauntlets were granted as a shortcut. This proves the tested key-gate/source transactions, not a complete unassisted dungeon playthrough.
+
+Individual AP keys were then received on actual private Hookshot through a real AP server, outside their target dungeon. Two Forest copies advanced held/found counts from zero to one to two while other dungeon counts stayed unchanged. Child and adult presentations kept the whole native key model in frame without overriding the camera. Duplicate checks did not grant another key. These observations complement per-copy resource/network tests; playing every one of the new catalogue's checks is not claimed.
 
 The private 0.11 external integration test uses the actual runtime and Archipelago 0.6.8 server with a generated 1,104-check Zelda room and a second game. It verifies offline receipts, server synchronization with no remote items, personal and foreign older-save recovery, exact ammunition amounts, and quiet acknowledgements for spent trade items. The game-side EVFL/GameData execution is modeled explicitly; no emulator or port gameplay session is implied by that result.
 
@@ -56,7 +79,7 @@ Local tests were performed on 21 November 2026 with game version 1.1.1. Each hos
 | --- | --- | --- |
 | Triforce 0.6.0, Windows | Native title-screen connection, item delivery, reconnection, checks and DeathLink; see the main README for the gameplay coverage and remaining presentation issues. | Supported by the published installer. |
 | Hookshot 3.0.1, Windows | An experimental rebuilt host connects before the title screen. Real remote item delivery, saving, incoming DeathLink, and receiving an item sent while the game was closed were verified in a new game. | Experimental adapter in the 0.9.0 installer; prerequisites and validation scope above. |
-| Fritchii 5.8.4, Windows | The supplied NUP boots to the French title screen. The AP RomFS overlay loads through LayeredFS and displays the Archipelago title badge; both title-screen tests ran at 60 FPS. | RomFS loading verified on 21 November. The 0.11 external runtime has not had an emulator gameplay validation. |
+| Fritchii 5.8.4, Windows | The supplied NUP boots to the French title screen and loads the AP overlay through LayeredFS. | Historical asset-loading test on 21 November; actual external gameplay validation on 24 November is described above. |
 
 ## Earlier Hookshot gameplay prototype
 
@@ -74,7 +97,7 @@ patch; it still requires the experimental gameplay bridge and its matching host
 build. The 0.9.0 installer now prepares the pinned adapter; this earlier desktop
 test remains separate evidence from the new installer tests.
 
-The gameplay test used a new private save and a copied local room with a second test player. It does not establish that every physical chest, all eight shop purchases, or every item presentation has been replayed on Hookshot. A natural outgoing DeathLink has not been tested in this host.
+The earlier gameplay test used a new private save and a copied local room with a second test player. It did not establish that every physical chest, all eight shop purchases, or every item presentation had been replayed on Hookshot. Natural outgoing DeathLink was not part of that earlier prototype test.
 
 The first remote check granted five rupees and saved received index 1. An incoming DeathLink then changed Link's life from 12 to 0 without an outgoing echo. A second five-rupee item was sent while no Hookshot game process was running. After restarting and loading the same private save, the game reached ten rupees and saved received index 2, with exactly one new receipt event. The first item and the previous DeathLink were not replayed.
 
@@ -86,9 +109,9 @@ Fritchii's NUP loader handles the standalone update container directly; conversi
 <portable-app>/user/load/0400486024DEC000/Archipelago/romfs/
 ```
 
-Only RomFS resources were copied for the overlay test. No Windows AP DLL, host include, existing save, or ExeFS patch was installed in the emulator. The observed AP title badge proves asset loading, not an AP connection or an inventory grant. The game's normal native texts remain localized by the game.
+Only RomFS resources are installed for the external path. No Windows AP DLL, native-host include or ExeFS patch is required in the emulator. The game's normal native texts remain localized by the game. The earlier title badge observation proved asset loading; the later actual gameplay tests above separately establish connection, grants, recovery and DeathLink for this exact tested revision.
 
-The 0.11 external backend adds check observation and guarded receipt signaling, but the historical title-screen experiment did not test those transactions. Fritchii's debugger interface alone is not evidence that every received item or older-save recovery works in gameplay. Life/death integration remains absent from the external runtime.
+The external runtime observes verified GameData and requests the game's registered native receipt events. Native Player AI publishes unsaved readiness and live-death flags. Incoming DeathLink requests use the game's own live-life query and native life-subtraction action. Pause, loading, events, unknown actions, fishing and missing seed/native heartbeat prevent unsafe activation. The desktop client must stay open; the emulator alone does not own an AP socket.
 
 ## Legacy save bridge limitations
 

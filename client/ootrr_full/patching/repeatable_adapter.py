@@ -669,6 +669,9 @@ def prepare_repeatables(plan, maps):
                   'underwater': bool(placement.get('underwater')) and not shop,
                   'original_reward_actor': previous, 'flag': flag, 'flag_hash': murmur3(flag),
                   'event_filename': 'RandoOnce_' + key + '.event.root', 'variants': variants}
+        native_flags = plan.get('matches', {}).get(placement['id'], {}).get('native_flags')
+        if native_flags:
+            record['native_flags'] = list(native_flags)
         if shop:
             record['shelves'] = [{'resource': patch['resource'], 'index': patch['path'][1], 'shelf': placement['before'],
                                   'board_hash': int.from_bytes(hashlib.sha256(
@@ -880,6 +883,7 @@ def build_repeatable_packs(records, read_pack, read_raw, tables, progress=None, 
             'EventUniqueAin': 'Work/AI/Root/Event/' + event_name + '.ain'}})
         components['EventPerformerRef'] = '?' + event_param
         also = (SOUL_FLAG_PREFIX + record['canonical'],) if record['canonical'].startswith('Item_Soul_') else ()
+        also += tuple(record.get('native_flags', ()))
         grant = exact_ammunition_grant(record['canonical'], record.get('item'))
         if grant is not None:
             exact_quantities[record['actor']] = grant[1]

@@ -26,6 +26,8 @@ def _operations(plan):
     result, seen, beans = {}, set(), []
     for placement in plan['placements']:
         entry = plan['matches'][placement['id']]
+        if entry.get('source') != 'native_extra':
+            continue
         name = entry.get('extra_name')
         if name is None:
             continue

@@ -101,7 +101,7 @@ OPTIONS = [
            kind='bool'),
     # ------------------------------------------------------------------ World
     Option('open_kakariko', 'World', 'Kakariko gate',
-           (('closed', 'Closed (Zelda\'s Letter)', OK), ('zelda', 'Open after the letter', NO_ADAPTER),
+           (('closed', 'Closed (Zelda\'s Letter)', OK), ('zelda', 'Open after the letter', OK),
             ('open', 'Open', OK)), 'closed',
            'Open: the gate and the Death Mountain part of the Fire Stone quest start as after the '
            'guard read Zelda\'s Letter. The castle visit and the Door of Time quest are unchanged. '
@@ -122,7 +122,8 @@ OPTIONS = [
            'To be confirmed in game.', experimental=('all', 'vanilla', 'song')),
     Option('spiritual_stones', 'World', 'Require Spiritual Stones',
            (('door', 'Follow Door of Time requirements (legacy seed)', OK),
-            ('all', 'Require all', OK), ('vanilla', 'Vanilla', OK)), 'all',
+            ('all', 'Require all', OK), ('vanilla', 'Vanilla', OK),
+            ('song', 'No stones: Ocarina waits in the moat', OK)), 'all',
            'Which stones Zelda\'s escape asks for to give the Ocarina of Time and the Song of Time. '
            'Require all: the Kokiri Emerald, the Goron Ruby and the Zora Sapphire. Vanilla: the Goron Ruby '
            'and the Zora Sapphire only, as in the original game. Door of Time requirements are separate.'),
@@ -135,10 +136,11 @@ OPTIONS = [
            experimental=('open',)),
     Option('gerudo_fortress', 'World', 'Gerudo Fortress',
            (('normal', 'Four carpenters', OK), ('fast', 'One carpenter', OK),
-            ('open', 'Open', 'The Gerudo Membership Card is handed over by the rescue of the last '
-             'carpenter: with every carpenter free from the start its check would be lost.')), 'normal',
+            ('open', 'All carpenters already rescued', OK)), 'normal',
            'One carpenter: the first carpenter freed, in any cell, ends the fortress and brings the '
            'rescue reward, then frees the remaining carpenters and opens every cell. '
+           'All rescued removes the skipped rescue check. A shuffled Membership Card moves into '
+           'the remaining AP item pool; an unshuffled card starts owned. '
            'To be confirmed in game.', experimental=('fast',)),
     Option('open_gerudo_valley_bridge', 'World', 'Gerudo Valley bridge repaired',
            ((False, OK), (True, OK)), False,
@@ -155,16 +157,30 @@ OPTIONS = [
            experimental=('adult',)),
     # ------------------------------------------------------------------- Goal
     Option('bridge', 'Goal', 'Rainbow Bridge',
-           (('vanilla', 'Shadow and Spirit medallions (vanilla)', OK), ('open', 'Open', NO_ADAPTER),
-            ('stones', 'Stones', NO_ADAPTER), ('medallions', 'Medallions', NO_ADAPTER),
-            ('dungeons', 'Dungeons', NO_ADAPTER), ('tokens', 'Skulltulas', NO_ADAPTER),
-            ('hearts', 'Hearts', NO_ADAPTER)), 'vanilla'),
+           (('vanilla', 'Shadow and Spirit medallions (vanilla)', OK), ('open', 'Open', OK),
+            ('stones', 'Stones', OK), ('medallions', 'Medallions', OK),
+            ('dungeons', 'Dungeons', OK), ('tokens', 'Skulltulas', OK),
+            ('hearts', 'Hearts', OK)), 'vanilla',
+           'The native bridge scene follows the chosen condition. Counted modes use their matching '
+           'Goal thresholds; Open is available from the start.'),
     Option('trials', 'Goal', 'Ganon\'s Castle trials', None, 6, kind='int',
-           minimum=0, maximum=6, supported_ints=(6,), help='The remake keeps all six trials.'),
+           minimum=0, maximum=6, supported_ints=tuple(range(7)),
+           help='Clear any selected number of the six native trials. Zero opens the tower from the start.'),
     Option('shuffle_ganon_bosskey', 'Goal', 'Ganon\'s Boss Key',
-           (('vanilla', 'Vanilla', OK), ('remove', 'Removed', NO_ADAPTER), ('dungeon', 'In the castle', NO_ADAPTER),
+           (('vanilla', 'Vanilla', OK), ('remove', 'Removed', OK), ('dungeon', 'In the castle', OK),
+            ('any_dungeon', 'Any dungeon', OK), ('overworld', 'Overworld', OK),
+            ('regional', 'Same geographic region', OK),
+            ('keysanity', 'Anywhere in the multiworld', OK),
+            ('lacs_dungeons', 'Light Arrows scene after dungeon rewards', OK),
+            ('lacs_stones', 'Light Arrows scene after Spiritual Stones', OK),
+            ('lacs_medallions', 'Light Arrows scene after Medallions', OK),
+            ('lacs_tokens', 'Light Arrows scene after Gold Skulltulas', OK),
+            ('lacs_hearts', 'Light Arrows scene after hearts', OK),
             ('medallions', 'Medallions', NO_ADAPTER), ('stones', 'Stones', NO_ADAPTER),
-            ('dungeons', 'Dungeons', NO_ADAPTER), ('tokens', 'Skulltulas', NO_ADAPTER)), 'vanilla'),
+            ('dungeons', 'Dungeons', NO_ADAPTER), ('tokens', 'Skulltulas', NO_ADAPTER)), 'vanilla',
+           'Shuffle Ganon\'s Boss Key in its own dungeon, in other allowed areas, or give it at the '
+           'Light Arrows scene using the configured scene requirement. Removed opens its boss door '
+           'from the start; Vanilla retains its native source.'),
     Option('triforce_hunt', 'Goal', 'Triforce hunt', ((False, OK), (True, NO_ADAPTER)), False, kind='bool'),
     # ------------------------------------------------------------------ Items
     Option('blue_fire_arrows', 'Items', 'Ice arrows melt red ice',
@@ -223,8 +239,9 @@ OPTIONS = [
             ('random', 'Random prices (10 to 99 rupees)', OK)), 'off',
            PILOT + ' Single-sale remake scrubs: stick upgrade (Lost Woods bridge), nut upgrade '
            '(Lost Woods), field and crater heart pieces. "Remake price": 40 and 100 rupees '
-           '(100 needs the Adult\'s Wallet). The scrub still announces its vanilla item; the item given '
-           'is the placed one. Refill scrubs (3 items) and Dream World scrubs not included.',
+           '(both fit the remake\'s starting wallet). The item given is the final AP placement. '
+           'Scrub item names can also update the native offer text. Refill scrubs (3 items) '
+           'and Dream World scrubs not included.',
            experimental=('low', 'regular', 'random')),
     Option('shuffle_cows', 'Items', 'First cow rewards', ((False, OK), (True, OK)), False,
            'Shuffle eight first cow rewards. The first reward replaces milk; later milk refills retain their native behaviour.', kind='bool'),
@@ -244,7 +261,8 @@ OPTIONS = [
     Option('shuffle_medigoron_carpet_salesman', 'Items', 'Medigoron and carpet salesman',
            ((False, OK), (True, NO_EVENT)), False, kind='bool'),
     Option('shuffle_freestanding_items', 'Items', 'Freestanding items (heart pieces, rupees, hearts)',
-           (('off', 'Vanilla', OK), ('dungeons', 'Dungeons', OK), ('overworld', 'Overworld', OK),
+           (('off', 'Vanilla', OK), ('pieces', 'Heart pieces only', OK),
+            ('dungeons', 'Dungeons', OK), ('overworld', 'Overworld', OK),
             ('all', 'All', OK)), 'off', PILOT, experimental=('dungeons', 'overworld', 'all')),
     Option('shuffle_npc_gifts', 'Items', 'NPC gifts and minigames',
            ((False, OK), (True, OK)), False,
@@ -294,26 +312,28 @@ OPTIONS = [
     Option('shuffle_mapcompass', 'Dungeons', 'Maps and compasses',
            (('vanilla', 'Vanilla', OK), ('dungeon', 'In their dungeon', OK), ('remove', 'Removed', OK),
             ('startwith', 'Start with', OK), ('any_dungeon', 'Any dungeon', OK),
-            ('overworld', 'Overworld', OK), ('keysanity', 'Anywhere', OK)), 'dungeon',
+            ('overworld', 'Overworld', OK), ('regional', 'Same geographic region', OK),
+            ('keysanity', 'Anywhere', OK)), 'dungeon',
            '"Start with": every map and compass is held from the start; their chests hold other items. '
            'Outside their dungeon, each map and compass becomes a dungeon-specific item ("Map: …").',
            experimental=('startwith', 'any_dungeon', 'overworld', 'keysanity')),
     Option('shuffle_smallkeys', 'Dungeons', 'Small keys',
            (('vanilla', 'Vanilla', OK),
-            ('dungeon', 'In their dungeon (key rings)', OK),
+            ('dungeon', 'In their dungeon', OK),
             ('remove', 'Removed (all keys from the start)', OK),
-            ('any_dungeon', 'Any dungeon (key rings)', OK), ('overworld', 'Overworld (key rings)', OK),
-            ('keysanity', 'Anywhere (key rings)', OK)), 'vanilla',
-           'Except for "Vanilla", small keys become one key ring per dungeon (Key rings option '
-           '= All dungeons): remake keys are generic, only a dungeon-specific key ring '
-           'can be placed elsewhere. Small key chests receive other items.',
+            ('any_dungeon', 'Any dungeon', OK), ('overworld', 'Overworld', OK),
+            ('regional', 'Same geographic region', OK), ('keysanity', 'Anywhere', OK)), 'vanilla',
+           'Choose where dungeon keys can be placed. Selected key-ring dungeons use a single ring; '
+           'with individual dungeon keys enabled, the remaining dungeons use separate AP keys '
+           'that credit their own dungeon wherever received. Historical rooms retain their original native keys.',
            experimental=('dungeon', 'remove', 'any_dungeon', 'overworld', 'keysanity')),
     Option('shuffle_hideoutkeys', 'Dungeons', 'Gerudo hideout keys',
            (('vanilla', 'Guards', OK), ('overworld', 'Overworld', NO_EVENT), ('keysanity', 'Anywhere', NO_EVENT)), 'vanilla'),
     Option('shuffle_bosskeys', 'Dungeons', 'Boss keys',
            (('vanilla', 'Vanilla', OK), ('dungeon', 'In their dungeon', OK),
             ('remove', 'Removed (boss keys from the start)', OK),
-            ('any_dungeon', 'Any dungeon', OK), ('keysanity', 'Anywhere', OK)), 'vanilla',
+            ('any_dungeon', 'Any dungeon', OK), ('overworld', 'Overworld', OK),
+            ('regional', 'Same geographic region', OK), ('keysanity', 'Anywhere', OK)), 'vanilla',
            'Outside their dungeon, each boss key becomes a dungeon-specific item ("Boss Key: …") '
            'that opens the boss door of that dungeon wherever it is found. Ganon\'s key: option of the Goal tab.',
            experimental=('dungeon', 'remove', 'any_dungeon', 'keysanity')),
@@ -321,9 +341,8 @@ OPTIONS = [
            (('off', 'None', OK), ('all', 'All dungeons', OK), ('choose', 'Chosen dungeons', OK),
             ('random', 'Random dungeons', OK)), 'off',
            'One key ring per dungeon (Forest, Fire, Water, Shadow, Spirit, Well, Gerudo Training Ground, Ganon\'s Castle): '
-           'all its small keys at once, wherever it is found. Required as soon as small '
-           'keys leave their place. With chosen or random dungeons, the other dungeons keep their '
-           'small keys in place (remake keys are generic).', experimental=('all', 'choose', 'random')),
+           'all its small keys at once, wherever it is found. Other dungeons use individual AP keys '
+           'when that option is enabled, or retain native keys for historical rooms.', experimental=('all', 'choose', 'random')),
     Option('key_rings_list', 'Dungeons', 'Key ring dungeons',
            tuple((d, d, OK) for d in KEY_RING_DUNGEONS), (),
            'Dungeons with a key ring when "Key rings" is "Chosen dungeons".', kind='list'),
@@ -372,15 +391,79 @@ for _name, _label, _help in (
     ('plant_beans', 'Beans already planted', 'All ten supported native bean platforms start planted; the bean merchant has one final purchase left.'),
 ):
     OPTIONS.append(Option(_name, 'Items', _label, ((False, OK), (True, OK)), False, _help, kind='bool'))
+from ootrr_full.game.goal_settings import NEW_DEFAULTS as GOAL_DEFAULTS
+for _prefix, _label in (('bridge', 'Rainbow Bridge'), ('lacs', 'Light Arrows scene')):
+    for _suffix, _noun, _maximum in (('stones', 'Spiritual Stones', 3), ('medallions', 'Medallions', 6),
+                                      ('rewards', 'dungeon rewards', 9)):
+        OPTIONS.append(Option(_prefix + '_' + _suffix, 'Goal', _label + ': ' + _noun, None, _maximum,
+                              'Number of distinct owned rewards required by the selected condition.',
+                              kind='int', minimum=0, maximum=_maximum,
+                              supported_ints=tuple(range(_maximum + 1))))
+    OPTIONS.append(Option(_prefix + '_tokens', 'Goal', _label + ': Gold Skulltulas', None, 50,
+                          'Required Gold Skulltula Tokens. The supported remake catalogue contains 98 attainable tokens.',
+                          kind='int', minimum=0, maximum=98, supported_ints=tuple(range(99))))
+    OPTIONS.append(Option(_prefix + '_hearts', 'Goal', _label + ': hearts', None, 20,
+                          'Required maximum health in whole hearts, including the selected starting hearts. '
+                          'A heart goal replaces filler with any missing Pieces of Heart so the real native '
+                          'maximum can reach the selected count. These items use normal global AP placement.',
+                          kind='int', minimum=1, maximum=20, supported_ints=tuple(range(1, 21))))
+OPTIONS.append(Option('lacs_condition', 'Goal', 'Light Arrows scene condition',
+                      (('vanilla', 'Shadow and Spirit Medallions', OK), ('stones', 'Spiritual Stones', OK),
+                       ('medallions', 'Medallions', OK), ('dungeons', 'Dungeon rewards', OK),
+                       ('tokens', 'Gold Skulltulas', OK), ('hearts', 'Hearts', OK)), 'vanilla',
+                      'The native Temple of Time scene follows this reward threshold. '
+                      'Ganon boss key on the scene uses its dungeon reward count.'))
+OPTIONS.append(Option('starting_hearts', 'World', 'Starting hearts', None, 3,
+                      'Initial maximum health for a new save. Heart rewards remain in the item pool.',
+                      kind='int', minimum=1, maximum=20, supported_ints=tuple(range(1, 21))))
+OPTIONS.append(Option('dungeon_reward_placement', 'Items', 'Dungeon reward placement',
+                      (('vanilla', 'Keep dungeon rewards native', OK),
+                       ('dungeons', 'Only dungeon reward handovers', OK),
+                       ('anywhere', 'Anywhere in the multiworld', OK)), 'anywhere',
+                      'Controls the nine Spiritual Stones and Medallions independently of boss heart '
+                      'containers. Restricted rewards stay among the nine actual dungeon reward '
+                      'handovers, including Rauru. Anywhere uses normal AP placement across all games.'))
+OPTIONS.append(Option('shuffle_entrances', 'World', 'Dungeon entrance shuffle',
+                      (('off', 'Native entrances', OK), ('dungeons', 'Coupled dungeon entrances', OK)), 'off',
+                      'Shuffle eleven supported dungeon entrances and their ordinary return doors together. '
+                      'Native arrival points are checked for both ages; blue warps retain their native exits. '
+                      'AP logic uses the identical permutation. Requires a newly generated room.'))
+OPTIONS.append(Option('individual_smallkeys', 'Items', 'Individual dungeon keys in Archipelago',
+                      ((False, OK), (True, OK)), True,
+                      'Dungeons without a selected key ring use individual AP small keys when small-key '
+                      'shuffle is enabled. Each key credits its own dungeon wherever it is found or received. '
+                      'Disabled preserves historical rooms whose unselected key dungeons kept native keys.', kind='bool'))
+OPTIONS.append(Option('door_of_time_song', 'World', 'Door of Time requires its song',
+                      ((False, OK), (True, OK)), True,
+                      'When disabled, the native door opens automatically once its selected stone '
+                      'requirement is met. Neither an ocarina nor the Song of Time is then required. '
+                      'The independent Zelda escape and its two rewards retain their own rules.', kind='bool'))
+OPTIONS.append(Option('shuffle_treasure_reward', 'Items', 'Treasure Chest Game first prize',
+                      (('inherit', 'Follow chest shuffle', OK), ('vanilla', 'Native heart piece', OK),
+                       ('shuffled', 'Independent AP check', OK)), 'inherit',
+                      'Control the first Treasure Chest Game heart piece independently. Later wins retain '
+                      'their native prize. Follow chest shuffle preserves existing room behaviour.'))
+for _name, _label in (('chest', 'Chests'), ('pot', 'Pots'), ('crate', 'Crates'),
+                       ('rock', 'Rocks'), ('bush', 'Grass and bushes')):
+    OPTIONS.append(Option(_name + '_scope', 'Items', _label + ': shuffle scope',
+                          (('all', 'Everywhere', OK), ('overworld', 'Overworld', OK),
+                           ('dungeons', 'Dungeons', OK)), 'all',
+                          'Limits the corresponding enabled source shuffle. Other sources stay native. '
+                          'Overworld-only chests require dungeon items to remain native or start with their effects.'))
+from ootrr_full.game import portable_options
+OPTIONS.extend(portable_options.options(Option, OK))
+from ootrr_full.game import economy_settings
+OPTIONS.extend(economy_settings.options(Option, OK))
 BY_NAME = {option.name: option for option in OPTIONS}
-TABS = ('Logic', 'World', 'Goal', 'Items', 'Dungeons', 'Souls', 'Quality of life')
-OUT_OF_SCOPE = ('Entrance shuffle, Master Quest, multiworld and gossip stone hints: out of scope '
-                'for this version, AP default values enforced (no shuffling).')
+TABS = ('Logic', 'World', 'Goal', 'Items', 'Dungeons', 'Souls', 'Economy', 'Quality of life', 'Difficulty')
+OUT_OF_SCOPE = ('Overworld entrance shuffle, Master Quest and native gossip stone hints have no '
+                'proven full-network adapter. Coupled dungeon entrances and AP multiworld are supported.')
 
 
 # Options added after a release, left out of the stored settings at this value: stored settings
 # without the option mean it, and seeds made before the option keep their identity.
-UNRECORDED = {'spiritual_stones': 'all', 'door_of_time_requirement': 'song', 'blue_fire_arrows': False}
+UNRECORDED = {'spiritual_stones': 'all', 'door_of_time_requirement': 'song', 'blue_fire_arrows': False,
+              **GOAL_DEFAULTS, **portable_options.unrecorded(), **economy_settings.DEFAULTS}
 
 
 def recorded(values):
@@ -456,9 +539,25 @@ def validate(values, supported_only=False):
             raise ValueError(f'{option.label} = {value!r}: {option.reason(value)}')
     if result['starting_age'] == 'adult':
         result['open_door_of_time'] = True   # the adult starts beyond the door: it stands open
+    if result['shuffle_ganon_bosskey'].startswith('lacs_'):
+        result['lacs_condition'] = result['shuffle_ganon_bosskey'][len('lacs_'):]
+        if supported_only and (not result['shuffle_quest_rewards'] or not result['shuffle_chests']):
+            raise ValueError('Ganon boss key on the Light Arrows scene requires shuffled quest rewards and chests.')
     if supported_only:
+        if result.get('no_ammo_drops') and result['shopsanity'] == 'all':
+            raise ValueError('No random ammunition drops requires retained shop refills: use numbered Shopsanity instead of shuffling every shop item.')
+        if result.get('lose_heart_on_death') and any(
+                result[prefix + '_hearts'] > 3 for prefix, mode in
+                (('bridge', result['bridge']), ('lacs', result['lacs_condition'])) if mode == 'hearts'):
+            raise ValueError('Heart requirements above three cannot be combined with losing a heart on Game Over.')
+        if result['shuffle_ganon_bosskey'] not in ('vanilla', 'remove') and not result['shuffle_chests']:
+            raise ValueError('Shuffling Ganon\'s Boss Key requires its dungeon chest source to be enabled.')
+        if result['shuffle_chests'] and result['chest_scope'] == 'overworld':
+            for _kind in ('smallkeys', 'bosskeys', 'ganon_bosskey', 'mapcompass'):
+                if result['shuffle_' + _kind] not in ('vanilla', 'remove', 'startwith'):
+                    raise ValueError('Overworld-only chests cannot shuffle dungeon item sources: use vanilla or removed dungeon items.')
         moved = result['shuffle_smallkeys'] not in ('vanilla', 'remove')
-        if moved and result['key_rings'] == 'off':
+        if moved and result['key_rings'] == 'off' and not result.get('individual_smallkeys'):
             raise ValueError('Small keys out of their place: set "Key rings" (remake keys are generic).')
         if result['key_rings'] != 'off' and not moved:
             raise ValueError('Key rings: choose where the small keys go (not "Vanilla").')

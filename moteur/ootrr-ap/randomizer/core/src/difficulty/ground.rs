@@ -466,10 +466,10 @@ impl Ground {
 pub fn load(rf: &mut Romfs, map: &str) -> Res<Option<Ground>> {
     let one: String = format!("{NAV_DIR}/{map}{NAV_EXT}");
     let mut meshes: Vec<Mesh> = Vec::new();
-    if rf.root.join(&one).is_file() {
+    if rf.is_file(&one) {
         let z: Vec<u8> = rf.read(&one)?;
         meshes.push(parse(&rf.zs.decompress(&z)?, [0.0; 3])?);
-    } else if rf.root.join(STITCHED_DIR).join(map).is_dir() {
+    } else if rf.is_dir(&format!("{STITCHED_DIR}/{map}")) {
         for f in rf.list(&format!("{STITCHED_DIR}/{map}"))? {
             let Some(shift) = tile_shift(&f) else {
                 continue;
@@ -484,7 +484,7 @@ pub fn load(rf: &mut Romfs, map: &str) -> Res<Option<Ground>> {
         return Ok(None);
     }
     let mut g: Ground = Ground::build(&meshes);
-    g.tiles = !rf.root.join(&one).is_file();
+    g.tiles = !rf.is_file(&one);
     Ok(Some(g))
 }
 

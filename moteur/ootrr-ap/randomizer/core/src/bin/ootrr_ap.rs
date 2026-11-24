@@ -333,6 +333,8 @@ fn shops(j: &Json) -> Result<()> {
 }
 #[path = "ootrr_ap/skulls.rs"]
 mod ap_skulls;
+#[path = "ootrr_ap/full_extras.rs"]
+mod full_extras;
 
 fn run() -> Result<()> {
     let mut input = String::new();
@@ -344,10 +346,11 @@ fn run() -> Result<()> {
         Some("settings") => inspect_settings(&j),
         Some("localize") => localize(&j),
         Some("cow-classes") => cow_classes(&j),
+        Some("full-extras") => full_extras::run(&j),
         Some("patch") => patch(&j),
         Some("shops") => shops(&j),
         Some("skulls") => ap_skulls::run(&j),
-        _ => Err("expected generate, base-seed, settings, localize, cow-classes, patch, shops or skulls".into()),
+        _ => Err("expected generate, base-seed, settings, localize, cow-classes, full-extras, patch, shops or skulls".into()),
     }
 }
 fn main() {
@@ -572,7 +575,7 @@ mod tests {
         windowed.insert(5, 0x58);
         fs::write(original.join(path), &single).unwrap();
         fs::write(overlay.join(path), &windowed).unwrap();
-        let mut game = Romfs { root: original, zs: zs::Zs::new() };
+        let mut game = Romfs { root: original, zs: zs::Zs::new(), members: None, reader: None };
         assert_eq!(read_overlay(&mut game, &overlay, path).unwrap(), (raw.to_vec(), Some(0)));
         fs::remove_file(overlay.join(path)).unwrap();
         assert_eq!(read_overlay(&mut game, &overlay, path).unwrap(), (raw.to_vec(), Some(0)));

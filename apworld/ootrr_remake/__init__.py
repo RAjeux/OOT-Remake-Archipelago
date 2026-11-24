@@ -214,8 +214,9 @@ class RemakeWorld(World):
 
     def _generate_full_network(self):
         from .options import full_option_values
-        from .full_ap import new_world
+        from .full_ap import new_world, require_playable_start
         values = full_option_values(self.options)
+        require_playable_start(values)
         key = f"archipelago|{self.multiworld.seed_name}|{self.player}"
         self.full_world = new_world(values, key)
         # Final ownership/placements are not known yet. Both slot_data and the
@@ -240,7 +241,8 @@ class RemakeWorld(World):
             location.access_rule = lambda state, gid=gid: full.reachable(gid, state.prog_items[player])
             if not full.in_logic[gid]:
                 location.progress_type = LocationProgressType.EXCLUDED
-            location.item_rule = lambda item, gid=gid: full.can_hold(gid, item.name if item.player == player and item.game == GAME else None)
+            from .dungeon_rewards import item_rule
+            location.item_rule = lambda item, gid=gid: item_rule(self, gid, item)
             region.locations.append(location)
         self.multiworld.completion_condition[player] = lambda state: full.reach(state.prog_items[player])[1]
 
@@ -255,18 +257,25 @@ class RemakeWorld(World):
             self.multiworld.itempool.remove(item)
         progression = [item for item in restricted if item.advancement]
         if progression:
-            places = self.multiworld.get_unfilled_locations(self.player)
+            from .dungeon_rewards import reserved
+            places = [place for place in self.multiworld.get_unfilled_locations(self.player) if not reserved(self, place)]
             self.random.shuffle(places)
             fill_restrictive(self.multiworld, self.multiworld.get_all_state(False), places, progression,
                              single_player_placement=True, lock=True, allow_excluded=False,
                              name="Ocarina of Time Remake dungeon items")
         for item in (item for item in restricted if not item.advancement):
+            from .dungeon_rewards import reserved
             places = [place for place in self.multiworld.get_unfilled_locations(self.player)
-                      if place.can_fill(self.multiworld.state, item, False)]
+                      if not reserved(self, place) and place.can_fill(self.multiworld.state, item, False)]
             if not places:
                 raise FillError("No full-network location can hold " + item.name)
             junk = [place for place in places if place.progress_type == LocationProgressType.EXCLUDED]
             self.random.choice(junk or places).place_locked_item(item)
+
+    @classmethod
+    def stage_pre_fill(cls, multiworld):
+        from .dungeon_rewards import prefill
+        prefill(multiworld)
 
     def _output_full_network(self, output_directory):
         output = self._full_manifest()
@@ -287,7 +296,9 @@ class RemakeWorld(World):
         for gid, name in full.names.items():
             item = self.multiworld.get_location(name, self.player).item
             own = item.player == self.player and item.game == GAME
-            if not full.can_hold(gid, item.name if own else None):
+            eligible = (full.can_hold(gid, item.name) if own else
+                        full.can_hold_foreign(gid, item.name, item.game))
+            if not eligible:
                 raise ValueError("The full-network source cannot grant its assigned item: " + name)
             placements[gid] = {"item": item.name, "own": own,
                                "player": self.multiworld.get_player_name(item.player), "game": item.game,

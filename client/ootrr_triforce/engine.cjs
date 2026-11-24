@@ -2,8 +2,9 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { WASI } = require("node:wasi");
 const [modulePath, command, game, mod] = process.argv.slice(2);
-const preopens = ["patch", "shops", "skulls", "localize", "cow-classes"].includes(command)
-  ? { "/game": game, "/mod": mod, "/load": path.dirname(path.dirname(mod)) } : {};
+const gameRoot = command === "full-extras" && fs.statSync(game).isFile() ? path.dirname(game) : game;
+const preopens = ["patch", "shops", "skulls", "localize", "cow-classes", "full-extras"].includes(command)
+  ? { "/game": gameRoot, "/mod": mod, "/load": path.dirname(path.dirname(mod)) } : {};
 const wasi = new WASI({ version: "preview1", args: ["ootrr-ap", command], preopens, returnOnExit: true });
 (async () => {
   const module = await WebAssembly.compile(fs.readFileSync(modulePath));

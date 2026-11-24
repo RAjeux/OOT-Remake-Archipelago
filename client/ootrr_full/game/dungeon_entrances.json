@@ -1,0 +1,1566 @@
+{
+  "format": 1,
+  "attribution": "MIT OOTRR paired dungeon entrance catalogue; see moteur/ootrr-ap/LICENSE-MIT.",
+  "source_sha256": {
+    "entr/pools.rs": "c7ed3f11468e3211b15767182bdb9f7786619c3ec2166ed9b7a123ac700d7adf",
+    "entrances.json": "b4f5196e2a1e5e102ff10e59842525d2fc97117aa548c951174e0e4ad8d965ae"
+  },
+  "connections": [
+    {
+      "name": "Deku Tree",
+      "entry": [
+        "KF Outside Deku Tree",
+        "Deku Tree Lobby"
+      ],
+      "exit": [
+        "Deku Tree Lobby",
+        "KF Outside Deku Tree"
+      ],
+      "doors": [
+        "11591212048579065524",
+        "5055470052273839817"
+      ],
+      "back": "7202597688446125475",
+      "extra": []
+    },
+    {
+      "name": "Dodongos Cavern",
+      "entry": [
+        "Death Mountain",
+        "Dodongos Cavern Beginning"
+      ],
+      "exit": [
+        "Dodongos Cavern Beginning",
+        "Death Mountain"
+      ],
+      "doors": [
+        "7450436466790279046",
+        "14899609633248452346"
+      ],
+      "back": "13182986850363170417",
+      "extra": []
+    },
+    {
+      "name": "Jabu Jabus Belly",
+      "entry": [
+        "Zoras Fountain",
+        "Jabu Jabus Belly Beginning"
+      ],
+      "exit": [
+        "Jabu Jabus Belly Beginning",
+        "Zoras Fountain"
+      ],
+      "doors": [
+        "4228704915231375030"
+      ],
+      "back": "17995796037457417799",
+      "extra": []
+    },
+    {
+      "name": "Bottom of the Well",
+      "entry": [
+        "Kakariko Village",
+        "Bottom of the Well"
+      ],
+      "exit": [
+        "Bottom of the Well",
+        "Kakariko Village"
+      ],
+      "doors": [
+        "7724348420662166424",
+        "6398355764627578761",
+        "7282308262581659982"
+      ],
+      "back": "5879842905123968374",
+      "extra": []
+    },
+    {
+      "name": "Forest Temple",
+      "entry": [
+        "SFM Forest Temple Entrance Ledge",
+        "Forest Temple Lobby"
+      ],
+      "exit": [
+        "Forest Temple Lobby",
+        "SFM Forest Temple Entrance Ledge"
+      ],
+      "doors": [
+        "12111229406165987984",
+        "16062333584792453828"
+      ],
+      "back": "6424309957238316552",
+      "extra": []
+    },
+    {
+      "name": "Fire Temple",
+      "entry": [
+        "DMC Fire Temple Entrance",
+        "Fire Temple Lower"
+      ],
+      "exit": [
+        "Fire Temple Lower",
+        "DMC Fire Temple Entrance"
+      ],
+      "doors": [
+        "5610205918630370402",
+        "7902523242437326635"
+      ],
+      "back": "15777142521042929903",
+      "extra": []
+    },
+    {
+      "name": "Water Temple",
+      "entry": [
+        "Lake Hylia",
+        "Water Temple Lobby"
+      ],
+      "exit": [
+        "Water Temple Lobby",
+        "Lake Hylia"
+      ],
+      "doors": [
+        "17562902631547701330",
+        "1570045424068288510"
+      ],
+      "back": "15195247349712517277",
+      "extra": []
+    },
+    {
+      "name": "Shadow Temple",
+      "entry": [
+        "Graveyard Warp Pad Region",
+        "Shadow Temple Entryway"
+      ],
+      "exit": [
+        "Shadow Temple Entryway",
+        "Graveyard Warp Pad Region"
+      ],
+      "doors": [
+        "8073930803580665285",
+        "2492461338144615701"
+      ],
+      "back": "18111227224209553662",
+      "extra": []
+    },
+    {
+      "name": "Spirit Temple",
+      "entry": [
+        "Desert Colossus",
+        "Spirit Temple Lobby"
+      ],
+      "exit": [
+        "Spirit Temple Lobby",
+        "Desert Colossus From Spirit Lobby"
+      ],
+      "doors": [
+        "13187812046230253833",
+        "15448624735210695325"
+      ],
+      "back": "6726536725586102117",
+      "extra": [
+        "adult",
+        "child"
+      ]
+    },
+    {
+      "name": "Ice Cavern",
+      "entry": [
+        "ZF Ice Ledge",
+        "Ice Cavern Beginning"
+      ],
+      "exit": [
+        "Ice Cavern Beginning",
+        "ZF Ice Ledge"
+      ],
+      "doors": [
+        "3056948024719440641"
+      ],
+      "back": "4069798734802445712",
+      "extra": [
+        "adult"
+      ]
+    },
+    {
+      "name": "Gerudo Training Ground",
+      "entry": [
+        "Gerudo Fortress",
+        "Gerudo Training Ground Lobby"
+      ],
+      "exit": [
+        "Gerudo Training Ground Lobby",
+        "Gerudo Fortress"
+      ],
+      "doors": [
+        "16659021570705780937"
+      ],
+      "back": "9849011308940982015",
+      "extra": []
+    }
+  ],
+  "doors": [
+    {
+      "hash": "5879842905123968374",
+      "file": "Banc/BottomOfTheWell/BottomOfTheWell_Static.bcett.byml.zs",
+      "map": "BottomOfTheWell",
+      "age": "both",
+      "name": "Well_KakarikoSide",
+      "cat": "dungeon",
+      "src_area": "Bottom of the Well",
+      "dst_area": "Kakariko Village",
+      "adult": "KakarikoVillage_Adult",
+      "child": "KakarikoVillage_Child",
+      "start": "Kakariko_WellSide",
+      "first": "Dm_SY_BancChangeGo_KakarikoVillage",
+      "next": "Dm_SY_BancChangeArrive",
+      "init_event": "",
+      "init_flag": "",
+      "extra": {
+        "IsAlternativeGameDataBool": "Sequence_IsAlternative_KakarikoAdult"
+      },
+      "pos": [
+        0.0,
+        118.0,
+        38.111
+      ],
+      "ages": [
+        "adult",
+        "child"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "8198897538104571716"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "7724348420662166424"
+        },
+        {
+          "age": "child",
+          "hash": "7282308262581659982"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": false
+    },
+    {
+      "hash": "5610205918630370402",
+      "file": "Banc/DeathMountainCrater/DeathMountainCrater_Adult_Static.bcett.byml.zs",
+      "map": "DeathMountainCrater_Adult",
+      "age": "adult",
+      "name": "OutsideOfFireTemple",
+      "cat": "dungeon",
+      "src_area": "Death Mountain Crater",
+      "dst_area": "Fire Temple",
+      "adult": "FireTemple",
+      "child": "FireTemple",
+      "start": "FireTemple",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "Dm_SY_BancChangeArrive",
+      "init_event": "Goto_FireTemple",
+      "init_flag": "HavePlayedEvent.Goto_FireTemple",
+      "extra": {},
+      "pos": [
+        0.7,
+        122.827,
+        -48.0
+      ],
+      "ages": [
+        "adult"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "7352210844561338164"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "15777142521042929903"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": false
+    },
+    {
+      "hash": "7902523242437326635",
+      "file": "Banc/DeathMountainCrater/DeathMountainCrater_Child_Static.bcett.byml.zs",
+      "map": "DeathMountainCrater_Child",
+      "age": "child",
+      "name": "OutsideOfFireTemple",
+      "cat": "dungeon",
+      "src_area": "Death Mountain Crater",
+      "dst_area": "Fire Temple",
+      "adult": "FireTemple",
+      "child": "FireTemple",
+      "start": "FireTemple",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "Dm_SY_BancChangeArrive",
+      "init_event": "Goto_FireTemple",
+      "init_flag": "HavePlayedEvent.Goto_FireTemple",
+      "extra": {},
+      "pos": [
+        0.7,
+        122.827,
+        -48.0
+      ],
+      "ages": [
+        "child"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "4907105830885953784"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "child",
+          "hash": "15777142521042929903"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": false
+    },
+    {
+      "hash": "7450436466790279046",
+      "file": "Banc/DeathMountainTrail/DeathMountainTrail_Adult_Static.bcett.byml.zs",
+      "map": "DeathMountainTrail_Adult",
+      "age": "adult",
+      "name": "MountainTrail_DodongoCavernSide",
+      "cat": "dungeon",
+      "src_area": "Death Mountain Trail",
+      "dst_area": "Dodongo's Cavern",
+      "adult": "DodongoCavern",
+      "child": "DodongoCavern",
+      "start": "DodongoCavern_MountainTrailSide",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "Dm_SY_BancChangeArrive",
+      "init_event": "",
+      "init_flag": "",
+      "extra": {},
+      "pos": [
+        -55.272,
+        124.9,
+        -31.261
+      ],
+      "ages": [
+        "adult"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "5380583979751343281"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "13182986850363170417"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": true
+    },
+    {
+      "hash": "14899609633248452346",
+      "file": "Banc/DeathMountainTrail/DeathMountainTrail_Child_Static.bcett.byml.zs",
+      "map": "DeathMountainTrail_Child",
+      "age": "child",
+      "name": "MountainTrail_DodongoCavernSide",
+      "cat": "dungeon",
+      "src_area": "Death Mountain Trail",
+      "dst_area": "Dodongo's Cavern",
+      "adult": "DodongoCavern",
+      "child": "DodongoCavern",
+      "start": "DodongoCavern_MountainTrailSide",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "Dm_SY_BancChangeArrive",
+      "init_event": "",
+      "init_flag": "",
+      "extra": {},
+      "pos": [
+        -55.272,
+        124.9,
+        -31.261
+      ],
+      "ages": [
+        "child"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "17076017300869024556"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "child",
+          "hash": "13182986850363170417"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": true
+    },
+    {
+      "hash": "13187812046230253833",
+      "file": "Banc/DesertColossus/DesertColossus_Adult_Static.bcett.byml.zs",
+      "map": "DesertColossus_Adult",
+      "age": "adult",
+      "name": "DesertColossus_FromSpiritTempleEntrance",
+      "cat": "dungeon",
+      "src_area": "Desert Colossus",
+      "dst_area": "Spirit Temple",
+      "adult": "SpiritTemple",
+      "child": "SpiritTemple",
+      "start": "SpiritTemple_Entrance",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "FromColossus_ArriveSpiritTemple",
+      "init_event": "Goto_SpritTemple",
+      "init_flag": "HavePlayedEvent.Goto_SpritTemple",
+      "extra": {},
+      "pos": [
+        -173.664,
+        106.302,
+        10.027
+      ],
+      "ages": [
+        "adult"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "1399657889124061205"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "6726536725586102117"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": false
+    },
+    {
+      "hash": "15448624735210695325",
+      "file": "Banc/DesertColossus/DesertColossus_Child_Static.bcett.byml.zs",
+      "map": "DesertColossus_Child",
+      "age": "child",
+      "name": "DesertColossus_FromSpiritTempleEntrance",
+      "cat": "dungeon",
+      "src_area": "Desert Colossus",
+      "dst_area": "Spirit Temple",
+      "adult": "SpiritTemple",
+      "child": "SpiritTemple",
+      "start": "SpiritTemple_Entrance",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "FromColossus_ArriveSpiritTemple",
+      "init_event": "Goto_SpritTemple",
+      "init_flag": "HavePlayedEvent.Goto_SpritTemple",
+      "extra": {},
+      "pos": [
+        -173.664,
+        106.302,
+        10.027
+      ],
+      "ages": [
+        "child"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "2888390093891919853"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "child",
+          "hash": "6726536725586102117"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": false
+    },
+    {
+      "hash": "13182986850363170417",
+      "file": "Banc/DodongoCavern/DodongoCavern_Static.bcett.byml.zs",
+      "map": "DodongoCavern",
+      "age": "both",
+      "name": "DodongoCavern_MountainTrailSide",
+      "cat": "dungeon",
+      "src_area": "Dodongo's Cavern",
+      "dst_area": "Death Mountain Trail",
+      "adult": "DeathMountainTrail_Adult",
+      "child": "DeathMountainTrail_Child",
+      "start": "MountainTrail_DodongoCavernSide",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "Dm_SY_BancChangeArrive_DeathMountainTrail_03",
+      "init_event": "",
+      "init_flag": "",
+      "extra": {},
+      "pos": [
+        0.0,
+        104.5,
+        41.5
+      ],
+      "ages": [
+        "adult",
+        "child"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "15277432959838273859"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "7450436466790279046"
+        },
+        {
+          "age": "child",
+          "hash": "14899609633248452346"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": true
+    },
+    {
+      "hash": "15777142521042929903",
+      "file": "Banc/FireTemple/FireTemple_Static.bcett.byml.zs",
+      "map": "FireTemple",
+      "age": "both",
+      "name": "FireTemple",
+      "cat": "dungeon",
+      "src_area": "Fire Temple",
+      "dst_area": "Death Mountain Crater",
+      "adult": "DeathMountainCrater_Adult",
+      "child": "DeathMountainCrater_Child",
+      "start": "OutsideOfFireTemple",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "Dm_SY_BancChangeArrive_DeathMountainCrater_02",
+      "init_event": "",
+      "init_flag": "",
+      "extra": {},
+      "pos": [
+        0.046,
+        112.0,
+        30.657
+      ],
+      "ages": [
+        "adult",
+        "child"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "16753847206745896926"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "5610205918630370402"
+        },
+        {
+          "age": "child",
+          "hash": "7902523242437326635"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": true
+    },
+    {
+      "hash": "6424309957238316552",
+      "file": "Banc/ForestTemple/ForestTemple_Static.bcett.byml.zs",
+      "map": "ForestTemple",
+      "age": "both",
+      "name": "ForestTemple",
+      "cat": "dungeon",
+      "src_area": "Forest Temple",
+      "dst_area": "Sacred Forest Meadow",
+      "adult": "SacredForestMeadow_Adult",
+      "child": "SacredForestMeadow_Child",
+      "start": "OutsideOfForestTemple",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "Dm_SY_BancChangeArrive_SacredForestMeadow_01",
+      "init_event": "",
+      "init_flag": "",
+      "extra": {},
+      "pos": [
+        0.035,
+        108.629,
+        78.028
+      ],
+      "ages": [
+        "adult",
+        "child"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "8715538126084515865"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "12111229406165987984"
+        },
+        {
+          "age": "child",
+          "hash": "16062333584792453828"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": true
+    },
+    {
+      "hash": "16659021570705780937",
+      "file": "Banc/GerudoFortress/GerudoFortress_Adult_Static.bcett.byml.zs",
+      "map": "GerudoFortress_Adult",
+      "age": "adult",
+      "name": "GerudoFortress_FromGerudoTrainingGround",
+      "cat": "dungeon",
+      "src_area": "Gerudo's Fortress",
+      "dst_area": "Gerudo Training Ground",
+      "adult": "GerudoTrainingGround",
+      "child": "GerudoTrainingGround",
+      "start": "GerudoTrainingGround_FromGerudoFortress",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "FromGerudoFortress_ArriveTrainingGround",
+      "init_event": "FromGerudoFortress_ArriveTrainingGround",
+      "init_flag": "HavePlayedEvent.Goto_GerudoTrainingGround",
+      "extra": {},
+      "pos": [
+        -1.164,
+        123.702,
+        10.81
+      ],
+      "ages": [
+        "adult"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "14087453091712012967"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "9849011308940982015"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": false
+    },
+    {
+      "hash": "9849011308940982015",
+      "file": "Banc/GerudoTrainingGround/GerudoTrainingGround_Static.bcett.byml.zs",
+      "map": "GerudoTrainingGround",
+      "age": "both",
+      "name": "GerudoTrainingGround_FromGerudoFortress",
+      "cat": "dungeon",
+      "src_area": "Gerudo Training Ground",
+      "dst_area": "Gerudo's Fortress",
+      "adult": "GerudoFortress_Adult",
+      "child": "GerudoFortress_Adult",
+      "start": "GerudoFortress_FromGerudoTrainingGround",
+      "first": "GerudoTrainingGround_LeaveGerudoFortress_Confirm",
+      "next": "Dm_SY_BancChangeArrive_GerudoFortress_01",
+      "init_event": "",
+      "init_flag": "",
+      "extra": {
+        "AddEventFlag": "Npc_Gerudo_004_FinishTalk",
+        "AddEventName": "Npc_Gerudo_004_GerudoTrainingGround_FinishTalk"
+      },
+      "pos": [
+        -1.75,
+        111.794,
+        6.913
+      ],
+      "ages": [
+        "adult",
+        "child"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "3098109849385245129"
+      ],
+      "refs": 4,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "16659021570705780937"
+        },
+        {
+          "age": "child",
+          "hash": "16659021570705780937"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": false
+    },
+    {
+      "hash": "8073930803580665285",
+      "file": "Banc/Graveyard/Graveyard_Adult_Static.bcett.byml.zs",
+      "map": "Graveyard_Adult",
+      "age": "adult",
+      "name": "GraveYard_ShadowTempleSide",
+      "cat": "dungeon",
+      "src_area": "Graveyard",
+      "dst_area": "Shadow Temple",
+      "adult": "ShadowTemple",
+      "child": "ShadowTemple",
+      "start": "Entrance",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "ShadowTemple_Arrive",
+      "init_event": "",
+      "init_flag": "",
+      "extra": {},
+      "pos": [
+        80.305,
+        120.179,
+        2.552
+      ],
+      "ages": [
+        "adult"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "10508416964840974579"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "18111227224209553662"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": true
+    },
+    {
+      "hash": "2492461338144615701",
+      "file": "Banc/Graveyard/Graveyard_Child_Static.bcett.byml.zs",
+      "map": "Graveyard_Child",
+      "age": "child",
+      "name": "GraveYard_ShadowTempleSide",
+      "cat": "dungeon",
+      "src_area": "Graveyard",
+      "dst_area": "Shadow Temple",
+      "adult": "ShadowTemple",
+      "child": "ShadowTemple",
+      "start": "Entrance",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "ShadowTemple_Arrive",
+      "init_event": "",
+      "init_flag": "",
+      "extra": {},
+      "pos": [
+        80.305,
+        120.179,
+        2.552
+      ],
+      "ages": [
+        "child"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "13602058748448071204"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "child",
+          "hash": "18111227224209553662"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": true
+    },
+    {
+      "hash": "17562902631547701330",
+      "file": "Banc/HyruleField/HyruleField_Adult_Static.bcett.byml.zs",
+      "map": "HyruleField_Adult",
+      "age": "adult",
+      "name": "OutsideOfWaterTemple",
+      "cat": "dungeon",
+      "src_area": "Lake Hylia",
+      "dst_area": "Water Temple",
+      "adult": "WaterTemple",
+      "child": "WaterTemple",
+      "start": "WaterTemple_FromLakeHylia",
+      "first": "Dm_SY_BancChangeGo_RunningRace",
+      "next": "SageOfWater_Arrival_WaterTemple",
+      "init_event": "",
+      "init_flag": "",
+      "extra": {
+        "IsChangableAirPos": "true"
+      },
+      "pos": [
+        -180.448,
+        110.9,
+        493.633
+      ],
+      "ages": [
+        "adult"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "16136374239424801060"
+      ],
+      "refs": 3,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "15195247349712517277"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": false
+    },
+    {
+      "hash": "1570045424068288510",
+      "file": "Banc/HyruleField/HyruleField_Child_Static.bcett.byml.zs",
+      "map": "HyruleField_Child",
+      "age": "child",
+      "name": "OutsideOfWaterTemple",
+      "cat": "dungeon",
+      "src_area": "Lake Hylia",
+      "dst_area": "Water Temple",
+      "adult": "WaterTemple",
+      "child": "WaterTemple",
+      "start": "WaterTemple_FromLakeHylia",
+      "first": "Dm_SY_BancChangeGo_RunningRace",
+      "next": "SageOfWater_Arrival_WaterTemple",
+      "init_event": "",
+      "init_flag": "",
+      "extra": {
+        "IsChangableAirPos": "true"
+      },
+      "pos": [
+        -180.448,
+        110.9,
+        493.633
+      ],
+      "ages": [
+        "child"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "9942152605673007151"
+      ],
+      "refs": 3,
+      "returns": [
+        {
+          "age": "child",
+          "hash": "15195247349712517277"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": false
+    },
+    {
+      "hash": "4069798734802445712",
+      "file": "Banc/IceCavern/IceCavern_Static.bcett.byml.zs",
+      "map": "IceCavern",
+      "age": "both",
+      "name": "IceCavern_FromZoraFountain",
+      "cat": "dungeon",
+      "src_area": "Ice Cavern",
+      "dst_area": "Zora's Fountain",
+      "adult": "ZoraFountain_Adult",
+      "child": "ZoraFountain_Child",
+      "start": "ZoraFountain_FromIceCavern",
+      "first": "Dm_SY_BancChangeGo_ZoraFountain",
+      "next": "Dm_SY_BancChangeArrive_IceCaven_02",
+      "init_event": "",
+      "init_flag": "",
+      "extra": {},
+      "pos": [
+        16.717,
+        114.434,
+        89.987
+      ],
+      "ages": [
+        "adult",
+        "child"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "no_start"
+      },
+      "anchors": [
+        "15728806554850576239"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "3056948024719440641"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": false
+    },
+    {
+      "hash": "17995796037457417799",
+      "file": "Banc/InsideJabuJabuBelly/InsideJabuJabuBelly_Static.bcett.byml.zs",
+      "map": "InsideJabuJabuBelly",
+      "age": "both",
+      "name": "InsideJabuJabuBelly_FromZoraFountain",
+      "cat": "dungeon",
+      "src_area": "Jabu Jabu's Belly",
+      "dst_area": "Zora's Fountain",
+      "adult": "ZoraFountain_Adult",
+      "child": "ZoraFountain_Child",
+      "start": "ZoraFountain_FromInsideJabuJabuBelly",
+      "first": "Dm_SY_BancChangeGo_InsideJabujabu",
+      "next": "Dm_SY_BancChangeArrive_ZoraFountain_01",
+      "init_event": "",
+      "init_flag": "",
+      "extra": {},
+      "pos": [
+        -0.885,
+        94.723,
+        -6.957
+      ],
+      "ages": [
+        "adult",
+        "child"
+      ],
+      "start_ok": {
+        "adult": "no_start",
+        "child": "ok"
+      },
+      "anchors": [
+        "11091680779372467380"
+      ],
+      "refs": 3,
+      "returns": [
+        {
+          "age": "child",
+          "hash": "4228704915231375030"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": false
+    },
+    {
+      "hash": "7202597688446125475",
+      "file": "Banc/InsideTheDekuTree/InsideTheDekuTree_Static.bcett.byml.zs",
+      "map": "InsideTheDekuTree",
+      "age": "both",
+      "name": "Entrance",
+      "cat": "dungeon",
+      "src_area": "Deku Tree",
+      "dst_area": "Kokiri Forest",
+      "adult": "KokiriForest_Adult",
+      "child": "KokiriForest_Child",
+      "start": "FrontDekuTree",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "Dm_SY_BancChangeArrive_KokiriForest_01",
+      "init_event": "",
+      "init_flag": "",
+      "extra": {},
+      "pos": [
+        0.219,
+        112.0,
+        15.771
+      ],
+      "ages": [
+        "adult",
+        "child"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "5126271134363607410"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "11591212048579065524"
+        },
+        {
+          "age": "child",
+          "hash": "5055470052273839817"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": true
+    },
+    {
+      "hash": "6398355764627578761",
+      "file": "Banc/KakarikoVillage/KakarikoVillage_Adult_Alternative_Static.bcett.byml.zs",
+      "map": "KakarikoVillage_Adult_Alternative",
+      "age": "adult",
+      "name": "Kakariko_WellSide",
+      "cat": "dungeon",
+      "src_area": "Kakariko Village",
+      "dst_area": "Bottom of the Well",
+      "adult": "BottomOfTheWell",
+      "child": "BottomOfTheWell",
+      "start": "Well_KakarikoSide",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "Dm_SY_BancChangeArrive",
+      "init_event": "Goto_KakarikoWells",
+      "init_flag": "HavePlayedEvent.Goto_KakarikoWells",
+      "extra": {
+        "IsNoDisplayMapIcon": "true"
+      },
+      "pos": [
+        -10.341,
+        97.194,
+        44.861
+      ],
+      "ages": [
+        "adult"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "4114499650852949140"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "5879842905123968374"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": false
+    },
+    {
+      "hash": "7724348420662166424",
+      "file": "Banc/KakarikoVillage/KakarikoVillage_Adult_Static.bcett.byml.zs",
+      "map": "KakarikoVillage_Adult",
+      "age": "adult",
+      "name": "Kakariko_WellSide",
+      "cat": "dungeon",
+      "src_area": "Kakariko Village",
+      "dst_area": "Bottom of the Well",
+      "adult": "BottomOfTheWell",
+      "child": "BottomOfTheWell",
+      "start": "Well_KakarikoSide",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "Dm_SY_BancChangeArrive",
+      "init_event": "Goto_KakarikoWells",
+      "init_flag": "HavePlayedEvent.Goto_KakarikoWells",
+      "extra": {
+        "IsNoDisplayMapIcon": "true"
+      },
+      "pos": [
+        -10.341,
+        97.194,
+        44.861
+      ],
+      "ages": [
+        "adult"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "1135273409024976521"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "5879842905123968374"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": false
+    },
+    {
+      "hash": "7282308262581659982",
+      "file": "Banc/KakarikoVillage/KakarikoVillage_Child_Static.bcett.byml.zs",
+      "map": "KakarikoVillage_Child",
+      "age": "child",
+      "name": "Kakariko_WellSide",
+      "cat": "dungeon",
+      "src_area": "Kakariko Village",
+      "dst_area": "Bottom of the Well",
+      "adult": "BottomOfTheWell",
+      "child": "BottomOfTheWell",
+      "start": "Well_KakarikoSide",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "Dm_SY_BancChangeArrive",
+      "init_event": "Goto_KakarikoWells",
+      "init_flag": "HavePlayedEvent.Goto_KakarikoWells",
+      "extra": {},
+      "pos": [
+        -10.341,
+        97.194,
+        44.861
+      ],
+      "ages": [
+        "child"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "4960948135364187760"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "child",
+          "hash": "5879842905123968374"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": false
+    },
+    {
+      "hash": "11591212048579065524",
+      "file": "Banc/KokiriForest/KokiriForest_Adult_Static.bcett.byml.zs",
+      "map": "KokiriForest_Adult",
+      "age": "adult",
+      "name": "FrontDekuTree",
+      "cat": "dungeon",
+      "src_area": "Kokiri Forest",
+      "dst_area": "Deku Tree",
+      "adult": "InsideTheDekuTree",
+      "child": "InsideTheDekuTree",
+      "start": "Entrance",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "Dm_SY_BancChangeArrive_InsideTheDekuTree_01",
+      "init_event": "InsideTheDekuTree_Arrive",
+      "init_flag": "HavePlayedEvent.Dm_Deku_0000",
+      "extra": {},
+      "pos": [
+        92.41,
+        127.602,
+        -27.532
+      ],
+      "ages": [
+        "adult"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "1049172506997396323"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "7202597688446125475"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": false
+    },
+    {
+      "hash": "5055470052273839817",
+      "file": "Banc/KokiriForest/KokiriForest_Child_Static.bcett.byml.zs",
+      "map": "KokiriForest_Child",
+      "age": "child",
+      "name": "FrontDekuTree",
+      "cat": "dungeon",
+      "src_area": "Kokiri Forest",
+      "dst_area": "Deku Tree",
+      "adult": "InsideTheDekuTree",
+      "child": "InsideTheDekuTree",
+      "start": "Entrance",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "Dm_SY_BancChangeArrive_InsideTheDekuTree_01",
+      "init_event": "InsideTheDekuTree_Arrive",
+      "init_flag": "HavePlayedEvent.Dm_Deku_0000",
+      "extra": {},
+      "pos": [
+        92.41,
+        127.602,
+        -27.532
+      ],
+      "ages": [
+        "child"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "2583059866669998428"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "child",
+          "hash": "7202597688446125475"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": false
+    },
+    {
+      "hash": "12111229406165987984",
+      "file": "Banc/SacredForestMeadow/SacredForestMeadow_Adult_Static.bcett.byml.zs",
+      "map": "SacredForestMeadow_Adult",
+      "age": "adult",
+      "name": "OutsideOfForestTemple",
+      "cat": "dungeon",
+      "src_area": "Sacred Forest Meadow",
+      "dst_area": "Forest Temple",
+      "adult": "ForestTemple",
+      "child": "ForestTemple",
+      "start": "ForestTemple",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "Dm_SY_BancChangeArrive",
+      "init_event": "Dm_ForestTemple_0000",
+      "init_flag": "HavePlayedEvent.Dm_ForestTemple_0000",
+      "extra": {},
+      "pos": [
+        -6.977,
+        132.4,
+        -121.693
+      ],
+      "ages": [
+        "adult"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "486607292670898309"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "6424309957238316552"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": false
+    },
+    {
+      "hash": "16062333584792453828",
+      "file": "Banc/SacredForestMeadow/SacredForestMeadow_Child_Static.bcett.byml.zs",
+      "map": "SacredForestMeadow_Child",
+      "age": "child",
+      "name": "OutsideOfForestTemple",
+      "cat": "dungeon",
+      "src_area": "Sacred Forest Meadow",
+      "dst_area": "Forest Temple",
+      "adult": "ForestTemple",
+      "child": "ForestTemple",
+      "start": "ForestTemple",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "Dm_SY_BancChangeArrive",
+      "init_event": "Dm_ForestTemple_0000",
+      "init_flag": "HavePlayedEvent.Dm_ForestTemple_0000",
+      "extra": {},
+      "pos": [
+        -6.977,
+        132.4,
+        -121.693
+      ],
+      "ages": [
+        "child"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "13531296609976377815"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "child",
+          "hash": "6424309957238316552"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": false
+    },
+    {
+      "hash": "18111227224209553662",
+      "file": "Banc/ShadowTemple/ShadowTemple_Static.bcett.byml.zs",
+      "map": "ShadowTemple",
+      "age": "both",
+      "name": "Entrance",
+      "cat": "dungeon",
+      "src_area": "Shadow Temple",
+      "dst_area": "Graveyard",
+      "adult": "Graveyard_Adult",
+      "child": "Graveyard_Child",
+      "start": "GraveYard_ShadowTempleSide",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "Dm_SY_BancChangeArrive_ShadowTemple_01",
+      "init_event": "",
+      "init_flag": "",
+      "extra": {},
+      "pos": [
+        13.828,
+        105.783,
+        62.963
+      ],
+      "ages": [
+        "adult",
+        "child"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "16102682942867704360"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "8073930803580665285"
+        },
+        {
+          "age": "child",
+          "hash": "2492461338144615701"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": true
+    },
+    {
+      "hash": "6726536725586102117",
+      "file": "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs",
+      "map": "SpiritTemple",
+      "age": "both",
+      "name": "SpiritTemple_Entrance",
+      "cat": "dungeon",
+      "src_area": "Spirit Temple",
+      "dst_area": "Desert Colossus",
+      "adult": "DesertColossus_Adult",
+      "child": "DesertColossus_Child",
+      "start": "DesertColossus_FromSpiritTempleEntrance",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "FromSpiritTemple_ArriveColossus",
+      "init_event": "",
+      "init_flag": "",
+      "extra": {},
+      "pos": [
+        -0.0,
+        112.279,
+        12.584
+      ],
+      "ages": [
+        "adult",
+        "child"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "8442134684332352520"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "13187812046230253833"
+        },
+        {
+          "age": "child",
+          "hash": "15448624735210695325"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": true
+    },
+    {
+      "hash": "15195247349712517277",
+      "file": "Banc/WaterTemple/WaterTemple_Static.bcett.byml.zs",
+      "map": "WaterTemple",
+      "age": "both",
+      "name": "WaterTemple_FromLakeHylia",
+      "cat": "dungeon",
+      "src_area": "Water Temple",
+      "dst_area": "Lake Hylia",
+      "adult": "HyruleField_Adult",
+      "child": "HyruleField_Child",
+      "start": "OutsideOfWaterTemple",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "Dm_SY_BancChangeArrive",
+      "init_event": "",
+      "init_flag": "",
+      "extra": {
+        "IsChangableAirPos": "true"
+      },
+      "pos": [
+        -4.5,
+        133.0,
+        47.53
+      ],
+      "ages": [
+        "adult",
+        "child"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "3805283097609825251"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "17562902631547701330"
+        },
+        {
+          "age": "child",
+          "hash": "1570045424068288510"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": false
+    },
+    {
+      "hash": "3056948024719440641",
+      "file": "Banc/ZoraFountain/ZoraFountain_Adult_Static.bcett.byml.zs",
+      "map": "ZoraFountain_Adult",
+      "age": "adult",
+      "name": "ZoraFountain_FromIceCavern",
+      "cat": "dungeon",
+      "src_area": "Zora's Fountain",
+      "dst_area": "Ice Cavern",
+      "adult": "IceCavern",
+      "child": "IceCavern",
+      "start": "IceCavern_FromZoraFountain",
+      "first": "Dm_SY_BancChangeGo",
+      "next": "SageOfWater_Arrival_IceCavern",
+      "init_event": "",
+      "init_flag": "",
+      "extra": {},
+      "pos": [
+        47.22,
+        119.948,
+        -70.546
+      ],
+      "ages": [
+        "adult"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "14428234463060580143"
+      ],
+      "refs": 2,
+      "returns": [
+        {
+          "age": "adult",
+          "hash": "4069798734802445712"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": true
+    },
+    {
+      "hash": "4228704915231375030",
+      "file": "Banc/ZoraFountain/ZoraFountain_Child_Static.bcett.byml.zs",
+      "map": "ZoraFountain_Child",
+      "age": "child",
+      "name": "ZoraFountain_FromInsideJabuJabuBelly",
+      "cat": "dungeon",
+      "src_area": "Zora's Fountain",
+      "dst_area": "Jabu Jabu's Belly",
+      "adult": "InsideJabuJabuBelly",
+      "child": "InsideJabuJabuBelly",
+      "start": "InsideJabuJabuBelly_FromZoraFountain",
+      "first": "Dm_SY_BancChangeGo_ToInsideJabujabu",
+      "next": "Dm_SY_BancChangeArrive",
+      "init_event": "",
+      "init_flag": "",
+      "extra": {},
+      "pos": [
+        18.077,
+        114.395,
+        -24.478
+      ],
+      "ages": [
+        "child"
+      ],
+      "start_ok": {
+        "adult": "ok",
+        "child": "ok"
+      },
+      "anchors": [
+        "6879349138535148736"
+      ],
+      "refs": 3,
+      "returns": [
+        {
+          "age": "child",
+          "hash": "17995796037457417799"
+        }
+      ],
+      "weak_returns": [],
+      "swappable": true
+    }
+  ]
+}
