@@ -1,10 +1,10 @@
-OOT Remake Archipelago · 0.12.0-alpha.1
+OOT Remake Archipelago · 0.12.0-alpha.2
 English player guide — French: Guide-FR.txt
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
 GET STARTED
 
-Download OOT-Remake-Archipelago-0.12.0-alpha.1.exe from project Releases.
+Download OOT-Remake-Archipelago-0.12.0-alpha.2.exe from project Releases.
 Keep this Windows x64 application wherever you prefer. Python and Node.js
 are included; normal use needs no console.
 

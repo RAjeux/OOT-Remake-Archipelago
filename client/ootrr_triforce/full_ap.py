@@ -27,11 +27,14 @@ ADULT_START_UNAVAILABLE = (
 )
 
 # Archipelago adds only the world's package to its loader search path. The
-# separately named pure-Python engine lives at this archive's root so it cannot
-# shadow AP's own modules, or another project's original oot_rando package.
+# separately named pure-Python engine stays inside the sole installable world
+# directory. zipimport accepts an archive/subdirectory search path, so it does
+# not require a second top-level directory that AP's installer would reject.
 _ARCHIVE = Path(__file__).parent.parent
-if _ARCHIVE.suffix == ".apworld" and _ARCHIVE.is_file() and str(_ARCHIVE) not in sys.path:
-    sys.path.append(str(_ARCHIVE))
+_VENDOR = Path(__file__).parent / "_vendor"
+if _VENDOR.is_dir() or (_ARCHIVE.suffix == ".apworld" and _ARCHIVE.is_file()):
+    if str(_VENDOR) not in sys.path:
+        sys.path.append(str(_VENDOR))
 
 # Enable source families, not optional rule-changing gameplay experiments.
 # Source eligibility and source/item form rules are still enforced by the solver.

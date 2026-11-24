@@ -32,6 +32,16 @@ def tree(root):
             yield rel.as_posix(), path
 
 
+def world_entries():
+    """Keep the APWorld's engine inside its sole installable package root."""
+    entries = list(tree(ROOT / "apworld"))
+    entries.extend(("ootrr_remake/" + name, CLIENT / "ootrr_triforce" / name) for name in WORLD_FILES)
+    prefix = "ootrr_remake/_vendor/ootrr_full/"
+    entries.extend((prefix + name, path) for name, path in tree(CLIENT / "ootrr_full"))
+    entries.append((prefix + "LICENSE-MIT.txt", CLIENT / "credits/OotrR-MIT.txt"))
+    return entries
+
+
 def archive(dest, entries):
     dest.parent.mkdir(parents=True, exist_ok=True)
     with TemporaryDirectory(dir=dest.parent) as directory:
@@ -88,11 +98,7 @@ def main():
     world = OUT/"ootrr_remake.apworld"
     app = OUT/"Client-OOT-Remake.pyz"
     src = OUT/"sources/Sources-moteur.zip"
-    world_entries = list(tree(ROOT/"apworld"))
-    world_entries.extend(("ootrr_remake/"+n, CLIENT/"ootrr_triforce"/n) for n in WORLD_FILES)
-    world_entries.extend(("ootrr_full/"+n, path) for n, path in tree(CLIENT/"ootrr_full"))
-    world_entries.append(("ootrr_full/LICENSE-MIT.txt", CLIENT/"credits/OotrR-MIT.txt"))
-    archive(world, world_entries)
+    archive(world, world_entries())
     archive(app, tree(CLIENT))
     archive(src, tree(ROOT/"moteur"))
 

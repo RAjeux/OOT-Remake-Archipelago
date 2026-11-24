@@ -7,6 +7,7 @@ import marshal
 import ntpath
 from pathlib import Path, PurePosixPath
 import struct
+import sys
 import types
 from zipfile import ZipFile, is_zipfile
 
@@ -89,6 +90,17 @@ def inspect_zip(raw, private_markers, context):
                 code_paths(marshal.loads(data[16:]), context + "/" + name)
 
 
+def inspect_apworld(raw, private_markers, context):
+    """Check the same APWorld container contract used before desktop install."""
+    client = str(ROOT / 'client')
+    if client not in sys.path:
+        sys.path.insert(0, client)
+    from ootrr_triforce.app_runtime import validate_apworld_archive
+    metadata = validate_apworld_archive(BytesIO(raw))
+    inspect_zip(raw, private_markers, context)
+    return metadata
+
+
 def inspect_app(path, extra_markers=()):
     from PyInstaller.archive.readers import CArchiveReader
     from build_app import HOST_FILES, NODE_SHA256
@@ -127,7 +139,7 @@ def inspect_app(path, extra_markers=()):
         if name not in entries or sha(archive.extract(entries[name])) != digest:
             raise ValueError("Missing or altered embedded resource: " + name)
     modules = set()
-    counts = dict(archive_entries=len(entries), python_modules=0, nested_zips=0)
+    counts = dict(archive_entries=len(entries), python_modules=0, nested_zips=0, apworld_format=False)
     for name, original in entries.items():
         if archive.toc[original][2] > MAX_ENTRY:
             raise ValueError("Oversized application resource: " + name)
@@ -145,11 +157,17 @@ def inspect_app(path, extra_markers=()):
         if archive.toc[original][-1] in ("s", "m", "M"):
             code_paths(marshal.loads(data), name)
         elif is_zipfile(BytesIO(data)):
-            inspect_zip(data, private_markers, name)
+            if name.endswith('.apworld'):
+                inspect_apworld(data, private_markers, name)
+                counts['apworld_format'] = True
+            else:
+                inspect_zip(data, private_markers, name)
             counts["nested_zips"] += 1
     missing = REQUIRED_MODULES - modules
     if missing:
         raise ValueError("Required application modules are not frozen: " + ", ".join(sorted(missing)))
+    if not counts['apworld_format']:
+        raise ValueError('The application has no installable APWorld container.')
     counts["python_modules"] = len(modules)
     return dict(result="PASS", version=version, artifact=path.name, bytes=path.stat().st_size,
                 sha256=sha(path.read_bytes()), console=False, onefile=True,

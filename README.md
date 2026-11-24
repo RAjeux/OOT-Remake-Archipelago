@@ -8,7 +8,9 @@ This is an alpha. Current private gameplay tests cover Triforce title-screen con
 
 ## Play
 
-Download **`OOT-Remake-Archipelago-0.12.0-alpha.1.exe`** from [Releases](https://github.com/RAjeux/OOT-Remake-Archipelago/releases). Python and Node.js are included; normal setup needs no console or separate runtime installation.
+Download **`OOT-Remake-Archipelago-0.12.0-alpha.2.exe`** from [Releases](https://github.com/RAjeux/OOT-Remake-Archipelago/releases). Python and Node.js are included; normal setup needs no console or separate runtime installation.
+
+If Archipelago rejected the 0.12.0-alpha.1 APWorld with "expected a single directory", replace the application with this version and install its APWorld again.
 
 Supply Windows x64, your own **game version 1.1.1**, a working **Triforce installation with its build tools**, an active Archipelago room and your `.apootrr` player file. The experimental native Hookshot adapter requires **3.0.1**, its original tools and retained build files. No Nintendo files or game hosts are distributed here.
 
@@ -109,7 +111,7 @@ Use Windows x64 Python with Tcl/Tk support:
 ```powershell
 py -3 -m pip install -r requirements-app.txt
 py -3 tools/build_app.py
-py -3 tools/verify_app.py dist/OOT-Remake-Archipelago-0.12.0-alpha.1.exe
+py -3 tools/verify_app.py dist/OOT-Remake-Archipelago-0.12.0-alpha.2.exe
 ```
 
 The single executable bundles Python, Tk, Node.js, both engines, APWorld, bridge, adapters and notices. `VERSION` declares its version. The 0.12.0-alpha.1 executable passed payload inspection covering 526 Python modules and its isolated selftest in 10.94 seconds with a Unicode profile and only Windows System32 on PATH. The selftest checks hashes, a real child-process Codec and Tk responsiveness while the child holds its GIL; it does not launch a game or server. Full preparation uses isolated workers with bounded progress/log transport and cancellation confined to private build caches.

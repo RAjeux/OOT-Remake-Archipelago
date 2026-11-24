@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.12.0-alpha.2
+
+Fix APWorld installation through Archipelago: the adapted engine is now nested
+inside the world package, leaving the single root directory required by the
+launcher. The standalone archive and the application use the same packaging
+function. Gameplay settings, IDs, placements and saved games are unchanged.
+
+
 ## 0.12.0-alpha.1
 
 - Full-network configuration expands to 119 configuration controls. The default

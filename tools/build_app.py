@@ -167,13 +167,9 @@ def source_notice(work, version):
 
 def payload(work, version, node, node_license):
     # Assemble the APWorld directly. Do not overwrite any historical ZIP/reference.
-    from build import WORLD_FILES, archive, tree
+    from build import archive, tree, world_entries
     world = work / "ootrr_remake.apworld"
-    rows = list(tree(ROOT / "apworld"))
-    rows.extend(("ootrr_remake/" + name, ROOT / "client/ootrr_triforce" / name) for name in WORLD_FILES)
-    rows.extend(("ootrr_full/" + name, path) for name, path in tree(ROOT / "client/ootrr_full"))
-    rows.append(("ootrr_full/LICENSE-MIT.txt", ROOT / "client/credits/OotrR-MIT.txt"))
-    archive(world, rows)
+    archive(world, world_entries())
     files = {"ootrr_remake.apworld": world, "native/archipelago.dll": ROOT / "prebuilt/windows-x64/archipelago.dll",
              "runtime/libzstd.dll": ROOT / "distribution/runtime/libzstd.dll",
              "runtime/LICENSE.txt": ROOT / "distribution/runtime/LICENSE.txt",

@@ -1,10 +1,10 @@
-OOT Remake Archipelago · 0.12.0-alpha.1
+OOT Remake Archipelago · 0.12.0-alpha.2
 Guide du joueur en français — English: Guide.txt
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
 COMMENCER
 
-Télécharge OOT-Remake-Archipelago-0.12.0-alpha.1.exe depuis les Releases.
+Télécharge OOT-Remake-Archipelago-0.12.0-alpha.2.exe depuis les Releases.
 Garde cet exécutable Windows x64 où tu le souhaites. Python et Node.js
 sont inclus ; aucune console n'est nécessaire pour l'utilisation normale.
 
