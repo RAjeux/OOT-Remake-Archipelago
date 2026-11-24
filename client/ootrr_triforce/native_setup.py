@@ -61,7 +61,8 @@ def bind_romfs(source, mod, data, baseline):
         from .ap_shops import selected_shops
         for name in sorted(selected_shops(data["checks"], data)):
             after=append_saved_bool(after,SHOP_CHECKS[name]["flag"])
-    skulls=set(data.get("checks", ())).intersection(AP_SKULL_CHECKS)
+    skulls=(set() if data.get('generation_mode') == 'full_network'
+            else set(data.get("checks", ())).intersection(AP_SKULL_CHECKS))
     if skulls:
         from .ap_skulls import SCRATCH, NATIVE_SCRATCH
         from .cursor_resource import append_saved_bool, append_transient_string64
@@ -176,27 +177,35 @@ def install_tools(base, chooser, configured=None):
 def save_session(root, config, data, roster, *, prepared=None):
     old=root/"native-session.json"
     previous=json.loads(old.read_bytes()) if old.is_file() else {}
+    item_ids, location_ids, check_flags = ITEM_IDS, LOCATION_IDS, CHECK_FLAGS
+    full_recovery = None
+    full_seed_marker = 0
+    if data.get("generation_mode") == "full_network":
+        if prepared is None:
+            raise ValueError("Full-network native setup requires verified prepared resources.")
+        from .full_mod import session_catalog
+        item_ids, location_ids, check_flags, full_recovery, full_seed_marker = session_catalog(data, prepared)
     checks={}
     for n in data["checks"]:
         row=roster.get(n,("",""))
         item,owner=(row["item"],row["player"]) if isinstance(row,dict) else row
-        checks[LOCATION_IDS[n]]=dict(Name=n,Flags=CHECK_FLAGS[n],Item=item,Owner=owner)
+        checks[location_ids[n]]=dict(Name=n,Flags=check_flags[n],Item=item,Owner=owner)
         if isinstance(row,dict):
-            checks[LOCATION_IDS[n]]["ItemID"]=row.get("item_id",0)
-            checks[LOCATION_IDS[n]]["Recipient"]=row.get("owner",0)
+            checks[location_ids[n]]["ItemID"]=row.get("item_id",0)
+            checks[location_ids[n]]["Recipient"]=row.get("owner",0)
         if isinstance(row,dict) and row.get("game"):
-            checks[LOCATION_IDS[n]]["Game"]=row["game"]
+            checks[location_ids[n]]["Game"]=row["game"]
     recovery=[]
     if prepared is not None and data.get("local_items") and data.get("reward_mode")=="all_locations":
         from .restoration import prepared_locations
-        recovery=prepared_locations(prepared,data["checks"])
+        recovery=full_recovery if full_recovery is not None else prepared_locations(prepared,data["checks"])
         if recovery:
             for name in data["checks"]:
                 row=roster.get(name)
                 if (not isinstance(row,dict) or type(row.get("item_id")) is not int or row["item_id"]<=0
                         or type(row.get("owner")) is not int or row["owner"]<=0
                         or type(row.get("local")) is not bool or row["local"]!=(row["owner"]==data["player"])
-                        or (row["local"] and ITEM_IDS.get(row["item"])!=row["item_id"])):
+                        or (row["local"] and item_ids.get(row["item"])!=row["item_id"])):
                     raise ValueError(tr("Invalid Archipelago restoration metadata."))
     trade_replay = {}
     if prepared is not None and data.get("adult_trade_shuffle"):
@@ -213,8 +222,11 @@ def save_session(root, config, data, roster, *, prepared=None):
              AutoConnect=previous.get("AutoConnect",True),
              CursorHash=cursor_hash(data["token"]),Baseline=config["baseline"],DeathLink=bool(data.get("death_link",False)),
              Language=detect_language(root,config),
-             ItemNames={ITEM_IDS[n]:names for n,names in item_names().items() if n in ITEM_IDS},
-             Items={i:n for n,i in ITEM_IDS.items()},Checks=checks,RecoveryLocations=recovery)
+             ItemNames={item_ids[n]:names for n,names in item_names().items() if n in item_ids},
+             Items={i:n for n,i in item_ids.items()},Checks=checks,RecoveryLocations=recovery)
+    if data.get("generation_mode") == "full_network":
+        doc["ItemsHandling"] = 1
+        doc["SeedMarker"] = full_seed_marker
     if trade_replay:
         doc["TradeReplayReceipts"] = trade_replay
     write_json(old,doc)

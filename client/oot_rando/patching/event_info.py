@@ -50,7 +50,19 @@ def flow_name(path):
 
 def _chart(raw):
     from oot_rando.patching.event_patch import _flow
+    if raw is None or hasattr(raw, 'entry_points'):
+        return raw
     return _flow(raw).flowchart
+
+
+def _cached_charts(current):
+    """Decode each immutable flow once within one dependency analysis."""
+    charts = {}
+    def get(name):
+        if name not in charts:
+            charts[name] = _chart(current(name))
+        return charts[name]
+    return get
 
 
 def _successors(event):

@@ -134,6 +134,69 @@ fn localize(j: &Json) -> Result<()> {
     Ok(())
 }
 
+fn cow_jobs(j: &Json) -> Result<Vec<ootrr_core::cow_clone::Cow>> {
+    use std::collections::BTreeSet;
+    let requested = j.get("classes").and_then(Json::as_arr).ok_or("missing cow classes")?;
+    let known = ootrr_core::cow_clone::all();
+    if requested.len() > known.len() { return Err("too many cow classes".into()); }
+    let mut seen = BTreeSet::new();
+    let mut jobs = Vec::new();
+    for value in requested {
+        let name = value.as_str().ok_or("invalid cow class")?;
+        if !seen.insert(name.to_owned()) { return Err("duplicate cow class".into()); }
+        jobs.push(known.iter().find(|cow| cow.class == name).cloned().ok_or("unknown native cow class")?);
+    }
+    jobs.sort_by(|a, b| a.class.cmp(&b.class));
+    Ok(jobs)
+}
+
+// A resource adapter only: no OOTRR fill or native-local reward is generated.
+// The full Python engine owns placements and the AP first-milk transactions.
+fn cow_classes(j: &Json) -> Result<()> {
+    use ootrr_core::cow_clone;
+    let jobs = cow_jobs(j)?;
+    let mut game = Romfs::open(Path::new("/game"))?;
+    let overlay = Path::new("/mod");
+    let (raw_table, dictionary) = read_overlay(&mut game, overlay, rsizetable::TABLE_PATH)?;
+    let mut table = Rst::parse(&raw_table)?;
+    let mut flows = Vec::new();
+    let mut prepared = Vec::new();
+    let source_dictionary = cow_clone::flow::dict(&game)?;
+    for cow in &jobs {
+        let path = ootrr_core::flow_locations::path_of(&cow.flow_file());
+        let raw = cow_clone::base(&mut game, &cow.flow_file())?.ok_or("missing native cow flow")?;
+        flows.push((path.clone(), raw.len()));
+        prepared.push((path, zs::compress_raw(&raw, source_dictionary)?));
+    }
+    let have = |path: &str| fs::read(overlay.join(path)).ok();
+    let refs = jobs.iter().collect::<Vec<_>>();
+    let made = cow_clone::stage(&mut game, &have, &refs, &table, &flows)?;
+    // A new path must not overwrite the allocation of an unrelated resource
+    // which happens to have the same CRC32. Refuse before writing any output.
+    for (path, _) in &made.sizes {
+        let hash = rsizetable::hash(rsizetable::key(path));
+        if table.crc.iter().any(|row| row.0 == hash) {
+            return Err(format!("new cow resource collides with an existing resource-size entry: {path}").into());
+        }
+    }
+    cow_clone::sized(&mut game, &mut table, &made)?;
+    prepared.extend(made.outs.into_iter().map(|out| (out.path, out.z)));
+    let table_frame = zs::compress_raw(&table.write()?, dictionary)?;
+    let paths = prepared.iter().map(|(path, _)| path.clone()).collect::<Vec<_>>();
+    // All source, flow, class, size-table and compression checks precede writes.
+    for (path, frame) in prepared {
+        let destination = overlay.join(modpack::rel(&path)?);
+        fs::create_dir_all(destination.parent().ok_or("invalid cow resource path")?)?;
+        fs::write(destination, frame)?;
+    }
+    let destination = overlay.join(rsizetable::TABLE_PATH);
+    fs::create_dir_all(destination.parent().ok_or("invalid size-table path")?)?;
+    fs::write(destination, table_frame)?;
+    println!("{}", Json::obj().with("classes", Json::strs(jobs.iter().map(|cow| cow.class.as_str())))
+        .with("files", Json::strs(paths.iter().map(String::as_str))).pretty());
+    Ok(())
+}
+
 // Replace the physical reward of network gear only. Native OOTRR has already generated
 // the complete mod, including its original tier ordering, shops and resource sizes.
 fn patch(j: &Json) -> Result<()> {
@@ -280,10 +343,11 @@ fn run() -> Result<()> {
         Some("base-seed") => base_seed(&j),
         Some("settings") => inspect_settings(&j),
         Some("localize") => localize(&j),
+        Some("cow-classes") => cow_classes(&j),
         Some("patch") => patch(&j),
         Some("shops") => shops(&j),
         Some("skulls") => ap_skulls::run(&j),
-        _ => Err("expected generate, base-seed, settings, localize, patch, shops or skulls".into()),
+        _ => Err("expected generate, base-seed, settings, localize, cow-classes, patch, shops or skulls".into()),
     }
 }
 fn main() {
@@ -294,6 +358,18 @@ fn main() {
 mod tests {
     use super::*;
     use ootrr_core::{difficulty::bean, msbt::{self, Msbt, Sec}, qol::navi_return::{self, Mode}, sarc};
+
+    #[test]
+    fn cow_resource_requests_only_accept_unique_known_classes() {
+        let names = ootrr_core::cow_clone::all().iter().map(|cow| cow.class.clone()).collect::<Vec<_>>();
+        let request = Json::obj().with("classes", Json::strs(names.iter().map(String::as_str)));
+        assert_eq!(cow_jobs(&request).unwrap().len(), 5);
+        for requested in [vec!["../Animal_Cow"], vec!["Animal_Cow_DMT", "Animal_Cow_DMT"], vec!["Animal_Cow_LinkHouse"]] {
+            let request = Json::obj().with("classes", Json::strs(requested));
+            assert!(cow_jobs(&request).is_err());
+        }
+        assert!(cow_jobs(&Json::obj()).is_err());
+    }
 
     fn book(pairs: &[(&str, &str)]) -> Vec<u8> {
         let mut m = Msbt { be: false, unk_a: [0, 0], enc: 0, ver: 3, unk_b: [0, 0], pad: [0; 10],

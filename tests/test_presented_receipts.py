@@ -153,7 +153,8 @@ class SceneRun:
                 self.actions.append((str(data.actor.v.identifier), command, params))
                 self.trace.append((command, params))
                 if command == "EventTriggerAddOrRemovePouchContent":
-                    assert params["Num"] == 1
+                    assert params["Num"] == 1 or (params["Actor"] in {"Item_Bomb", "Item_Arrow_Normal", "Item_DekuSeed", "Item_DekuNut"}
+                                                  and type(params["Num"]) is int and 0 < params["Num"] <= 999)
                     self.owned.add(OWNERS.get(params["Actor"], params["Actor"]))
                 node = data.nxt.v
             elif isinstance(data, SwitchEvent):
@@ -309,7 +310,7 @@ class GroundStyleReceiptTests(unittest.TestCase):
             for owned in (set(), {"Item_Hookshot"}, {bag}):
                 with self.subTest(item=name, owned=owned):
                     run, ack = self.execute(name, owned=set(owned))
-                    expected = [ITEM_DATA[name]["actor"]] if bag in owned else []
+                    expected = [ITEM_DATA[name].get("grant_actor", ITEM_DATA[name]["actor"])] if bag in owned else []
                     grants = [(index, params["Actor"]) for index, (command, params) in enumerate(run.trace)
                               if command == "EventTriggerAddOrRemovePouchContent"]
                     self.assertEqual([actor for index, actor in grants], expected)
@@ -317,7 +318,7 @@ class GroundStyleReceiptTests(unittest.TestCase):
                         self.assertLess(grants[0][0], ack)
                     pickups = [params["ActorName"] for command, params in run.trace
                                if command == "EventTriggerRequestOpenPickUpWindow"]
-                    self.assertEqual(pickups, expected)
+                    self.assertEqual(pickups, [ITEM_DATA[name]["actor"]] if bag in owned else [])
                     if not expected:
                         self.assertEqual(run.trace, [("EventTriggerAddOrSubGameDataInt",
                                                      {"GameDataName": CURSOR, "Index": -1, "Value": 1}),

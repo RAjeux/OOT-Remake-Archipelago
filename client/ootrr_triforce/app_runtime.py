@@ -37,9 +37,11 @@ def default_base():
 
 
 def resource_root():
+    if _resource_override is not None:
+        return Path(_resource_override)
     if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         return Path(sys._MEIPASS)
-    return _resource_override or Path(sys.argv[0]).resolve().parent
+    return Path(sys.argv[0]).resolve().parent
 
 
 def log_path(base=None):

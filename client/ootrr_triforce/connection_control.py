@@ -195,6 +195,8 @@ def _request(descriptor, method, path, body=None):
         raw = response.read(CONTROL_LIMIT + 1)
         if response.status in (401, 403):
             raise ControlError("rpc_unauthorized")
+        if response.status == 404 and path == "/v1/chat":
+            raise ControlError("native_update_required")
         if response.status != 200 or len(raw) > CONTROL_LIMIT:
             raise ControlError("rpc_invalid_response")
         value = json.loads(raw)
@@ -371,6 +373,50 @@ class Controller:
                 return dict(self._live_info(reply, data), result=reply["result"])
         except ControlError as error:
             return self._failure(error.code, running)
+
+    def chat(self):
+        """Read recent server messages from the game-owned connection only."""
+        return self._chat()
+
+    def say(self, text):
+        """Send an explicitly submitted message; never queue it while offline."""
+        try:
+            valid = (isinstance(text, str) and bool(text.strip()) and len(text.encode("utf-8")) <= 512
+                     and not any(unicodedata.category(character) == "Cc" for character in text))
+        except UnicodeError:
+            valid = False
+        if not valid:
+            return self._failure("invalid_chat_message")
+        return self._chat(text)
+
+    def _chat(self, text=None):
+        running = False
+        try:
+            with self._owner() as offline:
+                running = not offline
+                data = self._session()
+                self._offline_info(data)
+                if offline:
+                    raise ControlError("chat_disconnected")
+                descriptor = self._live(data)
+                reply = (_request(descriptor, "GET", "/v1/chat") if text is None else
+                         _request(descriptor, "POST", "/v1/chat", {"text": text}))
+                info = self._live_info(reply, data)
+                rows = reply.get("messages")
+                if (not isinstance(rows, list) or len(rows) > 20
+                        or any(not isinstance(row, dict) or type(row.get("id")) is not int or row["id"] < 1
+                               or not isinstance(row.get("text"), str) or len(row["text"].encode("utf-8")) > 512
+                               for row in rows)):
+                    raise ControlError("rpc_invalid_response")
+                code = reply.get("chat_error", "")
+                if not isinstance(code, str) or code not in {"", "invalid_chat_message", "chat_disconnected"}:
+                    raise ControlError("rpc_invalid_response")
+                return dict(info, result=reply["result"], messages=[{"id": row["id"], "text": row["text"]} for row in rows], stream=descriptor[0],
+                            error_code=code or info.get("error_code", ""))
+        except ControlError as error:
+            return dict(self._failure(error.code, running), messages=[], stream=0)
+        except UnicodeError:
+            return dict(self._failure("rpc_invalid_response", running), messages=[], stream=0)
 
 
 def discover_profiles(base=None, explicit=None):

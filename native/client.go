@@ -32,10 +32,12 @@ type Config struct {
 	Language                                                 string
 	Player, Protocol                                         int
 	CursorHash                                               uint32
+	SeedMarker                                               uint32
 	DeathLink                                                bool
 	AutoConnect                                              *bool
 	RewardMode                                               string
 	LocalItems                                               bool
+	ItemsHandling                                            int
 	Items                                                    map[int]string
 	ItemNames                                                map[int]map[string]string
 	Checks                                                   map[int]Location
@@ -62,6 +64,7 @@ type Client struct {
 	persistedRevision         uint64
 	death                     deathLink
 	connection                *connectionControl
+	chat                      *chatState
 }
 type packet map[string]any
 type wire struct {
@@ -80,11 +83,13 @@ type wire struct {
 		RewardMode string `json:"reward_mode"`
 		LocalItems bool   `json:"local_items"`
 	} `json:"slot_data"`
-	Checked []int `json:"checked_locations"`
-	Items   []networkItem
-	Keys    map[string]json.RawMessage
-	Tags    []string
-	Data    json.RawMessage
+	Checked  []int `json:"checked_locations"`
+	Items    []networkItem
+	Keys     map[string]json.RawMessage
+	Tags     []string
+	Data     json.RawMessage
+	Text     string
+	SlotInfo json.RawMessage `json:"slot_info"`
 }
 type networkItem struct{ Item, Player, Location int }
 
@@ -115,6 +120,9 @@ func newClient(c Config, root string, logger *log.Logger) (*Client, error) {
 	}
 	if c.LocalItems != (c.RewardMode == "all_locations") {
 		return nil, errors.New("local rewards do not match the room reward mode")
+	}
+	if c.ItemsHandling != 0 && (c.ItemsHandling != 1 || !c.LocalItems) {
+		return nil, errors.New("invalid explicit item handling mode")
 	}
 	uri, e := url.Parse(c.Server)
 	if e != nil || (uri.Scheme != "ws" && uri.Scheme != "wss") || uri.Hostname() == "" || uri.User != nil || c.Room == "" || c.Slot == "" || c.Player < 1 || c.Protocol != 1 || c.CursorHash == 0 || len(c.Checks) > 2000 || len(c.Checks) == 0 {
@@ -239,6 +247,8 @@ func (s *Client) sessionEpoch(conn *websocket.Conn, password string, epoch uint6
 		_ = conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 		return conn.WriteJSON(p)
 	}
+	unbindChat := s.bindChat(epoch, send)
+	defer unbindChat()
 	done := make(chan struct{})
 	var worker sync.WaitGroup
 	defer func() {
@@ -297,6 +307,9 @@ func (s *Client) sessionEpoch(conn *websocket.Conn, password string, epoch uint6
 				if s.cfg.LocalItems {
 					handling = 5
 				}
+				if s.cfg.ItemsHandling != 0 {
+					handling = s.cfg.ItemsHandling
+				}
 				if e := send(packet{"cmd": "Connect", "name": s.cfg.Slot, "game": s.cfg.Game, "uuid": s.cfg.UUID, "password": password, "version": packet{"major": 0, "minor": 6, "build": 7, "class": "Version"}, "items_handling": handling, "tags": tags, "slot_data": true}); e != nil {
 					return e
 				}
@@ -326,6 +339,11 @@ func (s *Client) sessionEpoch(conn *websocket.Conn, password string, epoch uint6
 				}
 				s.goalConfirmed = false
 				s.mu.Unlock()
+				if games := s.chatRoster(epoch, m.SlotInfo); len(games) > 0 {
+					if e := send(packet{"cmd": "GetDataPackage", "games": games}); e != nil {
+						return e
+					}
+				}
 				if err := s.persistChecks(); err != nil {
 					s.logger.Print("Cannot save location journal; retrying.")
 				}
@@ -463,6 +481,18 @@ func (s *Client) sessionEpoch(conn *websocket.Conn, password string, epoch uint6
 							}
 						}
 					}()
+				}
+			case "PrintJSON":
+				if auth {
+					s.recordChat(epoch, m.Data)
+				}
+			case "DataPackage":
+				if auth {
+					s.chatPackage(epoch, m.Data)
+				}
+			case "Print":
+				if auth {
+					s.recordChatText(epoch, m.Text)
 				}
 			case "Bounced":
 				if auth {

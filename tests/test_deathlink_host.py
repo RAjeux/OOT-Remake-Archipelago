@@ -63,6 +63,8 @@ static int model_death_state, model_outgoing_deaths, model_remote_suppress;
 static uint32_t gd_hash, gd_value;
 static uint64_t marked_address;
 static int ap_cursor16;
+static uint32_t ap_seed_marker16;
+static int seed_known, seed_matches;
 static uint64_t ap_delivery_actor16;
 static uint64_t ap_delivery_epoch16;
 static uint64_t ap_delivery_mgr16, ap_delivery_core16, ap_delivery_life16;
@@ -116,6 +118,7 @@ static int oot_pouch_count(Ctx *c, const char *name) {
 static int oot_gamedata_bool(Ctx *c, uint32_t hash, int *value) {
     (void)c;
     if (hash == 0xef2b60c2u) { *value = loading; return 1; }
+    if (hash == 0x1234abcd) { *value = seed_matches; return seed_known; }
     assert(hash == 0x604aebe1u); *value = paused; return pause_known;
 }
 static int hos_oot_is_player(Ctx *c, uint64_t address) {
@@ -161,6 +164,7 @@ static void reset(void) {
     pouch_count = loading = remote_pending = state_count = gd_count = marks = log_count = 0;
     gd_hash = gd_value = 0xffffffffu; marked_address = 0;
     ap_cursor16 = 33; ap_death16 = death_api;
+    ap_seed_marker16 = 0; seed_known = seed_matches = 1;
     ap_delivery_actor16 = ap_delivery_epoch16 = 0;
     ap_delivery_mgr16 = ap_delivery_core16 = ap_delivery_life16 = 0;
     ap_delivery_ready16 = 0;
@@ -198,6 +202,11 @@ int main(void) {
     reset(); valid_core = 0; blocked(&c, actor, components);
     reset(); core[7184 / 8] = 0; blocked(&c, actor, components);
     reset(); life.type = 0x12345678; blocked(&c, actor, components);
+    reset(); ap_seed_marker16=0x1234abcd; seed_known=0; blocked(&c,actor,components);
+    reset(); ap_seed_marker16=0x1234abcd; seed_matches=0; blocked(&c,actor,components);
+    reset(); ap_seed_marker16=0x1234abcd;
+    assert(ap_player16(&c,actor,components,1000000000));
+    assert(ap_delivery_ready16 && states[0]==0);
 
     reset();
     assert(ap_player16(&c, actor, components, 1000000000));

@@ -1,10 +1,12 @@
 """Typed Archipelago options backed by the shared public settings catalogue."""
 from dataclasses import make_dataclass
+import Options as ap_options
 
 from Options import (Choice, OptionGroup, OptionSet, PerGameCommonOptions, Range, Removed, Toggle,
                      random_weighted_range)
 
 from .settings import OPTION_SPECS, default_options, validate_options
+from .full_ap import full_option_specs, full_defaults, validate_full_options
 
 
 class SteppedRange(Range):
@@ -61,6 +63,8 @@ def _option_type(spec):
 
 
 OPTION_TYPES = {spec["id"]: _option_type(spec) for spec in OPTION_SPECS}
+FULL_OPTION_SPECS = tuple(spec for spec in full_option_specs() if spec["id"] != "death_link")
+OPTION_TYPES.update({spec["id"]: _option_type(spec) for spec in FULL_OPTION_SPECS})
 globals().update({option.__name__: option for option in OPTION_TYPES.values()})
 
 
@@ -102,6 +106,7 @@ class TradeBonusRemoved(Removed):
 
 RemakeOptions = make_dataclass(
     "RemakeOptions", [(name, option) for name, option in OPTION_TYPES.items()]
+    + ([("start_inventory_from_pool", ap_options.StartInventoryPool)] if hasattr(ap_options, "StartInventoryPool") else [])
     + [("ootrr_settings", OOTRRSettingsRemoved), ("kokiri_shop_checks", KokiriShopChecksRemoved),
        ("shuffle_trade_checks", TradeBonusRemoved)], bases=(PerGameCommonOptions,),
     namespace={"__module__": __name__})
@@ -109,6 +114,42 @@ RemakeOptions = make_dataclass(
 OPTION_GROUPS = [OptionGroup(group, [OPTION_TYPES[spec["id"]] for spec in OPTION_SPECS if spec["group"] == group],
                             start_collapsed=group == "Difficulty")
                  for group in dict.fromkeys(spec["group"] for spec in OPTION_SPECS)]
+OPTION_GROUPS += [OptionGroup(group, [OPTION_TYPES[spec["id"]] for spec in FULL_OPTION_SPECS if spec["group"] == group],
+                             start_collapsed=group != "Generation")
+                  for group in dict.fromkeys(spec["group"] for spec in FULL_OPTION_SPECS)]
+
+
+def full_option_values(options):
+    """Read the dedicated full-mode fields, rejecting unnoticed native changes."""
+    from .full_ap import translate_legacy_options
+    values = full_defaults()
+    for spec in full_option_specs():
+        option = getattr(options, spec["id"], None)
+        if option is None:
+            continue
+        values[spec["id"]] = (option.current_key if spec["kind"] == "choice" else
+                              bool(option.value) if spec["kind"] == "toggle" else option.value)
+    # Old YAML keys retain their old meaning. Translate deliberate changes where
+    # an equivalent exists and report unsupported ones instead of ignoring them.
+    changed = {}
+    defaults = default_options()
+    for spec in OPTION_SPECS:
+        name = spec["id"]
+        if name == "death_link":
+            continue
+        option = getattr(options, name, None)
+        if option is None:
+            continue
+        value = option.current_key if spec["kind"] == "choice" else option.value
+        if name == "shuffle_shops" and value == "random_deals":
+            value = "random"
+        if spec["kind"] == "toggle":
+            value = bool(value)
+        if spec["kind"] == "set":
+            value = list(v for v in spec["choices"] if v in value)
+        if value != defaults[name]:
+            changed[name] = value
+    return validate_full_options(translate_legacy_options(changed, values))
 
 
 def _normalize_inactive_options(values):

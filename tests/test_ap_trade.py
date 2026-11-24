@@ -190,7 +190,11 @@ class TradeRewardTests(unittest.TestCase):
                         run.inventory[bag] = 1
                     run.trade(COJIRO)
                     self.assertEqual(run.inventory["Item_CojiroCucco"], 0)
-                    self.assertEqual(run.inventory[ITEM_DATA[item]["actor"]], int(owns_bag))
+                    metadata = ITEM_DATA[item]
+                    actor = metadata.get('grant_actor', metadata['actor'])
+                    actor = OWNERS.get(actor, actor)
+                    expected = {'Bombs (20)': 20, 'Arrows (30)': 30, 'Deku Seeds (30)': 30}[item]
+                    self.assertEqual(run.inventory[actor], expected if owns_bag else 0)
                     self.assertEqual(run.inventory["TBox_Rupee_Green"], 0)
                     self.assertTrue(run.values[TRADE_CHECKS[COJIRO]["flag_name"]])
                     self.assertEqual(len(run.saves), 1)
@@ -200,6 +204,26 @@ class TradeRewardTests(unittest.TestCase):
                     before = run.inventory.copy()
                     run.trade(COJIRO)
                     self.assertEqual(run.inventory, before)
+
+    def test_full_quantity_alias_consumes_input_even_without_a_bag(self):
+        from ootrr_full.patching.ammo_quantities import quantity_actor
+        name = 'Bombs (20)'
+        recipes = dict(ITEM_DATA)
+        recipes[name] = dict(ITEM_DATA[name], actor=quantity_actor(name))
+        info = dict(INFO)
+        info[quantity_actor(name)] = dict(INFO[ITEM_DATA[name]['actor']])
+        pouch, presenter, _ = ap_trade.build_trade_rewards(
+            pouch_fixture(), presenter_fixture(), {COJIRO: reward(name)}, native_info=info,
+            item_data=recipes, reconcile=False)
+        run = TradeRun(pouch, presenter)
+        run.inventory['Item_CojiroCucco'] = 1
+        run.trade(COJIRO)
+        self.assertEqual(run.inventory['Item_CojiroCucco'], 0)
+        self.assertEqual(run.inventory['Item_Bomb'], 0)
+        self.assertTrue(run.values[TRADE_CHECKS[COJIRO]['flag_name']])
+        self.assertEqual(len(run.saves), 1)
+        self.assertFalse(any(command in {'FixtureNativeModel', 'FixtureNativeSound',
+                                        'EventTriggerRequestOpenPickUpWindow'} for command, _ in run.trace))
 
     def test_own_reward_replaces_quest_grant_consumes_only_its_input_once(self):
         run = self.runner({COJIRO: reward("Bomb Bag")})

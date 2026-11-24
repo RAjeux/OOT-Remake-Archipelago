@@ -1,0 +1,450 @@
+"""Archipelago reception through one global watcher and an event dispatcher.
+
+The game re-reads none of its files during a session (in-game test 12/11: a flow
+rewritten while the game runs is only taken at the next game start), so the only
+instant signal from outside is a GameData Bool written in the game's memory by the
+client. Everything else is in the mod, the same on Hookshot and on emulators.
+
+The items other worlds can send are known when the mod is built (the patch's
+``remote`` list; a progressive one gives the level above the one Link holds). Each
+one, a *record*:
+
+* ``RandoAP.Recv.<key>``: the client's signal (written in memory);
+* ``RandoAP.Got.<key>``: saved, set once the item was handed over. The client reads it
+  to know what the game already has (a reload of an older save gives it again);
+* the client sets the record's Recv before setting shared ``RandoAP.Pending``;
+* ``Sequence/MainUpdate.module.ainb`` uses the native request-and-clear pattern
+  for Pending, adding seven nodes regardless of the number of remote items;
+* one ``EventSetting`` row requests ``RandoAP_Dispatch``, which finds the pending
+  record, clears Recv and calls its item entry only when Got is still false;
+* the entry point ``RandoAP_<key>`` added to
+  ``Dm_SY_GetInEvent``: the vanilla item get with Link's pose
+  (``GetInEvent_NotTurn_NotNpc``, as the Deku Tree gift) of the item's chest actor
+  (one that is shown held up), then Got = true;
+* the dispatcher's ``GameAnalyzedEventInfo`` row lists all reachable dependencies.
+
+Helpers retain a legacy mode to verify seeds with per-record watchers. New seeds
+need a client that understands their manifest's shared ``signal`` field.
+
+In-game test 12/11 (Hookshot): signal → pose and text at once. A consumable actor
+(``Item_DekuNut``) showed no model and played its use effect: chest actors are used.
+"""
+import copy
+import hashlib
+import io
+
+PREFIX = 'RandoAP_'
+RECV, GOT = 'RandoAP.Recv.', 'RandoAP.Got.'
+FLOW = 'Dm_SY_GetInEvent'
+FLOW_PATH = 'Event/EventFlow/Dm_SY_GetInEvent.bfevfl.zs'
+GET_ENTRY = 'GetInEvent_NotTurn_NotNpc'
+MAIN_UPDATE = 'Sequence/MainUpdate.module.ainb'
+EVENT_SETTINGS = 'RSDB/EventSetting.Product.111.rstbl.byml.zs'
+ANALYZED = 'RSDB/GameAnalyzedEventInfo.Product.111.rstbl.byml.zs'
+TEMPLATE_ROW = 'CrumblingGanonCastle_Arrive'     # PlayerPos + FlowchartEvent, started without an actor
+TEMPLATE_ANALYZED = 'NaviLockOnHint'             # requested by the sequence, no recorded camera
+DISPATCH = PREFIX + 'Dispatch'
+SIGNAL = 'RandoAP.Pending'
+
+
+def record_key(player, location):
+    """Stable key of an item found by ``player`` at ``location`` (their names)."""
+    return hashlib.sha256(f'{player}\0{location}'.encode('utf-8')).hexdigest()[:12]
+
+
+def records(remote):
+    """One record per item of this game found in another world (the patch's ``remote``)."""
+    from ootrr_full.game.item_forms import form_actor
+    from ootrr_full.game.remake_world import PROGRESSIVE
+    from ootrr_full.patching.ammo_quantities import exact_ammunition_grant, ammunition_capacity, quantity_spec
+    result, seen = [], set()
+    for entry in remote:
+        key = record_key(entry['player'], entry['location'])
+        if key in seen:
+            raise ValueError('Two remote items share a key: ' + key)
+        seen.add(key)
+        if entry['item'] in PROGRESSIVE:
+            # Tier chosen in game: the one above the highest Link holds (see add_entries).
+            tiers = list(PROGRESSIVE[entry['item']])
+            result.append({'key': key, 'item': entry['item'], 'player': entry['player'],
+                           'location': entry['location'], 'actor': tiers[0], 'tiers': tiers, 'style': 'progressive',
+                           'event': PREFIX + key, 'recv': RECV + key, 'got': GOT + key})
+            continue
+        quantity = quantity_spec(entry['item'])
+        canonical = quantity['base'] if quantity else remote_actor(entry['item'])
+        actor = quantity['actor'] if quantity else form_actor(canonical, 'chest')
+        record = {'key': key, 'item': entry['item'], 'player': entry['player'], 'location': entry['location'],
+                       'actor': actor, 'style': 'pickup' if is_consumable(entry['item']) else 'get',
+                       'event': PREFIX + key, 'recv': RECV + key, 'got': GOT + key}
+        grant = exact_ammunition_grant(canonical, entry['item'])
+        if grant is not None:
+            record.update(grant_actor=grant[0], grant_amount=grant[1])
+            from ootrr_full.patching.ammo_quantities import quantity_actor
+            record['actor'] = quantity_actor(entry['item']) or actor
+        capacity = ammunition_capacity(canonical)
+        if capacity:
+            record['capacity'] = list(capacity)
+        result.append(record)
+    return result
+
+
+# Actors that cannot be held up by Link's item-get pose: the ocarinas are the
+# accessory Link plays (no Item_EventObject_Base parent, in-game test 13/11: the
+# get showed nothing and crashed, null read). They are handed over as Saria does
+# (Dm_Kokiri_0155 Event68/Event77): added to the pouch, then the get display
+# GetPouchContent/DisplayGetByActorName, without the pose.
+DISPLAY_ONLY = ('Item_Ocarina_Fairy', 'Item_Ocarina_Time')
+# Songs (``Item_Melody_*``, model of a rupee) are handed over the same way: their text only.
+DISPLAY_FLOW, DISPLAY_ENTRY = 'GetPouchContent', 'DisplayGetByActorName'
+
+
+def given_actor(event):
+    """(actor, event after the hand-over) of a hand-over written by add_entries, or (None, None)."""
+    params = event.data.params.data if event.data.params else {}
+    if getattr(event.data, 'entry_point_name', None) == GET_ENTRY:
+        return params.get('ActorName'), event.data.nxt.v
+    show = event.data.nxt.v if getattr(event.data, 'nxt', None) is not None else None
+    if (show is not None and getattr(show.data, 'entry_point_name', None) == DISPLAY_ENTRY
+            and show.data.res_flowchart_name == DISPLAY_FLOW
+            and show.data.params.data.get('ActorName') == params.get('Actor')):
+        return params.get('Actor'), show.data.nxt.v
+    return None, None
+
+
+def remote_actor(item):
+    """Actor handed over for an item received from another world.
+
+    Dungeon keys there are the seed's own key actors (``key_adapter``: built for the
+    received ones too, see :func:`key_items`), never the generic remake keys, which the
+    game credits to the dungeon Link stands in (none outside a dungeon).
+    """
+    from ootrr_full.game.remake_world import item_actor
+    from ootrr_full.patching.key_adapter import BOSS_KEY_DUNGEONS, DUNGEON_FOLDER, boss_actor
+    if item.startswith('Boss Key ('):
+        folder = DUNGEON_FOLDER.get(item[len('Boss Key ('):-1])
+        if folder in BOSS_KEY_DUNGEONS:
+            return boss_actor(folder)
+    try:
+        actor = item_actor(item, None)
+    except KeyError as error:   # a key ring of a dungeon without one in the remake
+        raise ValueError('No remake actor for: ' + item) from error
+    if actor.startswith('Item_Dungeon_'):
+        raise ValueError('A dungeon item tied to its dungeon cannot come from another world: ' + item)
+    return actor
+
+
+def key_items(items):
+    """AP names of the dungeon-specific keys among reception records (their actors must be built)."""
+    from ootrr_full.patching.key_adapter import is_key_actor
+    return sorted({record['item'] for record in items if is_key_actor(record['actor'])})
+
+
+# Consumables arrive as a ground pickup would (user request 12/11): no pose, no message,
+# the count shown above Link (the pick-up window Dm_SY_Get/PouchAddItem opens).
+CONSUMABLE_PREFIXES = ('Rupee (', 'Rupees (', 'Deku Nuts (', 'Deku Stick (', 'Deku Seeds (', 'Bombs (',
+                       'Bombchus (', 'Arrows (')
+CONSUMABLES = ('Recovery Heart', 'Remake: Magic Jar', 'Remake: Scrub Seed')
+
+
+def is_consumable(item):
+    return item.startswith(CONSUMABLE_PREFIXES) or item in CONSUMABLES
+
+
+def add_entries(raw, items, dispatch=False):
+    """Entry point per record in Dm_SY_GetInEvent, then Got = true.
+
+    ``get``: the item get of its actor (Link's pose, message). ``pickup``: the silent
+    add a chest makes (GetPouchContent/GetPouchContent: ``EventTriggerAddOrRemovePouchContent``
+    of the chest actor) and the pick-up window above Link (Dm_SY_Get/PouchAddItem Event45).
+    ``progressive``: the tier above the highest one Link holds (progressive.add_tier_chain).
+    """
+    from evfl.entry_point import EntryPoint
+    from evfl.util import make_index
+    from ootrr_full.patching.progressive import FlowEditor, add_tier_chain, held_query, link
+    editor = FlowEditor(raw, FLOW)
+    chart = editor.chart
+    entries = {e.name for e in chart.entry_points}
+    events = {e.name for e in chart.events}
+    if GET_ENTRY not in entries:
+        raise ValueError('Item get entry point missing: ' + GET_ENTRY)
+
+    def give_events(name, actor):
+        """(first event, last event, sub-flow events) handing ``actor`` over."""
+        from ootrr_full.patching.song_adapter import is_song_actor
+        if actor in DISPLAY_ONLY or is_song_actor(actor):   # songs: text only, nothing in Link's hands
+            add = editor.action(name, 'PouchSystemActor', 'EventTriggerAddOrRemovePouchContent', {
+                'Num': 1, 'IsEquipDIrect': False, 'IsSetMessageTargetActorName': True, 'Actor': actor,
+                'IsGetEvent': False})
+            show = editor.subflow(name + '_Show', DISPLAY_FLOW, DISPLAY_ENTRY, {'ActorName': actor})
+            link(add, show)
+            return add, show, [show]
+        event = editor.subflow(name, '', GET_ENTRY, {'ActorName': actor, 'IsNpcEventStarter': False})
+        return event, event, [event]
+
+    def got_event(record):
+        return editor.action(record['event'] + '_Got', 'GameDataActor', 'EventTriggerSetGameDataBool',
+                             {'GameDataName': record['got'], 'Index': -1, 'Value': True})
+
+    def add_entry(name, first, sub_flows):
+        entry = EntryPoint(name)
+        entry.main_event = make_index(first)
+        entry._sub_flow_event_indices = [chart.events.index(e) for e in sub_flows]
+        chart.entry_points.append(entry)
+
+    for record in items:
+        name = record['event']
+        if name in entries or {name, name + '_Show', name + '_Got'} & events:
+            raise ValueError('Reception entry point already present: ' + name)
+        if record['style'] == 'progressive':
+            got = got_event(record)
+            first, sub_flows = add_tier_chain(editor, name, record['tiers'], give_events, got)
+            add_entry(name, first, sub_flows)
+            continue
+        if record['style'] == 'pickup':
+            first = editor.action(name, 'PouchSystemActor', 'EventTriggerAddOrRemovePouchContent', {
+                'Num': record.get('grant_amount', 1), 'IsEquipDIrect': False, 'IsSetMessageTargetActorName': False,
+                'Actor': record.get('grant_actor', record['actor']), 'IsGetEvent': False})
+            show = editor.action(name + '_Show', 'UISystemActor', 'EventTriggerRequestOpenPickUpWindow',
+                                 {'ActorName': record['actor']})
+            link(first, show)
+            last, sub_flows = show, []
+        else:
+            first = editor.subflow(name, '', GET_ENTRY, {'ActorName': record['actor'], 'IsNpcEventStarter': False})
+            last, sub_flows = first, [first]
+        got = got_event(record)
+        link(last, got)
+        if record.get('capacity'):
+            give = first
+            first = got
+            for index, actor in enumerate(record['capacity']):
+                first = editor.switch(name + '_Capacity' + str(index), *held_query(actor), give, first)
+        add_entry(name, first, sub_flows)
+    if dispatch and items:
+        # Only the shared dispatcher is requested by MainUpdate. The per-item
+        # entries remain sub-flows, with the same saved receipts as older seeds.
+        first = None
+        calls = []
+        for record in reversed(items):
+            name = record['event']
+            give = editor.subflow(name + '_DispatchGive', '', name, None)
+            calls.append(give)
+            held = editor.switch(name + '_DispatchGot', 'GameDataActor', 'EventQueryIsGameDataBool',
+                                 {'GameDataName': record['got'], 'Index': -1}, None, give)
+            clear = editor.action(name + '_DispatchClear', 'GameDataActor', 'EventTriggerSetGameDataBool',
+                                  {'GameDataName': record['recv'], 'Index': -1, 'Value': False})
+            link(clear, held)
+            first = editor.switch(name + '_DispatchRecv', 'GameDataActor', 'EventQueryIsGameDataBool',
+                                  {'GameDataName': record['recv'], 'Index': -1}, clear, first)
+        add_entry(DISPATCH, first, calls)
+    result, checked = editor.write('The reception entries')
+    written = {e.name: e for e in checked.flowchart.entry_points}
+    for record in items:
+        if record['style'] == 'progressive':
+            _check_tiers(written[record['event']], record)
+            continue
+        chain, event = [], written[record['event']].main_event.v
+        if record.get('capacity'):
+            from ootrr_full.patching.progressive import _is_query, _case
+            first = None
+            for index, actor in reversed(list(enumerate(record['capacity']))):
+                if (event is None or event.name != record['event'] + '_Capacity' + str(index)
+                        or not _is_query(event, actor)):
+                    raise ValueError('Reception equipment guard is invalid: ' + record['event'])
+                if first is None:
+                    first = _case(event, 0)
+                elif first is not _case(event, 0):
+                    raise ValueError('Reception equipment guard has inconsistent grants.')
+                event = _case(event, 1)
+            if event is None or event.name != record['event'] + '_Got':
+                raise ValueError('Missing equipment must acknowledge the empty reception.')
+            event = first
+        while event is not None:
+            chain.append(event.name)
+            event = event.data.nxt.v if getattr(event.data, 'nxt', None) is not None else None
+        name = record['event']
+        wanted = [name, name + '_Show', name + '_Got'] if record['style'] == 'pickup' else [name, name + '_Got']
+        if chain != wanted:
+            raise ValueError('Reception entry wrongly chained: ' + name)
+    return result
+
+
+def _check_tiers(entry, record):
+    """The written chain of a progressive record: each check, the tier it gives, then Got."""
+    from ootrr_full.patching.progressive import check_tier_chain
+    name = record['event']
+    check_tier_chain(entry.main_event.v, name, record['tiers'], given_actor, name + '_Got')
+
+
+def add_event_rows(settings_raw, items, dispatch=False):
+    """EventSetting row per record, playing ``FLOW``/its entry."""
+    from ootrr_full.formats import byml_codec
+    document = byml_codec.load(settings_raw)
+    rows = document['root']
+    by_id = {row['__RowId']: row for row in rows}
+    if dispatch:
+        items = [{'event': DISPATCH}] if items else []
+    for record in items:
+        if record['event'] in by_id:
+            raise ValueError('EventSetting row already present: ' + record['event'])
+        row = copy.deepcopy(by_id[TEMPLATE_ROW])
+        row.pop('EventEffectSetting', None)
+        row['__RowId'] = record['event']
+        row['FlowchartFileName'] = f'Work/Event/EventFlow/{FLOW}.evfc'
+        row['EntryPointName'] = record['event']
+        rows.append(row)
+        by_id[record['event']] = row
+    rows.sort(key=lambda r: r['__RowId'])
+    return byml_codec.dump(document)
+
+
+def add_analyzed_rows(info_raw, items, current, dispatch=False):
+    """GameAnalyzedEventInfo row per record: every flow its entry calls, transitively.
+
+    ``current(name)``: the flow as written in the seed. Events the entry starts by
+    ``EventTransition`` (with the events they list) go to ``ChildEventList``. The item
+    gets make the same calls (one analysis serves them all); a pick-up calls nothing.
+    """
+    from ootrr_full.formats import byml_codec
+    from ootrr_full.patching.event_info import closure, reachable_transitions
+    document = byml_codec.load(info_raw)
+    rows = document['root']
+    by_id = {row['__RowId']: row for row in rows}
+    template = copy.deepcopy(by_id[TEMPLATE_ANALYZED])
+    plain = copy.deepcopy(template)
+    if dispatch:
+        from ootrr_full.patching.event_info import _cached_charts
+        current = _cached_charts(current)
+        items = [{'event': DISPATCH, 'style': 'get'}] if items else []
+    gets = [record for record in items if record['style'] in ('get', 'progressive')]
+    if gets:
+        call = (FLOW, gets[0]['event'])
+        flows = closure({call}, current) - {FLOW}
+        if flows:
+            template['SubFlowList'] = sorted(flows, key=str.lower)
+        children = set(reachable_transitions(call, current))
+        for child in list(children):
+            children.update((by_id.get(child) or {}).get('ChildEventList') or [])
+        if children:
+            template['ChildEventList'] = sorted(children, key=str.lower)
+    for record in items:
+        if record['event'] in by_id:
+            raise ValueError('GameAnalyzedEventInfo row already present: ' + record['event'])
+        row = copy.deepcopy(plain if record['style'] == 'pickup' else template)
+        row['__RowId'] = record['event']
+        rows.append(row)
+        by_id[record['event']] = row
+    rows.sort(key=lambda r: r['__RowId'])
+    return byml_codec.dump(document), {'subflows': template.get('SubFlowList', []),
+                                       'children': template.get('ChildEventList', [])}
+
+
+def ainb_to_binary(document):
+    """Serialize with ``ainb`` 0.2.17, whose writer pads an empty blackboard to 0x30
+    bytes (``AINB.write``) while format 0x408 needs 0x38, as its own offsets count:
+    that one write is widened (checked: vanilla sequence modules come back byte for byte)."""
+    import ainb
+    from ainb.common import AINBWriter
+    script = ainb.AINB.from_dict(document)
+    writer = AINBWriter(io.BytesIO(), name='AINB Writer')
+    plain, widened = writer.write, []
+
+    def write(data):
+        if not widened and not script.blackboard and script.version >= 0x408 and data == bytes(0x30):
+            widened.append(True)
+            data = bytes(0x38)
+        return plain(data)
+    writer.write = write
+    script.write(writer)
+    result = writer.get_buffer()
+    ainb.AINB.from_binary(result)
+    return result
+
+
+def _input(name, value, output=False):
+    return {'Name': name, 'Default Value': value, 'Node Index': -1, 'Output Index': 0,
+            'Flags': ['Uses Default', 'Is Output'] if output else ['Uses Default']}
+
+
+# A node lists at most 255 children (u8 count): the watchers hang under groups of
+# this size, each group a child of the root (a seed may receive hundreds of items).
+WATCHER_GROUP = 64
+WATCHER = ['SeqQueryGetNonStructGameDataBool', 'Element_BoolSelector', 'Element_Simultaneous',
+           'SeqOneShotRequestEvent', 'SeqOneShotSetNonStructGameDataBool', 'SeqExecuteGenericDummyAction']
+
+
+def patch_main_update(raw, items, dispatch=False):
+    """One shared watcher; ``dispatch=False`` reproduces older per-record seeds."""
+    if dispatch:
+        # Seven additional nodes regardless of remote count. Keep the proven
+        # request-and-clear pattern; dispatch the item inside the event instead.
+        return patch_main_update(raw, [{'key': 'dispatch', 'recv': SIGNAL, 'event': DISPATCH}]
+                                 if items else [], dispatch=False)
+    import ainb
+    document = ainb.AINB.from_binary(raw).as_dict()
+    nodes = document['Nodes']
+    root = nodes[0]
+    if root['Node Type'] != 'Element_Simultaneous' or 'Is Root Node' not in root['Flags']:
+        raise ValueError('Unexpected MainUpdate root.')
+    dummy = next(n for n in nodes if n['Name'] == 'SeqExecuteGenericDummyAction')
+    selector_model = next(n for n in nodes if n['Node Type'] == 'Element_BoolSelector')
+    first = len(nodes)
+    once = {'Bool': [{'Name': 'ExecuteEveryFrame', 'Default Value': False, 'Flags': []}]}
+
+    def guid(index):
+        return f'0a9a9a00-0000-4000-8000-{index:012x}'
+
+    def user(index, name, inputs, outputs=None, flags=(), properties=None):
+        return {'Node Type': 'UserDefined', 'Node Index': index, 'Name': name, 'GUID': guid(index),
+                'Flags': list(flags), 'Queries': [], 'Attachments': [], 'Properties': properties or {},
+                'Parameters': {'Inputs': inputs, 'Outputs': outputs or {}}, 'XLink Actions': [], 'Plugs': {}}
+
+    groups = []
+    for position, record in enumerate(items):
+        if position % WATCHER_GROUP == 0:
+            group = copy.deepcopy(root)
+            group.update({'Node Index': len(nodes), 'GUID': guid(len(nodes)), 'Flags': [], 'Plugs': {'Child': []}})
+            nodes.append(group)
+            root['Plugs']['Child'].append({'Node Index': group['Node Index'], 'Name': ''})
+            groups.append(group)
+        query_i, selector_i, both_i, request_i, clear_i, idle_i = range(len(nodes), len(nodes) + 6)
+        query = user(query_i, 'SeqQueryGetNonStructGameDataBool', {
+            'Int': [_input('GameDataIndex', -1, True)], 'Bool': [_input('IsDirect', True)],
+            'String': [_input('GameDataFullName', record['recv'])]},
+            {'Bool': [{'Name': 'Value', 'Is Output': True}]}, ['Is Query'],
+            {'Bool': [{'Name': 'OutputOnlyOnEnter', 'Default Value': False, 'Flags': []}]})
+        selector = copy.deepcopy(selector_model)
+        selector.update({'Node Index': selector_i, 'GUID': guid(selector_i), 'Queries': [query_i],
+                         'Flags': [f for f in selector['Flags'] if f != 'Is Root Node']})
+        selector['Parameters'] = {'Inputs': {'Bool': [{'Name': 'Input', 'Default Value': False, 'Node Index': query_i,
+                                                        'Output Index': 0, 'Flags': []}]}, 'Outputs': {}}
+        selector['Plugs'] = {'Generic': [{'Node Index': query_i, 'Name': 'Input', 'Unknown 1': 0, 'Unknown 2': 0}],
+                             'Child': [{'Node Index': both_i, 'Name': 'True'}, {'Node Index': idle_i, 'Name': 'False'}]}
+        both = copy.deepcopy(root)
+        both.update({'Node Index': both_i, 'GUID': guid(both_i), 'Flags': [],
+                     'Plugs': {'Child': [{'Node Index': request_i, 'Name': ''}, {'Node Index': clear_i, 'Name': ''}]}})
+        request = user(request_i, 'SeqOneShotRequestEvent', {
+            'Bool': [_input('IsBancParamValue', False, True)], 'String': [_input('EventName', record['event'])]},
+            properties=once)
+        clear = user(clear_i, 'SeqOneShotSetNonStructGameDataBool', {
+            'Int': [_input('GameDataIndex', -1, True)], 'Bool': [_input('Value', False)],
+            'String': [_input('GameDataFullName', record['recv'])]}, properties=once)
+        idle = copy.deepcopy(dummy)
+        idle.update({'Node Index': idle_i, 'GUID': guid(idle_i)})
+        nodes.extend([query, selector, both, request, clear, idle])
+        groups[-1]['Plugs']['Child'].append({'Node Index': selector_i, 'Name': ''})
+    result = ainb_to_binary(document)
+    check = ainb.AINB.from_binary(result).as_dict()['Nodes']
+    group_count = -(-len(items) // WATCHER_GROUP)
+    group_nodes = [c['Node Index'] for c in check[0]['Plugs']['Child'][len(check[0]['Plugs']['Child']) - group_count:]]
+    for index, record in enumerate(items):
+        group_index, slot = divmod(index, WATCHER_GROUP)
+        group = first + group_index * (1 + WATCHER_GROUP * 6)
+        base = group + 1 + slot * 6
+        if group_nodes[group_index] != group or check[group]['Node Type'] != 'Element_Simultaneous':
+            raise ValueError('MainUpdate watcher group not attached: ' + record['key'])
+        if [n['Name'] or n['Node Type'] for n in check[base:base + 6]] != WATCHER:
+            raise ValueError('MainUpdate watcher not written as expected: ' + record['key'])
+        events = check[base + 3]['Parameters']['Inputs']['String'][0]['Default Value']
+        if events != record['event'] or check[group]['Plugs']['Child'][slot]['Node Index'] != base + 1:
+            raise ValueError('MainUpdate watcher not attached: ' + record['key'])
+    return result

@@ -17,6 +17,10 @@ FORBIDDEN_NAMES = {"outils.json", "native-session.json", "last-profile.json", "c
 FORBIDDEN_SUFFIXES = {".sav", ".apsave", ".apootrr", ".archipelago", ".apmultidata", ".apmultisave"}
 REQUIRED_MODULES = {"ootrr_triforce.app_window", "ootrr_triforce.app_runtime", "ootrr_triforce.install_service",
                     "ootrr_triforce.player", "ootrr_triforce.connection_window", "ootrr_triforce.hookshot_setup",
+                    "ootrr_triforce.settings_editor", "ootrr_triforce.room_library", "ootrr_triforce.tracker_service",
+                    "ootrr_triforce.chat_window", "ootrr_triforce.external_window", "ootrr_triforce.full_worker",
+                    "ootrr_triforce.full_ap", "ootrr_triforce.full_mod", "ootrr_full.randomizer.randomizer_core",
+                    "ootrr_full.archipelago.bridge", "ootrr_full.patching.ammo_quantities", "yaml",
                     "tkinter", "zstandard"}
 
 
@@ -103,6 +107,9 @@ def inspect_app(path, extra_markers=()):
     version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
     if manifest.get("schema") != 1 or manifest.get("version") != version or manifest.get("platform") != "windows-x64":
         raise ValueError("The application manifest does not match this source version.")
+    from build_app import client_code_digest
+    if manifest.get('code_sha256') != client_code_digest():
+        raise ValueError('The embedded Python code differs from the reviewed source.')
     expected_native = sha((ROOT / "prebuilt/windows-x64/archipelago.dll").read_bytes())
     expected_wasm = sha((ROOT / "client/ootrr_triforce/engine.wasm").read_bytes())
     components = [("native/archipelago.dll", expected_native),

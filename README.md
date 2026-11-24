@@ -1,125 +1,116 @@
 # Ocarina of Time Remake × Archipelago
 
-**0.10.0-alpha.1 — one Windows application for Triforce and experimental Hookshot support.** Download `OOT-Remake-Archipelago-0.10.0-alpha.1.exe` to prepare the mod, configure your room and launch the game. The application includes Python and Node.js, downloads the compatible OOTRR 0.8.1 builder when needed, and rebuilds the selected compatible host during setup.
+**0.11.0-alpha.1 — a Windows application with a full-network randomizer, a settings editor and isolated room profiles.** Prepare the mod, connect to Archipelago and launch Zelda from one executable. Triforce keeps its in-game connection menu; the experimental Hookshot adapter has native controls too.
 
-Title-screen connections, items received while the game was closed, local and remote chests, one Kokiri purchase, and DeathLink in both directions have been tested on **Triforce 0.6.0**. **Item presentation animations and some camera movements still need improvement.** All 64 shop identities have automated coverage; purchases in the seven newly connected shops have not been played through in the game.
+The new **Full network** engine adapts [Mozencaz/OotrR](https://github.com/Mozencaz/OotrR), retaining its attribution and MIT notice. Its default configuration creates **1,104 real AP checks**, including 98 Gold Skulltulas and 64 shop slots across eight shops. Enabled source families participate in the multiworld instead of receiving a separate local randomizer reward. The previous OOTRR engine remains available for existing configurations and player files.
 
-[Port compatibility tests](docs/PORT-COMPATIBILITY.md) describe the experimental **Hookshot 3.0.1 Windows** adapter and its prerequisites. Fritchii 5.8.4 can load the RomFS overlay but has no AP gameplay backend. Other host versions, Linux and emulators are not supported by this installer.
-
-Version 0.9.1 fixes setup with **Triforce 0.7.0**: its Achievements page and Mods transition remain intact when adding the AP menu. Setup checks the required source hooks before connecting or preparing resources. Existing player files remain compatible; this installer fix does not require a new room.
-
-AP ammunition cannot grant its missing equipment. Bombs, arrows and seeds received without their required capacity upgrade are consumed without an inventory change, popup or substitute rupee. The received-item index still advances, so the next item can arrive normally.
+This is an alpha. Automated generation, resource, network and UI tests cover more than has been played manually. Earlier Triforce gameplay tests verified title-screen connection, offline items, personal and remote rewards, older-save recovery and bidirectional DeathLink. The complete new catalogue has not had a human playthrough. See [compatibility and evidence](docs/PORT-COMPATIBILITY.md).
 
 ## Play
 
-Download **`OOT-Remake-Archipelago-0.10.0-alpha.1.exe`** from the [project releases](https://github.com/RAjeux/OOT-Remake-Archipelago/releases). Keep this one file wherever you prefer; no archive extraction or separate Python, Node.js or OOTRR installation is required.
+Download **`OOT-Remake-Archipelago-0.11.0-alpha.1.exe`** from [Releases](https://github.com/RAjeux/OOT-Remake-Archipelago/releases). Python and Node.js are included; normal setup needs no console or separate runtime installation.
 
-You need Windows x64, a working **Triforce installation with its build tools**, your own **version 1.1.1 game files**, and an active Archipelago room with your `.apootrr` player file. Hookshot users need the supported **3.0.1 installation, original build tools and retained build files** instead. An internet connection is needed for the first download of the compatible randomizer builder. No Nintendo game files are supplied.
+Supply Windows x64, your own **game version 1.1.1**, a working **Triforce installation with its build tools**, an active Archipelago room and your `.apootrr` player file. The experimental native Hookshot adapter requires **3.0.1**, its original tools and retained build files. No Nintendo files or game hosts are distributed here.
 
-1. Open the application and choose **Set up a room**. Select your `.apootrr` file and **Game host**. The application finds the selected installation when possible; choose its game folder if it is not found. Its files and tools are checked before installation.
-2. Enter the **room address** and its password if required, then choose **Install and prepare**. Preparation and any necessary game build run in the same window.
-3. When setup finishes, choose **Play**. Zelda connects from the title screen. Use a save dedicated to this room.
+1. Choose **Set up a room**, select the `.apootrr` file and game host, then confirm the detected installation.
+2. Enter the room address and password if needed. Choose **Install and prepare** and wait for preparation and any host build to finish.
+3. Choose **Play** and use a save dedicated to this room. The native client can connect at the title screen; item delivery waits for a loaded save and suitable player control.
 
-After setup, open the same application and choose **Play** for later sessions. You can close the application while playing. **Connection** changes the prepared room's server and password without a console. Triforce's **Options → Archipelago** menu remains available. Hookshot provides **F1/Insert → Gameplay → AP Server / AP Connect**. These interfaces control the same connection in the selected host. See the [connection guide](docs/CONNECTION-WINDOW.md).
+For later sessions, choose **Play** again. **Connection** changes the prepared room's address and password without a console. In Triforce, **Options → Archipelago** controls the same connection. Hookshot provides **F1/Insert → Gameplay → AP Server / AP Connect**; use the desktop window for passwords outside printable ASCII. See the [connection guide](docs/CONNECTION-WINDOW.md).
 
-On the computer generating the room, choose **Create YAML** in the same application. **Install APWorld** installs the world into an existing Archipelago installation; **Save YAML** writes your player configuration with all supported settings. Edit that YAML, then generate and host the room with Archipelago and the other players' YAML files as usual. The application does not generate or host rooms. The APWorld requires **Archipelago 0.6.7 or later**; generation has been tested with **0.6.8**.
+The English [player guide](distribution/Guide.txt) and [guide français](distribution/Guide-FR.txt) explain configuration, rooms, tracking, chat, updates and troubleshooting.
 
-Room profiles, connection settings, downloaded tools and saves are kept in `%LOCALAPPDATA%\OOTRR-Archipelago`, outside the executable's temporary files. Hookshot has a separate `hosts\hookshot` namespace; switching hosts does not transfer a save or its history. Moving or replacing the downloaded application keeps this data. Existing saves and the automatic-connection preference are preserved during setup. To update, close Zelda, let any host update finish, then prepare the same `.apootrr` file again in the new application. A different room needs its own player file and dedicated save.
+## Configure a multiworld
 
-Existing rooms retain their placements. Generate a new room to use the corrected dungeon access rules described in the [stability notes](docs/STABILITY.md); an existing room's placement proof cannot be changed by reconnecting. Enabling the full adult trade shuffle also requires a new room and a fresh save.
+The organizer uses **Create YAML → Settings** to edit the configuration. Choose **Full network** for a new room, adjust the supported settings, or start from **Standard**, **Maximum AP** or **Quick start**. Import/export supports YAML and JSON; imported legacy configurations retain their engine. Advanced AP common options, unknown fields and weighted settings are preserved on export.
 
-The [player guide](distribution/Guide.txt) covers setup, updates and troubleshooting. Optional logs and embedded licenses are available under **Help**. Source code and advanced command-line tools remain available for developers in this repository.
+Choose **Install APWorld** on the generating computer, restart Archipelago, save the YAML and generate with the other players' configurations as usual. The application prepares Zelda; **Archipelago still generates and hosts the multiworld**. The APWorld requires Archipelago 0.6.7 or later and has been tested with 0.6.8.
 
-## What the mod does
+Full-network options use `generation_mode: full_network` and `full_*` keys. They cover chests, songs, NPC and quest rewards, boss rewards, fairies, shops, scrubs, Gold Skulltulas, freestanding items, selected breakables, dungeon items, adult trades, cows, beans and other supported sources. `death_link` remains a separate AP option. The editor displays supported values and descriptions. A disabled or unadapted source retains native behavior; enabling a family does not make every object of that type a check.
 
-A chest containing an item for Zelda shows and grants the native item assigned by Archipelago. A chest containing another player's item shows an AP medal and sends the item to that player. The chest's previous local reward is not granted a second time.
+The default catalogue has 995 locations with precise progression access and 109 with approximate access. Approximate locations are excluded from progression placement and may hold filler. Dungeon-local item modes retain their explicit restrictions. Ordinary progression can be placed in other players' games; no rule forces a share into Zelda. Randomization does not promise equal counts or progression timing between players.
 
-Network locations cover the catalogued chests and, when enabled, generated special deals across all eight shelf shops, up to 77 supported Gold Skulltula drops and eleven adult trade rewards. Ordinary shop goods and other non-catalogued rewards retain OOTRR's local handling. Their exclusion from the network does not imply unchanged vanilla behavior.
+See the [full-network catalogue, supported goal rules and validation](docs/FULL-NETWORK.md). Full mode currently uses the vanilla bridge, six trials and native Ganon boss key; the historical engine retains its other goal settings.
 
-Items from other worlds are delivered in order while a save is active, using the game's effects. Items sent while Zelda is closed remain on the server and are recovered after reconnection. Each grant and its received-item index are committed together; save before quitting normally.
+Full-network preparation uses the bundled Python engine. **Legacy** uses the pinned OOTRR 0.8.1 builder, downloaded when first needed. Legacy retains its native setting names and narrower AP catalogue; the [legacy setting comparison](docs/SETTINGS-COMPATIBILITY.md) and [OoTR comparison](docs/OOTR-SETTINGS-COMPARISON.md) describe that engine. The schemas are distinct. Renaming keys does not convert a room.
 
-In a newly prepared `all_locations` room with personal physical rewards, loading an older save also restores previously checked AP locations. Your reward is granted once to that save; another player's reward only restores the completed location, without sending it again. A durable room journal and the server's checked locations supply this history. This covers AP chests, selected shop purchases, supported Gold Skulltulas and shuffled adult trades. OOTRR's native-local rewards outside that catalogue still follow the selected save; they do not have an AP check history. Reconfigure an existing player file to prepare the restoration events before using this feature.
+Settings are fixed at generation. Use a **new room and fresh save** to adopt the full-network engine or change placements. An application update or reconnection cannot convert an existing seed. Existing `.apootrr` files and legacy room identities remain readable.
 
-Native-local does not mean vanilla: a song, NPC gift or other non-AP reward can be shuffled by OOTRR while remaining entirely in Zelda. These rewards are not forced placements of AP items. They retain the game's per-save behavior. Adding a source to the AP pool requires a stable location identity, a replacement event, restoration support and a new generated room; reporting an existing native reward as an extra AP check would duplicate its effect. See [items, checks and saves](docs/ITEMS-AND-SAVES.md).
+The experimental `full_starting_age: adult` plays the native first-pedestal and Rauru prologue before giving control in the Temple of Time. Those two real reward sources run once. A shuffled Master Sword must be received as its actual AP item; the adapted pedestal still allows returning to childhood without it. This option needs a new save and gameplay confirmation.
 
-Major received items use the game's native turn toward the player camera and item presentation pose. Ordinary pickups retain their native central display and sounds.
+## Items, checks and saves
 
-New receipts and older-save restorations wait for normal player control. Crawling, fishing, climbing, swimming, combat, active events and pause defer delivery; unknown actions also defer it. Observed paused or busy DeathLink states retain a pending death until normal control returns. An inventory transition which suspends all callbacks before pause is observed still needs a gameplay check. See [delivery safety and validation limits](docs/DELIVERY-SAFETY.md).
+A personal reward uses its native model and effect. Another player's reward uses the AP medal and is sent to its recipient. An enabled AP source replaces its original local grant, including quest exchanges. Some sources retain repeatable native refills after their one-time check, such as milk from cows.
 
-Reprepared adult-trade rooms silently recover remote quest items which a completed exchange has already consumed. The corresponding check and its personal reward still recover normally. A DeathLink packet from a replaced connection is discarded. See the [stability and update notes](docs/STABILITY.md) for the targeted story fixes and validation scope.
+Remote items remain on the server while Zelda is closed and arrive in order after reconnection. The native bridge records the received index with each grant. Personal physical rewards are not granted again through a second network delivery. A prepared room's recovery metadata and durable history restore completed AP locations when loading an older save: personal rewards recover once to that save, while another player's check recovers without another send. Ordinary native rewards outside the catalogue still follow that save. See [items and saves](docs/ITEMS-AND-SAVES.md) for legacy details.
 
-`shuffle_shops: random_deals` (Random Deals) rolls zero to four one-time special deals in each of the eight shelf shops, including Kokiri. Only those generated deals enter the AP pool; each may contain your own item or another player's item, without a forced recipient. Your items use their native appearance and effects; remote items use the AP medal. Ordinary goods keep native purchases and remain available normally. `deals_1` through `deals_4` select that many special deals per shop, subject to the native item pool. `shuffle` only mixes ordinary shop goods locally, and `off` keeps vanilla shops; neither adds AP checks. Single-player rooms work too. Shopsanity Prices applies to special deals. A new generated room is required: old player files retain their original eight Kokiri purchases, placements, prices and save history.
+Major received items use the game's presentation pose and turn toward the camera. Small pickups use native displays and sounds. Receipts and recovery wait while Link is busy, including crawling, fishing, pause and events. Ammunition without its required equipment gives no ammunition, substitute reward or popup; the index still advances. Presentation and constrained-action behavior remain areas for gameplay regression testing.
 
-Archipelago reserves `random` (and the Random? control) for choosing a whole option value at random, which can select Off or another shop mode. Choose **Random Deals** explicitly for a variable number of deals per shop. The APWorld translates `random_deals` to OOTRR's native `random` value; native settings strings keep their original format.
+`death_link: true` shares deaths through the **native Triforce/Hookshot bridge**. A received death waits for suitable control after observed pause or constrained actions. Earlier gameplay tests established both directions on Triforce; not every menu transition or host revision has been played through. See [delivery safety](docs/DELIVERY-SAFETY.md).
 
-`death_link: true` shares deaths with other DeathLink participants. A remote death waits for an active event, such as a purchase or item receipt, to finish.
+## Rooms, tracker and chat
 
-`adult_trade_shuffle: true` replaces the adult trade rewards with AP items and puts the ten quest items in the multiworld. Talk to the appropriate NPC while owning their requested item; hidden items in the shared inventory slot are accepted automatically, and other owned trade items are retained. This mode starts with a hatched Pocket Cucco, disables trade-item expiry and removes the final three-day wait. It requires `shuffle_rewards: supported` and a newly generated room. The old additive `shuffle_trade_checks` control has been removed from new YAMLs; previously generated rooms retain their original behavior. See the [adult trade guide](docs/ADULT-TRADE-REWARDS.md).
+**My rooms** lists prepared native and external profiles. Name them, reopen their configuration, or activate a cached native room while Zelda is closed. A profile copy of the player file survives moving the original download. Switching hosts does not transfer saves or received-item history.
 
-`shuffle_master_sword: true` puts the Master Sword in the multiworld and replaces its first pedestal grant with an AP reward. Time travel and Rauru's separate native reward remain available. The default is `false`, retaining the native sword. This option needs a newly generated room and save; it does not change an existing room's sword. See the [Master Sword guide](docs/MASTER-SWORD.md).
+**Back up save** creates a verified copy without editing the original. Native backups cover the profile's user data and relevant history. External backups cover the explicitly selected save. Backups exclude connection passwords; automatic restore is not provided.
 
-`shuffle_skulltulas` offers `off`, `pinned` for 44 firmly identified native locations, and `matched` for the supported researched matches. The AP check completes on collecting the reward, not on killing the enemy or receiving a token. `matched` normally has 76 eligible checks, or 77 with supported planted/starting beans; 23 uncertain matches remain native-local. Tests cover generation, resources and event flows, plus private in-game pickup sequences and older-save recovery. Every original site and reward has not been played through. See the [Gold Skulltula guide](docs/GOLD-SKULLTULAS.md) and [example YAML](examples/Gold-Skulltulas.yaml) for the coverage and remaining presentation limits.
+**Archipelago tracker** shows known checks and, for verified full-network artifacts, inventory, keys, souls and estimated access from an observed save. Select a save when there are several. Estimates are informational; the tracker does not send manual checks or expose planned rewards. The external tracker observes its existing runtime and can operate before the first save when the running seed can be verified.
 
-The mod automatically follows the host's selected game language: French uses French text, and other languages fall back to English. There is no YAML language setting. Other players' names, chat, and item names from other games retain their server wording. Configuration tools default to English and may reuse the known game language. YAML descriptions and developer documentation use English.
+**Archipelago chat** shows recent server messages and sends only when you choose **Send**. Native chat uses Zelda's existing authenticated connection, without a second AP login. History is bounded and kept in memory. External chat shares the external runtime.
 
-Restart the game after changing its language. Both translations are installed together, so changing language does not require generating a new seed.
+## Other ports and emulators
 
-The YAML exposes **93 native OOTRR settings, the adult trade and Master Sword extensions, and DeathLink**, with descriptions, allowed values and dependency checks. Native-local shuffles include supported NPC and song rewards, cows, ground pickups, destructibles, dungeon entrances, and prices. OOTRR builds those rewards from the same seed that proves the AP access rules; AP moves only its catalogued rewards. Experimental destructibles retain OOTRR's one-time break persistence: leaving their drop behind can lose it.
+**Other ports and emulators…** is a separate experimental path for compatible Windows/Linux processes. Supply a supported RomFS tree or NUP, dedicated mods folder, exact game/host executable, and optionally the ROM and `progress.sav`. The application prepares a full-network artifact and uses its desktop runtime for connection, observed checks and supported receipt signaling. Keep its window open while connected. Original saves are never imported or moved.
 
-Independently randomized sub-options are ignored while their parent setting is inactive. For example, a random fixed price does not affect a sale using Cheap prices. Active settings still follow their documented dependencies; Random? on every field can produce an invalid combination.
+The backend checks the seed and runtime readiness before delivery. Setup does not prove every port, emulator revision or presentation works. External DeathLink is not implemented. No Linux application is packaged yet. Historical Fritchii tests established RomFS loading and the AP title badge, not an AP playthrough; the new backend needs validation on each chosen host. Native Triforce remains the established path. See [port compatibility](docs/PORT-COMPATIBILITY.md).
 
-The [complete comparison of all 118 native settings](docs/SETTINGS-COMPATIBILITY.md) explains the 25 omitted native controls, including the replaced additive trade setting, unavailable native features, Silver Rupee delivery, AP-aware hints, chest sizes and location exclusions. Do not add omitted YAML keys expecting them to enable those features.
+The external runtime also recovers server-confirmed checks into older saves: personal rewards recover once, foreign checks restore completion without resending, and already-spent adult trade items are acknowledged quietly. These paths have real local-server and native-resource model tests; the actual host's game thread remains a separate gameplay validation.
 
-The [OoTR comparison](docs/OOTR-SETTINGS-COMPARISON.md) distinguishes the N64 randomizer's settings from those available in the remake. `bridge: open` provides the existing zero-reward bridge condition directly in the YAML.
+## Updates, data and language
 
-New rooms use `reward_mode: all_locations`, `local_items: true`, and `items_handling=5`: personal items are granted physically, while the network supplies remote items and AP starting inventory. Older `all_chest_rewards` and `legacy_gear` rooms keep mode `7`. Generate a new room to change modes; do not edit an existing room's flags to convert it.
+Profiles, tools and settings live under `%LOCALAPPDATA%\OOTRR-Archipelago`, outside the executable. Native Hookshot uses `hosts\hookshot`; external sessions use `hosts\external\profiles`. Original host saves are not moved into another profile.
+
+**Help → Check for updates** checks compatible releases. A signed release can be downloaded and verified using the publisher's Ed25519 key and SHA-256 checksum. A separate **Install and restart** action retains the previous executable and rolls back an immediate restart failure. Unsigned historical releases open their download page. Updating the application does not reprepare a room or modify its save; close Zelda and prepare the same player file again to install mod changes. See [signed updates](docs/SIGNED-UPDATES.md).
+
+French game language selects French application/mod text; other languages fall back to English. Restart Zelda after changing its language. YAML keys and source messages stay English. Names, chat and foreign-game items retain server wording. Both game translations are installed together.
 
 ## Develop
 
-Python client code is in `client/`, the APWorld in `apworld/`, the native bridge in `native/`, and the adapted Rust engine in `moteur/ootrr-ap/`. Historical internal names such as `ootrr_triforce` and `nx2navi` are retained for compatibility.
+The vendored engine is `client/ootrr_full/`, with its pinned revision and original hashes in `UPSTREAM.json`. Our adapters preserve old protocol identities and player files. The original codec remains in `client/oot_rando/`; the legacy Rust engine remains in `moteur/ootrr-ap/`.
 
 | Area | Main files |
 | --- | --- |
-| Options, AP logic, and player files | `apworld/ootrr_remake/`, `client/ootrr_triforce/settings.py`, `catalog.py` |
-| Windows application | `client/app.py`, `app_window.py`, `app_runtime.py`, `install_service.py`; `tools/build_app.py` |
-| Mod preparation and installation | `player.py`, `native_setup.py`, `hookshot_setup.py`, `install_mod.py` in `client/ootrr_triforce/` |
-| Connections, items, checks, and DeathLink | `native/client.go`, `connection.go`, `game.go`, `deathlink.go` |
-| Triforce gameplay bridge | `native/ootrr_archipelago.inc`, `ootrr_ap_items.inc` |
-| Embedded connection menu | `native/ootrr_ap_menu.inc`, `client/ootrr_triforce/menu_setup.py` |
-| Hookshot host and menu adapter | `native/ootrr_ap_hookshot.inc`, `ootrr_ap_hookshot_menu.inc`; `hookshot_setup.py` |
-| Desktop connection window | `client/ootrr_triforce/connection_window.py`, `connection_control.py`; `native/control.go` |
-| Language discovery and translations | `i18n.py`, `i18n_fr.json`, `item_names.py` in `client/ootrr_triforce/`; `native/localization.go` |
-| Chests, medals, item receipts, and shops | `medallions.py`, `receipt_events.py`, `shop_events.py`, `ap_shops.py` in `client/ootrr_triforce/` |
-| Gold Skulltula identities and pickup flows | `skull_catalog.py`, `ap_skulls.py` in `client/ootrr_triforce/`; `ootrr_ap/skulls.rs` in the adapted engine |
-| Full adult trades and quest inventory | `trade_catalog.py`, `trade_events.py`, `ap_trade.py`, `trade_state.py`, `trade_receipts.py`; engine `adult_trade.rs` |
-| OOTRR engine and generation | `moteur/ootrr-ap/randomizer/core/src/bin/ootrr_ap.rs`, `slice/generate.rs` |
-| Game resources and formats | `client/oot_rando/` |
+| APWorld, full schema and identities | `apworld/ootrr_remake/`, `client/ootrr_triforce/full_ap.py`, `full_catalog.json` |
+| Full logic, generation and resources | `client/ootrr_full/`; `full_mod.py`, `full_events.py`, `full_extra_recovery.py`, `full_cows.py` |
+| Legacy engine and catalogues | `moteur/ootrr-ap/`, `settings.py`, `catalog.py`, `ap_shops.py`, `ap_skulls.py`, `ap_trade.py` |
+| Application and settings editor | `client/app.py`, `app_window.py`, `settings_editor.py`, `app_runtime.py` |
+| Isolated preparation | `full_worker.py`; `full_mod.py` stages and the frozen `client/app.py` selftest |
+| Profiles, backups and tracking | `room_library.py`, `room_windows.py`, `tracker_service.py` |
+| Native setup and menus | `install_service.py`, `native_setup.py`, `hookshot_setup.py`, `menu_setup.py`; `native/ootrr_ap_*` |
+| Native network, delivery and DeathLink | `native/client.go`, `game.go`, `connection.go`, `deathlink.go`, `ootrr_archipelago.inc` |
+| Desktop controls and chat | `connection_control.py`, `connection_window.py`, `chat_window.py`; `native/control.go`, `chat.go` |
+| Experimental external runtime | `external_setup.py`, `external_window.py`, `upgrade_runtime.py`, `upgrade_readiness.py` |
+| Signed updates | `update_service.py`, `update_key.py`, `tools/sign_release.py` |
+| French display text | `i18n.py`, `i18n_fr.json`, `settings_fr.json`; `native/localization.go` |
 | Validation | `tests/`, `tests/fixtures/`, `tools/test.py` |
 
-Use English source messages with `tr()` and add the matching French entry to `i18n_fr.json`, preserving format placeholders. AP item names and IDs are protocol identifiers: translate display labels only, and retain the owning game's namespace. The engine's `localize` pass updates existing OOTRR-generated text inside the staged mod; it does not rebuild gameplay flows. Localization tests check catalogue coverage, language selection, legacy profiles, and cache upgrades.
+Unprefixed table paths are under `client/ootrr_triforce/`. Use English messages with `tr()` and add French entries without changing placeholders. Translate display labels, not AP identifiers or another game's item namespace.
 
-### Build the Windows application
+### Build
 
-Use Windows x64 Python with Tcl/Tk support and install the packaging dependencies:
+Use Windows x64 Python with Tcl/Tk support:
 
 ```powershell
 py -3 -m pip install -r requirements-app.txt
 py -3 tools/build_app.py
-py -3 tools/verify_app.py dist/OOT-Remake-Archipelago-0.10.0-alpha.1.exe
+py -3 tools/verify_app.py dist/OOT-Remake-Archipelago-0.11.0-alpha.1.exe
 ```
 
-`tools/build_app.py` creates the single windowed executable in `dist/`. It bundles the Python runtime, Tk, the pinned Node.js runtime, the APWorld, native bridge, both host adapters and notices. The compatible OOTRR builder is downloaded by the application on first use; game files and the selected host are supplied by the player. `VERSION` declares the release version. The build uses the supplied native DLL and WebAssembly engine and does not build a user's game.
+The single executable bundles Python, Tk, Node.js, both engines, APWorld, bridge, adapters and notices. `VERSION` declares its version. The frozen selftest checks hashes, a real child-process Codec and Tk responsiveness while the child holds its GIL; it does not launch a game or server. Full preparation uses isolated workers with bounded progress/log transport and cancellation confined to private build caches.
 
-For advanced CLI development, `py -3 tools/build.py` still assembles `dist/Archipelago-OOT-Remake-0.10.0-alpha.1.zip`, including `Client-OOT-Remake.pyz`, command wrappers, APWorld and engine sources. This is separate from the normal player download. After validating a legacy ZIP, record a new reference with `tools/verify_release.py --version <version> --record-reference`; retain older manifests unchanged.
+`py -3 tools/build.py` makes the separate advanced CLI ZIP. `--native` needs Go and a cgo-compatible x64 compiler (`CC`); reinstall and rebuild the host after changing its DLL. `--engine` needs Rust and `wasm32-wasip1`; legacy dependencies are vendored. `tools/check_catalog.py` checks protocol tables and `tools/generate_item_header.py` regenerates the item table. [Signing instructions](docs/SIGNED-UPDATES.md) keep private keys outside the repository.
 
-To rebuild the supplied components:
-
-- `py -3 tools/build.py --native` requires Go and an x64 C compiler compatible with cgo. The script enables `CGO_ENABLED=1`; set `CC` to select a compiler. Reinstall the mod and rebuild Triforce with the new DLL digest afterward.
-- `py -3 tools/build.py --engine` requires Rust with the `wasm32-wasip1` target installed. This copy was built with **Rust 1.99.0**. Dependencies are vendored in `moteur/ootrr-ap/vendor/`.
-
-Use `tools/check_catalog.py` to check the protocol tables and `tools/generate_item_header.py` to regenerate the native item table. `tools/generate_art.py` regenerates title artwork data from repository assets. Application logs and corresponding-source notices can be opened through **Help** in the executable.
-
-### Run tests
+### Test
 
 ```powershell
 py -3 -m venv .venv
@@ -127,19 +118,17 @@ py -3 -m venv .venv
 .\.venv\Scripts\python.exe tools/test.py
 ```
 
-The suite assembles the release and checks generation, resources, and event graphs using synthetic data. Node.js is required for engine tests. `--c` adds gameplay bridge tests using a C model, with GCC or Clang available through `PATH` or `CC`.
+The suite assembles the CLI release and checks generation, schemas, resources, receipt flows, profile transactions, YAML preservation, signatures, process workers and real Tk widgets. Node.js is required for legacy tests. `--c` adds C gameplay models with GCC or Clang through `PATH` or `CC`.
 
-Network tests start a real temporary Archipelago server on the local machine:
+Real local-server tests require Archipelago:
 
 ```powershell
 $env:AP_SERVER = 'C:\ProgramData\Archipelago\ArchipelagoServer.exe'
 .\.venv\Scripts\python.exe tools/test.py --c --network
 ```
 
-Adjust the path, or set `AP_SOURCE` to an Archipelago source checkout with its dependencies installed. On Windows, tests load the supplied DLL in a test process. On Linux, they build its equivalent with Go and C; Tk and libzstd are also required. Coverage includes history after a complete shutdown, reconnection, mode `5` without duplicate personal rewards, and DeathLink deferred during an event. Run Go tests from `native/` with `go test -mod=vendor ./...`.
-
-Rooms in `tests/fixtures/` are dedicated regression fixtures. Test life states are simulated: these checks do not replace in-game validation of animations, inventory, or Link's death.
+Alternatively set `AP_SOURCE` with dependencies installed. Windows tests load the supplied DLL in a test process; Linux builds the equivalent with Go and C. Tk and libzstd are required where relevant. From `native/`, run `go test -mod=vendor ./...`; `-race` adds concurrency checks with a suitable compiler. Fixtures and simulated states do not replace gameplay validation of inventories, animations or deaths.
 
 ## Licenses and credits
 
-Integration code is distributed under **GPL-3.0-or-later**, with separate licenses for third-party components. Archipelago artwork retains its own terms, including **CC BY-NC 4.0** for the colored icon and its adaptations. The title lettering is rendered for this project using the Cinzel font under OFL 1.1. See [LICENSE](LICENSE), [NOTICE](NOTICE), and [REFERENCES.md](REFERENCES.md).
+Integration code is **GPL-3.0-or-later**. Adapted [Mozencaz/OotrR](https://github.com/Mozencaz/OotrR) code and UI ideas retain their **MIT** attribution; its notices also credit imported logic data. Third-party notices include PyYAML MIT and bundled runtimes. Archipelago artwork retains its terms, including **CC BY-NC 4.0** for the colored icon and adaptations. Cinzel lettering uses OFL 1.1. See [LICENSE](LICENSE), [NOTICE](NOTICE), [REFERENCES.md](REFERENCES.md) and `client/credits/`.

@@ -1,173 +1,181 @@
-OOT Remake Archipelago · 0.10.0-alpha.1
-One Windows x64 application for Triforce and experimental Hookshot 3.0.1.
+OOT Remake Archipelago · 0.11.0-alpha.1
+English player guide — French: Guide-FR.txt
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
-Before you start
-Download OOT-Remake-Archipelago-0.10.0-alpha.1.exe from the project releases.
-Python and Node.js are included. The compatible OOTRR 0.8.1 builder is
-downloaded automatically when first needed; an internet connection is
-required for that download. No separate runtime or randomizer installation
-is needed.
+GET STARTED
 
-You supply a working Triforce installation with its build tools and your own
-version 1.1.1 game files. Obtain your .apootrr player file and the address
-of its active Archipelago room. No Nintendo game files are included.
-Hookshot requires its completed 3.0.1 installation, original build tools and
-retained build files. Other Hookshot versions are rejected by this adapter.
+Download OOT-Remake-Archipelago-0.11.0-alpha.1.exe from project Releases.
+Keep this Windows x64 application wherever you prefer. Python and Node.js
+are included; normal use needs no console.
 
-Prepare and play
-1. Open the application and choose Set up a room.
-2. Select your .apootrr player file and Game host. The selected installation
-   is detected when possible; choose its game folder if it is not found.
-   The application checks the game files and tools before installation.
-3. Enter the room address and a password only if the room requires one.
-   Choose Install and prepare.
-4. Wait for preparation and any necessary host build to finish.
-   Progress appears in the same window; no console is needed.
-5. Choose Play. The game connects from the title screen.
-   Use a save dedicated to this room.
+Native setup needs your own game version 1.1.1 and working Triforce with
+its build tools. Experimental native Hookshot requires version 3.0.1,
+original tools and retained build files. No game files or host are supplied.
+Obtain your .apootrr file, active room address and any password from the
+person generating your multiworld.
 
-For later sessions, open the same application and choose Play. Closing it
-while playing leaves Zelda and its Archipelago connection running.
+1. Choose Set up a room, the player file and game host.
+2. Confirm the detected installation or choose its folder.
+3. Enter the room address and password, then Install and prepare.
+4. Wait for preparation and any host build, then choose Play.
+5. Use a save dedicated to this room. The native connection can begin at
+   the title screen; delivery waits for a loaded save and suitable control.
 
-Change the connection
-Choose Connection in the application, or open Options > Archipelago in
-Triforce. Hookshot provides F1/Insert > Gameplay > AP Server / AP Connect.
-These interfaces control the same prepared room and game connection.
-Hookshot's native editor accepts ASCII; use the app's Connection window for
-passwords with accents or other non-ASCII characters, then keep the saved password.
-With Zelda closed, Save remembers the address and password for the next
-startup. With the mod running, Connect and Disconnect apply to the live
-connection. Automatic connection is enabled by default.
-Preparing an existing room retains your automatic-connection preference.
+Later, choose Play again. Closing the application leaves the native game
+and its connection running. Do not run two hosts for the same player slot.
 
-In the desktop connection window, Keep retains the saved password without
-showing it, Replace saves a new one, and Clear removes it. Passwords are
-protected for the current Windows account. The room and player come from
-the prepared player file; use Set up a room for a different .apootrr file.
+CREATE AND CONFIGURE A ROOM
 
-Addresses accept host:port, ws://host:port or wss://host:port.
-archipelago.gg uses TLS automatically. Local servers keep their selected
-transport; 127.0.0.1:38281 is the usual address on the hosting PC.
+The organizer needs Archipelago 0.6.7 or later; 0.6.8 has been tested.
 
-Create a room
-The same application provides Create YAML for the room's organizer.
-1. Choose Install APWorld and select the existing Archipelago installation
-   on the computer that will generate the room. Restart Archipelago.
-2. Enter your player name and choose Save YAML. The file contains all
-   supported settings and their descriptions. Edit these before generation.
-3. Generate and host the room with Archipelago and the other players' YAML
-   files as usual, then distribute each player's generated file.
+1. Choose Create YAML > Install APWorld on the generating computer.
+   Select its existing Archipelago installation, then restart AP.
+2. Enter the player name and open Settings.
+3. Choose Full network for a new room. Standard, Maximum AP and Quick
+   start are starting points; edit the supported options as desired.
+4. Apply, then Save YAML. Generate and host with Archipelago and all
+   players' YAMLs as usual. Give each player their generated player file.
 
-Room generation and hosting remain in Archipelago. The application does not
-start a server or generate a multiworld. The APWorld requires Archipelago
-0.6.7 or later; generation has been tested with 0.6.8.
+Archipelago still generates and hosts the multiworld. This application
+prepares Zelda. Import configuration accepts YAML/JSON and preserves
+advanced AP common fields, weighted values and unknown fields. Export can
+also write JSON. Cancel in Settings keeps the previous configuration.
 
-Updates and saved data
-Room profiles, connection settings, downloaded tools and saves are stored
-under %LOCALAPPDATA%\OOTRR-Archipelago. They remain available when the
-application executable is moved, replaced or closed.
-Hookshot uses a separate hosts\hookshot folder for its profiles and saves.
-Switching hosts does not transfer a save or its received-item history.
+Full network uses generation_mode: full_network and full_* settings. Its
+defaults create 1,104 real AP checks, including 98 Gold Skulltulas and 64
+slots across eight shops. Enabled supported sources use AP placements
+instead of separate local randomized rewards. Locations with approximate
+access hold filler; progression uses precise access. Dungeon-item rules
+still apply. AP can place ordinary progression in other players' games,
+without promising identical counts or progression timing for each world.
 
-Close Zelda and its builder before preparing a mod. Let any host update finish, then
-use Set up a room in the new application with the same .apootrr file.
-Existing saves and profiles are preserved. The application rebuilds the
-game when necessary. Your normal OOTRR installation is left in place;
-the compatible builder is kept separately in the application's data folder.
+Legacy retains the previous native OOTRR options and narrower AP catalogue.
+Imported old YAMLs keep that engine. It downloads OOTRR 0.8.1 when needed;
+full-network preparation uses the bundled engine. Renaming old keys to
+full_* does not convert an existing room.
 
-Each new room needs its own player file and dedicated save. Existing rooms
-keep their original settings and placements. Generate a new room for the
-corrected dungeon access rules introduced in 0.6.1 or to enable the full
-adult trade shuffle. Reconnecting does not change an old room's placements.
+Changing engines or placements needs a new room and fresh save. Updating
+or reconnecting cannot change a seed. Existing player files remain readable.
+Random? rolls options independently; dependencies still apply. Read each
+option's description before randomizing everything.
 
-Items and checks
-Your own AP rewards use native item models and effects. Another player's
-item uses the AP medal and is sent to its recipient. The old local reward
-is replaced. Network checks cover the catalogued chests and, when enabled,
-selected special deals across all eight shops, supported Gold Skulltulas
-and eleven adult trades. Old rooms keep their original Kokiri purchases.
-Other shuffled sources retain OOTRR's native local handling.
+Experimental adult start plays the native first-pedestal and Rauru prologue
+before giving control in the Temple of Time. Both real reward sources run
+once. A shuffled Master Sword must be received as its actual item; the
+adapted pedestal still permits returning to childhood without it. A new
+save and gameplay confirmation are required for this option.
 
-Triforce 0.7.0 setup
-Version 0.9.1 supports the updated Achievements page and Mods input transition.
-The required source hooks are checked before room preparation. If an older
-installer rejected these tools, retry with this application and the same
-.apootrr file. A new room is not required for this installer correction.
+CONNECTION AND DEATHLINK
 
-Items received while Zelda is closed remain on the server. They arrive
-in order after reconnecting and loading a save. Each grant is committed
-with its received-item index. Save before quitting normally.
+Connection changes the native address or password. Triforce's Options >
+Archipelago and Hookshot's F1/Insert > Gameplay > AP Server / AP Connect
+control the same connection. Player and room identity come from the file.
 
-With a prepared all_locations room using personal physical rewards,
-loading an older save also restores previously checked AP locations.
-Your rewards are restored once to that save. Another player's location
-is restored without sending its reward again. Native-local rewards outside
-the AP catalogue continue to follow the selected save.
+With Zelda closed, Save retains settings for the next start. With the mod
+running, Connect/Disconnect controls its live connection. Keep retains a
+password without revealing it; Replace stores a new one; Clear removes it.
+Windows protects saved passwords for your account. Hookshot's native text
+entry is ASCII; use the desktop window for passwords containing accents.
 
-Supported settings
-The YAML exposes 93 native OOTRR settings, the adult trade and Master Sword
-extensions, and DeathLink. In particular:
-- shuffle_shops: random_deals (Random Deals) rolls zero to four special deals in each of the eight
-  shops, including Kokiri. Only these deals become AP checks and can hold your
-  own or another player's item. deals_1 through deals_4 request that many deals
-  per shop; shuffle keeps ordinary goods local. Existing rooms retain their
-  original shop checks; generate a new room for the new selection.
-  Archipelago's plain random / Random? chooses a whole shop mode instead.
-- shuffle_skulltulas: pinned enables 44 identified checks. matched enables
-  76 supported checks, or 77 with supported planted or starting beans.
-  Collect the reward to complete its check. Uncertain sites stay local.
-- adult_trade_shuffle: true with shuffle_rewards: supported puts ten
-  quest items in the multiworld and replaces eleven trade rewards with AP
-  items. An exchange consumes only its requested item. Wake Talon before
-  returning the Pocket Cucco to Anju; expiry and the final wait are disabled.
-- shuffle_master_sword: true puts the Master Sword in the multiworld.
-  Its first pedestal grant becomes an AP reward. Rauru's reward and native
-  time travel remain separate. The default false keeps the native sword.
-  This choice requires a newly generated room and a new save.
-- bridge: open opens the bridge on approach. Leave bridge_rewards at its
-  default 9 or use 0; this choice uses an effective threshold of zero.
-- death_link: true shares deaths with other participating games. A received
-  death waits for normal control after an observed pause or constrained action.
+Addresses accept host:port, ws://host:port and wss://host:port.
+archipelago.gg uses TLS automatically. 127.0.0.1:38281 is the usual local
+address on the computer hosting the server.
 
-Network items and restored AP locations wait while Link crawls, fishes,
-climbs, swims, fights, uses an item, plays an event or has the game paused.
-Unknown player actions defer delivery too. A fishing rod remains protected
-between casts. Missing ammunition equipment consumes that AP reward without
-giving ammunition, equipment, a substitute rupee or a pickup animation.
+Enable death_link in the player settings before generation to share deaths
+through the native bridge. Observed paused or busy actions defer incoming
+deaths until suitable control resumes. External DeathLink is unavailable.
+Not every menu transition or host revision has been tested in-game.
 
-DeathLink retains a death across a long pause once the native bridge has
-observed that pause. A menu that stops every Link callback before pause is
-observed still needs an in-game check; see docs/DELIVERY-SAFETY.md.
+REWARDS AND SAVES
 
-Random? rolls each field independently. Inactive sub-options are ignored:
-for example, a random Fixed Price has no effect when the price mode is Cheap.
-Active settings still follow their documented dependencies, so selecting
-Random? everywhere does not guarantee a valid combination.
+Personal rewards use native models and effects. Remote rewards use the AP
+medal and are sent to their owner. An enabled AP source replaces its old
+local grant, including quest exchanges. Repeatable refills may remain
+after the first AP reward, such as milk from a checked cow.
 
-Supported native-local shuffles include songs, NPC rewards, cows, ground
-items, destructibles, dungeon entrances and prices. Experimental breakable
-sources stay broken; collect their drop before leaving.
-See docs/SETTINGS-COMPATIBILITY.md in the repository for all 118 native
-settings and the reasons for the 25 omitted controls.
+Remote items sent while Zelda is closed wait on the server and arrive in
+order after reconnection. The native bridge commits each grant and received
+index together; personal physical rewards have no second network grant.
+Save before quitting normally.
 
-Language and current limits
-The application and mod follow the game language: French uses French text,
-and other languages fall back to English. YAML keys and descriptions use
-English. Other players' names and items from other games keep their server
-wording. Restart Zelda after changing its language in Triforce.
+Prepared AP history can restore completed locations to an older save.
+Personal rewards recover once to that save. Remote locations recover
+without resending another player's item. Native rewards outside the AP
+catalogue keep their per-save behavior.
 
-Native gameplay has been tested with Triforce 0.6.0. Item presentation and
-some camera movements can still need improvement. Automated checks cover
-more sources than have been played manually; every option combination and
-every original Skulltula site has not been completed in the game.
-Hookshot and Fritchii are not supported by this release's native installer.
+Major items use native presentation and turn toward the camera. Small
+pickups keep native effects and sounds. Delivery waits while Link is busy,
+including crawling, fishing, pause and events. Ammunition without its
+equipment gives nothing: no substitute rupee or popup; the index advances.
+The entire catalogue and every constrained action have not been manually
+played through. Presentation remains an area for regression testing.
 
-Help and credits
-Help > Open log opens the application log. Help > Licenses and source
-provides the bundled notices and corresponding-source information.
-These are optional; they are not part of normal setup or play.
+ROOMS, BACKUPS, TRACKER AND CHAT
 
-When reporting an issue, include the application version, Triforce version,
-location and steps to reproduce it. Review logs for participant names before
-posting them publicly. Do not attach game files or saves.
+My rooms lists prepared profiles. Rename them, open an external room or
+activate a cached native room with Zelda closed. A profile copy of the
+player file survives moving the original download. If preparation is
+needed, reuse that file in Set up a room. Switching hosts does not transfer
+saves or received-item history.
+
+Back up save creates and verifies a copy without editing the original.
+Native backups cover profile user data and relevant history; external
+backups cover the explicitly chosen save. Passwords are excluded. Open
+the folder to retain a copy elsewhere. Automatic restore is not provided.
+
+Archipelago tracker shows known checks. Prepared full-network rooms add
+inventory, keys, souls and estimated access from an observed save. Select
+a save when there are several. Estimates may wait until saving and remain
+informational. The tracker sends no manual checks or planned reward spoilers.
+
+Archipelago chat uses the existing connection. Only Send sends a message.
+Recent history is bounded and kept in memory. Native chat creates no second
+AP login and does not queue messages for another room.
+
+OTHER PORTS AND EMULATORS — EXPERIMENTAL
+
+This separate window accepts a full-network player file, supported RomFS
+folder or NUP, dedicated mods folder and exact host/game executable. A ROM
+is optional for launch. progress.sav is optional; selecting it later permits
+read-only tracking while the game is closed. Original saves are not moved.
+
+Install and prepare, launch normally, then connect here. Keep this window
+open: it owns the external runtime. Tracker and chat share its connection.
+Opening a library profile does not connect automatically. Disconnect before
+changing installation inputs. Live tracking before the first save requires
+verification of the running game's seed.
+
+Seed and receipt-readiness checks guard delivery. Protocol/setup tests do
+not establish every port or emulator version. External DeathLink is not
+implemented; no Linux executable is packaged. Historical Fritchii tests
+proved RomFS loading and the AP title badge only. Native Triforce remains
+the established gameplay path. See docs/PORT-COMPATIBILITY.md for evidence.
+
+The external runtime reconciles server-confirmed checks into older saves.
+Personal rewards recover once; foreign checks restore completion without
+resending. Spent adult trade items are acknowledged quietly. These paths
+have local-server and native-resource model tests, not a port playthrough.
+
+UPDATES, LANGUAGE AND HELP
+
+Help > Check for updates checks compatible releases. Include prereleases
+includes alpha versions. Signed downloads require Ed25519 authentication
+and SHA-256 verification before a separate Install and restart action.
+The previous executable is retained; immediate restart failure restores it.
+Unsigned historical releases open their normal download page. Updating the
+application does not modify games, saves or prepared rooms.
+
+To install mod changes, save and close Zelda, wait for host updates to
+finish, then prepare the same player file with the new application.
+Data remains under %LOCALAPPDATA%\OOTRR-Archipelago. Native Hookshot uses
+hosts\hookshot and external sessions use hosts\external\profiles. Moving
+or replacing the executable leaves this data in place.
+
+French game language selects French display text; other languages use
+English. Restart Zelda after changing its language. YAML keys stay English;
+player names, chat and foreign-game items retain server wording.
+
+Help > Open log opens diagnostics. Licenses and source shows the bundled
+notices. Report app/host versions, source location and reproduction steps.
+Review logs before sharing them; do not post game files, passwords or
+private saves.

@@ -1,0 +1,1355 @@
+"""Versioned local generator: prudent adapters plus the complete AP-glitchless mode.
+
+RNG protocol sha256-counter-v1 hashes canonical settings + a big-endian counter,
+then uses rejection sampling. It does not depend on Python's random implementation.
+When ``Settings.full`` is set, every chest is placed by the glitchless solver of
+``full_randomizer`` (AP OoT rules read from the local Archipelago installation)
+and verified by an independent sweep before any file is written.
+"""
+from dataclasses import dataclass, field, fields
+import hashlib
+import json
+from pathlib import Path
+import tempfile
+
+import zstandard as zstd
+
+from ootrr_full.formats.inspect_nup import Nup
+from ootrr_full.formats.inspect_resources import Byml, decompress, dictionaries, sarc
+from ootrr_full.patching.randomize_kokiri import BUILD, TITLE, MAP, RESTBL, CHESTS, POOL, check_supported_game, patch_map
+from ootrr_full.patching.qol_patches import (STATIC, STATIC_SOURCE_SHA256, DYNAMIC_SOURCE_SHA256, PHYSICS, EVENT_SETTINGS,
+                         patch_forest, patch_baked_wall, sha256, cutscene_files, patch_dialogues,
+                         quick_chest, CHEST_FLOW,
+                         quick_small_chest, SMALL_CHEST_FLOW,
+                         KOKIRI_SHOP_MAPS, KOKIRI_SHOP_PACKS, open_kokiri_shop,
+                         release_kokiri_shop_goods, BOMB_LIFT_PACKS, free_bomb_lift,
+                         DC_BOULDER_MODULE, let_bombs_break_dc_boulder, SCRUB_FLOW, keep_one_scrub_good,
+                         ACTION_GUIDE_FLOW, ocarina_guide_on_get,
+                         SWORD_CHEST_FLOW, skip_kokiri_sword_cutscene,
+                         NOCTURNAL_SKULLTULA_MAPS, nocturnal_skulltula_edits,
+                         NIGHT_SKULLTULA_MODULE, keep_night_skulltulas_by_day)
+from ootrr_full.game.randomizer_categories import CATEGORIES
+from ootrr_full.game.world_maps import SAFE_CATEGORIES, build_world, effective_members
+from ootrr_full.game.resource_allocations import allocation, grow_resources, add_resources
+from ootrr_full.formats.byml_writer import lift_actors, patch_strings
+from ootrr_full.logic import rando_options
+
+GENERATOR_VERSION = '0.12.18'  # Include the Treasure Chest Game first prize
+ADAPTER_VERSION = 'ap-glitchless-v5'   # v5: progressive tokens (every copy gives the next level)
+ADULT_MAP = MAP.replace('_Child_', '_Adult_')
+# The amiibo menu: given by Kaepora's first field arrival, now never played
+# (patching/owl_advice.py, FIELD_ARRIVAL_POUCH).
+STARTING_ITEMS = ('Pouch_Amiibo',)
+
+
+def ap_records(settings):
+    """Reception records of an Archipelago seed (items of this game found in other worlds)."""
+    if settings.archipelago is None or not settings.archipelago.get('remote'):
+        return []
+    from ootrr_full.patching.ap_mailbox import records
+    return records(settings.archipelago['remote'])
+
+
+def starting_pouch_items(full):
+    """Only explicitly selected starting equipment, plus the remake's menu item.
+
+    Starting items come from the Archipelago patch, else from the starting
+    inventory option (solo seed, ``full['starting']``).
+    """
+    full = full or {}
+    starting = (full.get('archipelago') or {}).get('starting') if full.get('archipelago') else full.get('starting')
+    from ootrr_full.patching import adult_start
+    held = adult_start.starting_actors(full.get('options'))
+    actors = list(STARTING_ITEMS) + list(held) + [s['actor'] for s in starting or []]
+    from ootrr_full.patching.progressive import WEAPON_CAPACITY
+    for weapon, capacities in WEAPON_CAPACITY.items():
+        if weapon in actors and not any(capacity in actors for capacity in capacities):
+            actors.append(capacities[0])
+    return actors
+# Archipelago goal flag: after Defeat_Ganon's native "Complete" step (Ganon's death),
+# before the transition to Dm_Ending_0000.
+GOAL_FLOW, GOAL_EVENT = 'Event/EventFlow/Defeat_Ganon.bfevfl.zs', 'Event37'
+GOAL_MARKER_PREFIX = 'RandoGoal.'
+SEED_MARKER_PREFIX = 'RandoSeed.'
+
+
+def save_marker(manifest):
+    """Name of the saved flag that binds a save to this seed (set by the new-game opening)."""
+    return SEED_MARKER_PREFIX + str(manifest.get('save_seed_id') or manifest.get('seed_id', ''))
+CHECKS = [{'id': str(ident), 'region': 'Kokiri Forest',
+           'name': f'Four-chest house — slot {i + 1}'}
+          for i, ident in enumerate(sorted(CHESTS))]
+PRUDENT_POOL = [name for name in POOL if name.startswith('TBox_Rupee_')]
+SKIP_OPTIONS = ('skip_locked_cutscenes', 'skip_auto_dialogues', 'skip_chest_cutscenes')
+# Omitted from ``to_dict`` while False (earlier seeds keep their identity).
+OPTIONAL_SKIPS = SKIP_OPTIONS + ('skulltulas_always_present',)
+# Removed options (≤ 0.7): their patches are part of the broader skips.
+LEGACY_SKIPS = {'skip_intro': 'skip_locked_cutscenes'}
+# Removed without replacement: NPC dialogue skips crashed in game (turbo A instead).
+DROPPED_SKIPS = ('skip_saria_dialogue', 'skip_npc_dialogues')
+
+
+@dataclass
+class Settings:
+    seed: str
+    randomize_chests: bool = True
+    pool: list[str] = field(default_factory=lambda: list(PRUDENT_POOL))
+    excluded_checks: list[str] = field(default_factory=list)
+    avoid_vanilla: bool = True
+    open_forest: bool = True
+    # Omitted from ``to_dict`` while False. ``skip_locked_cutscenes`` covers the intro
+    # and every other locked cutscene (area presentations never play: always on).
+    skip_locked_cutscenes: bool = False
+    skip_auto_dialogues: bool = False
+    # Big chests: lid animation, Link holds the item up, no chest performance.
+    skip_chest_cutscenes: bool = False
+    # Night-only gold skulltulas present day and night (the logic stays unchanged).
+    skulltulas_always_present: bool = False
+    categories: dict[str, bool] = field(default_factory=lambda: dict.fromkeys(CATEGORIES, False))
+    full: dict | None = None
+    # Archipelago patch (``.aprmk`` content): the placements come from a multiworld.
+    archipelago: dict | None = None
+
+    def validate(self):
+        if not isinstance(self.seed, str) or not self.seed.strip() or len(self.seed) > 256:
+            raise ValueError('The seed must be a non-empty text of at most 256 characters.')
+        for name in ('randomize_chests', 'avoid_vanilla', 'open_forest') + OPTIONAL_SKIPS:
+            if type(getattr(self, name)) is not bool:
+                raise ValueError(f'{name} must be a boolean.')
+        for name, allowed in [('pool', set(POOL)), ('excluded_checks', {str(h) for h in CHESTS})]:
+            values = getattr(self, name)
+            if not isinstance(values, list) or any(not isinstance(v, str) for v in values):
+                raise ValueError(f'{name} must be a list of texts.')
+            if len(values) != len(set(values)) or not set(values) <= allowed:
+                raise ValueError(f'{name} holds an unknown or duplicate value.')
+        if (not isinstance(self.categories, dict) or set(self.categories) - set(CATEGORIES)
+                or any(type(v) is not bool for v in self.categories.values())):
+            raise ValueError('Unknown categories or non-boolean values.')
+        if self.full is not None:
+            self.full = rando_options.validate(self.full)
+            if self.randomize_chests or self.categories.get('world_chests'):
+                raise ValueError('The full randomizer handles every chest: disable the four Kokiri '
+                                 'chests and the Ordinary chests category.')
+            overlap = [CATEGORIES[name] for name, option, off in (
+                ('pots', 'shuffle_pots', 'off'), ('bushes', 'shuffle_bushes', False), ('rocks', 'shuffle_rocks', False),
+                ('trees', 'shuffle_trees', False))
+                if self.categories.get(name) and self.full.get(option, off) != off]
+            if overlap:
+                raise ValueError('These categories are already shuffled as checks by the full randomizer: '
+                                 + ', '.join(overlap) + '. Untick the matching cosmetic category.')
+        if self.archipelago is not None:
+            from ootrr_full.archipelago.bridge import check_patch
+            check_patch(self.archipelago)
+            patch_options = dict(self.archipelago['options'])
+            patch_options.setdefault('spiritual_stones', rando_options.UNRECORDED['spiritual_stones'])
+            if self.full is None or self.full != rando_options.validate(patch_options):
+                raise ValueError('The full randomizer options must be those of the Archipelago patch.')
+            if self.open_forest != self.archipelago['open_forest']:
+                raise ValueError('"Open the way" must match the Archipelago patch.')
+        if self.randomize_chests:
+            for ident, original in CHESTS.items():
+                if str(ident) not in self.excluded_checks and not [v for v in self.pool if not self.avoid_vanilla or v != original]:
+                    raise ValueError('The pool cannot fill every active chest.')
+        if not (self.full is not None or any(self.categories.values()) or self.open_forest
+                or any(getattr(self, name) for name in OPTIONAL_SKIPS)
+                or (self.randomize_chests and len(self.excluded_checks) < len(CHESTS))):
+            raise ValueError('Enable at least one option or chest to randomize to generate a mod.')
+        return self
+
+    def validate_supported(self):
+        self.validate()
+        if self.randomize_chests and any(name not in PRUDENT_POOL for name in self.pool):
+            raise ValueError('Rewards other than rupees are disabled in the first prudent release. Use the prudent profile.')
+        if self.full is not None:
+            rando_options.validate(self.full, supported_only=True)
+        pending = [CATEGORIES[name] for name, enabled in self.categories.items() if enabled and name not in SAFE_CATEGORIES]
+        if pending:
+            raise ValueError('Adapters still to be written for: ' + ', '.join(pending)
+                             + '. Settings can be exported; no partial seed is produced.')
+        return self
+
+    def to_dict(self):
+        self.validate()
+        # ``full`` is omitted when unset so that earlier seeds keep their identity.
+        return {f.name: (sorted(getattr(self, f.name)) if f.name in ('pool', 'excluded_checks')
+                        else {name: self.categories.get(name, False) for name in sorted(CATEGORIES)}
+                        if f.name == 'categories' else dict(sorted(rando_options.recorded(self.full).items()))
+                        if f.name == 'full' else getattr(self, f.name))
+                for f in fields(self) if not (f.name in ('full', 'archipelago') and getattr(self, f.name) is None)
+                and not (f.name in OPTIONAL_SKIPS and not getattr(self, f.name))}
+
+    @classmethod
+    def from_dict(cls, value):
+        if not isinstance(value, dict):
+            raise ValueError('Unknown settings or invalid format.')
+        value = dict(value)
+        for dropped in DROPPED_SKIPS:
+            value.pop(dropped, None)
+        for legacy, current in LEGACY_SKIPS.items():
+            if legacy in value:
+                enabled = value.pop(legacy)
+                if type(enabled) is not bool:
+                    raise ValueError(f'{legacy} must be a boolean.')
+                value[current] = bool(value.get(current, False)) or enabled
+        if set(value) - {f.name for f in fields(cls)}:
+            raise ValueError('Unknown settings or invalid format.')
+        if 'seed' not in value:
+            raise ValueError('The seed is required.')
+        if isinstance(value.get('full'), dict):
+            value['full'] = dict(value['full'])
+            value['full'].setdefault('spiritual_stones', rando_options.UNRECORDED['spiritual_stones'])
+        return cls(**value).validate()
+
+
+def _canonical(value):
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')
+
+
+def settings_identity(settings, generator_version=GENERATOR_VERSION, adapter_version=ADAPTER_VERSION):
+    return sha256(_canonical({'generator': generator_version, 'adapter': adapter_version,
+                              'settings': settings.to_dict()}))
+
+
+def placements_for(settings):
+    """Complete map, including original values for excluded/disabled checks."""
+    settings.validate()
+    key = bytes.fromhex(settings_identity(settings))
+    counter = 0
+    result = dict(CHESTS)
+    if settings.randomize_chests:
+        for ident in sorted(CHESTS):
+            if str(ident) in settings.excluded_checks:
+                continue
+            choices = sorted(v for v in settings.pool if not settings.avoid_vanilla or v != CHESTS[ident])
+            limit = (1 << 256) - ((1 << 256) % len(choices))
+            while True:
+                sample = int.from_bytes(hashlib.sha256(key + counter.to_bytes(8, 'big')).digest(), 'big')
+                counter += 1
+                if sample < limit:
+                    result[ident] = choices[sample % len(choices)]
+                    break
+    return result
+
+
+def source_reader(nup, members, sources):
+    """``read(path, expected_sha256=None)``: a resource of the game; its hash is recorded in ``sources``."""
+    def read(path, expected=None):
+        data = nup.read(members[path])
+        sources[path] = sha256(data)
+        if expected and sources[path] != expected:
+            raise ValueError(f'Unexpected source resource: {path}')
+        return data
+    return read
+
+
+def recompress(raw, original, dictionaries_):
+    """Compress ``raw`` with the dictionary of the resource it replaces, and check the round trip."""
+    ident = zstd.get_frame_parameters(original).dict_id
+    candidates = [zstd.ZstdCompressionDict(v) for v in dictionaries_.values()]
+    matched = [v for v in candidates if v.dict_id() == ident] if ident else []
+    if ident and len(matched) != 1:
+        raise ValueError('Compression dictionary ambiguous or missing.')
+    encoded = zstd.ZstdCompressor(level=10, dict_data=matched[0] if matched else None).compress(raw)
+    if decompress(encoded, dictionaries_) != raw:
+        raise ValueError('Recompression check failed.')
+    return encoded
+
+
+def complete_event_info(extra_raw, nup, members, d, read):
+    """Events load only the external sub-flows listed for them: a changed flow that
+    calls a new flowchart (the Deku Tree gift's Dm_SY_GetInEvent) gets it listed.
+
+    Updates ``extra_raw`` in place and returns the summary of what was added."""
+    from ootrr_full.patching.event_info import (GAME_ANALYZED_EVENT_INFO, add_child_events,
+                                                add_subflow_dependencies, flow_name, flow_path,
+                                                new_subflows, new_transitions)
+    skips = {}
+    changed_flows = {flow_name(p): raw for p, raw in extra_raw.items() if flow_name(p)}
+    vanilla_cache = {}
+
+    def vanilla_flow(name):
+        if name not in vanilla_cache:
+            path = flow_path(name)
+            vanilla_cache[name] = decompress(nup.read(members[path]), d) if path in members else None
+        return vanilla_cache[name]
+    added_calls = new_subflows(changed_flows, vanilla_flow)
+    current_named = lambda name: changed_flows.get(name) or vanilla_flow(name)
+    if added_calls:
+        extra_raw[GAME_ANALYZED_EVENT_INFO], skips['subflow_dependencies'] = add_subflow_dependencies(
+            decompress(read(GAME_ANALYZED_EVENT_INFO), d), Byml(decompress(read(EVENT_SETTINGS), d)).root,
+            added_calls, current_named)
+    # Same for the events a changed flow now starts by EventTransition (the ocarina
+    # guide's Dm_SY_Ocarina after every item get).
+    added_events = new_transitions(changed_flows, vanilla_flow)
+    if added_events:
+        info_source = extra_raw.get(GAME_ANALYZED_EVENT_INFO) or decompress(read(GAME_ANALYZED_EVENT_INFO), d)
+        extra_raw[GAME_ANALYZED_EVENT_INFO], skips['child_events'] = add_child_events(
+            info_source, Byml(decompress(read(EVENT_SETTINGS), d)).root, added_events, current_named)
+    return skips
+
+
+def compress_changed(extra_raw, files, growths, read, d):
+    """Recompress edited resources into ``files``; ``growths`` records how much each one grew."""
+    for path, raw in sorted(extra_raw.items()):
+        source = read(path)
+        if not path.endswith('.zs'):       # stored uncompressed in the game (logic modules)
+            growths[path] = max(len(raw) - len(source), 0)
+            files[path] = raw
+            continue
+        growths[path] = max(len(raw) - len(decompress(source, d)), 0)
+        files[path] = recompress(raw, source, d)
+
+
+def grow_resource_table(files, growths, new_sizes, read, d, *, known_paths=()):
+    """Make room in the resource size table (RESTBL) for grown or new resources.
+
+    Writes the new table into ``files`` and returns the changed allocations."""
+    if not (any(growths.values()) or new_sizes):
+        return []
+    rest_source = read(RESTBL)
+    rest, allocations = grow_resources(decompress(rest_source, d), growths)
+    if new_sizes:
+        rest, added = add_resources(rest, new_sizes, known_paths=known_paths)
+        allocations += added
+    files[RESTBL] = recompress(rest, rest_source, d)
+    return allocations
+
+
+def publish_mod(output, files, documents, finish=None):
+    """Write a mod folder atomically: ``romfs/<path>`` for ``files``, then ``documents``
+    (name to bytes or text), then whatever ``finish(staging)`` adds. ``output`` must not exist."""
+    output = Path(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='.oot-stage-', dir=output.parent) as temporary:
+        staging = Path(temporary) / 'ready'
+        staging.mkdir()
+        for path, data in files.items():
+            destination = staging / 'romfs' / path
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(data)
+        for name, data in documents.items():
+            if isinstance(data, bytes):
+                (staging / name).write_bytes(data)
+            else:
+                (staging / name).write_text(data, encoding='utf-8')
+        if finish:
+            finish(staging)
+        staging.rename(output)
+
+
+def json_document(value):
+    return json.dumps(value, ensure_ascii=False, indent=2)
+
+
+def generate(nup_path, output, settings, progress=None, save_seed_id=None, saves_from=None):
+    """Publish a complete new mod directory, never install or modify a game/save.
+
+    ``save_seed_id``: an earlier seed of the same Archipelago slot whose saves this one
+    continues (its save marker is kept); by default the seed binds its own saves.
+    ``saves_from``: oldest application version these saves may come from, when the seed
+    replaces an older one (tracker/save_patch.py, ``saves_from``)."""
+    settings.validate_supported()
+    output = Path(output)
+    if output.exists():
+        raise ValueError('The output folder already exists. Choose a new folder.')
+    report = progress or (lambda message: None)
+    report('Checking the game and the settings…')
+    nup = Nup(nup_path)
+    try:
+        check_supported_game(nup)
+        d = dictionaries(nup)
+        members = effective_members(nup)
+        files, sources = {}, {}
+
+        read = source_reader(nup, members, sources)
+
+        def compress(path, raw, original):
+            files[path] = recompress(raw, original, d)
+
+        placements = placements_for(settings)
+        raw_maps = {}
+        world = {'checks': [], 'placements': [], 'coverage': {}}
+        if any(settings.categories.values()):
+            report('Randomizing the selected categories…')
+            world = build_world(nup, d, settings.categories, settings_identity(settings), settings.avoid_vanilla, report)
+            raw_maps.update(world['raw_maps'])
+            sources.update(world['sources'])
+        full = None
+        extra_raw, new_files = {}, {}
+        if settings.full is not None:
+            full, extra_raw, new_files = _build_full(nup, d, members, settings, raw_maps, sources, read, report)
+        chests = []
+        active = settings.randomize_chests and len(settings.excluded_checks) < len(CHESTS)
+        if active or settings.open_forest:
+            source = read(MAP, DYNAMIC_SOURCE_SHA256)
+            raw = raw_maps.get(MAP, decompress(source, d))
+            if active:
+                report('Composing chest rewards…')
+                for reward in sorted(set(placements.values())):
+                    pack = sarc(decompress(nup.read(nup.latest(f'romfs/Pack/Actor/{reward}.pack.zs')), d))
+                    Byml(pack[f'Actor/{reward}.engine__actor__ActorParam.bgyml'])
+                raw, chests = patch_map(raw, placements)
+                # One logical check must have the same reward in both native ages.
+                adult_source = read(ADULT_MAP)
+                adult_raw = raw_maps.get(ADULT_MAP, decompress(adult_source, d))
+                raw_maps[ADULT_MAP], _ = patch_map(adult_raw, placements)
+            if settings.open_forest:
+                report('Opening the way to Hyrule and fixing collision…')
+                static_source = read(STATIC, STATIC_SOURCE_SHA256)
+                static, raw = patch_forest(raw_maps.get(STATIC, decompress(static_source, d)), raw)
+                raw_maps[STATIC] = static
+                physics_source = read(PHYSICS)
+                physics, _ = patch_baked_wall(decompress(physics_source, d))
+                compress(PHYSICS, physics, physics_source)
+            raw_maps[MAP] = raw
+        if settings.skulltulas_always_present:
+            report('Night skulltulas present day and night…')
+            nocturnal = 0
+            for path in NOCTURNAL_SKULLTULA_MAPS:
+                current = raw_maps[path] if path in raw_maps else decompress(read(path), d)
+                edits = nocturnal_skulltula_edits(Byml(current).root)
+                if edits:
+                    raw_maps[path], nocturnal = patch_strings(current, edits), nocturnal + len(edits)
+            if not nocturnal:
+                raise ValueError('Night skulltulas not found in the maps.')
+            # The map logic deletes them by day: that delete input becomes false.
+            extra_raw[NIGHT_SKULLTULA_MODULE], _ = keep_night_skulltulas_by_day(
+                extra_raw.get(NIGHT_SKULLTULA_MODULE) or read(NIGHT_SKULLTULA_MODULE))
+        # Always on: a "Save Warp" button in the pause menu's System tab (patching/save_warp.py).
+        report('Save Warp button in the pause menu…')
+        from ootrr_full.patching.save_warp import patch_save_warp
+        extra_raw.update(patch_save_warp(
+            lambda path: extra_raw.get(path) or read(path),
+            sorted(m for m in members if m.startswith('Mals/') and '.Product.110.' in m),
+            lambda path: extra_raw.get(path) or decompress(read(path), d)))
+        from ootrr_full.game.tracking_metadata import GAMEDATA, add_saved_flags, build_tracking, reward_label
+        from ootrr_full.patching.soul_adapter import murmur3
+        marker_name = SEED_MARKER_PREFIX + (save_seed_id or settings_identity(settings))
+        if settings.full is not None:
+            report('Opening the full Kokiri shop…')
+            opened = 0
+            for path in KOKIRI_SHOP_MAPS:
+                current = raw_maps.get(path)
+                if current is None:
+                    current = decompress(read(path), d)
+                patched, count = open_kokiri_shop(current, marker_name)
+                if count:
+                    raw_maps[path], opened = patched, opened + count
+            if not opened:
+                raise ValueError('Kokiri shop not found in the maps.')
+            released = 0
+            for path in KOKIRI_SHOP_PACKS:
+                current = extra_raw.get(path)
+                if current is None:
+                    current = decompress(read(path), d)
+                patched, count = release_kokiri_shop_goods(current)
+                if count:
+                    extra_raw[path], released = patched, released + count
+            if not released:
+                raise ValueError('Kokiri shop sale conditions not found.')
+            # The bomb bag can come before the Goron Bracelet: bombs must not need it.
+            freed = 0
+            for path in BOMB_LIFT_PACKS:
+                current = extra_raw.get(path)
+                if current is None:
+                    current = decompress(read(path), d)
+                patched, count = free_bomb_lift(current)
+                if count:
+                    extra_raw[path], freed = patched, freed + count
+            if not freed:
+                raise ValueError('Bomb lift parameter not found.')
+            # The bomb bag can come before the Goron Bracelet: Link's bombs break the
+            # Dodongo's Cavern boulder, not only the bomb flower (raw file, not compressed).
+            extra_raw[DC_BOULDER_MODULE], dc_boulder = let_bombs_break_dc_boulder(
+                extra_raw.get(DC_BOULDER_MODULE) or read(DC_BOULDER_MODULE))
+            # Items found in any order: a refill scrub may have no good Link can use yet.
+            extra_raw[SCRUB_FLOW], scrub_goods = keep_one_scrub_good(
+                extra_raw.get(SCRUB_FLOW) or decompress(read(SCRUB_FLOW), d))
+            # The Fairy Ocarina can come before the Deku Tree: it gets the vanilla
+            # ocarina guide (normally shown in Hyrule Field after the bridge) on item get.
+            extra_raw[ACTION_GUIDE_FLOW], ocarina_guide = ocarina_guide_on_get(
+                extra_raw.get(ACTION_GUIDE_FLOW) or decompress(read(ACTION_GUIDE_FLOW), d))
+            if full.get('key_items'):
+                # Key rings / dungeon boss keys: applied at the end of every item get.
+                from ootrr_full.patching.key_adapter import add_key_hook
+                extra_raw[ACTION_GUIDE_FLOW], key_hook = add_key_hook(extra_raw[ACTION_GUIDE_FLOW],
+                                                                      full['key_items'])
+            if full['progressive']['actors']:
+                # Progressive tokens: the next level, at the start of every item get.
+                from ootrr_full.patching.progressive import add_converter
+                extra_raw[ACTION_GUIDE_FLOW], progressive_converter = add_converter(
+                    extra_raw[ACTION_GUIDE_FLOW], full['progressive']['actors'])
+            # The Kokiri Sword chest no longer hands over (and equips) the sword
+            # through its cutscene whatever it contains.
+            extra_raw[SWORD_CHEST_FLOW], sword_chest = skip_kokiri_sword_cutscene(
+                extra_raw.get(SWORD_CHEST_FLOW) or decompress(read(SWORD_CHEST_FLOW), d))
+            # Story locks broken by items found in any order (patching/story_fixes.py).
+            from ootrr_full.patching import story_fixes
+            story = {}
+            from ootrr_full.patching import lost_dog
+            extra_raw[lost_dog.CHALLENGES], story['lost_dog_quest'] = lost_dog.quest_from_start(
+                extra_raw.get(lost_dog.CHALLENGES) or decompress(read(lost_dog.CHALLENGES), d))
+            from ootrr_full.patching import gerudo_fortress
+            story['gerudo_membership'] = {}
+            for path, fix in gerudo_fortress.resource_fixes():
+                extra_raw[path], story['gerudo_membership'][path] = fix(
+                    extra_raw.get(path) or (decompress(read(path), d) if path.endswith('.zs') else read(path)))
+            stones = story_fixes.escape_stones(settings.full)
+            from ootrr_full.patching import link_goron
+            extra_raw[link_goron.SCHEDULES], story['link_goron_rolling'] = link_goron.stunnable_before_intro(
+                extra_raw.get(link_goron.SCHEDULES) or decompress(read(link_goron.SCHEDULES), d))
+            npc_gifts = {}
+            for key, location in (('goron', 'GC Rolling Goron as Adult'), ('zora', 'ZD King Zora Thawed')):
+                gid = 'npc#' + location
+                placement = next((p for p in full['placements'] if p['id'] == gid), None)
+                if placement:
+                    npc_gifts[key] = {'actor': placement['after'], 'flag': full['matches'][gid]['tracking_flag']}
+            if npc_gifts:
+                story['npc_gifts'] = npc_gifts
+            for path, key, fix in story_fixes.flow_fixes(stones, npc_gifts):
+                extra_raw[path], story[key] = fix(extra_raw.get(path) or decompress(read(path), d))
+            # Kaepora's first field arrival never plays (its effects are set at the start):
+            # its quest step follows the Deku Tree escape instead (patching/owl_advice.py).
+            from ootrr_full.patching import owl_advice
+            from ootrr_full.patching.quest_guard import CHALLENGES, challenge_steps
+            extra_raw[owl_advice.ESCAPE_FLOW], story['owl_field_step'] = owl_advice.field_step_after_escape(
+                extra_raw.get(owl_advice.ESCAPE_FLOW) or decompress(read(owl_advice.ESCAPE_FLOW), d),
+                challenge_steps(decompress(read(CHALLENGES), d)))
+            # Full bottles (Ruto's Letter...) on a shelf need no empty bottle (patching/shop_bottles.py).
+            from ootrr_full.patching.shop_bottles import DISPLAY_SHOP_FLOW, patch_display_shop
+            extra_raw[DISPLAY_SHOP_FLOW], story['shop_full_bottles'] = patch_display_shop(
+                extra_raw.get(DISPLAY_SHOP_FLOW) or decompress(read(DISPLAY_SHOP_FLOW), d))
+            from ootrr_full.patching.quest_guard import CHALLENGES as CHALLENGE_TABLE
+            from ootrr_full.patching import child_castle_skip
+            if child_castle_skip.enabled(settings.full):
+                # Child Hyrule Castle skipped: its requests never move the quests back.
+                from ootrr_full.patching.quest_guard import challenge_steps
+                castle_steps = challenge_steps(decompress(read(CHALLENGE_TABLE), d))
+                story['child_castle'] = {}
+                for path in child_castle_skip.GUARDED_FLOWS:
+                    extra_raw[path], story['child_castle'][path] = child_castle_skip.guard_flow(
+                        path, extra_raw.get(path) or decompress(read(path), d), castle_steps)
+                # The Kokiri stay as before the Deku Tree's death until it dies.
+                schedules, talks = child_castle_skip.kokiri_paths(members)
+                story['child_castle_kokiri'] = {}
+                for path in schedules:
+                    raw, count = child_castle_skip.kokiri_schedule(extra_raw.get(path) or read(path))
+                    if count:
+                        extra_raw[path] = raw
+                        story['child_castle_kokiri'][path] = count
+                for path in talks:
+                    raw, changed = child_castle_skip.kokiri_talk(extra_raw.get(path) or decompress(read(path), d))
+                    if changed:
+                        extra_raw[path] = raw
+                        story['child_castle_kokiri'][path] = changed
+                if not story['child_castle_kokiri']:
+                    raise ValueError('No Kokiri state waiting for Zelda found.')
+                # The village Saria is not deleted at once by her map module.
+                saria = child_castle_skip.SARIA_MODULE
+                extra_raw[saria], story['child_castle_saria'] = child_castle_skip.saria_waits_for_deku_tree(
+                    extra_raw.get(saria) or read(saria))
+            # First arrivals (area presentations) never move a quest back.
+            arrival_flows, story['first_arrivals'] = story_fixes.keep_first_arrivals_forward(
+                lambda path: extra_raw.get(path) or decompress(read(path), d),
+                decompress(read(CHALLENGE_TABLE), d))
+            extra_raw.update(arrival_flows)
+            # Adult Link is no longer stopped by an invisible wall at Zora's River mouth.
+            river = raw_maps.get(story_fixes.ZORA_RIVER_MAP) or decompress(read(story_fixes.ZORA_RIVER_MAP), d)
+            wall_edits, wall_actors = story_fixes.zora_river_wall_edits(Byml(river).root)
+            raw_maps[story_fixes.ZORA_RIVER_MAP] = patch_strings(river, wall_edits)
+            story['zora_river_wall'] = {'map': story_fixes.ZORA_RIVER_MAP, 'actors': wall_actors,
+                                        'presence': story_fixes.ZORA_RIVER_WALL_PRESENCE}
+            # Same walls in the child map, adult-only there.
+            child_river = (raw_maps.get(story_fixes.ZORA_RIVER_CHILD_MAP)
+                           or decompress(read(story_fixes.ZORA_RIVER_CHILD_MAP), d))
+            wall_edits, wall_actors = story_fixes.zora_river_child_wall_edits(Byml(child_river).root)
+            raw_maps[story_fixes.ZORA_RIVER_CHILD_MAP] = patch_strings(child_river, wall_edits)
+            story['zora_river_child_wall'] = {'map': story_fixes.ZORA_RIVER_CHILD_MAP, 'actors': wall_actors,
+                                              'presence': story_fixes.ZORA_RIVER_WALL_PRESENCE,
+                                              'negation': True}
+            # Adult Link can longshot onto the Lake Hylia island tree before the Water Temple.
+            lake = raw_maps.get(story_fixes.LAKE_TREE_MAP) or decompress(read(story_fixes.LAKE_TREE_MAP), d)
+            tree_edits, tree_actor = story_fixes.lake_tree_wall_edits(Byml(lake).root)
+            raw_maps[story_fixes.LAKE_TREE_MAP] = patch_strings(lake, tree_edits)
+            story['lake_tree_wall'] = {'map': story_fixes.LAKE_TREE_MAP, 'actor': tree_actor,
+                                       'presence': story_fixes.LAKE_TREE_WALL_PRESENCE_ENTRY['FlagName']}
+            # The open Bombchu door also needs its vendor/music and no closed sign.
+            story['bombchu_shop_actors'] = {}
+            for path in story_fixes.BOMBCHU_SHOP_ACTORS:
+                market = raw_maps.get(path) or decompress(read(path), d)
+                edits, details = story_fixes.bombchu_shop_actor_edits(Byml(market).root, path)
+                raw_maps[path] = patch_strings(market, edits)
+                story['bombchu_shop_actors'][path] = details
+            # Adult Link can put the Master Sword back before the Forest Temple (raw file).
+            extra_raw[story_fixes.PEDESTAL_MODULE], story['pedestal'] = story_fixes.pedestal_after_first_adult_arrival(
+                extra_raw.get(story_fixes.PEDESTAL_MODULE) or read(story_fixes.PEDESTAL_MODULE))
+            extra_raw[story_fixes.LIGHT_ARROWS_MODULE], story['light_arrows_medallions'] = story_fixes.light_arrows_on_medallions(
+                extra_raw.get(story_fixes.LIGHT_ARROWS_MODULE) or read(story_fixes.LIGHT_ARROWS_MODULE))
+            extra_raw[story_fixes.PRELUDE_MODULE], story['prelude_medallion'] = story_fixes.prelude_on_forest_medallion(
+                extra_raw.get(story_fixes.PRELUDE_MODULE) or read(story_fixes.PRELUDE_MODULE))
+            # Sheik in Kakariko: the burning scene on the three medallions, not the three sages.
+            extra_raw[GAMEDATA], story['kakariko_burning_medallions'] = story_fixes.kakariko_burning_on_medallions(
+                extra_raw.get(GAMEDATA) or decompress(read(GAMEDATA), d))
+            # The temple Sheik no longer stands in front of the pedestal between his scenes.
+            extra_raw[GAMEDATA], story['sheik_temple'] = story_fixes.sheik_temple_expression(extra_raw[GAMEDATA])
+            extra_raw[story_fixes.SHEIK_TEMPLE_MODULE], _ = story_fixes.sheik_leaves_the_pedestal(
+                extra_raw.get(story_fixes.SHEIK_TEMPLE_MODULE) or read(story_fixes.SHEIK_TEMPLE_MODULE))
+            # Scenes no longer required: the Water Temple gate (Serenade), the Door of Time
+            # (Zelda's escape) and the rainbow bridge (Zelda's revelation).
+            extra_raw[GAMEDATA], story['scene_conditions'] = story_fixes.scene_expressions(extra_raw[GAMEDATA])
+            extra_raw[GAMEDATA], story['gerudo_card_conditions'] = gerudo_fortress.membership_expressions(extra_raw[GAMEDATA])
+            # The altar rejects the song before the opening flow can run unless
+            # its native invalid-condition is updated too.
+            extra_raw[GAMEDATA], story['door_song_condition'] = story_fixes.door_song_condition(
+                extra_raw[GAMEDATA], rando_options.stored_value(settings.full, 'door_of_time_requirement'))
+            for path, key, fix in story_fixes.scene_module_fixes():
+                extra_raw[path], story[key] = fix(extra_raw.get(path) or read(path))
+            # Zelda's escape on the stones held, checked at every item get.
+            extra_raw[ACTION_GUIDE_FLOW], story['zelda_escape_item_get'] = story_fixes.zelda_escape_on_item_get(
+                extra_raw[ACTION_GUIDE_FLOW], stones)
+            # The clock runs before Zelda (Impa's send-off flag set at the start).
+            story['clock'] = story_fixes.CLOCK_FLAG
+            # Zones open from the start, kept open (patching/world_openings.py).
+            from ootrr_full.patching.world_openings import OPENINGS, apply_openings
+            options = full.get('options') or {}
+            if (any(options.get(option) == value for option, value, _ in OPENINGS)
+                    or rando_options.escape_requirement(options) == 'song'):
+                from ootrr_full.patching.quest_guard import CHALLENGES
+                extra_raw[GAMEDATA], opened_flows, story['openings'] = apply_openings(
+                    options, lambda path: extra_raw.get(path) or decompress(read(path), d),
+                    extra_raw.get(GAMEDATA) or decompress(read(GAMEDATA), d),
+                    decompress(read(CHALLENGES), d),
+                    lambda path: extra_raw.get(path) or read(path))
+                extra_raw.update(opened_flows)
+        gamedata_source = extra_raw.get(GAMEDATA)
+        if gamedata_source is None:
+            gamedata_source = decompress(read(GAMEDATA), d)
+        if settings.full is not None:
+            from ootrr_full.patching.native_extras import start_values as native_extra_start_values
+            bean_values = native_extra_start_values(settings.full)
+            if bean_values:
+                from ootrr_full.patching.game_defaults import set_new_game_defaults
+                gamedata_source = set_new_game_defaults(gamedata_source, bean_values, allow_reset=(8, 24))
+        goal_name = GOAL_MARKER_PREFIX + settings_identity(settings) if settings.archipelago is not None else None
+        # Great Fairies: one saved flag each, set by her reward (patching/story_fixes.py).
+        from ootrr_full.patching.story_fixes import dampe_saved_flags, great_fairy_saved_flags
+        # Dampé's race: the first prize opened (patching/story_fixes.py).
+        fairy_flags = {**great_fairy_saved_flags(), **dampe_saved_flags()} if settings.full is not None else {}
+        # Save Warp request (patching/save_warp.py): never true in a save.
+        from ootrr_full.patching.save_warp import SAVE_WARP_FLAG
+        extra_raw[GAMEDATA] = add_saved_flags(gamedata_source, {marker_name: False, SAVE_WARP_FLAG: False,
+                                                                **fairy_flags,
+                                                                **({goal_name: False} if goal_name else {})})
+        # Bind a save only when the actual new-game opening completes. A True
+        # default would incorrectly bind an old save when its missing flags initialize.
+        from ootrr_full.patching.event_patch import add_collection_markers
+        opening = 'Event/EventFlow/OpeningEvent.bfevfl.zs'
+        extra_raw[opening], seed_markers = add_collection_markers(
+            decompress(read(opening), d), {'Event3': marker_name})
+        # Every seed: "Randomizer" badge under the logo of the main menu (common UI
+        # archive) and of the title screen.
+        from ootrr_full.patching.title_badge import BADGE_FILES, add_title_badge
+        title_badge = {}
+        for badge_file in BADGE_FILES:
+            extra_raw[badge_file], title_badge[badge_file] = add_title_badge(decompress(read(badge_file), d))
+        goal_markers = []
+        if goal_name:
+            # Archipelago goal: set once Ganon's defeat completes the native challenge,
+            # just before the ending cutscene (read live by the client: no save follows).
+            extra_raw[GOAL_FLOW], goal_markers = add_collection_markers(
+                extra_raw.get(GOAL_FLOW) or decompress(read(GOAL_FLOW), d), {GOAL_EVENT: goal_name})
+        start_values = {}   # GameData written at the end of the opening (manifest: save migration)
+        if settings.full is not None:
+            # Only selected starting equipment, with capacity accompanying an
+            # explicitly selected bow/slingshot, enters the opening inventory.
+            from ootrr_full.patching.event_patch import add_pouch_items
+            extra_raw[opening] = add_pouch_items(extra_raw[opening], 'RandoCollected_Event3',
+                                                 starting_pouch_items(full))
+            # Maps/compasses "start with", keys "removed": dungeon data written at the start.
+            from ootrr_full.patching.event_patch import add_start_values
+            from ootrr_full.patching.key_adapter import start_dungeon_values, check_start_values
+            from ootrr_full.patching import area_presentations, child_castle_skip
+            castle_skip = child_castle_skip.enabled(settings.full)
+            from ootrr_full.patching import adult_start
+            if adult_start.enabled(settings.full):
+                # Before the castle requests: they are chained after the same anchor, ahead of it.
+                extra_raw[opening], story['adult_start'] = adult_start.patch_opening(extra_raw[opening])
+            start_values = dict(start_dungeon_values(settings.full), **story_fixes.story_start_values())
+            start_values.update(native_extra_start_values(settings.full))
+            start_values.update(area_presentations.start_values())
+            if castle_skip:
+                start_values.update(child_castle_skip.START_VALUES)
+            if start_values:
+                check_start_values(extra_raw[GAMEDATA], start_values)
+                extra_raw[opening] = add_start_values(extra_raw[opening], 'RandoCollected_Event3', start_values)
+            if castle_skip:
+                # Child Hyrule Castle skipped: the quests start where the castle leaves them.
+                extra_raw[opening], castle_events = child_castle_skip.add_start_steps(
+                    extra_raw[opening], child_castle_skip.start_step_params(
+                        lambda p: decompress(read(p), d), door_ready=not stones))
+                story['child_castle_start'] = castle_events
+            # Big Poes to bring back: the collector's reward threshold (patching/big_poes.py).
+            from ootrr_full.patching import big_poes
+            poe_count = settings.full.get('big_poe_count', big_poes.VANILLA_COUNT)
+            if poe_count != big_poes.VANILLA_COUNT:
+                from ootrr_full.game.extra_sources import event_paths
+                for path in event_paths(members, big_poes.FLOW):
+                    extra_raw[path] = big_poes.patch_flow(
+                        extra_raw[path] if path in extra_raw else decompress(read(path), d), poe_count)
+            # Cuccos to bring back: the cucco lady's pen, its logic module and her lines (patching/cuccos.py).
+            from ootrr_full.patching import cuccos
+            cucco_count = settings.full.get('chicken_count', cuccos.VANILLA_COUNT)
+            if cucco_count != cuccos.VANILLA_COUNT:
+                from ootrr_full.game.extra_sources import event_paths
+                flows = event_paths(members, cuccos.FLOW)
+                if not flows:
+                    raise ValueError('Cucco minigame flow not found.')
+                for path in flows:
+                    extra_raw[path] = cuccos.patch_flow(
+                        extra_raw[path] if path in extra_raw else decompress(read(path), d), cucco_count)
+                extra_raw[cuccos.LOGIC_MODULE] = cuccos.patch_logic(
+                    extra_raw.get(cuccos.LOGIC_MODULE) or read(cuccos.LOGIC_MODULE), cucco_count)
+                for path in cuccos.message_paths(members):
+                    extra_raw[path], _ = cuccos.patch_messages(
+                        extra_raw.get(path) or decompress(read(path), d), cucco_count)
+        skips = {'title_badge': title_badge}
+        if settings.full is not None:
+            skips['ocarina_guide'] = ocarina_guide
+            skips['dc_boulder_bombs'] = dc_boulder
+            skips['scrub_goods'] = scrub_goods
+            if full.get('key_items'):
+                skips['key_items'] = {'records': full['key_items'], 'hook': key_hook}
+            if full['progressive']['actors']:
+                skips['progressive'] = {'converter': progressive_converter, 'hooks': full['progressive']['hooks']}
+            skips['sword_chest'] = sword_chest
+            skips['story_fixes'] = story
+            if full.get('gift_get'):
+                skips['gift_get'] = full['gift_get']
+            if full.get('song_flows'):
+                skips['songs'] = full['song_flows']
+            if full.get('master_sword_flows'):
+                skips['master_sword_flows'] = full['master_sword_flows']
+            if settings.full.get('big_poe_count', 10) != 10:
+                skips['big_poes'] = settings.full['big_poe_count']
+            if settings.full.get('chicken_count', 7) != 7:
+                skips['cuccos'] = settings.full['chicken_count']
+        current_flow = lambda path: extra_raw[path] if path in extra_raw else decompress(read(path), d)
+        # Every seed: area presentations never play (patching/area_presentations.py):
+        # pre-marked at the start in full mode, else left on their first frame.
+        report('Area presentations skipped…')
+        from ootrr_full.patching.area_presentations import presentation_files
+        flows, skips['area_presentations'] = presentation_files(current_flow, premarked=settings.full is not None)
+        extra_raw.update(flows)
+        if settings.full is not None:
+            from ootrr_full.patching.area_presentations import start_values as presentation_start_values
+            skips['presentation_flags'] = presentation_start_values()
+        if settings.skip_chest_cutscenes or (settings.full or {}).get('fast_chests'):
+            report('Chests without cutscene…')
+            extra_raw[CHEST_FLOW], skips['quick_chest'] = quick_chest(current_flow(CHEST_FLOW))
+            extra_raw[SMALL_CHEST_FLOW], skips['quick_small_chest'] = quick_small_chest(current_flow(SMALL_CHEST_FLOW))
+        if settings.skip_locked_cutscenes:
+            # Flow-driven cutscenes: native skip windows up to each
+            # event, with idempotent state writes replayed when skipped. Analysed on
+            # the original flows; flows already changed by another patch are left alone.
+            report('Cutscenes skippable up to their events…')
+            from ootrr_full.patching.qol_patches import skip_window_candidates, cutscene_window_files
+            flow_names = {p[len('Event/EventFlow/'):-len('.bfevfl.zs')] for p in members
+                          if p.startswith('Event/EventFlow/') and p.endswith('.bfevfl.zs')}
+            original_flow = lambda path: decompress(nup.read(members[path]), d)
+            candidates = [n for n in skip_window_candidates(decompress(read(EVENT_SETTINGS), d))
+                          if 'Event/EventFlow/' + n + '.bfevfl.zs' not in extra_raw]
+            flows, skips['cutscene_windows'] = cutscene_window_files(original_flow, flow_names, candidates)
+            extra_raw.update(flows)
+        report('Analyzing event flow dependencies…')
+        skips.update(complete_event_info(extra_raw, nup, members, d, read))
+        # In place on the vanilla table (same size); chest rows are added after. The
+        # area presentation rows always pause like the fountains (their skip windows).
+        report('Dialogues and area presentations skippable with + …')
+        extra_raw[EVENT_SETTINGS], skips['dialogues'] = patch_dialogues(
+            decompress(read(EVENT_SETTINGS), d), settings.skip_auto_dialogues, True)
+        plain_raw = {}
+        mailbox_items = ap_records(settings)
+        if mailbox_items:
+            # Items of other worlds: the client sets a Bool in the game's memory, the
+            # global sequence starts an item-get event (patching.ap_mailbox). After the
+            # sub-flow completion above: its own row lists what it calls.
+            report('Archipelago item reception…')
+            from ootrr_full.patching import ap_mailbox
+            from ootrr_full.patching.event_info import GAME_ANALYZED_EVENT_INFO, flow_path as mailbox_flow_path
+            current_raw = lambda path: extra_raw[path] if path in extra_raw else decompress(read(path), d)
+            extra_raw[ap_mailbox.FLOW_PATH] = ap_mailbox.add_entries(current_raw(ap_mailbox.FLOW_PATH), mailbox_items,
+                                                                    dispatch=True)
+            mailbox_flows = lambda name: (extra_raw[ap_mailbox.FLOW_PATH] if name == ap_mailbox.FLOW
+                                          else current_raw(mailbox_flow_path(name))
+                                          if mailbox_flow_path(name) in members else None)
+            extra_raw[EVENT_SETTINGS] = ap_mailbox.add_event_rows(current_raw(EVENT_SETTINGS), mailbox_items, dispatch=True)
+            extra_raw[GAME_ANALYZED_EVENT_INFO], mailbox_row = ap_mailbox.add_analyzed_rows(
+                current_raw(GAME_ANALYZED_EVENT_INFO), mailbox_items, mailbox_flows, dispatch=True)
+            plain_raw[ap_mailbox.MAIN_UPDATE] = ap_mailbox.patch_main_update(read(ap_mailbox.MAIN_UPDATE),
+                                                                             mailbox_items, dispatch=True)
+            extra_raw[GAMEDATA] = add_saved_flags(extra_raw[GAMEDATA], {
+                ap_mailbox.SIGNAL: False,
+                **{flag: False for record in mailbox_items for flag in (record['recv'], record['got'])}})
+            skips['ap_mailbox'] = {'items': mailbox_items, 'row': mailbox_row, 'signal': ap_mailbox.SIGNAL}
+        if full is not None and full['progressive']['actors']:
+            # Safety net of the progressive tokens: the global sequence converts any token
+            # got by a route that reaches no converter call (patching.progressive).
+            from ootrr_full.patching import progressive
+            from ootrr_full.patching.event_info import GAME_ANALYZED_EVENT_INFO as info_path, flow_path as watch_flow_path
+            watch_raw = lambda path: extra_raw[path] if path in extra_raw else decompress(read(path), d)
+            watch_flows = lambda name: (watch_raw(watch_flow_path(name)) if watch_flow_path(name) in members else None)
+            extra_raw[EVENT_SETTINGS] = progressive.watch_event_row(watch_raw(EVENT_SETTINGS))
+            extra_raw[info_path], watch_row = progressive.watch_analyzed_row(watch_raw(info_path), watch_flows)
+            main_update = plain_raw.get(progressive.MAIN_UPDATE) or read(progressive.MAIN_UPDATE)
+            plain_raw[progressive.MAIN_UPDATE] = progressive.patch_main_update(main_update, full['progressive']['actors'])
+            skips['progressive_watch'] = {'tokens': list(full['progressive']['actors']), 'row': watch_row}
+        if full is not None:
+            # Chests save no flag of their own: each chest, shuffled or left in place, runs
+            # its own copy of its opening event, which sets a saved Bool first (tracking,
+            # Archipelago). Last of the event patches: the copied rows inherit every
+            # completed list.
+            report('Opening flags of the chests…')
+            from ootrr_full.patching import chest_flags
+            current_raw = lambda path: extra_raw[path] if path in extra_raw else decompress(read(path), d)
+            map_root = lambda path: Byml(raw_maps[path] if path in raw_maps else decompress(read(path), d)).root
+            settings_raw = current_raw(chest_flags.EVENT_SETTINGS)
+            settings_rows = {row['__RowId']: row for row in Byml(settings_raw).root}
+            # Not ``chests``: that name holds the Kokiri chests the spoiler lists below.
+            flagged = full['placements'] + chest_flags.vanilla_placements(full['matches'], full['placements'])
+            records, skipped = chest_flags.plan_records(flagged, map_root, settings_identity(settings), settings_rows)
+            for resource, edits in sorted(chest_flags.map_edits(records).items()):
+                raw_maps[resource] = patch_strings(raw_maps[resource] if resource in raw_maps
+                                                   else decompress(read(resource), d), edits)
+            for path, flow_records in sorted(chest_flags.by_flow(records).items()):
+                extra_raw[path] = chest_flags.add_entries(current_raw(path), flow_records)
+            extra_raw[chest_flags.EVENT_SETTINGS] = chest_flags.add_rows(settings_raw, records)
+            extra_raw[chest_flags.ANALYZED], analyzed = chest_flags.add_analyzed_rows(
+                current_raw(chest_flags.ANALYZED), records)
+            extra_raw[GAMEDATA] = add_saved_flags(extra_raw[GAMEDATA], {r['flag']: False for r in records})
+            for record in records:
+                full['matches'][record['id']]['tracking_flag'] = record['flag']
+            skips['chest_flags'] = {'records': records, 'skipped': skipped, 'analyzed_rows': analyzed}
+            # Meeting Zelda before the Deku Tree must not send Mido away from his wall.
+            from ootrr_full.patching.qol_patches import MIDO_SCHEDULE, keep_mido_at_post
+            plain_raw[MIDO_SCHEDULE], skips['mido_post'] = keep_mido_at_post(read(MIDO_SCHEDULE))
+        # Apply last: derived world/shop/drop actors can embed the same pouch data.
+        from ootrr_full.patching import bomb_refills
+        skips['bomb_refills'] = bomb_refills.apply(
+            extra_raw, new_files, lambda path: decompress(read(path), d))
+        from ootrr_full.patching import elemental_arrows
+        for path, fix in elemental_arrows.resource_fixes():
+            target = extra_raw if path.endswith('.zs') else plain_raw
+            raw = target.get(path)
+            if raw is None:
+                raw = decompress(read(path), d) if path.endswith('.zs') else read(path)
+            target[path] = fix(raw)
+        skips['elemental_arrows'] = True
+        if (settings.full or {}).get('blue_fire_arrows', False):
+            from ootrr_full.patching import blue_fire_arrows
+            for path, fix in blue_fire_arrows.resource_fixes():
+                extra_raw[path] = fix(extra_raw.get(path) or decompress(read(path), d))
+            skips['blue_fire_arrows'] = True
+        from ootrr_full.patching import magic_capacity
+        skips['magic_capacity'] = magic_capacity.apply(
+            extra_raw, new_files, lambda path: decompress(read(path), d))
+        if settings.full is not None and adult_start.enabled(settings.full):
+            path = adult_start.SPAWN_MAP
+            raw = extra_raw.pop(path, None)
+            if raw is not None and path in raw_maps:
+                raise ValueError('The adult-start map has conflicting composed edits.')
+            raw_maps[path] = adult_start.add_start_marker(raw if raw is not None else
+                                                         raw_maps.get(path) or decompress(read(path), d))
+        report('Compressing and checking generated resources…')
+        growths = {}
+        for path, raw in sorted(raw_maps.items()):
+            source = read(path)
+            growth = len(raw) - len(decompress(source, d))
+            if growth < 0:
+                raise ValueError('A composed map shrank unexpectedly.')
+            growths[path] = growth
+            compress(path, raw, source)
+        compress_changed(extra_raw, files, growths, read, d)
+        for path, raw in sorted(plain_raw.items()):
+            # Uncompressed resources (sequence AI): written as they are.
+            growths[path] = max(len(raw) - len(read(path)), 0)
+            files[path] = raw
+        new_sizes = {}
+        rest_raw = decompress(read(RESTBL), d) if new_files else None
+        for path, (raw, template) in sorted(new_files.items()):
+            compress(path, raw, read(template))
+            # A copy of a resource (model, texture) needs at least the original's allocation.
+            new_sizes[path] = max((len(raw) + 0x1000 + 4095) & ~4095, allocation(rest_raw, template) or 0)
+        allocations = grow_resource_table(files, growths, new_sizes, read, d, known_paths=members)
+        if settings.skip_locked_cutscenes:
+            report('Skippable cutscenes…')
+            cutscenes, skips['cutscenes'] = cutscene_files(read)
+            files.update(cutscenes)
+
+        from ootrr_full import __version__ as app_version
+        manifest = {'schema_version': 1, 'generator_version': GENERATOR_VERSION,
+                    'adapter_version': ADAPTER_VERSION, 'app_version': app_version, 'seed_id': settings_identity(settings),
+                    'title_id': TITLE, 'build_id': BUILD, 'settings': settings.to_dict(),
+                    'scope': 'Four Kokiri chests, ordinary chests, explicit drops of the selected pots, bushes and rocks, and QoL. Progression and ambiguous sources kept.',
+                    'files': {p: {'size': len(v), 'sha256': sha256(v)} for p, v in sorted(files.items())},
+                    'source_files': sources, 'resource_allocations': allocations,
+                    'coverage': world['coverage'], 'skips': skips, 'progression_randomized': full is not None,
+                    'complete_randomizer': False,
+                    'validation': 'Static checks done; this composed seed is still to be tested in game.'}
+        if save_seed_id:
+            manifest['save_seed_id'] = save_seed_id
+        if saves_from:
+            manifest['saves_from'] = str(saves_from)
+        if start_values:
+            # Values a game started before a fix never received (tracker/save_patch.py).
+            manifest['start_values'] = dict(sorted(start_values.items()))
+        if full is not None:
+            families = sorted({p['source'] for p in full['placements']})
+            manifest['scope'] = ('Full glitchless randomizer: sources shuffled together ('
+                                 + ', '.join(families) + ') placed by the remake glitchless solver and checked by a '
+                                 'second playthrough; other sources unchanged.')
+            manifest['full_randomizer'] = {
+                'logic_world_version': full['logic_world_version'],
+                'logic_world_sha256': full['logic_world_sha256'], 'coverage': full['coverage'], 'attempts': full['attempts'],
+                'experimental': rando_options.experimental_choices(settings.full),
+                'souls': full['souls']['items'], 'new_save_required': bool(full['souls']['items']),
+                'derived_actors': full['derived_actors'],
+                'sources': dict(sorted(__import__('collections').Counter(
+                    p['source'] for p in full['placements']).items()))}
+            if full.get('archipelago'):
+                # Read by the Archipelago client: location IDs and items found in other worlds.
+                manifest['archipelago'] = full['archipelago']
+            elif full.get('starting'):
+                manifest['starting'] = full['starting']
+        checks = {'schema_version': 1, 'seed_id': manifest['seed_id'],
+                  # With the complete randomizer its catalogue lists every check (the
+                  # four historical Kokiri chests included): no duplicates.
+                  'checks': full['checks'] + world['checks'] if full else (
+                      [dict(check, randomized=active and check['id'] not in settings.excluded_checks)
+                       for check in CHECKS] + world['checks'])}
+        spoiler = {'schema_version': 1, 'seed_id': manifest['seed_id'],
+                   'placements': [dict(c, id=c['hash'], category='kokiri_chests', resources=[MAP, ADULT_MAP])
+                                  for c in chests] + world['placements']
+                                  + ([dict(p, category='full_' + ('chests' if p['source'] == 'chest' else p['source']))
+                                      for p in full['spoiler']] if full else []),
+                   'playthrough': full['playthrough'] if full else []}
+
+        def tracking_read(path):
+            if path in extra_raw:
+                return extra_raw[path]
+            if path in new_files:
+                return new_files[path][0]
+            return decompress(read(path), d)
+
+        tracking = build_tracking(manifest['seed_id'], checks['checks'], full, tracking_read)
+        tracking['seed_marker'] = str(murmur3(marker_name))
+        tracking['event_markers'][opening] = seed_markers
+        if goal_name:
+            tracking['goal_marker'] = str(murmur3(goal_name))
+            tracking['event_markers'][GOAL_FLOW] = goal_markers
+        if full is None:
+            from ootrr_full.game.remake_world import actor_item
+            for c in chests:
+                row = tracking['checks'].get(str(c['hash']))
+                if row:
+                    row['reward'] = reward_label(actor_item(c['after'], 'KokiriForest'), c['after'])
+            for placement in world['placements']:
+                row = tracking['checks'].get(placement['id'])
+                if row:
+                    actor = placement.get('after', '')
+                    row['reward'] = reward_label(actor_item(actor, placement.get('folder', '')), actor)
+        tracking_bytes = json.dumps(tracking, ensure_ascii=False, indent=2).encode('utf-8')
+        manifest['tracking'] = {'schema_version': 1, 'sha256': sha256(tracking_bytes),
+                                'new_save_required': True, 'mode': 'save'}
+        report('Writing the mod and its manifests atomically…')
+        def write_spoiler_text(staging):
+            # Human-readable spoiler next to spoiler.json (not part of the manifest).
+            from ootrr_full.randomizer.spoiler_report import SPOILER_TEXT, load_report, write_text
+            write_text(load_report(staging), staging / SPOILER_TEXT)
+        publish_mod(output, files, {'manifest.json': json_document(manifest), 'checks.json': json_document(checks),
+                                    'spoiler.json': json_document(spoiler), 'tracking.json': tracking_bytes},
+                    write_spoiler_text)
+        report('Generation done.')
+        return manifest
+    finally:
+        nup.stream.close()
+
+
+def _relocate_gift_marker(markers, source, event, target, replacement, flag):
+    """Keep active collection metadata on the hand-over that still executes.
+
+    The bypassed cutscene retains its dead nodes for byte-level verification,
+    but restoration guards must protect the replacement call after the scene.
+    """
+    found = [row for row in markers.get(source, ()) if row['event'] == event]
+    if not flag:
+        if found:
+            raise ValueError('A relocated gift lost its collection flag.')
+        return
+    if len(found) != 1 or found[0]['flag'] != flag:
+        raise ValueError('A relocated gift has inconsistent collection metadata.')
+    if any(row['event'] == replacement for row in markers.get(target, ())):
+        raise ValueError('Two gifts share the relocated collection event.')
+    markers[source] = [row for row in markers[source] if row['event'] != event]
+    if not markers[source]:
+        del markers[source]
+    markers.setdefault(target, []).append({'event': replacement,
+                                         'marker': 'RandoCollected_' + replacement, 'flag': flag})
+
+
+def _build_full(nup, dictionaries_, members, settings, raw_maps, sources, read, report):
+    """Plan and compose the complete randomizer. Returns (plan, modified, new)."""
+    from collections import defaultdict
+    from ootrr_full.logic.world import World
+    from ootrr_full.formats import byml_codec
+    from ootrr_full.randomizer import full_randomizer
+    from ootrr_full.game.extra_sources import scan_world
+    from ootrr_full.game.item_forms import add_rsdb_rows, build_pack, derived_actors, is_derived
+    from ootrr_full.patching.soul_adapter import build_soul_files, presence_changes, RSDB_FILES
+    from ootrr_full.patching.event_patch import patch_event_params
+
+    report('Reading the remake logic…')
+    data = World()
+    maps, groups, enemies, extra = scan_world(nup, dictionaries_, members, report)
+    if settings.archipelago is not None:
+        from ootrr_full.archipelago import bridge
+        patch = settings.archipelago
+        if patch['game_build'] != BUILD or patch['world'] != data.fingerprint()                 or patch['scan'] != bridge.scan_fingerprint(groups, enemies, extra):
+            raise ValueError('This Archipelago patch was generated with an apworld built from another game '
+                             'or another version of the application: rebuild the apworld and generate again.')
+        report('Applying the Archipelago placements…')
+        plan = full_randomizer.plan_assigned(data, settings.full, groups, enemies, patch['seed_key'],
+                                             bridge.assigned_items(patch), settings.open_forest, report,
+                                             extra=extra, labels=bridge.foreign_labels(patch),
+                                             starting=patch.get('precollected', ()))
+        plan['archipelago'] = {'starting': plan['starting'], 'seed_name': patch.get('seed_name'), 'slot_name': patch.get('slot_name'),
+                               'player': patch.get('player'), 'location_ids': patch.get('location_ids', {}),
+                               'remote': patch['remote'], 'spheres': bridge.patch_spheres(patch)}
+    else:
+        report('Glitchless placement and independent check…')
+        plan = full_randomizer.plan(data, settings.full, groups, enemies, settings_identity(settings),
+                                    settings.open_forest, report, extra=extra)
+    from ootrr_full.patching.repeatable_adapter import (prepare_repeatables, patch_repeatable_sources,
+                                     build_repeatable_packs, register_repeatable_flags)
+    repeatables = prepare_repeatables(plan, maps)
+    repeatable_actors = {r['actor'] for r in repeatables}
+    plan['repeatables'] = repeatables
+    for record in repeatables:
+        plan['matches'][record['id']]['tracking_flag'] = record['flag']
+        for row in plan['spoiler']:
+            if row['id'] == record['id']:
+                row['reward_actor'] = row['actor']
+                row['actor'] = record['actor']
+    changes, event_changes, lifts = defaultdict(list), defaultdict(list), defaultdict(dict)
+    from ootrr_full.game.item_forms import ground_lift, world_scale
+    # Unshuffled sources of a fixed progressive level give a token too (full_randomizer.native_sources).
+    natives = plan['progressive']['natives']
+    for placement in plan['placements'] + natives:
+        unchanged = placement['after'] == placement['before']
+        for patch in placement['patches']:
+            if 'after' in patch:      # own value (scrub price), whatever the item
+                event_changes[patch['resource']].append(
+                    (patch['event'], patch['param'], patch['before'], patch['after']))
+            elif unchanged:
+                continue
+            elif 'event' in patch:
+                event_changes[patch['resource']].append(
+                    (patch['event'], patch['param'], patch['before'], placement['after']))
+            else:
+                changes[patch['resource']].append({'path': tuple(patch['path']), 'before': patch['before'],
+                                                   'after': placement['after']})
+                if patch['path'][-1] == 'Gyaml':
+                    height = ground_lift(patch['before'], placement['after'])
+                    if height:
+                        lifts[patch['resource']][patch['path'][1]] = height
+                    scale = world_scale(placement['after'])
+                    if scale != 1.0:
+                        if 'Scale' in maps[patch['resource']]['root']['Actors'][patch['path'][1]]:
+                            raise ValueError('Freestanding spot already scaled: ' + patch['resource'])
+                        changes[patch['resource']].append({'path': tuple(patch['path'][:-1]) + ('Scale',),
+                                                           'before': None, 'after': (scale,) * 3})
+    for resource, edits in presence_changes(plan['souls']['edits'] + plan['souls'].get('door_edits', []),
+                                            {path: maps[path]['root'] for path in maps}).items():
+        changes[resource].extend(edits)
+    actors = {p['after'] for p in plan['placements'] + natives} - {p['before'] for p in plan['placements']}
+    from ootrr_full.patching.key_adapter import is_key_actor as _is_key_actor
+    from ootrr_full.patching.progressive import is_token
+    from ootrr_full.patching.master_sword_item import MASTER_SWORD_ACTOR
+    for actor in sorted(actors):
+        if (actor.startswith(('Item_Soul_', 'Item_AP_', 'Item_FullAmmo_')) or is_derived(actor) or actor in repeatable_actors
+                or _is_key_actor(actor) or is_token(actor)
+                or (settings.full.get('shuffle_master_sword') and actor == MASTER_SWORD_ACTOR)):
+            continue
+        if 'Pack/Actor/' + actor + '.pack.zs' not in members:
+            raise ValueError('Reward actor missing from the game: ' + actor)
+    for resource, edits in sorted(changes.items()):
+        report('Composition : ' + resource.split('/')[-1])
+        if resource not in raw_maps:
+            sources[resource] = sha256(maps[resource]['compressed'])
+        raw_maps[resource] = lift_actors(patch_strings(raw_maps.get(resource, maps[resource]['raw']), edits),
+                                         lifts.get(resource, {}))
+    patch_repeatable_sources(repeatables, maps, raw_maps)
+    modified, new = {}, {}
+    from ootrr_full.patching.ammo_quantities import build_files as build_quantity_files
+    quantity_items = {p['item'] for p in plan['placements']}
+    if settings.archipelago is not None:
+        quantity_items.update(row['item'] for row in settings.archipelago.get('remote', ()))
+        quantity_items.update(settings.archipelago.get('precollected', ()))
+    quantity_modified, quantity_new = build_quantity_files(
+        lambda path: decompress(read(path), dictionaries_), quantity_items,
+        sorted(m for m in members if m.startswith('Mals/') and '.Product.110.' in m))
+    modified.update(quantity_modified)
+    new.update(quantity_new)
+    if settings.full.get('shuffle_master_sword'):
+        from ootrr_full.patching.master_sword_item import build_files as build_master_sword_files
+        master_modified, master_new = build_master_sword_files(
+            lambda path: modified[path] if path in modified else decompress(read(path), dictionaries_))
+        modified.update(master_modified)
+        new.update(master_new)
+    if plan['souls']['items']:
+        report('Building souls: items, tables, flags and texts…')
+        messages = sorted(m for m in members if m.startswith('Mals/') and '.Product.110.' in m)
+        if not messages:
+            raise ValueError('Message archives not found: soul names cannot be shown.')
+        # Read the tables already modified (Master Sword rows), keep the files built before.
+        soul_modified, soul_new = build_soul_files(
+            lambda path: modified[path] if path in modified else decompress(read(path), dictionaries_),
+            plan['souls']['items'], messages)
+        modified.update(soul_modified)
+        new.update(soul_new)
+        # Enemies with their own Presence read "soul AND vanilla condition" BoolExps.
+        from ootrr_full.patching.soul_adapter import GAMEDATA as _GAMEDATA, add_soul_expressions
+        modified[_GAMEDATA] = add_soul_expressions(
+            modified.get(_GAMEDATA) or decompress(read(_GAMEDATA), dictionaries_), plan['souls']['edits'])
+    # Dungeon-specific keys (key rings, boss keys found outside their dungeon).
+    from ootrr_full.patching.key_adapter import (build_key_files, check_dungeon_data, check_got_flags, is_key_actor,
+                                               key_records)
+    from ootrr_full.game.item_forms import canonical_of
+    def _reward(placement):   # repeatable pickups keep their reward actor apart
+        actor = placement.get('reward_actor', placement['after'])
+        return canonical_of(actor) if is_derived(actor) else actor
+
+    key_items = {p['item'] for p in plan['placements'] if is_key_actor(_reward(p))}
+    # Received from other worlds too: the mailbox hands over the same actors.
+    from ootrr_full.patching.ap_mailbox import key_items as _mailbox_key_items
+    key_items = sorted(key_items | set(_mailbox_key_items(ap_records(settings))))
+    plan['key_items'] = key_records(key_items)
+    if plan['key_items']:
+        report("Building dungeon-specific items (key rings, boss keys, maps, compasses)…")
+        messages = sorted(m for m in members if m.startswith('Mals/') and '.Product.110.' in m)
+
+        def key_read(path):
+            return modified[path] if path in modified else decompress(read(path), dictionaries_)
+
+        from ootrr_full.patching.soul_adapter import GAMEDATA as _GAMEDATA
+        check_dungeon_data(key_read(_GAMEDATA), plan['key_items'])
+        key_modified, key_new = build_key_files(key_read, plan['key_items'], messages)
+        check_got_flags(key_modified[_GAMEDATA], plan['key_items'])
+        modified.update(key_modified)
+        new.update(key_new)
+    if settings.archipelago is not None:
+        from ootrr_full.archipelago.bridge import foreign_items
+        from ootrr_full.patching.ap_item import build_ap_files
+        placed = {p['item'] for p in plan['placements']}
+        ap_items = {item: label for item, label in foreign_items(settings.archipelago).items() if item in placed}
+        if ap_items:
+            report(f'Building {len(ap_items)} Archipelago items (medallion with the logo, names)…')
+            messages = sorted(m for m in members if m.startswith('Mals/') and '.Product.110.' in m)
+
+            def ap_read(path):
+                return modified[path] if path in modified else decompress(read(path), dictionaries_)
+
+            ap_modified, ap_new = build_ap_files(ap_read, ap_items, messages)
+            modified.update(ap_modified)
+            new.update(ap_new)
+    tokens = sorted(set(plan['progressive']['tokens'].values()) | {n['token'] for n in natives})
+    plan['progressive']['actors'] = tokens
+    if tokens:
+        report(f'Building {len(tokens)} progressive items (next level once found)…')
+        from ootrr_full.patching.progressive import build_token_files
+        messages = sorted(m for m in members if m.startswith('Mals/') and '.Product.110.' in m)
+
+        def token_read(path):
+            return modified[path] if path in modified else decompress(read(path), dictionaries_)
+
+        token_modified, token_new = build_token_files(token_read, tokens, messages)
+        modified.update(token_modified)
+        new.update(token_new)
+    for resource, edits in sorted(event_changes.items()):
+        report('Event: ' + resource.split('/')[-1])
+        modified[resource] = patch_event_params(decompress(read(resource), dictionaries_), edits)
+    from ootrr_full.patching.native_extras import apply as apply_native_extras
+    plan['native_extra_ops'] = apply_native_extras(plan, modified,
+                                                  lambda path: decompress(read(path), dictionaries_))
+    # Fire Arrows shuffled: the sun-shot cutscene binds the pickup now in their place.
+    from ootrr_full.patching import fire_arrows
+    fire_actor = fire_arrows.placed_actor(plan['placements'])
+    if fire_actor:
+        flow = fire_arrows.CUTSCENE_FLOW
+        raw = modified.get(flow)
+        modified[flow] = fire_arrows.retarget_cutscene(
+            raw if raw is not None else decompress(read(flow), dictionaries_), fire_actor)
+        plan['fire_arrow_cutscene'] = {'flow': flow, 'actor': fire_actor}
+    from ootrr_full.patching.qol_patches import SARIA_GIFT_FLOW, saria_add_before_display
+    if SARIA_GIFT_FLOW in event_changes:
+        # Saria's gift is in the pouch before its get window (and ActionGuide) runs.
+        modified[SARIA_GIFT_FLOW], _ = saria_add_before_display(modified[SARIA_GIFT_FLOW])
+    from ootrr_full.patching.event_patch import add_collection_markers
+    from ootrr_full.game.tracking_metadata import GAMEDATA, add_saved_flags
+    markers, saved_flags = defaultdict(dict), {}
+    shuffled_ids = {p['id'] for p in plan['placements']}
+    for gid, entry in sorted(plan['matches'].items()):
+        event_variants = [v for v in entry['variants'] if 'event' in v]
+        if not event_variants:
+            continue
+        if entry.get('source') == 'song' and gid not in shuffled_ids:
+            continue   # vanilla songs: no collection marker (their cutscene only loses its minigame)
+        if entry.get('native_flag'):
+            # Business scrubs save their own flag once the purchase succeeded
+            # (a marker after the sub-flow would also fire on "No").
+            entry['tracking_flag'] = entry['native_flag']
+            continue
+        flag = 'RandoCheck.' + settings_identity(settings)[:16] + '.' + gid
+        entry['tracking_flag'] = flag
+        saved_flags[flag] = False
+        for variant in event_variants:
+            old = markers[variant['resource']].get(variant['event'])
+            if old and old != flag:
+                raise ValueError('Two checks share the same collection event.')
+            markers[variant['resource']][variant['event']] = flag
+    plan['collection_markers'] = {}
+    for resource, events in sorted(markers.items()):
+        raw = modified.get(resource)
+        if raw is None:
+            raw = decompress(read(resource), dictionaries_)
+        modified[resource], plan['collection_markers'][resource] = add_collection_markers(raw, events)
+    # Songs: text-only gets, song cutscenes without their melody teaching, windmill
+    # trigger on the check's own flag (patching/song_adapter.py).
+    from ootrr_full.game.extra_sources import event_paths
+    from ootrr_full.patching.song_adapter import patch_flow as patch_song_flow, plan_song_flows, site_kind
+    song_inputs = [{'source': p['source'], 'ap': p['ap_locations'], 'before': p['before'], 'after': p['after'],
+                    'variants': [{'resource': x['resource'], 'event': x['event']} for x in p['patches']
+                                 if 'event' in x and 'after' not in x]}
+                   for p in plan['placements'] if p['form'] == 'event']
+    song_flags = {e['ap'][0]: e['tracking_flag'] for e in plan['matches'].values()
+                  if e.get('source') == 'song' and e.get('tracking_flag') and e['ap']}
+    plan['song_flows'] = plan_song_flows(song_inputs, song_flags, settings.full.get('shuffle_song_items'),
+                                         lambda stem: event_paths(members, stem),
+                                         lambda resource, event: site_kind(decompress(read(resource), dictionaries_),
+                                                                           event))
+    for resource, ops in plan['song_flows'].items():
+        raw = modified.get(resource)
+        if raw is None:
+            raw = decompress(read(resource), dictionaries_)
+        modified[resource] = patch_song_flow(raw, ops)
+    if any(ops.get('teaching') for ops in plan['song_flows'].values()):
+        # Link's own tune without the melody being added (song_adapter.add_teaching_entries).
+        from ootrr_full.patching.song_adapter import TEACHING_FLOW_PATH, add_teaching_entries
+        if TEACHING_FLOW_PATH in modified:
+            raise ValueError('Ocarina teaching flow already modified.')
+        modified[TEACHING_FLOW_PATH] = add_teaching_entries(decompress(read(TEACHING_FLOW_PATH), dictionaries_))
+    # Cutscene gifts: the shuffled item is given (and shown in Link's hands) once back
+    # in game, after the cutscene (pilot flows only).
+    from ootrr_full.patching.qol_patches import GIFT_AFTER_CUTSCENE, GIFT_GET_EVENT, bypass_cutscene_gift, give_gift_after
+    plan['gift_get'] = {}
+    for resource, spec in sorted(GIFT_AFTER_CUTSCENE.items()):
+        if resource not in event_changes:
+            continue
+        modified[resource], bypass = bypass_cutscene_gift(modified[resource], spec['event'])
+        target = spec['flow']
+        raw = modified.get(target)
+        if raw is None:
+            raw = decompress(read(target), dictionaries_)
+        modified[target], given = give_gift_after(raw, spec['after'], bypass['actor'], bypass['flag'])
+        _relocate_gift_marker(plan['collection_markers'], resource, spec['event'],
+                              target, GIFT_GET_EVENT, bypass['flag'])
+        plan['gift_get'][resource] = {'event': spec['event'], 'actor': bypass['actor'], 'flag': bypass['flag'],
+                                      'flow': target, 'after': spec['after'], 'call': given['call']}
+    # Token gifts whose flow never reaches an item get convert their token themselves.
+    from ootrr_full.patching.event_info import flow_name, flow_path
+    from ootrr_full.patching.progressive import add_converter_calls, hook_sites
+
+    def current_flow(name):
+        path = flow_path(name)
+        if path in modified:
+            return modified[path]
+        return decompress(read(path), dictionaries_) if path in members else None
+
+    holders = [p for p in plan['placements'] if p['id'] in plan['progressive']['tokens']] + natives
+    token_sources = [[(patch['resource'], patch['event']) for patch in placement['patches'] if 'event' in patch]
+                     for placement in holders]
+    plan['progressive']['hooks'] = hook_sites(token_sources, current_flow, covered=plan['gift_get'])
+    for resource, events in sorted(plan['progressive']['hooks'].items()):
+        modified[resource] = add_converter_calls(current_flow(flow_name(resource)), events, flow_name(resource))
+    if saved_flags:
+        raw = modified.get(GAMEDATA)
+        if raw is None:
+            raw = decompress(read(GAMEDATA), dictionaries_)
+        modified[GAMEDATA] = add_saved_flags(raw, saved_flags)
+    # Shuffled shelves are sold once by the shop itself: the slot stays selectable.
+    from ootrr_full.patching.repeatable_adapter import limit_shop_stock, shop_stock_edits
+    for seller, slots in sorted(shop_stock_edits(repeatables, maps).items()):
+        path = 'Pack/Actor/' + seller + '.pack.zs'
+        if path in modified or path in new:
+            raise ValueError('Shopkeeper pack already modified: ' + seller)
+        modified[path], _ = limit_shop_stock(decompress(read(path), dictionaries_), slots)
+    # Songs in chests or as pickups: drawn as Sheik's harp in their colour (patching/song_models.py).
+    from ootrr_full.patching import song_models
+    harp_songs = sorted({_reward(p) for p in plan['placements']
+                         if p['form'] in ('chest', 'world') and _reward(p) in song_models.SONG_COLOURS})
+    plan['song_models'] = {song: song_models.project_of(song) for song in harp_songs}
+    if harp_songs:
+        report(f'Building {len(harp_songs)} song harps (one colour per song)…')
+        harp_modified, harp_new = song_models.build_files(
+            lambda path: modified[path] if path in modified else decompress(read(path), dictionaries_), harp_songs)
+        modified.update(harp_modified)
+        new.update(harp_new)
+    derived = derived_actors(p['after'] for p in plan['placements'] + natives)
+    if derived or repeatables:
+        report(f'Building {len(derived)} derived actors (freestanding and shop items)…')
+        packs = {}
+
+        def read_pack(actor):
+            if actor not in packs:
+                path = 'Pack/Actor/' + actor + '.pack.zs'
+                if path in new:      # generated pack (soul): derive world/shop forms from it
+                    packs[actor] = sarc(new[path][0])
+                elif path in modified:   # song repointed to its harp
+                    packs[actor] = sarc(modified[path])
+                else:
+                    packs[actor] = sarc(decompress(read(path), dictionaries_)) if path in members else None
+            return packs[actor]
+
+        for actor in derived:
+            new['Pack/Actor/' + actor + '.pack.zs'] = build_pack(actor, read_pack, byml_codec)
+        documents = {name: byml_codec.load(modified[path] if path in modified
+                                           else decompress(read(path), dictionaries_))
+                     for name, path in RSDB_FILES.items()}
+        add_rsdb_rows({name: document['root'] for name, document in documents.items()}, derived)
+        tables = {name: document['root'] for name, document in documents.items()}
+
+        def repeat_read_raw(path):
+            return modified[path] if path in modified else decompress(read(path), dictionaries_)
+
+        new.update(build_repeatable_packs(repeatables, read_pack, repeat_read_raw, tables, progress=report))
+        from ootrr_full.patching.source_textures import build_files as build_source_texture_files
+        report('Building unchecked source textures…')
+        new.update(build_source_texture_files(repeatables, maps, raw_maps, read_pack, repeat_read_raw, tables))
+        for name, path in RSDB_FILES.items():
+            modified[path] = byml_codec.dump(documents[name])
+    if repeatables:
+        raw = modified.get(GAMEDATA)
+        if raw is None:
+            raw = decompress(read(GAMEDATA), dictionaries_)
+        modified[GAMEDATA], plan['repeatable_flags'] = register_repeatable_flags(raw, repeatables)
+    from ootrr_full.patching import special_item_shuffle
+    plan['master_sword_flows'] = {}
+    for path in special_item_shuffle.flow_paths(settings.full, members):
+        raw = modified.get(path)
+        if raw is None:
+            raw = decompress(read(path), dictionaries_)
+        modified[path], details = special_item_shuffle.patch_flow(path, raw)
+        plan['master_sword_flows'][path] = details
+    plan['derived_actors'] = derived + sorted(repeatable_actors)
+    plan['logic_world_version'] = data.version
+    plan['logic_world_sha256'] = data.fingerprint()
+    return plan, modified, new

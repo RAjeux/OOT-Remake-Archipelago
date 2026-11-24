@@ -31,6 +31,7 @@ AMMO_BAGS = {
 AMMO_BAGS.update({"Shop_BombBundle_0" + str(index): AMMO_BAGS["Item_Bomb"] for index in range(1, 5)})
 AMMO_BAGS.update({"Shop_ArrowBundle_0" + str(index): AMMO_BAGS["Item_Arrow_Normal"] for index in range(1, 4)})
 AMMO_BAGS.update({"Shop_DekuSeedBundle_0" + str(index): AMMO_BAGS["Item_DekuSeed"] for index in range(1, 3)})
+AMMO_BAGS["TBox_ArrowBundle_Small"] = AMMO_BAGS["Item_Arrow_Normal"]
 # Private preview marker, deliberately not a native pouch actor. Missing ammo
 # equipment consumes the AP transaction without an item, rupee or presentation.
 NO_AMMO_BAG = "OOTRR_APNoAmmo"
@@ -43,6 +44,10 @@ def is_cure(metadata):
 
 def receipt_style(metadata, native_info):
     """Use the game's item metadata to choose ordinary, short or major get."""
+    # Ocarinas are Link's accessory, not a held get-item model. Songs have no
+    # held model either. Use the native text hand-over used by Saria.
+    if metadata.get("display_only"):
+        return "text"
     if native_info is None:
         return "large"
     actor = metadata["actor"]
@@ -71,6 +76,20 @@ def append_recipe(editor, metadata, stem, grant_entry, commit, *, pickup=False):
     from evfl.common import Argument
     from oot_rando.patching.progressive import link
     from .receipt_events import DUNGEONS
+
+    capacity = metadata.get("ensure_capacity")
+    if capacity:
+        # A weapon's first real grant initializes its native bag. Full seeds
+        # never need to give bags (and filled ammunition) before that weapon.
+        add = editor.action(stem + "_Capacity", "PouchSystemActor", "EventTriggerAddOrRemovePouchContent",
+                            {"Actor": capacity[0], "Num": 1, "IsEquipDIrect": False,
+                             "IsSetMessageTargetActorName": False, "IsGetEvent": False})
+        link(add, commit)
+        ready = add
+        for index, actor in enumerate(capacity):
+            ready = editor.switch(stem + "_CapacityHeld" + str(index), "GameDataActor", "EventQueryCheckIsGet",
+                                  {"ActorName": actor}, commit, ready)
+        commit = ready
 
     def integer(label, key, after):
         node = editor.action(stem + label, "GameDataActor", "EventTriggerAddOrSubGameDataInt",
@@ -113,6 +132,24 @@ def append_recipe(editor, metadata, stem, grant_entry, commit, *, pickup=False):
                              {"Item": BOTTLE_ITEMS[metadata["bottle_item"]], "IsSetMessageTargetActorName": False,
                               "IsPushToSelectedBottle": False, "BigPoeFenceId": 0})
         link(node, commit)
+        return node
+    if metadata.get("grant_amount"):
+        node = editor.action(stem + "_Quantity", "PouchSystemActor", "EventTriggerAddOrRemovePouchContent",
+                             {"Num": metadata["grant_amount"], "Actor": metadata["grant_actor"],
+                              "IsEquipDIrect": False, "IsSetMessageTargetActorName": False, "IsGetEvent": False})
+        link(node, commit)
+        return node
+    if capacity:
+        # Full-network weapons initialize their bag in this same transaction.
+        # The generic silent grant used by old receipts owns an acknowledgement
+        # internally, so it cannot be followed by a capacity change safely.
+        # Apply its native pouch action directly, settle queued IsGet writes,
+        # then check all bag tiers before committing the AP acknowledgement.
+        from .ap_skulls import _after_writes
+        node = editor.action(stem + "_Weapon", "PouchSystemActor", "EventTriggerAddOrRemovePouchContent",
+                             {"Num": 1, "Actor": Argument("ActorName"), "IsEquipDIrect": False,
+                              "IsSetMessageTargetActorName": False, "IsGetEvent": False})
+        link(node, _after_writes(editor, stem + "_WeaponReady", commit))
         return node
     return editor.subflow(stem + "_Give", "", grant_entry,
                           {"ActorName": Argument("ActorName"), "IsGetInEvent": not pickup,
@@ -209,7 +246,7 @@ def append_tier_choice(editor, metadata, stem, present, *, no_ammo=None):
     received index. Neither path creates missing bags or a substitute reward.
     """
     from .receipt_events import OWNERS
-    bags = AMMO_BAGS.get(metadata["actor"])
+    bags = AMMO_BAGS.get(metadata.get("grant_actor", metadata["actor"]))
     if bags:
         give = present(stem + "_Ammo", metadata["actor"])
         root = no_ammo

@@ -116,7 +116,7 @@ def _native_source(editor):
     point.main_event = make_index(node)
 
 
-def build_restoration_flow(raw, roster):
+def build_restoration_flow(raw, roster, *, records=None, item_data=None):
     """Append quiet, location-bound restoration entries; never advance AP history."""
     from evfl.common import Argument
     from evfl.entry_point import EntryPoint
@@ -127,7 +127,8 @@ def build_restoration_flow(raw, roster):
     from .native_presentations import append_recipe, append_tier_choice, copy_entry
     from .receipt_events import _action, _silent_grant
 
-    records = restoration_records(roster)
+    records = restoration_records(roster) if records is None else records
+    recipes = ITEM_DATA if item_data is None else item_data
     if not records:
         return raw, {}
     editor = FlowEditor(raw, FLOW_PATH)
@@ -158,34 +159,47 @@ def build_restoration_flow(raw, roster):
         if trade_mode:
             from .trade_state import append_reconcile
             commit = append_reconcile(editor, stem + "_TradeSettle", save)
-        # Sold-out counters are location state, not a second purchase/payment.
-        for index, counter in reversed(list(enumerate(record["counters"]))):
-            sold = editor.action(stem + "_Sold" + str(index), "GameDataActor", "EventTriggerSetGameDataInt",
-                                 {"GameDataName": counter, "Index": -1, "Value": 1})
-            link(sold, commit)
-            commit = sold
-        for index, flag in reversed(list(enumerate(record["flags"]))):
-            opened = editor.action(stem + "_Flag" + str(index), "GameDataActor", "EventTriggerSetGameDataBool",
-                                   {"GameDataName": flag, "Index": -1, "Value": True})
-            link(opened, commit)
-            commit = opened
-        if record["wake_talon"]:
-            from .trade_catalog import TALON_AWAKE
-            awake = editor.action(stem + "_Talon", "GameDataActor", "EventTriggerSetGameDataBool",
-                                  {"GameDataName": TALON_AWAKE, "Index": -1, "Value": True})
-            link(awake, commit)
-            commit = awake
+        if record.get("full_network"):
+            from .full_extra_recovery import append_reconcile
+            commit = append_reconcile(editor, record, commit)
+        def commit_flags(prefix, after):
+            # Sold-out counters are state, not another purchase/payment.
+            for index, counter in reversed(list(enumerate(record["counters"]))):
+                sold = editor.action(prefix + "_Sold" + str(index), "GameDataActor", "EventTriggerSetGameDataInt",
+                                     {"GameDataName": counter, "Index": -1, "Value": 1})
+                link(sold, after)
+                after = sold
+            for index, flag in reversed(list(enumerate(record["flags"]))):
+                opened = editor.action(prefix + "_Flag" + str(index), "GameDataActor", "EventTriggerSetGameDataBool",
+                                       {"GameDataName": flag, "Index": -1, "Value": True})
+                link(opened, after)
+                after = opened
+            if record["wake_talon"]:
+                from .trade_catalog import TALON_AWAKE
+                awake = editor.action(prefix + "_Talon", "GameDataActor", "EventTriggerSetGameDataBool",
+                                      {"GameDataName": TALON_AWAKE, "Index": -1, "Value": True})
+                link(awake, after)
+                after = awake
+            return after
+
+        reward_commit = commit
+        if record.get("progressive_token"):
+            from .full_extra_recovery import append_progressive_reconcile
+            reward_commit = commit_flags(stem + "_Restored", append_progressive_reconcile(editor, record, commit))
+        commit = commit_flags(stem, commit)
+        if not record.get("progressive_token"):
+            reward_commit = commit
 
         reward = commit
         if record["local"]:
-            metadata = ITEM_DATA[record["item"]]
+            metadata = recipes[record["item"]]
             core_name = stem + "_Pouch"
-            recipe = append_recipe(editor, metadata, core_name, grant_entry, commit, pickup=True)
+            recipe = append_recipe(editor, metadata, core_name, grant_entry, reward_commit, pickup=True)
             if isinstance(recipe.data, SubFlowEvent) and recipe.data.entry_point_name == grant_entry:
                 recipe.data.params.data["IsShowNumDisplay"] = False
                 recipe.data.params.data["IsTreasureBox"] = False
                 editor.expected[recipe.name] = dict(recipe.data.params.data)
-                link(recipe, commit)
+                link(recipe, reward_commit)
             core = EntryPoint(core_name)
             core.main_event = make_index(recipe)
             chart.entry_points.append(core)
@@ -193,7 +207,7 @@ def build_restoration_flow(raw, roster):
             def give(branch, actor):
                 return editor.subflow(branch + "_Give", "", core_name, {"ActorName": actor})
 
-            reward = append_tier_choice(editor, metadata, stem, give, no_ammo=commit)
+            reward = append_tier_choice(editor, metadata, stem, give, no_ammo=reward_commit)
             if metadata.get("bottle_item") and metadata.get("pouch_special") == "NotPushToPouch":
                 deferred = status(stem + "_Deferred", -record["id"])
                 reward = editor.switch(stem + "_Bottle", "PouchSystemActor", "EventQueryIsAnyBottleEmpty",
@@ -251,10 +265,11 @@ def _register_restorations(modified, entries, read):
     analyzed_rows = {row["__RowId"]: row for row in analyzed["root"]}
 
     @lru_cache(None)
-    def current(name):
+    def current_raw(name):
         path = event_info.flow_path(name)
         return modified[path] if path in modified else read(path)
 
+    current = event_info._cached_charts(current_raw)
     memo = {}
     for entry in entries.values():
         if entry in setting_ids or entry in analyzed_ids:
@@ -299,7 +314,7 @@ def _register_restorations(modified, entries, read):
         modified[path] = byml_codec.dump(document)
 
 
-def prepared_locations(mod, expected):
+def prepared_locations(mod, expected, *, location_ids=None):
     """Return opt-in IDs only when their flow, registration and result field exist."""
     from oot_rando.formats import byml_codec
     from oot_rando.patching import chest_flags
@@ -310,7 +325,8 @@ def prepared_locations(mod, expected):
         return []
     try:
         proof = json.loads(marker.read_bytes())
-        ids = sorted(LOCATION_IDS[name] for name in expected)
+        identifiers = LOCATION_IDS if location_ids is None else location_ids
+        ids = sorted(identifiers[name] for name in expected)
         wanted = {event_name(location) for location in ids}
         if (proof != {"version": 1, "locations": ids, "events": sorted(wanted)}
                 or not all(type(location) is int for location in ids)):
@@ -337,14 +353,14 @@ def prepared_locations(mod, expected):
         raise _invalid() from None
 
 
-def prepare_restoration(romfs, mod, roster):
+def prepare_restoration(romfs, mod, roster, *, records=None, item_data=None, location_ids=None):
     """Add the status field and registered AP recovery routes inside staging."""
     from oot_rando.game.resource_allocations import grow_resources
     from oot_rando.patching.soul_adapter import murmur3
     romfs, mod = Path(romfs), Path(mod)
     if mod.name != "romfs" or mod.parent.name != "Archipelago":
         raise _invalid()
-    records = restoration_records(roster)
+    records = restoration_records(roster) if records is None else records
     if not records:
         return {"locations": [], "changed": False}
 
@@ -356,7 +372,7 @@ def prepare_restoration(romfs, mod, roster):
     def read(path):
         return codec.decode(source(path))
 
-    flow, entries = build_restoration_flow(read(FLOW_PATH), roster)
+    flow, entries = build_restoration_flow(read(FLOW_PATH), roster, records=records, item_data=item_data)
     data = read(GAME_DATA)
     if _status_field(data):
         raise _invalid()
@@ -380,6 +396,6 @@ def prepare_restoration(romfs, mod, roster):
     target = mod / MARKER
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(proof, separators=(",", ":")) + "\n", encoding="utf-8")
-    if prepared_locations(mod, roster) != sorted(entries):
+    if prepared_locations(mod, roster, location_ids=location_ids) != sorted(entries):
         raise _invalid()
     return {"locations": sorted(entries), "changed": True, "allocations": allocations}

@@ -17,13 +17,25 @@ def run(*args):
 
 run("tools/build.py")
 run("tests/test_release.py")
+run("tests/test_build_files.py")
 run("tests/test_builder.py")
 run("tests/test_app_runtime.py")
 run("tests/test_engine_paths.py")
 run("tests/test_app_packaging.py")
 run("tests/test_app_window.py")
+for check in ("test_settings_editor", "test_room_library", "test_tracker_service",
+              "test_settings_tracker_windows", "test_chat_control", "test_chat_window",
+              "test_external_window", "test_full_worker"):
+    run(f"tests/{check}.py")
 run("tests/test_install_service.py")
 run("tests/test_hookshot_setup.py")
+for check in ("test_full_ap", "test_full_adult_start", "test_full_resources", "test_full_extra_recovery",
+              "test_full_cows", "test_full_directory_source", "test_full_native_sources", "test_full_events",
+              "test_full_progressive_recovery", "test_upgrade_recovery",
+              "test_full_weapon_capacity", "test_full_ammunition", "test_full_minor_pickups", "test_repeatable_cache",
+              "test_update_service", "test_upgrade_runtime", "test_upgrade_readiness",
+              "test_external_setup"):
+    run(f"tests/{check}.py")
 run("tools/check_catalog.py")
 run("tests/test_shop_catalog.py")
 run("tests/test_shop_pool.py")

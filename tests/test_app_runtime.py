@@ -137,7 +137,8 @@ class AppRuntimeTests(unittest.TestCase):
             self.assertEqual(installed.read_bytes(), (bundle / 'ootrr_remake.apworld').read_bytes())
             backup, = (base / 'backups/apworld').glob('*.apworld')
             self.assertEqual(backup.read_bytes(), b'previous-world')
-            with patch.object(runtime, 'resource_root', return_value=root / 'closed-app'):
+            with patch.object(runtime, 'resource_root', return_value=root / 'closed-app'), \
+                 patch.dict(os.environ, {'OOTRR_NODE': ''}):
                 persistent = Path(runtime.bundled_node(base=base))
                 self.assertEqual(persistent.read_bytes(), b'node-runtime')
                 self.assertEqual((persistent.parent / 'LICENSE').read_bytes(), b'node-license')

@@ -69,6 +69,35 @@ def decode(raw):
     return flow
 
 
+class LargeDispatcherTests(unittest.TestCase):
+    def test_thousands_of_switches_preserve_subflow_order_without_python_recursion(self):
+        for kind in (SwitchEvent, SubFlowSwitchEvent):
+            with self.subTest(kind=kind.__name__):
+                flow = switch_flow(kind)
+                chart = flow.flowchart
+                first, reward = chart.events
+                branches = [first]
+                for index in range(1, 2500):
+                    branch = Event()
+                    branch.name, branch.data = 'Branch' + str(index), kind()
+                    if kind is SwitchEvent:
+                        branch.data.actor = make_rindex(chart.actors[0])
+                        branch.data.actor_query = make_rindex(chart.actors[0].queries[0])
+                    else:
+                        branch.data.res_flowchart_name = 'External'
+                        branch.data.entry_point_name = 'Choose'
+                    branches.append(branch)
+                for index, branch in enumerate(branches):
+                    branch.data.cases = {0: make_index(reward),
+                                         1: make_index(branches[index + 1] if index + 1 < len(branches) else None)}
+                chart.events = [*branches, reward]
+                raw = encode(flow)
+                restored = decode(raw)
+                expected = [2500] if kind is SwitchEvent else [0, 2500, *range(1, 2500)]
+                self.assertEqual(restored.flowchart.entry_points[0]._sub_flow_event_indices, expected)
+                self.assertEqual(encode(restored), raw)
+
+
 class TerminalSwitchTests(unittest.TestCase):
     def test_read_write_keeps_terminal_and_other_case(self):
         for kind in (SwitchEvent, SubFlowSwitchEvent):

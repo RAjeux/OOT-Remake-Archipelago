@@ -243,6 +243,7 @@ def discover(base=None, host=None):
                 room=session.get("Room", ""), slot=session.get("Slot", ""), token=session.get("Token", ""),
                 language=detect_language(profile or base, dict(cfg, exe=str(game / _executable_name(host)), romfs=str(romfs))),
                 ready=ready, build_required=not ready,
+                prepared_source=cfg.get("prepared_source", ""), tracker_source=cfg.get("tracker_source", ""),
                 diagnostic_log=str(base / "setup-diagnostic.log"))
 
 
@@ -259,7 +260,8 @@ def inspect_manifest(path):
 async def fetch_roster(data, server, password, cancel=None, timeout=45):
     """Authenticate and scout without checking locations or consuming items."""
     from websockets.legacy.client import connect
-    room = RoomView(data["player"])
+    identifiers = data.get("location_ids", LOCATION_IDS) if data.get("generation_mode") == "full_network" else LOCATION_IDS
+    room = RoomView(data["player"], item_ids=data.get("item_ids"), location_ids=identifiers)
     scouts = {}
     stable_names = {}
     authenticated = False
@@ -281,7 +283,7 @@ async def fetch_roster(data, server, password, cancel=None, timeout=45):
                             raise InstallError(tr("This server is hosting a different room. Check the server address and player file."))
                         await send(dict(cmd="Connect", name=data["slot"], game=data.get("game", LEGACY_GAME),
                                         uuid=str(uuid.uuid4()), password=password or None,
-                                        items_handling=5 if data.get("local_items") else 7,
+                                        items_handling=1 if data.get("generation_mode") == "full_network" else (5 if data.get("local_items") else 7),
                                         tags=["AP"], slot_data=True,
                                         version=dict(major=0, minor=6, build=7, **{"class": "Version"})))
                     elif command == "ConnectionRefused":
@@ -293,7 +295,7 @@ async def fetch_roster(data, server, password, cancel=None, timeout=45):
                         raise InstallError(tr("The server refused this player. Check the player file and room settings."))
                     elif command == "Connected":
                         slot_data = message.get("slot_data") or {}
-                        expected = {LOCATION_IDS[name] for name in data["checks"]}
+                        expected = {identifiers[name] for name in data["checks"]}
                         if (slot_data.get("protocol") != PROTOCOL or slot_data.get("token") != data["token"]
                                 or message.get("slot") != data["player"] or set(slot_data.get("checks", [])) != expected):
                             raise InstallError(tr("The player file and server slot belong to different generations."))
@@ -310,7 +312,7 @@ async def fetch_roster(data, server, password, cancel=None, timeout=45):
                             item, location, owner = ((record["item"], record["location"], record["player"])
                                                      if isinstance(record, dict) else record[:3])
                             scouts[location] = (item, owner)
-                expected = {LOCATION_IDS[name]: name for name in data["checks"]}
+                expected = {identifiers[name]: name for name in data["checks"]}
                 if not authenticated or room.waiting or not expected.keys() <= scouts.keys():
                     continue
                 roster = {}
@@ -498,6 +500,7 @@ def _install(request, progress, cancel, base, diagnostic):
     manifest = Path(request.get("manifest", "")).expanduser().resolve()
     inspect_manifest(manifest)
     data = player.read_manifest(manifest)
+    full_network = data.get("generation_mode") == "full_network"
     host = _host(request.get("host"))
     adapter = _adapter(host)
     try:
@@ -550,17 +553,19 @@ def _install(request, progress, cancel, base, diagnostic):
         _emit(progress, 10, tr("Preparing the required tools..."))
         builder_base = Path(request["app_base"])
         pinned_builder = builder_base / "tools/OOTRR-0.8.1-windows-x64-portable/ootrr.exe"
-        if request.get("builder") and Path(request["builder"]).expanduser().resolve() != pinned_builder:
+        if full_network:
+            builder = None
+        elif request.get("builder") and Path(request["builder"]).expanduser().resolve() != pinned_builder:
             builder = Path(request["builder"]).expanduser().resolve()
             from .builder import validate_builder
             validate_builder(builder)
         else:
             builder = Path(ensure_builder(builder_base, progress=lambda message: _emit(progress, 12, message), cancel=cancel))
         node = request.get("node") or bundled_node()
-        if not node:
+        if not node and not full_network:
             raise InstallError(tr("The bundled randomizer runtime is missing. Download the complete application again."))
         _cancelled(cancel)
-        runtime = dict(romfs=str(romfs), ootrr=str(builder), native=True, baseline=baseline, host="nx2navi",
+        runtime = dict(romfs=str(romfs), ootrr=str(builder or ""), native=True, baseline=baseline, host="nx2navi",
                        install_only=True, exe=str(game / _executable_name(host)), server=server,
                        protected=native_setup.protect_password(request.get("password", "")),
                        reward_mode=data.get("reward_mode", "legacy_gear"), local_items=bool(data.get("local_items")),
@@ -568,16 +573,21 @@ def _install(request, progress, cancel, base, diagnostic):
                        shop_check_mode=data.get("shop_check_mode"), shop_checks=list(data.get("shop_checks", ())),
                        foreign_only_shops=bool(data.get("foreign_only_shops")), shuffle_skulltulas=data.get("shuffle_skulltulas", "off"),
                        adult_trade_shuffle=bool(data.get("adult_trade_shuffle")),
-                       shop_prices={name: row["price"] for name, row in data["seed_file"].get("shops", {}).items() if name in SHOP_CHECKS})
+                       shop_prices={name: row["price"] for name, row in data.get("seed_file", {}).get("shops", {}).items() if name in SHOP_CHECKS})
         runtime["host"] = host
+        if full_network:
+            runtime.update(generation_process=True, _progress=progress, _cancel=cancel)
         assets = install_mod.build_cache(base, data["token"], host, {}, romfs) / native_setup.runtime_cache_name(baseline)
+        if full_network:
+            from .full_mod import code_fingerprint
+            assets = assets / ("full-" + code_fingerprint())
         runtime.update(assets=assets, other_tables={})
         with diagnostic.open("w", encoding="utf-8") as log, redirect_stdout(log), redirect_stderr(log), _node_environment(node):
             _emit(progress, 18, tr("Preparing your randomized game..."))
             player.build(assets, runtime, data)
             _cancelled(cancel)
             _emit(progress, 45, tr("Preparing item models and native rewards..."))
-            source = player.prepare(assets, player.preparation_settings(runtime, data), roster, data["moved"])
+            source = player.prepare(assets, player.preparation_settings(runtime, data), roster, data.get("moved", {}))
             _cancelled(cancel)
             if _running_game(game, tools, host):
                 raise InstallError(tr("Close Zelda and its setup application before installing."))
@@ -586,6 +596,7 @@ def _install(request, progress, cancel, base, diagnostic):
             mutable = [base / name for name in ("outils.json", "last-profile.json", "derniere-salle-native.json")]
             mutable.append(Path(request["app_base"]) / "desktop-host.json")
             mutable.append(profile / "native-session.json")
+            mutable.append(profile / "player.apootrr")
             if host == "nx2navi":
                 mutable += [tools / "host" / name for name in (*native_setup.RT_FILES, "hos_main.c")]
                 mutable += [tools / "gpu/vk" / name for name in (*native_setup.MENU_FILES, "vk_menu.cpp")]
@@ -600,6 +611,7 @@ def _install(request, progress, cancel, base, diagnostic):
                 session = _json(profile / "native-session.json", {})
                 session["AutoConnect"] = automatic
                 write_json(profile / "native-session.json", session)
+                write_json(profile / "player.apootrr", data)
                 seed = mods / "My Seed"
                 if seed.is_dir() and ((seed / "romfs" / install_mod.REST).is_file() or (seed / "romfs/UI/Layout2Archive").is_dir()):
                     if seed.is_symlink() or (hasattr(seed, "is_junction") and seed.is_junction()):
@@ -627,7 +639,8 @@ def _install(request, progress, cancel, base, diagnostic):
                     if not compatible:
                         raise InstallError(tr("The rebuilt game does not match the installed Archipelago module."))
                 cfg.update(host=host, game=str(game), exe=str(game / _executable_name(host)), romfs=str(romfs),
-                           ootrr=str(builder), native_tools=str(tools), manifest=str(manifest))
+                           ootrr=str(builder or ""), native_tools=str(tools), manifest=str(profile / "player.apootrr"),
+                           prepared_source=str(source), tracker_source=str(source / "Archipelago"))
                 cfg.setdefault("ports", {}).setdefault(host, {}).update(mods=str(mods), exe=str(game / _executable_name(host)),
                                                                        game=str(game), romfs=str(romfs), native_tools=str(tools))
                 write_json(base / "outils.json", cfg)
@@ -653,6 +666,7 @@ def _install(request, progress, cancel, base, diagnostic):
                   build_required=not compatible, backup=str(backup), diagnostic_log=str(diagnostic),
                   setup=str(tools.parent / ("HookshotSetup.exe" if host == "hookshot" else "TriforceSetup.exe")),
                   auto_connect=automatic)
+    result.update(manifest=str(profile / "player.apootrr"), prepared_source=str(source), tracker_source=str(source / "Archipelago"))
     _emit(progress, 100, tr("Ready to play.") if compatible else tr("The mod is installed. Finish building the selected game host before playing."))
     return result
 

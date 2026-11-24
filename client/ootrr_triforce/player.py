@@ -22,7 +22,7 @@ from .settings import yaml_options
 from .live import LiveInventory
 from .room_view import RoomView
 from .presentation import Presentation
-from .medallions import prepare
+from .medallions import prepare as prepare_legacy
 from . import install_mod
 from . import native_setup
 from .title_screen import write_title
@@ -59,6 +59,9 @@ def export_yaml():
 
 def read_manifest(path):
     data = json.loads(Path(path).read_text(encoding="utf-8"))
+    if data.get("generation_mode") == "full_network":
+        from .full_ap import validate_manifest
+        return validate_manifest(data)
     if data.get("game", LEGACY_GAME) not in (GAME, LEGACY_GAME):
         raise ValueError(tr('This file belongs to another Archipelago game.'))
     seed = data["seed_file"]
@@ -155,6 +158,9 @@ def patch_request(data):
 def preparation_settings(settings, data):
     """Bind text localization to the player's canonical seed, never UI defaults."""
     result = dict(settings)
+    if data.get("generation_mode") == "full_network":
+        result["_full_manifest"] = data
+        return result
     if "shop_check_mode" in data:
         result["shop_check_mode"] = data["shop_check_mode"]
         result["shop_checks"] = sorted(manifest_shop_checks(data))
@@ -180,6 +186,9 @@ def preparation_settings(settings, data):
 
 
 def build(root, settings, data):
+    if data.get("generation_mode") == "full_network":
+        from .full_mod import build as build_full
+        return build_full(root, settings, data)
     root.mkdir(parents=True,exist_ok=True)
     dest = root / "mods"
     if dest.is_dir() and (dest / "Archipelago" / "romfs").is_dir():
@@ -227,6 +236,13 @@ def build(root, settings, data):
         completed.mkdir()
         (stage/"Archipelago").rename(completed/"Archipelago")
         completed.rename(dest)
+
+
+def prepare(root, settings, roster, moved):
+    if settings.get("_full_manifest"):
+        from .full_mod import prepare as prepare_full
+        return prepare_full(root, settings, roster, settings["_full_manifest"])
+    return prepare_legacy(root, settings, roster, moved)
 
 
 def spawn_game(root, settings, live):

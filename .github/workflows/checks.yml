@@ -14,7 +14,9 @@ env:
 
 jobs:
   portable:
+    name: Windows generation, desktop UI and frozen runtime
     runs-on: windows-latest
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-python@v7.1.0
@@ -24,7 +26,27 @@ jobs:
         with:
           node-version: '22'
       - run: python -m pip install -r requirements-dev.txt
-      - run: python -X utf8 tools/test.py
+      - name: Fetch pinned Archipelago 0.6.8 option contracts
+        shell: python
+        run: |
+          import hashlib
+          from pathlib import Path
+          from urllib.request import urlopen
+          destination = Path('build/ap-primary')
+          destination.mkdir(parents=True, exist_ok=True)
+          expected = {
+              'Options.py': '12bd29c84c3c92a353ef252086ab80bd5cf66fc83dc3e371e4c687a0f052f101',
+              'Generate.py': 'ac70e743970314dfb68df421640d07620db2067f6e6338616ca297803d6e8ce7',
+          }
+          for name, digest in expected.items():
+              with urlopen('https://raw.githubusercontent.com/ArchipelagoMW/Archipelago/0.6.8/' + name, timeout=30) as response:
+                  raw = response.read(2 << 20)
+              assert hashlib.sha256(raw).hexdigest() == digest, name
+              (destination / name).write_bytes(raw)
+      - name: Test full AP, legacy compatibility, editor, profiles, tracker, chat and workers
+        env:
+          AP_SOURCE: build/ap-primary
+        run: python -X utf8 tools/test.py
       - run: python -X utf8 tools/verify_release.py
       - run: python -m pip install -r requirements-app.txt
       - run: python tools/build_app.py --output build/ci-application --work build/application-ci
@@ -45,10 +67,15 @@ jobs:
           $process = Start-Process -FilePath $application -ArgumentList @('--self-test', ('"{0}"' -f $result)) -Wait -PassThru -WindowStyle Hidden
           if ($process.ExitCode -ne 0) { exit $process.ExitCode }
           $report = Get-Content -LiteralPath $result -Raw | ConvertFrom-Json
-          if ($report.result -ne 'PASS' -or !$report.frozen -or !$report.persistent_node_engine) { exit 1 }
+          if ($report.result -ne 'PASS' -or !$report.frozen -or !$report.persistent_node_engine `
+              -or !$report.generation_process -or !$report.worker_codec -or !$report.worker_gil_heartbeat `
+              -or !$report.full_network_catalogue `
+              -or $report.game_started -or $report.server_connected) { exit 1 }
           Get-Content -LiteralPath $result
   native:
+    name: Native bridge and chat concurrency
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-go@v7.1.0

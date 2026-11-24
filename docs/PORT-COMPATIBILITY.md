@@ -1,6 +1,16 @@
 # Port compatibility
 
-The Windows x64 installer supports **Triforce** and an **experimental Hookshot 3.0.1 adapter**. Loading the RomFS mod on another host is a separate capability from connecting to Archipelago and applying received items.
+The Windows x64 application provides native setup for **Triforce** and an **experimental Hookshot 3.0.1 adapter**. Loading a RomFS mod is a separate capability from connecting to Archipelago and safely granting its items.
+
+## Current 0.11 external backend
+
+**Other ports and emulators…** provides a separate experimental setup/runtime for full-network rooms. It accepts a supported RomFS directory or NUP, dedicated mods folder, exact host/game executable, and optional ROM and save path. Profiles are separate from both native hosts. It never moves an original save, and opening a library profile does not automatically connect.
+
+The external window owns the AP runtime and must remain open while connected. Tracker and chat share that connection. The runtime verifies the seed and receipt-readiness markers before delivery; live inventory tracking can start before the first save when the process seed is verified. Windows and Linux process adapters exist in source, but the distributed desktop application is Windows x64. **External DeathLink is not implemented.**
+
+Automated resource, process-adapter and private real-server tests are separate evidence from gameplay on a particular emulator. No complete playthrough of the new full-network catalogue or universal port compatibility is claimed. The Fritchii and Hookshot observations below are historical tests of their stated revisions, not validation of every 0.11 source or new external receipt path. Native Triforce remains the established gameplay path.
+
+The private 0.11 external integration test uses the actual runtime and Archipelago 0.6.8 server with a generated 1,104-check Zelda room and a second game. It verifies offline receipts, server synchronization with no remote items, personal and foreign older-save recovery, exact ammunition amounts, and quiet acknowledgements for spent trade items. The game-side EVFL/GameData execution is modeled explicitly; no emulator or port gameplay session is implied by that result.
 
 ## Hookshot setup in 0.9.0
 
@@ -38,7 +48,7 @@ checks. The gameplay observations below belong to the earlier prototype, using
 the same network DLL and receipt bridge. They do not establish complete gameplay
 coverage for the new installer or its menu.
 
-## Tested hosts
+## Historical gameplay observations
 
 Local tests were performed on 21 November 2026 with game version 1.1.1. Each host used a separate test profile; existing game saves and host configurations were preserved.
 
@@ -46,7 +56,7 @@ Local tests were performed on 21 November 2026 with game version 1.1.1. Each hos
 | --- | --- | --- |
 | Triforce 0.6.0, Windows | Native title-screen connection, item delivery, reconnection, checks and DeathLink; see the main README for the gameplay coverage and remaining presentation issues. | Supported by the published installer. |
 | Hookshot 3.0.1, Windows | An experimental rebuilt host connects before the title screen. Real remote item delivery, saving, incoming DeathLink, and receiving an item sent while the game was closed were verified in a new game. | Experimental adapter in the 0.9.0 installer; prerequisites and validation scope above. |
-| Fritchii 5.8.4, Windows | The supplied NUP boots to the French title screen. The AP RomFS overlay loads through LayeredFS and displays the Archipelago title badge; both title-screen tests ran at 60 FPS. | RomFS loading verified. No emulator AP runtime is implemented or validated. |
+| Fritchii 5.8.4, Windows | The supplied NUP boots to the French title screen. The AP RomFS overlay loads through LayeredFS and displays the Archipelago title badge; both title-screen tests ran at 60 FPS. | RomFS loading verified on 21 November. The 0.11 external runtime has not had an emulator gameplay validation. |
 
 ## Earlier Hookshot gameplay prototype
 
@@ -78,10 +88,10 @@ Fritchii's NUP loader handles the standalone update container directly; conversi
 
 Only RomFS resources were copied for the overlay test. No Windows AP DLL, host include, existing save, or ExeFS patch was installed in the emulator. The observed AP title badge proves asset loading, not an AP connection or an inventory grant. The game's normal native texts remain localized by the game.
 
-A complete emulator backend must detect checks, request receipt events on the game thread, commit the saved received-item cursor, and integrate life/death state. Fritchii has a debugger interface, but a memory debugger alone is not a validated implementation of these transactions.
+The 0.11 external backend adds check observation and guarded receipt signaling, but the historical title-screen experiment did not test those transactions. Fritchii's debugger interface alone is not evidence that every received item or older-save recovery works in gameplay. Life/death integration remains absent from the external runtime.
 
-## Why the external save bridge is not a full fallback
+## Legacy save bridge limitations
 
-The legacy save bridge only supports a subset of equipment and currency. It does not implement the complete item catalogue, shop purchases, or DeathLink. Removing the `all_locations`/native-host guards would allow unsupported items to be consumed without their effects. Those guards remain in place.
+The old save-only bridge supports a subset of equipment and currency, not the complete catalogue, shop purchases or DeathLink. It remains separate from the guarded 0.11 full-network runtime. Removing its `all_locations`/native-host guards would consume unsupported items without their effects; those guards remain in place.
 
 The common AP backend has separate server/DLL tests for all 204 item IDs, the original 136 chest/shop location IDs, offline history, reconnection and bidirectional DeathLink. The later shop catalogue adds 56 location identities and resource/flow coverage; it does not add emulator support. These tests exercise the protocol and simulated host callbacks; they must not be presented as gameplay validation for an emulator or a newly adapted port. The 0.5.0 Gold Skulltula path has separate generation, resource and flow coverage and has not been tested in-game on these hosts.

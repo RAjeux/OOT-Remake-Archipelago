@@ -9,6 +9,7 @@ from .catalog import (AP_SKULL_CHECKS, CHESTS, FILLER, GAME, ITEM_DATA, ITEM_IDS
                       PINNED_SKULL_CHECKS, PROTOCOL, LOCATION_REWARD_MODE, SHOP_CHECKS, SKULL_CHECKS, TRADE_CHECKS)
 from .engine import run_engine
 from .options import OPTION_GROUPS, RemakeOptions, option_values
+from .full_ap import item_ids as full_item_ids, location_ids as full_location_ids
 from .settings import engine_settings
 from .shop_pool import SHOP_CHECK_MODE, shop_checks
 from .master_sword import (SETTING as MASTER_SWORD_SETTING, ITEM as MASTER_SWORD_ITEM,
@@ -33,11 +34,13 @@ class RemakeWorld(World):
     game = GAME
     web = RemakeWeb()
     options_dataclass = RemakeOptions
-    item_name_to_id = ITEM_IDS
-    location_name_to_id = LOCATION_IDS
+    item_name_to_id = full_item_ids()
+    location_name_to_id = full_location_ids()
     required_client_version = (0, 6, 7)
 
     def generate_early(self):
+        if getattr(getattr(self.options, "generation_mode", None), "current_key", "legacy") == "full_network":
+            return self._generate_full_network()
         values = option_values(self.options)
         settings = engine_settings(values)
         local_seed = f"AP-{self.random.getrandbits(64):016X}"
@@ -107,6 +110,8 @@ class RemakeWorld(World):
             self.seed_file['checksum'], self.shuffle_master_sword).encode()).hexdigest()
 
     def create_regions(self):
+        if getattr(self, "full_world", None) is not None:
+            return self._create_full_regions()
         start = Region("Menu", self.player, self.multiworld)
         self.multiworld.regions.append(start)
         self.rules_at = {}
@@ -141,16 +146,29 @@ class RemakeWorld(World):
             if self.shuffle_master_sword else goal)
 
     def create_item(self, name):
+        if getattr(self, "full_world", None) is not None:
+            from BaseClasses import ItemClassification as FullItemClassification
+            from .full_ap import item_ids
+            kinds = {"progression": FullItemClassification.progression, "useful": FullItemClassification.useful,
+                     "filler": FullItemClassification.filler}
+            return RemakeItem(name, kinds[self.full_world.classification(name)], item_ids()[name], self.player)
         classification = ItemClassification.filler if name == FILLER else ItemClassification.progression
         return RemakeItem(name, classification, ITEM_IDS[name], self.player)
 
     def get_filler_item_name(self):
+        if getattr(self, "full_world", None) is not None:
+            return "Rupee (1)"
         return FILLER
 
     def create_items(self):
+        if getattr(self, "full_world", None) is not None:
+            self.multiworld.itempool.extend(self.create_item(name) for name in self.full_world.pool)
+            return
         self.multiworld.itempool.extend(self.create_item(self.moved[name]) for name in self.waves)
 
     def fill_hook(self, progitempool, usefulitempool, filleritempool, fill_locations):
+        if getattr(self, "full_world", None) is not None:
+            return
         # Reverse fill should consume later reachable shelves/chests first. With
         # counted sphere gates, filling scarce early slots with later rewards can
         # otherwise strand the earlier rewards needed to unlock the rest.
@@ -164,6 +182,13 @@ class RemakeWorld(World):
             fill_locations[index] = location
 
     def fill_slot_data(self):
+        if getattr(self, "full_world", None) is not None:
+            output = self._full_manifest()
+            return {"protocol": PROTOCOL, "token": output['token'], "generation_mode": "full_network",
+                    "full_format_version": output['full_format_version'],
+                    "checks": sorted(output['location_ids'].values()),
+                    "death_link": bool(self.options.death_link.value), "reward_mode": "all_locations",
+                    "local_items": True, "catalog_scan": self.full_world.catalog["scan"]}
         return {"protocol": PROTOCOL, "token": self.token, "checks": sorted(LOCATION_IDS[n] for n in self.waves),
                 "death_link": bool(self.options.death_link.value), "reward_mode": LOCATION_REWARD_MODE,
                 "local_items": True, "kokiri_shop_checks": self.kokiri_shop_checks,
@@ -173,6 +198,8 @@ class RemakeWorld(World):
                 MASTER_SWORD_SETTING: self.shuffle_master_sword}
 
     def generate_output(self, output_directory):
+        if getattr(self, "full_world", None) is not None:
+            return self._output_full_network(output_directory)
         output = {"game": self.game, "protocol": PROTOCOL, "room": self.multiworld.seed_name, "slot": self.player_name,
                   "player": self.player, "token": self.token, "seed_file": self.seed_file,
                   "checks": sorted(self.waves), "moved": self.moved,
@@ -184,3 +211,94 @@ class RemakeWorld(World):
                   MASTER_SWORD_SETTING: self.shuffle_master_sword}
         path = Path(output_directory) / (self.multiworld.get_out_file_name_base(self.player) + ".apootrr")
         path.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    def _generate_full_network(self):
+        from .options import full_option_values
+        from .full_ap import new_world
+        values = full_option_values(self.options)
+        key = f"archipelago|{self.multiworld.seed_name}|{self.player}"
+        self.full_world = new_world(values, key)
+        # Final ownership/placements are not known yet. Both slot_data and the
+        # player file materialize the same final manifest after fill.
+        self.token, self._full_manifest_cache = None, None
+        extra = dict(getattr(getattr(self.options, "start_inventory", None), "value", {}))
+        from_pool = dict(getattr(getattr(self.options, "start_inventory_from_pool", None), "value", {}))
+        error = self.full_world.starting_error(extra, from_pool)
+        if error:
+            raise ValueError("Full-network starting inventory: " + error)
+        self.options.local_items.value |= self.full_world.local_only
+
+    def _create_full_regions(self):
+        from BaseClasses import LocationProgressType
+        from .full_ap import location_ids
+        ids, full, player = location_ids(), self.full_world, self.player
+        region = Region("Menu", player, self.multiworld)
+        self.multiworld.regions.append(region)
+        for gid in sorted(full.names):
+            name = full.names[gid]
+            location = RemakeLocation(player, name, ids[name], region)
+            location.access_rule = lambda state, gid=gid: full.reachable(gid, state.prog_items[player])
+            if not full.in_logic[gid]:
+                location.progress_type = LocationProgressType.EXCLUDED
+            location.item_rule = lambda item, gid=gid: full.can_hold(gid, item.name if item.player == player and item.game == GAME else None)
+            region.locations.append(location)
+        self.multiworld.completion_condition[player] = lambda state: full.reach(state.prog_items[player])[1]
+
+    def pre_fill(self):
+        if getattr(self, "full_world", None) is None:
+            return
+        from Fill import FillError, fill_restrictive
+        from BaseClasses import LocationProgressType
+        full = self.full_world
+        restricted = [item for item in self.multiworld.itempool if item.player == self.player and item.name in full.restricted]
+        for item in restricted:
+            self.multiworld.itempool.remove(item)
+        progression = [item for item in restricted if item.advancement]
+        if progression:
+            places = self.multiworld.get_unfilled_locations(self.player)
+            self.random.shuffle(places)
+            fill_restrictive(self.multiworld, self.multiworld.get_all_state(False), places, progression,
+                             single_player_placement=True, lock=True, allow_excluded=False,
+                             name="Ocarina of Time Remake dungeon items")
+        for item in (item for item in restricted if not item.advancement):
+            places = [place for place in self.multiworld.get_unfilled_locations(self.player)
+                      if place.can_fill(self.multiworld.state, item, False)]
+            if not places:
+                raise FillError("No full-network location can hold " + item.name)
+            junk = [place for place in places if place.progress_type == LocationProgressType.EXCLUDED]
+            self.random.choice(junk or places).place_locked_item(item)
+
+    def _output_full_network(self, output_directory):
+        output = self._full_manifest()
+        path = Path(output_directory) / (self.multiworld.get_out_file_name_base(self.player) + ".apootrr")
+        path.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    def _full_manifest(self):
+        if self._full_manifest_cache is not None:
+            return self._full_manifest_cache
+        from .full_ap import manifest
+        full = self.full_world
+        spheres = {}
+        for index, sphere in enumerate(self.multiworld.get_spheres()):
+            for location in sphere:
+                if location.player == self.player and location.name in full.gids:
+                    spheres[full.gids[location.name]] = index
+        placements = {}
+        for gid, name in full.names.items():
+            item = self.multiworld.get_location(name, self.player).item
+            own = item.player == self.player and item.game == GAME
+            if not full.can_hold(gid, item.name if own else None):
+                raise ValueError("The full-network source cannot grant its assigned item: " + name)
+            placements[gid] = {"item": item.name, "own": own,
+                               "player": self.multiworld.get_player_name(item.player), "game": item.game,
+                               "progression": bool(item.advancement), "sphere": spheres.get(gid)}
+        remote = [{"item": location.item.name, "location": location.name,
+                   "player": self.multiworld.get_player_name(location.player)}
+                  for location in self.multiworld.get_locations()
+                  if location.item and location.address is not None and location.item.player == self.player
+                  and location.player != self.player]
+        start = [item.name for item in self.multiworld.precollected_items[self.player]]
+        output = manifest(full, placements, remote, self.multiworld.seed_name, self.player_name,
+                          self.player, bool(self.options.death_link.value), start)
+        self.token, self._full_manifest_cache = output['token'], output
+        return output

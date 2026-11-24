@@ -228,13 +228,15 @@ class SkullEventTests(unittest.TestCase):
                         self.assertFalse(pouch)
                         self.assertFalse(any(command == "EventTriggerSetForGetWindow" for command, args in run.trace))
                     else:
-                        self.assertEqual(pouch, [metadata["actor"]])
+                        self.assertEqual(pouch, [metadata.get("grant_actor", metadata["actor"])])
                         effects = [args for command, args in run.trace
                                    if command == "EventTriggerAddOrRemovePouchContent"]
                         self.assertTrue(all(args["IsGetEvent"] is False for args in effects))
+                        self.assertEqual([args["Num"] for args in effects], [metadata.get("grant_amount", 1)])
                         calls = [args for command, args in run.trace if command.startswith("call:")
                                  and command.endswith("TemporaryGrant")]
-                        self.assertTrue(calls)
+                        if not metadata.get("grant_actor"):
+                            self.assertTrue(calls)
                         self.assertTrue(all(call["IsGetInEvent"] is False and call["IsTreasureBox"] is False
                                             and call["IsShowNumDisplay"] is True for call in calls))
                     self.assertNotIn(record["actor"], pouch)
@@ -405,9 +407,11 @@ class SkullEventTests(unittest.TestCase):
                             run.call(entry, {"ActorName": record[alias]}, flow)
                             self.assertTrue(run.values[record["flag_name"]])
                             self.assertEqual(len(run.windows), int(bag is not None))
-                            self.assertEqual([args["Actor"] for cmd, args in run.trace
-                                              if cmd == "EventTriggerAddOrRemovePouchContent"],
-                                             [record["native_actor"]] if bag else [])
+                            metadata = ITEM_DATA[record["local_item"]]
+                            grants = [args for cmd, args in run.trace if cmd == "EventTriggerAddOrRemovePouchContent"]
+                            self.assertEqual([(args["Actor"], args["Num"]) for args in grants],
+                                             [(metadata["grant_actor"], int(record["local_item"].split("(")[1][:-1]))]
+                                             if bag else [])
                             self.assertEqual(sum(cmd == "EventTriggerRequestOpenPickUpWindow" for cmd, _ in run.trace),
                                              int(bag is not None))
                             before = sum(cmd == "EventTriggerAddOrRemovePouchContent" for cmd, _ in run.trace)

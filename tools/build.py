@@ -1,5 +1,6 @@
 """Assemble the APWorld, the Python zipapp and the complete Windows release."""
 import argparse
+import filecmp
 import hashlib
 import os
 from pathlib import Path
@@ -16,7 +17,7 @@ CLIENT = ROOT / "client"
 NATIVE = ROOT / "native"
 ENGINE = ROOT / "moteur" / "ootrr-ap"
 DLL = ROOT / "prebuilt/windows-x64/archipelago.dll"
-WORLD_FILES = ("catalog.py", "shop_catalog.py", "shop_pool.py", "skull_catalog.py", "trade_catalog.py", "master_sword.py", "settings.py", "settings_fr.json", "i18n.py", "i18n_fr.json", "app_runtime.py",
+WORLD_FILES = ("catalog.py", "shop_catalog.py", "shop_pool.py", "skull_catalog.py", "trade_catalog.py", "master_sword.py", "settings.py", "settings_fr.json", "i18n.py", "i18n_fr.json", "app_runtime.py", "full_ap.py", "full_catalog.json",
                "engine.py", "engine.cjs", "engine.wasm", "LICENSE", "NOTICE")
 HOST_FILES = ("ootrr_archipelago.inc", "ootrr_ap_items.inc", "ootrr_ap_digest.h", "ootrr_ap_menu.inc",
               "ootrr_ap_hookshot.inc", "ootrr_ap_hookshot_menu.inc")
@@ -46,6 +47,8 @@ def archive(dest, entries):
 
 def copy_file(path, dest):
     dest.parent.mkdir(parents=True, exist_ok=True)
+    if dest.is_file() and filecmp.cmp(path, dest, shallow=False):
+        return
     shutil.copyfile(path, dest)
 
 
@@ -87,6 +90,8 @@ def main():
     src = OUT/"sources/Sources-moteur.zip"
     world_entries = list(tree(ROOT/"apworld"))
     world_entries.extend(("ootrr_remake/"+n, CLIENT/"ootrr_triforce"/n) for n in WORLD_FILES)
+    world_entries.extend(("ootrr_full/"+n, path) for n, path in tree(CLIENT/"ootrr_full"))
+    world_entries.append(("ootrr_full/LICENSE-MIT.txt", CLIENT/"credits/OotrR-MIT.txt"))
     archive(world, world_entries)
     archive(app, tree(CLIENT))
     archive(src, tree(ROOT/"moteur"))

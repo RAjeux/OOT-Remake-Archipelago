@@ -9,14 +9,14 @@ def printable(value):
 
 
 class RoomView:
-    def __init__(self, slot):
+    def __init__(self, slot, *, item_ids=None, location_ids=None):
         self.slot = slot
         self.team = 0
         self.players = {0: "Archipelago"}
         self.games = {slot: GAME}
         self.names = {
-            GAME: {"item_id": {v: k for k, v in ITEM_IDS.items()},
-                   "location_id": {v: k for k, v in LOCATION_IDS.items()}}
+            GAME: {"item_id": {v: k for k, v in (ITEM_IDS if item_ids is None else item_ids).items()},
+                   "location_id": {v: k for k, v in (LOCATION_IDS if location_ids is None else location_ids).items()}}
         }
         self.names[LEGACY_GAME] = self.names[GAME]
         self.waiting = False

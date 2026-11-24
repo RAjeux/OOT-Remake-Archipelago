@@ -1,0 +1,506 @@
+"""Bridge between the remake randomizer and Archipelago (no Archipelago import here).
+
+The ``.apworld`` (see :mod:`ootrr_full.archipelago.apworld_build`) ships the pure
+Python part of this package plus a **catalog** built once from the local game:
+the scanned chest groups, enemies and other reward sources, and the stable
+names of every location and item. With it, Archipelago runs the same
+preparation as the built-in randomizer (:func:`full_randomizer.prepare`):
+same locations, same item pool, same rules. Only the fill changes hands.
+
+Generation writes one **patch** per remake player (``.aprmk``, JSON). The
+application reads it back, checks that its own game gives the same catalog,
+and builds the mod with the placements chosen by Archipelago
+(:func:`full_randomizer.plan_assigned`).
+"""
+from collections import Counter
+import copy
+import hashlib
+import json
+
+GAME = 'Ocarina of Time Remake'
+CATALOG_VERSION = 3   # 3: native AI combat dependencies for soul progression
+PATCH_FORMAT = 'oot-remake-archipelago'
+PATCH_VERSION = 1
+PATCH_SUFFIX = '.apootrr'
+# Item standing in for another player's item: given by any location form.
+FOREIGN_STANDIN = 'Rupee (1)'
+# Remake options that are not exposed to Archipelago (fixed, or replaced by an AP common option).
+AP_SKIPPED = {'accessibility'}
+FILLER = ('Rupee', 'Rupees (', 'Deku Nuts (', 'Deku Stick', 'Arrows (', 'Bombs (', 'Deku Seeds (', 'Bombchus (',
+          'Map (', 'Compass (', 'Remake: ', 'Recovery Heart', 'Ice Trap')
+
+
+def _canonical(value):
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')
+
+
+def canonical_patch(patch):
+    """One ordering for room identity, native resource identity and receipts."""
+    result = copy.deepcopy(patch)
+    result['remote'] = sorted(result.get('remote', ()),
+                              key=lambda row: (row['player'], row['location'], row['item']))
+    result['precollected'] = sorted(result.get('precollected') or ())
+    return result
+
+
+def scan_fingerprint(groups, enemies, extra):
+    """SHA-256 of the scanned game data the preparation depends on.
+
+    Room locks of an enemy linked straight to its shutters (``'direct'``) only add a
+    Presence to those shutters at generation: the soul-bound enemies and the logic are
+    the same, so they stay out of the fingerprint and earlier patches remain valid.
+    Native ``combat`` evidence stays IN the fingerprint: old AP placements may
+    contain soul deadlocks and must be regenerated with a rebuilt apworld.
+    """
+    enemies = [dict(enemy, locks=[lock for lock in enemy['locks'] if not lock.get('direct')])
+               if any(lock.get('direct') for lock in enemy.get('locks') or ()) else enemy
+               for enemy in enemies]
+    # ``mechanics`` only loosens the dungeon entry souls (older catalogs, without
+    # it, keep every soul of the dungeon): earlier patches remain valid.
+    enemies = [{k: v for k, v in enemy.items() if k != 'mechanics'} for enemy in enemies]
+    return hashlib.sha256(_canonical({'groups': groups, 'enemies': enemies, 'extra': extra})).hexdigest()
+
+
+def stable_id(kind, name):
+    """Archipelago ID from the name alone: adding locations never renumbers the others."""
+    digest = hashlib.sha256(f'{GAME}|{kind}|{name}'.encode('utf-8')).digest()
+    return int.from_bytes(digest[:7], 'big') & ((1 << 52) - 1) or 1
+
+
+# ------------------------------------------------------------------ options
+def ap_value_name(value):
+    """Choice name of a remake value in Archipelago (``random`` is AP's own random roll)."""
+    return 'randomized' if value == 'random' else str(value)
+
+
+def ap_option_specs():
+    """Remake options with a real choice, as plain data for the apworld's option classes.
+
+    ``open_forest`` is a setting of the application, not of the full randomizer:
+    it is added here because it changes the logic.
+    """
+    from ootrr_full.logic import rando_options
+    specs = [{'name': 'open_forest', 'kind': 'bool', 'label': 'Open the way (Kokiri Forest exit)',
+              'default': True, 'values': [False, True], 'help': 'Mido no longer blocks the forest exit.'}]
+    for option in rando_options.OPTIONS:
+        if option.kind == 'items':
+            continue  # starting items: the apworld's own start_inventory_from_pool
+        values = [v for v in option.allowed() if option.supported(v)]
+        if option.name in AP_SKIPPED or (len(values) < 2 and option.kind != 'list'):
+            continue
+        specs.append({'name': option.name, 'kind': option.kind, 'label': option.label, 'default': option.default,
+                      'values': values, 'help': option.help})
+    return specs
+
+
+def full_options(values):
+    """AP option values (by remake name) → (full randomizer options, open_forest)."""
+    from ootrr_full.logic import rando_options
+    values = dict(values)
+    open_forest = bool(values.pop('open_forest', True))
+    options = rando_options.defaults()
+    options.update(values)
+    # Archipelago checks accessibility itself, over every world.
+    options['accessibility'] = 'minimal'
+    return rando_options.validate(options, supported_only=True), open_forest
+
+
+def player_yaml(values, open_forest, name='Player'):
+    """Archipelago player YAML of the ``OoT Remake`` game for these application settings."""
+    from ootrr_full.logic import rando_options
+    values = rando_options.validate(values, supported_only=True)
+    current = dict(values, open_forest=open_forest)
+    safe = ''.join(ch for ch in name if ch.isalnum() or ch in '_-') or 'Player'
+    lines = [f'name: {safe[:16]}', f'game: {GAME}', 'description: Generated by the OoT Randomizer application',
+             f'{GAME}:']
+    for spec in ap_option_specs():
+        value = current[spec['name']]
+        # Quoted: YAML would read ``off`` as false and ``4`` as an index.
+        if spec['kind'] == 'list':
+            import json
+            text = json.dumps(list(value), ensure_ascii=False)
+        else:
+            text = ('true' if value else 'false') if spec['kind'] == 'bool' else f"'{ap_value_name(value)}'"
+        lines.append(f'  {spec["name"]}: {text}')
+    lines.append(f'  accessibility: {"full" if values["accessibility"] == "full" else "minimal"}')
+    if values['start_inventory_from_pool']:
+        import json
+        lines.append('  start_inventory_from_pool: ' + json.dumps(values['start_inventory_from_pool'], ensure_ascii=False))
+    return '\n'.join(lines) + '\n'
+
+
+# ------------------------------------------------------------------ catalog
+def location_name(data, entry, gid):
+    """Same name as the tracker and the spoiler (``full_randomizer.check_name``)."""
+    from ootrr_full.randomizer.full_randomizer import _entry_zone, check_name
+    from ootrr_full.game.remake_world import zone_label
+    return check_name(entry, gid, zone_label(_entry_zone(data, entry, gid)) or entry['folder'])
+
+
+def _catalog_variants():
+    """Option sets whose union covers every location and item the remake can shuffle."""
+    from ootrr_full.logic import rando_options
+    base = rando_options.defaults()
+    everything = dict(base, shuffle_chests=True, shuffle_kokiri_sword=True, shuffle_remake_items=True,
+                      shopsanity='4', tokensanity='all', shuffle_scrubs='low', shuffle_freestanding_items='all',
+                      shuffle_npc_gifts=True, shuffle_boss_rewards=True, shuffle_great_fairies=True,
+                      shuffle_quest_rewards=True, shuffle_pots='all', shuffle_crates='all', shuffle_beehives=True,
+                      shuffle_master_sword=True, shuffle_gerudo_card=True,
+                      shuffle_bushes=True, shuffle_rocks=True, shuffle_trees=True, shuffle_mapcompass='dungeon',
+                      shuffle_smallkeys='keysanity', shuffle_bosskeys='keysanity',
+                      shuffle_song_items='any')
+    for matching in ('strict', 'scene'):
+        for spawns in ('off', 'bosses', 'regional', 'all'):
+            for rings in ('off', 'all'):
+                # Remake small keys are generic: out of their dungeon only as key rings.
+                yield dict(everything, chest_matching=matching, shuffle_enemy_spawns=spawns, key_rings=rings,
+                           shuffle_smallkeys='keysanity' if rings == 'all' else 'vanilla')
+
+
+def build_catalog(data, groups, enemies, extra, game_build, progress=None):
+    """Catalog shipped in the apworld. ``data`` is a :class:`World`."""
+    from ootrr_full.randomizer.full_randomizer import prepare
+    report = progress or (lambda message: None)
+    names, items = {}, set(data.item_table)
+    for index, options in enumerate(_catalog_variants()):
+        report(f'Catalog: option set {index + 1}/16')
+        c = prepare(data, options, copy.deepcopy(groups), copy.deepcopy(enemies), 'catalog', True,
+                    extra=copy.deepcopy(extra))
+        for gid in sorted(c.matches):
+            names.setdefault(gid, location_name(data, c.matches[gid], gid))
+        items.update(c.pool)
+        items.update(c.souls['items'])
+    # Unique names (two sources may share their AP location or zone tail).
+    seen, locations = Counter(names.values()), {}
+    for gid in sorted(names):
+        name = names[gid]
+        locations[gid] = name if seen[name] == 1 else f'{name} [{gid.split("#", 1)[-1]}]'
+    _check_unique('location', locations.values())
+    _check_unique('item', items)
+    return {'version': CATALOG_VERSION, 'game_build': game_build, 'world': data.fingerprint(),
+            'scan': scan_fingerprint(groups, enemies, extra),
+            'locations': locations, 'items': sorted(items),
+            'groups': groups, 'enemies': enemies, 'extra': extra}
+
+
+def _check_unique(kind, names):
+    names = list(names)
+    if len(set(names)) != len(names):
+        raise ValueError(f'Duplicate {kind} names in the catalog.')
+    ids = Counter(stable_id(kind, n) for n in names)
+    if any(count > 1 for count in ids.values()):
+        raise ValueError(f'{kind} ID collision: rename one {kind}.')
+
+
+def item_ids(catalog):
+    return {name: stable_id('item', name) for name in catalog['items']}
+
+
+def location_ids(catalog):
+    return {name: stable_id('location', name) for name in catalog['locations'].values()}
+
+
+# ------------------------------------------------------------------ one player
+class PlayerWorld:
+    """One remake player in an Archipelago generation."""
+
+    CACHE_SIZE = 4096
+
+    def __init__(self, catalog, values, seed_key):
+        from ootrr_full.logic.world import World
+        from ootrr_full.randomizer.full_randomizer import prepare, vname
+        data = World()
+        if data.fingerprint() != catalog['world']:
+            raise ValueError('The apworld logic does not match its catalog: rebuild the apworld.')
+        self.catalog = catalog
+        self.seed_key = seed_key
+        self.values = dict(values)
+        self.options, self.open_forest = full_options(values)
+        self.c = prepare(data, self.options, copy.deepcopy(catalog['groups']), copy.deepcopy(catalog['enemies']),
+                         seed_key, self.open_forest, extra=copy.deepcopy(catalog['extra']))
+        missing = sorted(g for g in self.c.shuffled if g not in catalog['locations'])
+        if missing:
+            raise ValueError(f'{len(missing)} locations missing from the catalog: rebuild the apworld.')
+        self.names = {gid: catalog['locations'][gid] for gid in self.c.shuffled}
+        self.gids = {name: gid for gid, name in self.names.items()}
+        self.in_logic = {gid: vname(gid) in self.c.logic.virtual for gid in self.c.shuffled}
+        self.vnames = {gid: vname(gid) for gid in self.c.shuffled}
+        self.pool = list(self.c.pool)
+        unknown = sorted(set(self.pool) - set(catalog['items']))
+        if unknown:
+            raise ValueError('Items missing from the catalog: ' + ', '.join(unknown[:5]))
+        self.progression = set(self.c.relevant) & set(self.pool)
+        # Dungeon-bound items stay in this world: keys are generic per dungeon.
+        # Progressive copies can go anywhere: found here or received, each one gives
+        # the level above the one Link holds (patching.progressive, patching.ap_mailbox).
+        self.restricted = set(self.c.restricted_dungeon) & set(self.pool)
+        self.local_only = set(self.restricted)
+        self.tracker_members = self._tracker_members()
+        self._cache = {}
+
+    def _tracker_members(self):
+        """Conservative area rules for filler-only checks, outside the fill logic.
+
+        These are tracker estimates, not new progression locations. Unknown areas
+        stay unreachable rather than inheriting Archipelago's always-true rule.
+        """
+        from ootrr_full.game.extra_sources import area_locations
+        from ootrr_full.game.remake_world import source_age
+        from ootrr_full.logic.rules import age_member
+        from ootrr_full.patching.soul_adapter import chest_requirements
+        if all(self.in_logic.values()):
+            return {}
+        logic = self.c.logic
+        # Use the actual maximum inventory, including native/starting rewards:
+        # arbitrary item counts can omit 100-token gates or invent missing items.
+        everything, available, _ = self.c.sweep({}, Counter(self.pool))
+        areas, result = {}, {}
+        for gid, inside in self.in_logic.items():
+            if inside:
+                continue
+            entry = self.c.shuffled[gid]
+            folder = entry['folder']
+            if folder == 'DreamWorld' and all('/BossRushIntervalRoom_' in v['resource']
+                                               for v in entry['variants']):
+                # These are the ten repeatable boss-rush interval chests, not
+                # checks in the enemy museum lobby. AP has no native museum
+                # kill records or boss-rush state. Require full supported-world
+                # access as a deliberately late estimate, never lobby access.
+                # Keep it outside the fill logic and use only achievable nodes
+                # so full accessibility does not require impossible locations.
+                if folder not in areas:
+                    areas[folder] = sorted(loc for loc in logic.location_names() if loc in available
+                                           and self.c.data.location_type(loc) not in
+                                           ('HintStone', 'Hint', 'Drop', 'Event'))
+            if folder not in areas:
+                areas[folder] = [loc for loc in area_locations(self.c.data, logic, folder) if loc in available]
+            members = list(areas[folder])
+            if not members:
+                continue
+            age = source_age(entry['variants'])
+            if age:
+                aged = [age_member(age, loc) if logic.accessible(everything, age_member(age, loc)) else loc
+                        for loc in members]
+                if aged == members:
+                    continue  # No proof this area's sources can be done at this age.
+                members = aged
+            members += list(entry.get('guards', ()))
+            souls = chest_requirements(self.c.souls, entry, areas[folder])
+            if souls:
+                members.append('Souls|' + '|'.join(sorted(souls)))
+            result[gid] = members
+        return result
+
+    def starting_error(self, extra, from_pool):
+        """Why these starting items (name → count) cannot be given, or None.
+
+        ``extra``: ``start_inventory`` (added to the pool); ``from_pool``:
+        ``start_inventory_from_pool``. Starting items are given at the end of the
+        opening; a progressive copy takes a level of the family, so it must come
+        from the pool (the number of levels is fixed).
+        """
+        from ootrr_full.game.remake_world import PROGRESSIVE
+        from ootrr_full.randomizer.full_randomizer import starting_unsupported
+        names = set(extra) | set(from_pool)
+        bad = sorted(n for n in names if starting_unsupported(n))
+        if bad:
+            return 'dungeon items cannot be starting items: ' + ', '.join(bad)
+        unknown = sorted(n for n in names if n not in self.catalog['items'])
+        if unknown:
+            return 'unknown starting items: ' + ', '.join(unknown)
+        progressive = sorted(n for n in extra if n in PROGRESSIVE and extra[n])
+        if progressive:
+            return ('progressive items must be in start_inventory_from_pool, not start_inventory: '
+                    + ', '.join(progressive))
+        too_many = sorted(n for n in from_pool if n in PROGRESSIVE and from_pool[n] > self.pool.count(n))
+        if too_many:
+            return 'more starting copies than in the item pool: ' + ', '.join(too_many)
+        from ootrr_full.randomizer.full_randomizer import starting_actors
+        try:
+            starting_actors([name for source in (extra, from_pool) for name, count in source.items()
+                             for _ in range(count)])
+        except ValueError as error:
+            return 'starting item has no supported native effect: ' + str(error)
+        return None
+
+    def classification(self, item):
+        if item in self.progression:
+            return 'progression'
+        if item.startswith(FILLER) or item == FOREIGN_STANDIN:
+            return 'filler'
+        return 'useful'
+
+    def can_hold(self, gid, item=None):
+        """Whether location ``gid`` can give ``item`` (None: another player's item)."""
+        from ootrr_full.patching.ap_item import ap_item
+        return self.c.allowed(ap_item('?') if item is None else item, gid)
+
+    def reach(self, counts):
+        """(reachable locations, victory), including conservative filler estimates. Cached."""
+        key = frozenset((k, v) for k, v in counts.items() if v > 0 and k in self.progression)
+        result = self._cache.get(key)
+        if result is None:
+            if len(self._cache) >= self.CACHE_SIZE:
+                self._cache.clear()
+            state, collected, _ = self.c.sweep({}, Counter(dict(key)))
+            # Do not add these nodes to logic.virtual/base: filler must never
+            # supply progression or change the native-location sweep.
+            collected = set(collected)
+            access = {}
+            for gid, members in self.tracker_members.items():
+                for member in members:
+                    if member not in access:
+                        access[member] = self.c.logic.accessible(state, member)
+                if all(access[member] for member in members):
+                    collected.add(self.vnames[gid])
+            result = (frozenset(collected), state.has('Triforce'))
+            self._cache[key] = result
+        return result
+
+    def reachable(self, gid, counts):
+        return self.vnames[gid] in self.reach(counts)[0]
+
+    def patch(self, placements, remote, seed_name, slot_name, player, game_build, precollected=()):
+        """Patch data. ``placements``: gid → {item, player, own, progression};
+        ``remote``: this player's items found in other worlds; ``precollected``:
+        Archipelago starting items (to be given by the client)."""
+        if set(placements) != set(self.c.shuffled):
+            raise ValueError('Every shuffled location must hold an item.')
+        # Every item found in another world must be one the game can be handed
+        # (patching.ap_mailbox): fail at generation, not with a softlock in game.
+        from ootrr_full.patching.ap_mailbox import records
+        records(remote)
+        return {'format': PATCH_FORMAT, 'version': PATCH_VERSION, 'game': GAME, 'game_build': game_build,
+                'world': self.catalog['world'], 'scan': self.catalog['scan'],
+                'seed_name': seed_name, 'slot_name': slot_name, 'player': player, 'seed_key': self.seed_key,
+                'options': self.options, 'open_forest': self.open_forest,
+                'placements': {gid: placements[gid] for gid in sorted(placements)},
+                'remote': remote, 'precollected': list(precollected),
+                'location_ids': {gid: stable_id('location', self.names[gid]) for gid in sorted(self.names)}}
+
+
+# ------------------------------------------------------------------ patch, application side
+def load_patch(path):
+    from pathlib import Path
+    try:
+        patch = json.loads(Path(path).read_text(encoding='utf-8'))
+    except (OSError, ValueError) as error:
+        raise ValueError(f'Unreadable Archipelago patch: {error}') from error
+    check_patch(patch)
+    return patch
+
+
+MAX_NAME = 512            # item, player and location names of any game
+MAX_ENTRIES = 200_000     # placements, remote items, location ids
+
+
+def _text(value, field, limit=MAX_NAME):
+    """A name shown in game or in the application: bounded, no control character."""
+    if not isinstance(value, str) or len(value) > limit or any(ord(c) < 32 or ord(c) == 127 for c in value):
+        raise ValueError(f'Invalid Archipelago patch: {field}.')
+    return value
+
+
+def _optional(patch, key, kind):
+    if key in patch and patch[key] is not None and not isinstance(patch[key], kind):
+        raise ValueError(f'Invalid Archipelago patch: {key}.')
+
+
+def check_patch(patch):
+    """Full shape of an ``.aprmk`` (``PlayerWorld.patch``): a malformed or hostile file is
+    refused here, before any of it reaches the generation, the client or the game texts."""
+    if not isinstance(patch, dict) or patch.get('format') != PATCH_FORMAT:
+        raise ValueError('Not an OoT Remake Archipelago patch.')
+    if patch.get('version') != PATCH_VERSION:
+        raise ValueError('Archipelago patch from another version of the apworld: update the application.')
+    for key in ('seed_key', 'options', 'open_forest', 'placements', 'remote', 'scan', 'world', 'game_build'):
+        if key not in patch:
+            raise ValueError(f'Archipelago patch incomplete ({key}).')
+    for key in ('seed_key', 'scan', 'world', 'game_build'):
+        _text(patch[key], key)
+    for key in ('seed_name', 'slot_name'):
+        if patch.get(key) is not None:
+            _text(patch[key], key)
+    if 'game' in patch and patch['game'] != GAME:
+        raise ValueError('Archipelago patch of another game.')
+    if type(patch['open_forest']) is not bool or not isinstance(patch['options'], dict):
+        raise ValueError('Invalid Archipelago patch: options.')
+    if 'player' in patch and patch['player'] is not None and type(patch['player']) is not int:
+        raise ValueError('Invalid Archipelago patch: player.')
+    placements, remote = patch['placements'], patch['remote']
+    if not isinstance(placements, dict) or len(placements) > MAX_ENTRIES:
+        raise ValueError('Invalid Archipelago patch: placements.')
+    for gid, placement in placements.items():
+        if not isinstance(gid, str) or len(gid) > MAX_NAME or not isinstance(placement, dict)                 or type(placement.get('own')) is not bool:
+            raise ValueError(f'Invalid placement in the Archipelago patch: {str(gid)[:80]}')
+        _text(placement.get('item'), f'placement {gid}')
+        for key in ('player', 'game'):
+            if placement.get(key) is not None:
+                _text(placement[key], f'placement {gid}')
+        if 'progression' in placement and type(placement['progression']) is not bool:
+            raise ValueError(f'Invalid placement in the Archipelago patch: {gid}')
+        if placement.get('sphere') is not None and type(placement['sphere']) is not int:
+            raise ValueError(f'Invalid placement in the Archipelago patch: {gid}')
+    if not isinstance(remote, list) or len(remote) > MAX_ENTRIES:
+        raise ValueError('Invalid Archipelago patch: remote.')
+    for entry in remote:
+        if not isinstance(entry, dict):
+            raise ValueError('Invalid Archipelago patch: remote.')
+        for key in ('item', 'location', 'player'):
+            _text(entry.get(key), 'remote ' + key)
+    _optional(patch, 'precollected', list)
+    for item in patch.get('precollected') or ():
+        _text(item, 'precollected')
+    _optional(patch, 'location_ids', dict)
+    ids = patch.get('location_ids') or {}
+    if len(ids) > MAX_ENTRIES or any(not isinstance(k, str) or type(v) is not int or not 0 < v < 1 << 53
+                                     for k, v in ids.items()):
+        raise ValueError('Invalid Archipelago patch: location_ids.')
+    return patch
+
+
+def settings_from_patch(patch, skulltulas_always_present=False):
+    """Application settings that build the mod of this patch (full randomizer only, skips on).
+
+    ``skulltulas_always_present`` only changes this game (no placement): a local choice.
+    """
+    from ootrr_full.randomizer.randomizer_core import SKIP_OPTIONS, Settings
+    from ootrr_full.game.randomizer_categories import CATEGORIES
+    check_patch(patch)
+    patch = canonical_patch(patch)
+    from ootrr_full.logic import rando_options
+    options = dict(patch['options'])
+    options.setdefault('spiritual_stones', rando_options.UNRECORDED['spiritual_stones'])
+    seed = f'AP {patch.get("seed_name", "")} {patch.get("slot_name", "")}'.strip()[:256]
+    return Settings(seed=seed, randomize_chests=False, open_forest=bool(patch['open_forest']),
+                    categories=dict.fromkeys(CATEGORIES, False), full=options,
+                    archipelago=patch, skulltulas_always_present=bool(skulltulas_always_present),
+                    **dict.fromkeys(SKIP_OPTIONS, True)).validate()
+
+
+def _label(placement):
+    return f'{placement["item"]} ({placement.get("player", "?")})'
+
+
+def assigned_items(patch):
+    """gid → item to place in this game (another player's item → its Archipelago medallion)."""
+    from ootrr_full.patching.ap_item import ap_item
+    return {gid: (p['item'] if p['own'] else ap_item(_label(p))) for gid, p in patch['placements'].items()}
+
+
+def foreign_items(patch):
+    """Planner item of each foreign item → (item name, player), for the get-item texts."""
+    from ootrr_full.patching.ap_item import ap_item
+    return {ap_item(_label(p)): (p['item'], p.get('player', '?'))
+            for p in patch['placements'].values() if not p['own']}
+
+
+def patch_spheres(patch):
+    """gid → sphere of the multiworld playthrough, or None for an older patch."""
+    spheres = {gid: p.get('sphere') for gid, p in patch['placements'].items()}
+    return spheres if any(v is not None for v in spheres.values()) else None
+
+
+def foreign_labels(patch):
+    """gid → label shown in the spoiler for another player's item."""
+    return {gid: _label(p) for gid, p in patch['placements'].items() if not p['own']}

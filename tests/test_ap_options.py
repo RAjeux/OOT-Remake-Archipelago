@@ -24,7 +24,7 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
-from ootrr_triforce import settings
+from ootrr_triforce import settings, full_ap
 from ootrr_triforce.catalog import GAME
 
 
@@ -107,7 +107,8 @@ def world_options(ap_options):
     spec = importlib.util.spec_from_file_location(package.__name__ + ".options", ROOT / "apworld/ootrr_remake/options.py")
     module = importlib.util.module_from_spec(spec)
     modules = {"Options": ap_options, package.__name__: package,
-               package.__name__ + ".settings": settings, spec.name: module}
+               package.__name__ + ".settings": settings,
+               package.__name__ + ".full_ap": full_ap, spec.name: module}
     with patch.dict(sys.modules, modules):
         spec.loader.exec_module(module)
     return module

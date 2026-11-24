@@ -15,7 +15,7 @@ static int (*ap_disconnect16)(void);
 static int (*ap_restore16)(uint8_t *,int);
 static void (*ap_restore_deferred16)(int);
 static int (*ap_receipt_replay16)(int,int);
-static uint32_t ap_cursor16, ap_flags16[4096];
+static uint32_t ap_cursor16, ap_seed_marker16, ap_flags16[4096];
 static int ap_flag_count16;
 static int ap_event_mode16;
 static uint64_t ap_delivery_actor16;
@@ -126,6 +126,7 @@ static int ap_boot16(void) {
     int (*start)(char*,char*)=(int(*)(char*,char*))GetProcAddress(lib,"AP_Start");
     int (*flags)(uint32_t*,int)=(int(*)(uint32_t*,int))GetProcAddress(lib,"AP_Flags");
     uint32_t (*cursor)(void)=(uint32_t(*)(void))GetProcAddress(lib,"AP_Cursor");
+    uint32_t (*seed_marker)(void)=(uint32_t(*)(void))GetProcAddress(lib,"AP_SeedMarker");
     ap_applied16=(void(*)(int))GetProcAddress(lib,"AP_Applied");
     ap_next16=(int(*)(int))GetProcAddress(lib,"AP_Next");
     ap_note16=(int(*)(char*,int))GetProcAddress(lib,"AP_Note");
@@ -144,6 +145,7 @@ static int ap_boot16(void) {
     snprintf(ap_profile16,sizeof ap_profile16,"%s\\user",utf8);
     hos_user_dir=ap_profile16;
     ap_flag_count16=flags(ap_flags16,4096);ap_cursor16=cursor();
+    ap_seed_marker16=seed_marker?seed_marker():0;
     ap_event_mode16=event_delivery();
     hos_log("OOTRR-AP native ABI 1: mod active, Archipelago profile loaded");
     return 1;
@@ -236,6 +238,10 @@ static int ap_player16(Ctx *c,uint64_t actor,uint64_t components,int64_t now) {
     if (!ap_cursor16 || !ap_death16) { ap_invalidate_delivery16(); return 0; }
     uint64_t mgr=oot_singleton(c,OOT_GAMEDATA_SLOT);
     int loading=0;
+    int seed_matches=0;
+    if (ap_seed_marker16 && (!oot_gamedata_bool(c,ap_seed_marker16,&seed_matches) || !seed_matches)) {
+        ap_invalidate_delivery16(); ap_death16(-1); return 0;
+    }
     if (!actor || !components || !mgr || !oot_gd_int(c,mgr,ap_cursor16) ||
         oot_pouch_count(c,oot_item_names[0])<0 ||
         (oot_gamedata_bool(c,0xef2b60c2u,&loading)&&loading)) {

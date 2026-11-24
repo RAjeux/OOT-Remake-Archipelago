@@ -133,6 +133,22 @@ class ReceiptRegistrationTests(unittest.TestCase):
         cls.analyzed = {row["__RowId"]: row for row in byml_codec.load(
             (mod / chest_flags.ANALYZED).read_bytes())["root"]}
         cls.ground_raw = resources[event_info.flow_path("Dm_SY_Get")]
+        cls.romfs, cls.resources, cls.names = romfs, resources, names
+        cls.generated = {p.relative_to(mod).as_posix(): p.read_bytes() for p in mod.rglob('*') if p.is_file()}
+
+    def test_cached_dependency_analysis_is_byte_identical_to_uncached_analysis(self):
+        build = receipt_events.build_presented_receipts
+        def selected(pouch, presenter, token, **kwargs):
+            return build(pouch, presenter, token, self.names, **kwargs)
+        with tempfile.TemporaryDirectory() as folder, \
+                patch.object(receipt_events, 'Codec', IdentityCodec), \
+                patch.object(receipt_events, 'build_presented_receipts', side_effect=selected), \
+                patch.object(event_info, '_cached_charts', side_effect=lambda current: current), \
+                patch.object(resource_allocations, 'grow_resources', return_value=(b'grown sizes', {})):
+            output = Path(folder) / 'mod'
+            receipt_events.prepare_receipts(self.romfs, output, {'token': 'c'*64, 'local_items': True})
+            generated = {p.relative_to(output).as_posix(): p.read_bytes() for p in output.rglob('*') if p.is_file()}
+            self.assertEqual(generated, self.generated)
 
     def rows(self, item):
         name = receipt_events.event_name(ITEM_IDS[item])
