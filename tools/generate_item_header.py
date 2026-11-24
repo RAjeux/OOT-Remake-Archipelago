@@ -8,7 +8,6 @@ sys.path.insert(0, str(root/"client"))
 from ootrr_triforce.catalog import FILLER, ITEM_IDS, ITEM_DATA, TRADE_CHECKS
 from ootrr_triforce.trade_catalog import TRADE_ITEMS
 from ootrr_triforce.live import POUCH
-from ootrr_triforce.full_ap import item_ids as full_item_ids
 
 if not POUCH.keys() <= ITEM_IDS.keys() or ITEM_IDS.keys() != ITEM_DATA.keys():
     raise ValueError("Delivery recipes and Archipelago IDs do not cover the same items.")
@@ -16,7 +15,7 @@ rows = [f"#define AP_RUPEE_ID {ITEM_IDS[FILLER]}", "static const char *ap_item_n
 rows.extend(f'    case {ITEM_IDS[name]}: return "{actor}";' for name, actor in POUCH.items())
 rows.extend(["    default: return NULL;", "    }", "}", ""])
 rows.extend(["/* Full conversion: the registered receipt event applies the vanilla effect", "   and commits the saved cursor. Unknown IDs are never silently acknowledged. */", "static const char *ap_eventname16(int item) {", "    switch (item) {"])
-rows.extend(f'    case {identifier}: return "OOTRR_APReceive_{identifier}";' for identifier in sorted(full_item_ids().values()))
+rows.extend(f'    case {identifier}: return "OOTRR_APReceive_{identifier}";' for _, identifier in sorted(ITEM_IDS.items(), key=lambda row: row[1]))
 rows.extend(["    default: return NULL;", "    }", "}", ""])
 (root/"native/ootrr_ap_items.inc").write_bytes("\n".join(rows).encode("ascii"))
 

@@ -292,9 +292,8 @@ class ShopEventTests(unittest.TestCase):
                     elif metadata["actor"] in AMMO_BAGS:
                         self.assertFalse(pouch)
                     else:
-                        self.assertEqual([values.get("Actor", values.get("ActorName")) for values in pouch],
-                                         [metadata.get("grant_actor", metadata["actor"])])
-                        self.assertEqual(pouch[0]["Num"], metadata.get("grant_amount", 1))
+                        self.assertEqual([values.get("Actor", values.get("ActorName")) for values in pouch], [metadata["actor"]])
+                        self.assertEqual(pouch[0]["Num"], 1)
                     if is_cure(metadata):
                         self.assertEqual([values["ActorName"] for command, values in run.trace
                                           if command == "EventTriggerRecoverByCureItem"], [metadata["actor"]])

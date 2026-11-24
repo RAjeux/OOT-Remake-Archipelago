@@ -7,7 +7,6 @@ import marshal
 import ntpath
 from pathlib import Path, PurePosixPath
 import struct
-import sys
 import types
 from zipfile import ZipFile, is_zipfile
 
@@ -18,15 +17,6 @@ FORBIDDEN_NAMES = {"outils.json", "native-session.json", "last-profile.json", "c
 FORBIDDEN_SUFFIXES = {".sav", ".apsave", ".apootrr", ".archipelago", ".apmultidata", ".apmultisave"}
 REQUIRED_MODULES = {"ootrr_triforce.app_window", "ootrr_triforce.app_runtime", "ootrr_triforce.install_service",
                     "ootrr_triforce.player", "ootrr_triforce.connection_window", "ootrr_triforce.hookshot_setup",
-                    "ootrr_triforce.settings_editor", "ootrr_triforce.room_library", "ootrr_triforce.tracker_service",
-                    "ootrr_triforce.chat_window", "ootrr_triforce.external_window", "ootrr_triforce.full_worker",
-                    "ootrr_triforce.full_ap", "ootrr_triforce.full_mod", "ootrr_full.randomizer.randomizer_core",
-                    "ootrr_full.archipelago.bridge", "ootrr_full.patching.ammo_quantities", "yaml",
-                    "ootrr_triforce.full_allocations", "ootrr_triforce.full_portable", "ootrr_triforce.full_settings",
-                    "ootrr_triforce.full_scrub_hints", "ootrr_triforce.room_updates", "ootrr_triforce.upgrade_readiness",
-                    "ootrr_triforce.native_player_brain",
-                    "ootrr_triforce.upgrade_deathlink", "ootrr_full.game.loose_keys",
-                    "ootrr_full.game.native_key_limits", "ootrr_full.patching.key_adapter",
                     "tkinter", "zstandard"}
 
 
@@ -91,17 +81,6 @@ def inspect_zip(raw, private_markers, context):
                 code_paths(marshal.loads(data[16:]), context + "/" + name)
 
 
-def inspect_apworld(raw, private_markers, context):
-    """Check the same APWorld container contract used before desktop install."""
-    client = str(ROOT / 'client')
-    if client not in sys.path:
-        sys.path.insert(0, client)
-    from ootrr_triforce.app_runtime import validate_apworld_archive
-    metadata = validate_apworld_archive(BytesIO(raw))
-    inspect_zip(raw, private_markers, context)
-    return metadata
-
-
 def inspect_app(path, extra_markers=()):
     from PyInstaller.archive.readers import CArchiveReader
     from build_app import HOST_FILES, NODE_SHA256
@@ -124,9 +103,6 @@ def inspect_app(path, extra_markers=()):
     version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
     if manifest.get("schema") != 1 or manifest.get("version") != version or manifest.get("platform") != "windows-x64":
         raise ValueError("The application manifest does not match this source version.")
-    from build_app import client_code_digest
-    if manifest.get('code_sha256') != client_code_digest():
-        raise ValueError('The embedded Python code differs from the reviewed source.')
     expected_native = sha((ROOT / "prebuilt/windows-x64/archipelago.dll").read_bytes())
     expected_wasm = sha((ROOT / "client/ootrr_triforce/engine.wasm").read_bytes())
     components = [("native/archipelago.dll", expected_native),
@@ -140,7 +116,7 @@ def inspect_app(path, extra_markers=()):
         if name not in entries or sha(archive.extract(entries[name])) != digest:
             raise ValueError("Missing or altered embedded resource: " + name)
     modules = set()
-    counts = dict(archive_entries=len(entries), python_modules=0, nested_zips=0, apworld_format=False)
+    counts = dict(archive_entries=len(entries), python_modules=0, nested_zips=0)
     for name, original in entries.items():
         if archive.toc[original][2] > MAX_ENTRY:
             raise ValueError("Oversized application resource: " + name)
@@ -158,17 +134,11 @@ def inspect_app(path, extra_markers=()):
         if archive.toc[original][-1] in ("s", "m", "M"):
             code_paths(marshal.loads(data), name)
         elif is_zipfile(BytesIO(data)):
-            if name.endswith('.apworld'):
-                inspect_apworld(data, private_markers, name)
-                counts['apworld_format'] = True
-            else:
-                inspect_zip(data, private_markers, name)
+            inspect_zip(data, private_markers, name)
             counts["nested_zips"] += 1
     missing = REQUIRED_MODULES - modules
     if missing:
         raise ValueError("Required application modules are not frozen: " + ", ".join(sorted(missing)))
-    if not counts['apworld_format']:
-        raise ValueError('The application has no installable APWorld container.')
     counts["python_modules"] = len(modules)
     return dict(result="PASS", version=version, artifact=path.name, bytes=path.stat().st_size,
                 sha256=sha(path.read_bytes()), console=False, onefile=True,

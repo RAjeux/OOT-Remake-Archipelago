@@ -24,7 +24,7 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
-from ootrr_triforce import settings, full_ap
+from ootrr_triforce import settings
 from ootrr_triforce.catalog import GAME
 
 
@@ -107,8 +107,7 @@ def world_options(ap_options):
     spec = importlib.util.spec_from_file_location(package.__name__ + ".options", ROOT / "apworld/ootrr_remake/options.py")
     module = importlib.util.module_from_spec(spec)
     modules = {"Options": ap_options, package.__name__: package,
-               package.__name__ + ".settings": settings,
-               package.__name__ + ".full_ap": full_ap, spec.name: module}
+               package.__name__ + ".settings": settings, spec.name: module}
     with patch.dict(sys.modules, modules):
         spec.loader.exec_module(module)
     return module
@@ -166,24 +165,6 @@ class APChoiceContractTests(unittest.TestCase):
         for prefix in ("option_", "alias_"):
             with self.assertRaises(AssertionError):
                 type("ForbiddenReservedValue", (self.ap.Choice,), {prefix + "random": 1})
-
-    def test_percentage_choices_keep_actual_values_and_one_hundred_random_rolls_on_native_steps(self):
-        specs = list(settings.OPTION_SPECS) + list(full_ap.full_option_specs())
-        for spec in specs:
-            if spec['kind'] != 'range' or spec.get('step', 1) == 1:
-                continue
-            option = self.world.OPTION_TYPES[spec['id']]
-            allowed = set(range(spec['min'], spec['max'] + 1, spec['step']))
-            with self.subTest(option=spec['id']):
-                self.assertTrue(issubclass(option, self.ap.Choice))
-                for value in (spec['min'], spec['default'], spec['max']):
-                    self.assertEqual(option.from_any(value).value, value)
-                    self.assertEqual(option.from_any(str(value)).value, value)
-                for _ in range(100):
-                    self.assertIn(option.from_any('random').value, allowed)
-                for style in ('random-low', 'random-middle', 'random-high'):
-                    for _ in range(10):
-                        self.assertIn(option.from_any(style).value, allowed)
 
     def test_explicit_random_deals_keeps_its_id_and_native_mode_without_a_roll(self):
         option = self.world.OPTION_TYPES["shuffle_shops"]

@@ -17,7 +17,7 @@ import tempfile
 import threading
 import urllib.request
 import uuid
-from zipfile import BadZipFile, ZipFile, Path as ZipPath
+from zipfile import ZipFile
 
 from .i18n import tr
 
@@ -37,11 +37,9 @@ def default_base():
 
 
 def resource_root():
-    if _resource_override is not None:
-        return Path(_resource_override)
     if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         return Path(sys._MEIPASS)
-    return Path(sys.argv[0]).resolve().parent
+    return _resource_override or Path(sys.argv[0]).resolve().parent
 
 
 def log_path(base=None):
@@ -268,48 +266,6 @@ def ensure_builder(base=None, progress=None, cancel=None):
     return executable
 
 
-def validate_apworld_archive(source):
-    """Validate the installable APWorld container, not just its Python imports.
-
-    Archipelago 0.6.8's LauncherComponents._install_apworld requires a single
-    top-level directory. Keep the vendored full engine inside that directory.
-    This accepts a filename or a binary file object without writing anything.
-    """
-    root = 'ootrr_remake'
-    required = {
-        '__init__.py', 'archipelago.json', 'full_ap.py', 'full_catalog.json',
-        '_vendor/ootrr_full/__init__.py', '_vendor/ootrr_full/LICENSE-MIT.txt',
-        '_vendor/ootrr_full/logic/rando_options.py',
-        '_vendor/ootrr_full/randomizer/full_randomizer.py',
-    }
-    try:
-        with ZipFile(source) as packaged:
-            names = packaged.namelist()
-            if len(names) != len(set(names)):
-                raise ValueError('The APWorld contains duplicate archive members.')
-            directories = [entry.name for entry in ZipPath(packaged).iterdir() if entry.is_dir()]
-            if directories != [root]:
-                raise ValueError('The APWorld must contain a single directory named ootrr_remake.')
-            for name in names:
-                path = PurePosixPath(name)
-                if ('\\' in name or path.is_absolute() or '..' in path.parts
-                        or not path.parts or path.parts[0] != root):
-                    raise ValueError('The APWorld contains a member outside its package directory.')
-            if not {root + '/' + name for name in required}.issubset(names):
-                raise ValueError('The APWorld is missing its package metadata or vendored engine.')
-            metadata = json.loads(packaged.read(root + '/archipelago.json'))
-            if (not isinstance(metadata, dict) or metadata.get('game') != 'Ocarina of Time Remake'
-                    or not isinstance(metadata.get('minimum_ap_version'), str)
-                    or not isinstance(metadata.get('world_version'), str)
-                    or type(metadata.get('version')) is not int
-                    or type(metadata.get('compatible_version')) is not int
-                    or not 0 <= metadata['compatible_version'] <= metadata['version']):
-                raise ValueError('The APWorld package metadata is invalid.')
-            return metadata
-    except (BadZipFile, UnicodeError, json.JSONDecodeError) as error:
-        raise ValueError('The APWorld archive is invalid or damaged.') from error
-
-
 def install_apworld(target, base=None):
     """Install the APWorld and its persistent engine runtime for this user."""
     from .save_bridge import atomic, exclusive
@@ -318,17 +274,16 @@ def install_apworld(target, base=None):
         if not (destination / "ArchipelagoGenerate.exe").is_file() and not (destination / "Generate.py").is_file():
             raise ValueError(tr("Choose your Archipelago installation folder."))
         destination /= "custom_worlds"
+    destination.mkdir(parents=True, exist_ok=True)
     archive = resource_root() / "ootrr_remake.apworld"
-    try:
-        validate_apworld_archive(archive)
-    except (OSError, ValueError) as error:
-        raise ValueError(tr("The application is incomplete. Download it again.")) from error
+    with ZipFile(archive) as packaged:
+        if "ootrr_remake/__init__.py" not in packaged.namelist():
+            raise ValueError(tr("The application is incomplete. Download it again."))
     node = resource_root() / "runtime/node/node.exe"
     if not node.is_file() or _sha(node) != NODE_SHA256:
         raise ValueError(tr("The application is incomplete. Download it again."))
     base = Path(base or default_base())
     runtime = base / "tools" / ("node-v" + NODE_VERSION)
-    destination.mkdir(parents=True, exist_ok=True)
     runtime.mkdir(parents=True, exist_ok=True)
     world = destination / "ootrr_remake.apworld"
     # The global APWorld may be shared by multiple users. Their existing world

@@ -31,25 +31,6 @@ def tool_archive(extra=None):
     return output.getvalue()
 
 
-def world_archive(*, extra_root=False, missing=None):
-    metadata = dict(game='Ocarina of Time Remake', minimum_ap_version='0.6.7',
-                    world_version='0.12.0', version=9, compatible_version=7)
-    files = {name: b'# packaged module\n' for name in (
-        '__init__.py', 'full_ap.py', 'full_catalog.json',
-        '_vendor/ootrr_full/__init__.py', '_vendor/ootrr_full/LICENSE-MIT.txt',
-        '_vendor/ootrr_full/logic/rando_options.py',
-        '_vendor/ootrr_full/randomizer/full_randomizer.py')}
-    files['archipelago.json'] = json.dumps(metadata).encode()
-    files.pop(missing, None)
-    output = BytesIO()
-    with ZipFile(output, 'w') as archive:
-        for name, raw in files.items():
-            archive.writestr('ootrr_remake/' + name, raw)
-        if extra_root:
-            archive.writestr('ootrr_full/__init__.py', '# old invalid layout')
-    return output.getvalue()
-
-
 class AppRuntimeTests(unittest.TestCase):
     def test_failed_download_never_replaces_an_existing_tool(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -144,7 +125,8 @@ class AppRuntimeTests(unittest.TestCase):
             node.mkdir(parents=True)
             (node / 'node.exe').write_bytes(b'node-runtime')
             (node / 'LICENSE').write_bytes(b'node-license')
-            (bundle / 'ootrr_remake.apworld').write_bytes(world_archive())
+            with ZipFile(bundle / 'ootrr_remake.apworld', 'w') as archive:
+                archive.writestr('ootrr_remake/__init__.py', '# world')
             (archipelago / 'custom_worlds').mkdir(parents=True)
             (archipelago / 'ArchipelagoGenerate.exe').touch()
             previous = archipelago / 'custom_worlds/ootrr_remake.apworld'
@@ -155,36 +137,10 @@ class AppRuntimeTests(unittest.TestCase):
             self.assertEqual(installed.read_bytes(), (bundle / 'ootrr_remake.apworld').read_bytes())
             backup, = (base / 'backups/apworld').glob('*.apworld')
             self.assertEqual(backup.read_bytes(), b'previous-world')
-            with patch.object(runtime, 'resource_root', return_value=root / 'closed-app'), \
-                 patch.dict(os.environ, {'OOTRR_NODE': ''}):
+            with patch.object(runtime, 'resource_root', return_value=root / 'closed-app'):
                 persistent = Path(runtime.bundled_node(base=base))
                 self.assertEqual(persistent.read_bytes(), b'node-runtime')
                 self.assertEqual((persistent.parent / 'LICENSE').read_bytes(), b'node-license')
-
-    def test_invalid_world_never_creates_destination_or_changes_previous_install(self):
-        invalid = (world_archive(extra_root=True), world_archive(missing='archipelago.json'),
-                   world_archive(missing='_vendor/ootrr_full/__init__.py'), b'not a zip')
-        for raw in invalid:
-            for existing in (False, True):
-                with self.subTest(existing=existing, size=len(raw)), tempfile.TemporaryDirectory() as directory:
-                    root = Path(directory)
-                    bundle, base = root / 'bundle', root / 'user-data'
-                    bundle.mkdir()
-                    (bundle / 'ootrr_remake.apworld').write_bytes(raw)
-                    destination = root / 'archipelago/custom_worlds'
-                    previous = destination / 'ootrr_remake.apworld'
-                    if existing:
-                        destination.mkdir(parents=True)
-                        previous.write_bytes(b'previous APWorld')
-                    with patch.object(runtime, 'resource_root', return_value=bundle), \
-                         self.assertRaises(ValueError):
-                        runtime.install_apworld(destination, base=base)
-                    self.assertFalse(base.exists(), 'Preflight must precede runtime, lock and backup writes')
-                    if existing:
-                        self.assertEqual(previous.read_bytes(), b'previous APWorld')
-                        self.assertEqual(list(destination.iterdir()), [previous])
-                    else:
-                        self.assertFalse(destination.exists(), 'Invalid APWorld must not create custom_worlds')
 
 
 if __name__ == '__main__':

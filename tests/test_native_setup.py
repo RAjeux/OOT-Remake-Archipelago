@@ -31,8 +31,7 @@ class CompiledGameTests(unittest.TestCase):
                 executable.write_bytes(BUILD_MARK + expected)
                 self.assertFalse(compiled_game(romfs), "A missing bundle cannot certify a build.")
                 dll.write_bytes(b"current DLL")
-                for binary in (b"", BUILD_MARK, BUILD_MARK + old, expected,
-                               b"OOTRR-AP native ABI 1" + expected):
+                for binary in (b"", BUILD_MARK, BUILD_MARK + old, expected):
                     executable.write_bytes(binary)
                     self.assertFalse(compiled_game(romfs))
                 executable.write_bytes(BUILD_MARK + b"\0" * 32 + expected)
@@ -49,21 +48,14 @@ class CompiledGameTests(unittest.TestCase):
                 for name in ("ootrr_archipelago.inc", "ootrr_ap_items.inc", "ootrr_ap_digest.h"):
                     helper = host / name
                     helper.write_bytes(b"installed host adapter")
-                    (native/name).write_bytes(helper.read_bytes())
                     os.utime(helper, ns=(1_000_000_000, 1_000_000_000))
                 for name in (*MENU_FILES, "vk_menu.cpp"):
                     helper = menu / name
                     helper.write_bytes(b"installed menu adapter")
-                    if name in MENU_FILES:
-                        (native/name).write_bytes(helper.read_bytes())
                     os.utime(helper, ns=(1_000_000_000, 1_000_000_000))
                 os.utime(executable, ns=(2_000_000_000, 2_000_000_000))
                 os.utime(renderer, ns=(2_000_000_000, 2_000_000_000))
                 self.assertTrue(compiled_game(romfs,tools))
-                packaged = native/"ootrr_archipelago.inc"
-                packaged.write_bytes(b"updated adapter, unchanged DLL")
-                self.assertFalse(compiled_game(romfs,tools), "A header-only application update requires the new host.")
-                packaged.write_bytes((host/packaged.name).read_bytes())
                 os.utime(menu / MENU_FILES[0], ns=(3_000_000_000, 3_000_000_000))
                 self.assertFalse(compiled_game(romfs,tools), "A menu update requires a rebuilt renderer.")
                 os.utime(renderer, ns=(4_000_000_000, 4_000_000_000))

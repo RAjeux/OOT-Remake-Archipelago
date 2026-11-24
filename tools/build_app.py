@@ -21,7 +21,7 @@ NODE_SHA256 = "86fc4785327db5f5c7558dc6156c543b433c313e813a222e088086222ab4afa6"
 NODE_LICENSE_SHA256 = "ed34dd8e3f0a78dbaf00d0444ce8e285b015b765379c2e17880455f70370f8e9"
 NODE_ZIP_SHA256 = "e612af99f626ab415ea225af6bce5c971feb448cb5cae250bb1c3fa50c5f7d9f"
 NODE_URL = f"https://nodejs.org/dist/v{NODE_VERSION}/node-v{NODE_VERSION}-win-x64.zip"
-PACKAGES = ("ootrr_triforce", "oot_rando", "ootrr_full", "ainb", "evfl", "websockets", "yaml")
+PACKAGES = ("ootrr_triforce", "oot_rando", "ainb", "evfl", "websockets")
 PYINSTALLER_VERSION = "6.22.3"
 
 
@@ -30,17 +30,6 @@ def sha(path):
     with Path(path).open("rb") as stream:
         for chunk in iter(lambda: stream.read(4 << 20), b""):
             digest.update(chunk)
-    return digest.hexdigest()
-
-
-def client_code_digest():
-    """Bind frozen cache keys to code inside PYZ, where .py files do not exist."""
-    digest = hashlib.sha256()
-    for path in sorted((ROOT / 'client').rglob('*.py')):
-        if '__pycache__' in path.parts:
-            continue
-        digest.update(path.relative_to(ROOT / 'client').as_posix().encode('utf-8') + b'\0')
-        digest.update(hashlib.sha256(path.read_bytes()).digest())
     return digest.hexdigest()
 
 
@@ -167,9 +156,11 @@ def source_notice(work, version):
 
 def payload(work, version, node, node_license):
     # Assemble the APWorld directly. Do not overwrite any historical ZIP/reference.
-    from build import archive, tree, world_entries
+    from build import WORLD_FILES, archive, tree
     world = work / "ootrr_remake.apworld"
-    archive(world, world_entries())
+    rows = list(tree(ROOT / "apworld"))
+    rows.extend(("ootrr_remake/" + name, ROOT / "client/ootrr_triforce" / name) for name in WORLD_FILES)
+    archive(world, rows)
     files = {"ootrr_remake.apworld": world, "native/archipelago.dll": ROOT / "prebuilt/windows-x64/archipelago.dll",
              "runtime/libzstd.dll": ROOT / "distribution/runtime/libzstd.dll",
              "runtime/LICENSE.txt": ROOT / "distribution/runtime/LICENSE.txt",
@@ -177,20 +168,14 @@ def payload(work, version, node, node_license):
              "SOURCES.txt": source_notice(work, version), "assets/icon.png": ROOT / "assets/icon.png"}
     files.update({"native/" + name: ROOT / "native" / name for name in HOST_FILES})
     files.update({name: ROOT / name for name in ("VERSION", "LICENSE", "NOTICE")})
-    files.update({'distribution/' + name: ROOT / 'distribution' / name
-                  for name in ('Guide.txt', 'Guide-FR.txt')})
     for path in (ROOT / "client/ootrr_triforce").iterdir():
         if path.is_file() and path.suffix != ".py":
             files["ootrr_triforce/" + path.name] = path
-    for name, path in tree(ROOT / "client/ootrr_full"):
-        if path.suffix != ".py":
-            files["ootrr_full/" + name] = path
     files.update(licenses(work, node_license))
     digest = ",".join(map(str, hashlib.sha256(files["native/archipelago.dll"].read_bytes()).digest()))
     if files["native/ootrr_ap_digest.h"].read_bytes() != ("static const unsigned char ap_dll_sha16[32] = {" + digest + "};\n").encode("ascii"):
         raise ValueError("The native DLL and host verification header differ.")
     manifest = dict(schema=1, version=version, platform="windows-x64", node_version=NODE_VERSION,
-                    code_sha256=client_code_digest(),
                     python_version=".".join(map(str, sys.version_info[:3])), pyinstaller_version=PYINSTALLER_VERSION,
                     payload={name: sha(path) for name, path in sorted(files.items())})
     manifest_path = work / "app-manifest.json"

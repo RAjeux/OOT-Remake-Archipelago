@@ -167,14 +167,6 @@ func AP_Cursor() C.uint32_t {
 	return C.uint32_t(active.cfg.CursorHash)
 }
 
-//export AP_SeedMarker
-func AP_SeedMarker() C.uint32_t {
-	if active == nil {
-		return 0
-	}
-	return C.uint32_t(active.cfg.SeedMarker)
-}
-
 //export AP_Note
 func AP_Note(dest *C.char, cap C.int) C.int {
 	s := active
@@ -251,15 +243,11 @@ func (s *Client) saved(b []byte) ([]uint32, bool, bool) {
 		return nil, false, false
 	}
 	complete, belongs := false, false
-	seedBelongs := s.cfg.SeedMarker == 0
 	var fs []uint32
 	for i := 40; i < end-8; i += 8 {
 		h, v := word(i), word(i+4)
 		if h == s.cfg.CursorHash {
 			belongs = true
-		}
-		if h == s.cfg.SeedMarker && v == 1 {
-			seedBelongs = true
 		}
 		if _, ok := s.byFlag[h]; ok && v == 1 {
 			fs = append(fs, h)
@@ -268,6 +256,6 @@ func (s *Client) saved(b []byte) ([]uint32, bool, bool) {
 			complete = true
 		}
 	}
-	return fs, complete, belongs && seedBelongs
+	return fs, complete, belongs
 }
 func main() {}

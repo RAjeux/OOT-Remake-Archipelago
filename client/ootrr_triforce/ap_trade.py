@@ -26,15 +26,13 @@ def _invalid():
     return ValueError(tr("Invalid Archipelago trade metadata."))
 
 
-def trade_records(roster, *, require_all=False, item_data=None, item_ids=None):
+def trade_records(roster, *, require_all=False):
     """Resolve only the append-only trade catalogue; legacy rooms stay inert."""
     from oot_rando.patching import ap_item
     names = sorted(set(roster).intersection(TRADE_CHECKS))
     if names and require_all and set(names) != set(TRADE_CHECKS):
         raise _invalid()
     records = []
-    recipes = ITEM_DATA if item_data is None else item_data
-    identifiers = ITEM_IDS if item_ids is None else item_ids
     for name in names:
         reward, source = roster[name], TRADE_CHECKS[name]
         if (not isinstance(reward, dict) or type(reward.get("local")) is not bool
@@ -42,7 +40,7 @@ def trade_records(roster, *, require_all=False, item_data=None, item_ids=None):
                 or not isinstance(reward.get("player"), str) or not reward["player"]):
             raise _invalid()
         local, item = reward["local"], reward["item"]
-        if local and (item not in recipes or reward.get("item_id", identifiers[item]) != identifiers[item]):
+        if local and (item not in ITEM_DATA or reward.get("item_id", ITEM_IDS[item]) != ITEM_IDS[item]):
             raise _invalid()
         label = ap_item.ap_item(json.dumps([name, item, reward["player"]], ensure_ascii=False))
         records.append(dict(name=name, id=source["id"], flag_name=source["flag_name"],
@@ -63,7 +61,7 @@ def _preloads(editor, prefix=PREFIX):
 
 
 def build_trade_rewards(pouch_raw, presenter_raw, roster, *, native_info=None, ground_raw=None,
-                        records=None, prefix=PREFIX, event_stem=event_name, reconcile=True, item_data=None):
+                        records=None, prefix=PREFIX, event_stem=event_name, reconcile=True):
     """Return both changed charts and the location-bound NPC callback entries."""
     from evfl.common import Argument
     from evfl.entry_point import EntryPoint
@@ -78,7 +76,6 @@ def build_trade_rewards(pouch_raw, presenter_raw, roster, *, native_info=None, g
     from .trade_state import append_reconcile
 
     records = trade_records(roster) if records is None else list(records)
-    recipes = ITEM_DATA if item_data is None else item_data
     if not records:
         return pouch_raw, presenter_raw, {}
     pouch, presenter = FlowEditor(pouch_raw, FLOW_PATH), FlowEditor(presenter_raw, PRESENTER_PATH)
@@ -111,16 +108,8 @@ def build_trade_rewards(pouch_raw, presenter_raw, roster, *, native_info=None, g
     entries = {}
     for record in records:
         stem = event_stem(record["id"])
-        metadata = (recipes[record["item"]] if record["local"]
+        metadata = (ITEM_DATA[record["item"]] if record["local"]
                     else dict(actor=record["actor"], mode="actor", kind="Item"))
-        if record.get('small_key_token'):
-            from ootrr_full.patching.key_adapter import key_actor_item, small_applied_flag
-            token = record['small_key_token']
-            if (not record['local'] or not isinstance(token, dict)
-                    or key_actor_item(token.get('actor', '')) != record['item']
-                    or token.get('applied') != small_applied_flag(token['actor'])):
-                raise _invalid()
-            metadata = dict(metadata, mode='small_keys', actor=token['actor'], small_key_tokens=[token['actor']])
         style = receipt_style(metadata, native_info) if record["local"] else "large"
         core_name = stem + "_Pouch"
         save = pouch.action(stem + "_Save", "GameSystemActor", "EventTriggerRequestAutoSave", None)
@@ -163,7 +152,7 @@ def build_trade_rewards(pouch_raw, presenter_raw, roster, *, native_info=None, g
         register(pouch, core_name, guard(stem + "_Core", core))
         shown = (copy_receipt_presenter(presenter, metadata, record["id"], core_name, style=style,
                                        ground_raw=ground_raw, prefix=prefix + "Show_" + str(record["id"]))
-                 if style not in {"pickup", "text"} else None)
+                 if style != "pickup" else None)
         if shown:
             # Retain all native model/sound/camera actions, except intermediate
             # save requests. Only the callback above commits this transaction.
@@ -177,9 +166,9 @@ def build_trade_rewards(pouch_raw, presenter_raw, roster, *, native_info=None, g
                             point.main_event = make_index(node.data.nxt.v)
 
         def present(branch, actor):
-            if style in {"pickup", "text"}:
+            if style == "pickup":
                 call = pouch.subflow(branch + "_Get", "", core_name, {"ActorName": actor})
-                if style == "pickup" and (native_info is None or not native_info[actor].get("IsNotOpenStockNumDisplay", False)):
+                if native_info is None or not native_info[actor].get("IsNotOpenStockNumDisplay", False):
                     popup = pouch.action(branch + "_Pickup", "UISystemActor", "EventTriggerRequestOpenPickUpWindow",
                                          {"ActorName": actor})
                     link(call, popup)
@@ -198,7 +187,7 @@ def build_trade_rewards(pouch_raw, presenter_raw, roster, *, native_info=None, g
             link(window, recipe_root)
             point.main_event = make_index(window)
         no_ammo = commit
-        if required and metadata.get('grant_actor', metadata['actor']) in AMMO_BAGS:
+        if required and metadata["actor"] in AMMO_BAGS:
             consumed_empty = pouch.action(stem + "_EmptyConsume", "PouchSystemActor", "EventTriggerAddOrRemovePouchContent",
                                           {"Actor": required, "Num": -1, "IsEquipDIrect": False,
                                            "IsSetMessageTargetActorName": False, "IsGetEvent": False})
@@ -214,10 +203,9 @@ def build_trade_rewards(pouch_raw, presenter_raw, roster, *, native_info=None, g
     return pouch.write("Native Archipelago adult trade rewards")[0], presenter.write("Native adult trade presentations")[0], entries
 
 
-def prepare_trade_rewards(romfs, mod, roster, settings=None, *, records=None, item_data=None, item_ids=None):
+def prepare_trade_rewards(romfs, mod, roster, settings=None):
     """Stage reward callbacks; NPC wrappers register their dependency closure."""
-    records = (trade_records(roster, require_all=True, item_data=item_data, item_ids=item_ids)
-               if records is None else records)
+    records = trade_records(roster, require_all=True)
     if not records:
         return {}
     from oot_rando.formats import byml_codec
@@ -237,7 +225,7 @@ def prepare_trade_rewards(romfs, mod, roster, settings=None, *, records=None, it
     info = {row["__RowId"]: row for row in byml_codec.load(
         codec.decode(source("RSDB/PouchActorInfo.Product.111.rstbl.byml.zs")))["root"]}
     pouch, presenter, entries = build_trade_rewards(before[FLOW_PATH], before[PRESENTER_PATH], roster,
-        native_info=info, ground_raw=codec.decode(source(GROUND_PATH)), records=records, item_data=item_data)
+        native_info=info, ground_raw=codec.decode(source(GROUND_PATH)))
     modified = {FLOW_PATH: pouch, PRESENTER_PATH: presenter}
     rest_frame = source(REST)
     table, allocations = grow_resources(codec.decode(rest_frame),

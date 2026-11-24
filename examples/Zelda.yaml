@@ -2,8 +2,6 @@
 name: Zelda
 game: "Ocarina of Time Remake"
 "Ocarina of Time Remake":
-  # Historical OOTRR example. Use Full-Network.yaml for the new engine.
-  generation_mode: legacy
   # Fixed goal: defeat Ganon. AP-compatible settings only.
 
   # Shuffle

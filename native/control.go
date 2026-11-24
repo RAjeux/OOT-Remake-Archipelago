@@ -157,13 +157,6 @@ func controlHandler(s *Client, secret, host string) http.Handler {
 		switch r.URL.Path {
 		case "/v1/status":
 			method = http.MethodGet
-		case "/v1/chat":
-			method = r.Method
-			if method != http.MethodGet && method != http.MethodPost {
-				w.Header().Set("Allow", "GET, POST")
-				controlError(w, http.StatusMethodNotAllowed, "method_not_allowed")
-				return
-			}
 		case "/v1/connect", "/v1/disconnect":
 			method = http.MethodPost
 		default:
@@ -180,11 +173,7 @@ func controlHandler(s *Client, secret, host string) http.Handler {
 				controlError(w, http.StatusBadRequest, "invalid_request")
 				return
 			}
-			if r.URL.Path == "/v1/chat" {
-				controlJSON(w, http.StatusOK, s.chatReply(1, ""))
-			} else {
-				controlJSON(w, http.StatusOK, controlResponse{1, s.connectionInfo()})
-			}
+			controlJSON(w, http.StatusOK, controlResponse{1, s.connectionInfo()})
 			return
 		}
 		if media, _, err := mime.ParseMediaType(r.Header.Get("Content-Type")); err != nil || media != "application/json" {
@@ -209,21 +198,6 @@ func controlHandler(s *Client, secret, host string) http.Handler {
 			}
 			s.disconnect()
 			controlJSON(w, http.StatusOK, controlResponse{1, s.connectionInfo()})
-			return
-		}
-		if r.URL.Path == "/v1/chat" {
-			var request struct {
-				Text *string `json:"text"`
-			}
-			if !decodeControlJSON(raw, &request) || request.Text == nil {
-				controlError(w, http.StatusBadRequest, "invalid_request")
-				return
-			}
-			errorCode, result := s.say(*request.Text), 1
-			if errorCode != "" {
-				result = -1
-			}
-			controlJSON(w, http.StatusOK, s.chatReply(result, errorCode))
 			return
 		}
 		var request struct {

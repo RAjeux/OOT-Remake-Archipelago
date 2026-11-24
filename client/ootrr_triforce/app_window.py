@@ -10,12 +10,10 @@ import os
 from pathlib import Path
 import queue
 import re
-import sys
 import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import webbrowser
-import uuid
 
 from .i18n import detect_language, normalize_language, set_language, tr
 
@@ -27,43 +25,8 @@ TEXT = {
     "home": "Home",
     "play": "Play",
     "setup": "Set up a room",
-    "update_room": "Update prepared room",
     "yaml": "Create YAML",
     "connection": "Connection",
-    "rooms": "My rooms",
-    "tracker": "Archipelago tracker",
-    "chat": "Archipelago chat",
-    "external": "Other ports and emulators…",
-    "configure_settings": "Configure settings…",
-    "import_configuration": "Import configuration…",
-    "configuration_file": "Player configuration",
-    "configuration_failed": "The configuration could not be read. Check its settings and try again.",
-    "configuration_imported": "Configuration imported. Review its settings before generating the room.",
-    "reading_configuration": "Reading the configuration…",
-    "configuration_summary": "{mode} · {count} configurable settings",
-    "full_network": "Full network",
-    "legacy": "Legacy OOTRR",
-    "changing_room": "Selecting your room…",
-    "room_failed": "The room could not be selected. Close Zelda and check its prepared files.",
-    "snapshot": "Backing up this room's saves…",
-    "snapshot_saved": "Save backup created.",
-    "snapshot_failed": "The backup could not be created. Close Zelda and try again.",
-    "check_updates": "Check for updates",
-    "checking_updates": "Checking for application updates…",
-    "updates_failed": "Updates could not be checked. Try again later.",
-    "up_to_date": "You are using the latest available version.",
-    "update_available": "Version {version} is available.",
-    "download_update": "Open download page",
-    "include_prereleases": "Include prerelease updates",
-    "verify_update": "Download and verify update",
-    "downloading_update": "Downloading and verifying the signed update…",
-    "verified_update": "The signed update has been verified.",
-    "update_download_failed": "The update could not be verified. Your current application is unchanged.",
-    "install_update": "Install and restart",
-    "installing_update": "Installing the verified update…",
-    "update_install_failed": "The update could not be installed. Your previous application was preserved.",
-    "external_update_busy": "Disconnect the external room before restarting this application.",
-    "open_verified_update": "Open verified download folder",
     "host": "Game host",
     "triforce": "Triforce",
     "hookshot": "Hookshot (experimental)",
@@ -87,7 +50,6 @@ TEXT = {
     "update_title": "Room update required.",
     "prepare_first": "Prepare a room to enable Play.",
     "update_needed": "This room needs an update. Choose Set up a room to prepare it.",
-    "resource_update": "Update this room with the same player file. Its save and room are preserved; a new seed is not required.",
     "finding": "Finding your game and prepared room…",
     "player_room": "{slot} · Room {room}",
     "setup_intro": "Choose the player file generated for you by Archipelago. Your existing saves are kept.",
@@ -116,7 +78,7 @@ TEXT = {
     "player_name": "Player name",
     "save_yaml": "Save YAML…",
     "yaml_name_error": "Choose a name of 1 to 16 characters other than Archipelago.",
-    "yaml_saved": "YAML saved. Generate the room with Archipelago and the other players' YAML files.",
+    "yaml_saved": "YAML saved. Edit its settings before generating your room.",
     "saving_yaml": "Saving YAML…",
     "yaml_failed": "The YAML could not be saved. Choose a writable folder and try again.",
     "install_world": "Install APWorld…",
@@ -188,12 +150,6 @@ class AppWindow:
         self.status_key, self.status_values = "finding", {}
         self.progress_text = ""
         self.connection_window = None
-        self.update_window = None
-        self.pending_update = None
-        self.include_prereleases = tk.BooleanVar(value=True)
-        self.settings_window = self.rooms_window = self.tracker_window = self.chat_window = self.external_window = None
-        from .settings_editor import PlayerConfiguration
-        self.yaml_document = PlayerConfiguration.new()
         self.about_window = None
         self.translated_widgets = []
         self.menu_language = None
@@ -271,7 +227,7 @@ class AppWindow:
         pane.columnconfigure(0, weight=1)
         pane.columnconfigure(1, weight=1)
         pane.rowconfigure(0, weight=1)
-        pane.rowconfigure(7, weight=1)
+        pane.rowconfigure(5, weight=1)
         self._label(pane, "intro", wraplength=680).grid(row=1, column=0, columnspan=2, sticky="w", pady=(0, 18))
         summary = ttk.LabelFrame(pane, padding=22)
         summary.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(0, 18))
@@ -288,16 +244,6 @@ class AppWindow:
         self.yaml_button.grid(row=3, column=1, sticky="ew", padx=(7, 0))
         self.connection_button = self._button(pane, "connection", self.open_connection)
         self.connection_button.grid(row=4, column=0, columnspan=2, sticky="w", pady=(16, 0))
-        extras = ttk.Frame(pane)
-        extras.grid(row=5, column=0, columnspan=2, sticky="ew", pady=(12, 0))
-        self.rooms_button = self._button(extras, "rooms", self.open_rooms)
-        self.rooms_button.grid(row=0, column=0, padx=(0, 12))
-        self.tracker_button = self._button(extras, "tracker", self.open_tracker)
-        self.tracker_button.grid(row=0, column=1)
-        self.chat_button = self._button(extras, "chat", self.open_chat)
-        self.chat_button.grid(row=0, column=2, padx=(12, 0))
-        self.external_button = self._button(pane, "external", self.open_external)
-        self.external_button.grid(row=6, column=0, columnspan=2, sticky="w", pady=(12, 0))
 
     def _page_title(self, pane, key):
         pane.columnconfigure(0, weight=1)
@@ -396,21 +342,13 @@ class AppWindow:
         self.name_entry = ttk.Entry(pane, textvariable=self.player_name)
         self.name_entry.grid(row=3, column=0, sticky="ew")
         self.form_widgets.append(self.name_entry)
-        self.yaml_summary = ttk.Label(pane, wraplength=680)
-        self.yaml_summary.grid(row=4, column=0, sticky="w", pady=(12, 8))
-        controls = ttk.Frame(pane)
-        controls.grid(row=5, column=0, sticky="ew", pady=(0, 12))
-        self.settings_button = self._button(controls, "configure_settings", self.open_settings)
-        self.settings_button.grid(row=0, column=0, padx=(0, 10))
-        self.import_button = self._button(controls, "import_configuration", self.import_configuration)
-        self.import_button.grid(row=0, column=1)
         self.save_yaml_button = self._button(pane, "save_yaml", self.save_yaml, style="App.Action.TButton")
-        self.save_yaml_button.grid(row=6, column=0, sticky="w", pady=(0, 24))
-        ttk.Separator(pane).grid(row=7, column=0, sticky="ew", pady=(0, 18))
-        self._label(pane, "world_intro", wraplength=680).grid(row=8, column=0, sticky="ew", pady=(0, 14))
+        self.save_yaml_button.grid(row=4, column=0, sticky="w", pady=(16, 24))
+        ttk.Separator(pane).grid(row=5, column=0, sticky="ew", pady=(0, 18))
+        self._label(pane, "world_intro", wraplength=680).grid(row=6, column=0, sticky="ew", pady=(0, 14))
         self.world_button = self._button(pane, "install_world", self.install_world)
-        self.world_button.grid(row=9, column=0, sticky="w")
-        pane.rowconfigure(10, weight=1)
+        self.world_button.grid(row=7, column=0, sticky="w")
+        pane.rowconfigure(8, weight=1)
 
     def _wheel(self, event):
         if self.page != "setup" or event.widget.winfo_toplevel() != self.master:
@@ -595,10 +533,7 @@ class AppWindow:
                 if result.get("_failed"):
                     self.status_key = "cancelled" if result.get("_cancelled") else {
                         "install": "setup_failed", "launch": "launch_failed", "yaml": "yaml_failed",
-                        "world": "world_failed", "licenses": "path_failed", "room": "room_failed",
-                        "snapshot": "snapshot_failed", "updates": "updates_failed",
-                        "update_download": "update_download_failed", "update_install": "update_install_failed",
-                        "configuration": "configuration_failed"
+                        "world": "world_failed", "licenses": "path_failed"
                     }[task.kind]
                     self.progress_text = result.get("_message", "")
                 elif task.kind == "install":
@@ -607,10 +542,6 @@ class AppWindow:
                     if (old_profile != self.current.get("profile") and self.connection_window
                             and not self.connection_window.closed):
                         self.connection_window.close()
-                    if old_profile != self.current.get("profile"):
-                        for child in (self.tracker_window, self.chat_window):
-                            if child and not child.closed:
-                                child.close()
                     self.current["manifest"] = self.fields["manifest"].get().strip()
                     self.status_key = "ready" if result.get("ready") else "build_needed"
                     self.page = "home"
@@ -618,59 +549,6 @@ class AppWindow:
                     self.status_key = "ready" if self.current.get("ready") else "prepare_first"
                     if not self.close_requested:
                         self._open_path(result["path"])
-                elif task.kind == "room":
-                    if result.get("host") == "external":
-                        if self.close_requested:
-                            self.close()
-                            return
-                        if self.rooms_window and not self.rooms_window.closed:
-                            self.rooms_window.close()
-                        self.status_key = "ready" if self.current.get("ready") else "prepare_first"
-                        self.open_external(result["profile"])
-                        self._render()
-                        continue
-                    self.current = dict(result)
-                    self.host = result.get("host", "nx2navi")
-                    for name in ("manifest", "game", "romfs", "tools", "server"):
-                        self._set_field(name, result.get(name, ""))
-                    self.target_mods = result.get("mods", "")
-                    self.manifest_info = None
-                    if self.connection_window and not self.connection_window.closed:
-                        self.connection_window.close()
-                    if self.rooms_window and not self.rooms_window.closed:
-                        self.rooms_window.close()
-                    if self.tracker_window and not self.tracker_window.closed:
-                        self.tracker_window.close()
-                    if self.chat_window and not self.chat_window.closed:
-                        self.chat_window.close()
-                    self.page = "home" if result.get("ready") else "setup"
-                    self.status_key = "ready" if result.get("ready") else "prepare_first"
-                    if not result.get("ready"):
-                        self._inspect_manifest()
-                        self._queue_installation_check()
-                elif task.kind == "snapshot":
-                    self.status_key = "snapshot_saved"
-                    if not self.close_requested:
-                        self._open_path(result["path"])
-                elif task.kind == "updates":
-                    release = result.get("release")
-                    self.status_key = "update_available" if release else "up_to_date"
-                    self.status_values = {"version": release.version} if release else {}
-                    if release and not self.close_requested:
-                        self._show_update(release)
-                elif task.kind == "update_download":
-                    self.pending_update = result["update"]
-                    self.status_key = "verified_update"
-                    self._show_verified_update()
-                elif task.kind == "update_install":
-                    self.close_requested = True
-                    self.close()
-                    return
-                elif task.kind == "configuration":
-                    document = result["document"]
-                    self.yaml_document = document
-                    self.player_name.set(document.name)
-                    self.status_key = "configuration_imported"
                 else:
                     self.status_key = {"launch": "launched", "yaml": "yaml_saved", "world": "world_installed"}[task.kind]
                 if self.close_requested:
@@ -699,12 +577,10 @@ class AppWindow:
             self.help_menu.delete(0, "end")
             for key, command in (("guide", self.open_guide), ("open_log", self.open_log),
                                  ("compatibility", self.open_compatibility),
-                                 ("check_updates", self.check_updates),
                                  ("open_data", self.open_data), ("licenses", self.open_licenses),
                                  ("about", self.about)):
                 self.help_menu.add_command(label=self._text(key), command=command)
             self.menu_language = self.language
-            self.help_menu.add_checkbutton(label=self._text("include_prereleases"), variable=self.include_prereleases)
         self.page_frames[self.page].tkraise()
         self.host_choice.configure(values=(self._text("triforce"), self._text("hookshot")),
                                    state="disabled" if self.busy else "readonly")
@@ -718,19 +594,10 @@ class AppWindow:
                       if ready else self._text("update_needed"))
         else:
             detail = self._text("prepare_first")
-        if self.current.get('reprepare_required'):
-            detail = self._text('resource_update')
         self.home_room.configure(text=detail)
-        self.setup_button.configure(text=self._text('update_room' if self.current.get('reprepare_required') else 'setup'))
         self.play_button.configure(state="normal" if ready and not self.busy else "disabled")
         self.connection_button.configure(state="normal" if self.current.get("profile") and not self.busy else "disabled")
-        self.tracker_button.configure(state="normal" if self.current.get("profile") and not self.busy else "disabled")
-        self.chat_button.configure(state="normal" if self.current.get("profile") and not self.busy else "disabled")
-        from .settings_editor import specs_for
-        self.yaml_summary.configure(text=self._text("configuration_summary", mode=self._text(self.yaml_document.mode),
-                                                   count=len(specs_for(self.yaml_document.mode))))
-        for widget in (self.setup_button, self.yaml_button, self.save_yaml_button, self.world_button,
-                       self.settings_button, self.import_button, self.rooms_button, self.external_button, *self.form_widgets):
+        for widget in (self.setup_button, self.yaml_button, self.save_yaml_button, self.world_button, *self.form_widgets):
             widget.configure(state="disabled" if self.busy else "normal")
         can_install = bool(self.manifest_info and self.installation_info and self.installation_info.get("valid")
                            and self.fields["game"].get().strip() and self.fields["server"].get().strip())
@@ -783,15 +650,7 @@ class AppWindow:
         self._set_field("password", "")
         def progress(percent, message):
             self.results.put((_Task("progress", None), (percent, message)))
-        def prepare():
-            result = self.service.install(request, progress=progress, cancel=self.cancel_event)
-            try:
-                from .room_library import RoomLibrary
-                RoomLibrary(self.base).register(result, request["manifest"])
-            except (OSError, ValueError):
-                logging.getLogger(__name__).warning("Room metadata could not be added to the library.")
-            return result
-        self._start("install", prepare, "preparing")
+        self._start("install", lambda: self.service.install(request, progress=progress, cancel=self.cancel_event), "preparing")
 
     def cancel(self):
         if self.busy:
@@ -808,18 +667,11 @@ class AppWindow:
         if self.busy:
             return
         try:
-            from .settings_editor import validate_name
-            self.yaml_document.name = validate_name(self.player_name.get())
+            content = yaml_content(self.player_name.get())
         except ValueError:
             self.status_key = "yaml_name_error"
             self._render()
             self.name_entry.focus_set()
-            return
-        try:
-            content = self.yaml_document.dumps()
-        except (ValueError, ImportError):
-            self.status_key = "configuration_failed"
-            self._render()
             return
         safe_name = re.sub(r"[^\w -]", "_", self.player_name.get().strip())
         target = self.dialogs.asksaveasfilename(parent=self.master, title=self._text("save_yaml"),
@@ -831,150 +683,6 @@ class AppWindow:
                 atomic(Path(target), content.encode("utf-8"))
                 return {}
             self._start("yaml", save, "saving_yaml")
-
-    def open_settings(self):
-        if self.busy:
-            return
-        if self.settings_window and not self.settings_window.closed:
-            self.settings_window.master.lift()
-            return
-        from .settings_editor import SettingsEditorWindow
-        self.yaml_document.name = self.player_name.get()
-        def applied(document):
-            self.yaml_document = document
-            self.player_name.set(document.name)
-            self._render()
-        self.settings_window = SettingsEditorWindow(tk.Toplevel(self.master), self.yaml_document,
-            language=self.language, on_apply=applied, dialogs=self.dialogs)
-
-    def import_configuration(self):
-        if self.busy:
-            return
-        from .settings_editor import PlayerConfiguration
-        path = self.dialogs.askopenfilename(parent=self.master, title=self._text("import_configuration"),
-            filetypes=((self._text("configuration_file"), "*.yaml *.yml *.json"),))
-        if path:
-            self._start("configuration", lambda: {"document": PlayerConfiguration.read(path)}, "reading_configuration")
-
-    def open_rooms(self):
-        if self.busy:
-            return
-        if self.rooms_window and not self.rooms_window.closed:
-            self.rooms_window.master.lift()
-            return
-        from .room_library import RoomLibrary
-        from .room_windows import RoomsWindow
-        library = RoomLibrary(self.base)
-        def select(key):
-            self._start("room", lambda: library.select(key), "changing_room")
-        def backup(key):
-            self._start("snapshot", lambda: {"path": library.snapshot(key)}, "snapshot")
-        self.rooms_window = RoomsWindow(tk.Toplevel(self.master), library, language=self.language,
-                                       on_select=select, on_backup=backup)
-
-    def open_tracker(self):
-        if self.busy or not self.current.get("profile"):
-            return
-        if self.tracker_window and not self.tracker_window.closed:
-            self.tracker_window.master.lift()
-            return
-        from .room_windows import ProgressWindow
-        self.tracker_window = ProgressWindow(tk.Toplevel(self.master), self.current["profile"],
-                                            artifact=self.current.get("tracker_source"), language=self.language)
-
-    def open_chat(self):
-        if self.busy or not self.current.get("profile"):
-            return
-        if self.chat_window and not self.chat_window.closed:
-            self.chat_window.master.lift()
-            return
-        from .chat_window import ChatWindow
-        self.chat_window = ChatWindow(tk.Toplevel(self.master), self.current["profile"], language=self.language)
-
-    def open_external(self, profile=None):
-        if self.busy:
-            return
-        if self.external_window and not self.external_window.closed:
-            self.external_window.master.lift()
-            if profile:
-                self.external_window.open_profile(profile)
-            return
-        from .external_window import ExternalWindow
-        self.external_window = ExternalWindow(tk.Toplevel(self.master), base=self.base,
-            language=self.language, profile=profile, dialogs=self.dialogs)
-
-    def check_updates(self):
-        if self.busy:
-            return
-        prereleases = self.include_prereleases.get()
-        def check():
-            from .app_runtime import resource_root
-            from .update_service import check_for_update
-            version = (resource_root() / "VERSION").read_text(encoding="utf-8").strip()
-            return {"release": check_for_update(version, include_prereleases=prereleases)}
-        self._start("updates", check, "checking_updates")
-
-    def _show_update(self, release):
-        if self.update_window and self.update_window.winfo_exists():
-            self.update_window.destroy()
-        dialog = self.update_window = tk.Toplevel(self.master)
-        dialog.title(self._text("check_updates"))
-        content = ttk.Frame(dialog, padding=22)
-        content.grid(sticky="nsew")
-        ttk.Label(content, text=self._text("update_available", version=release.version),
-                  style="App.Heading.TLabel").grid(row=0, column=0, sticky="w")
-        notes = tk.Text(content, width=75, height=16, wrap="word")
-        notes.insert("1.0", release.notes)
-        notes.configure(state="disabled")
-        notes.grid(row=1, column=0, pady=16)
-        ttk.Button(content, text=self._text("download_update"), command=lambda: webbrowser.open(release.page)).grid(row=2, column=0, sticky="e")
-        if release.signed:
-            ttk.Button(content, text=self._text("verify_update"), command=lambda: self.download_update(release)).grid(row=3, column=0, sticky="e", pady=(12, 0))
-
-    def download_update(self, release):
-        if self.busy:
-            return
-        def download():
-            from .update_service import prepare_update
-            from .app_runtime import default_base
-            base = Path(self.base or self.current.get("app_base") or default_base())
-            return {"update": prepare_update(release, base / "updates")}
-        self._start("update_download", download, "downloading_update")
-
-    def _show_verified_update(self):
-        if self.update_window and self.update_window.winfo_exists():
-            self.update_window.destroy()
-        dialog = self.update_window = tk.Toplevel(self.master)
-        dialog.title(self._text("check_updates"))
-        pane = ttk.Frame(dialog, padding=22)
-        pane.grid()
-        ttk.Label(pane, text=self._text("verified_update"), style="App.Heading.TLabel").grid(row=0, column=0, pady=(0, 16))
-        if getattr(sys, "frozen", False):
-            ttk.Button(pane, text=self._text("install_update"), command=self.install_update).grid(row=1, column=0, sticky="e")
-        else:
-            ttk.Button(pane, text=self._text("open_verified_update"), command=lambda: self._open_path(self.pending_update.path.parent)).grid(row=1, column=0, sticky="e")
-
-    def install_update(self):
-        if self.busy or self.pending_update is None or not getattr(sys, "frozen", False):
-            return
-        if self.external_window and not self.external_window.closed and (self.external_window.runtime or self.external_window.busy):
-            self.status_key = "external_update_busy"
-            self._render()
-            return
-        update, executable = self.pending_update, Path(sys.executable).resolve()
-        def install():
-            from .update_service import install_prepared
-            from .app_runtime import spawn_process
-            backup = install_prepared(update, executable)
-            try:
-                spawn_process([str(executable)], cwd=executable.parent)
-            except BaseException:
-                failed = executable.with_name(executable.name + ".failed-update-" + uuid.uuid4().hex[:8])
-                os.replace(executable, failed)
-                os.replace(backup, executable)
-                raise
-            return {}
-        self._start("update_install", install, "installing_update")
 
     def install_world(self):
         if self.busy:
@@ -1016,16 +724,7 @@ class AppWindow:
             messagebox.showerror(self._text("title"), self._text("path_failed"), parent=self.master)
 
     def open_guide(self):
-        name = "Guide-FR.txt" if self.language == "fr" else "Guide.txt"
-        try:
-            from .app_runtime import resource_root
-            path = resource_root() / "distribution" / name
-            if path.is_file():
-                self._open_path(path)
-                return
-        except (ImportError, OSError):
-            pass
-        webbrowser.open("https://github.com/RAjeux/OOT-Remake-Archipelago/blob/main/distribution/" + name)
+        webbrowser.open("https://github.com/RAjeux/OOT-Remake-Archipelago#play")
 
     def open_compatibility(self):
         webbrowser.open("https://github.com/RAjeux/OOT-Remake-Archipelago/blob/main/docs/PORT-COMPATIBILITY.md")
@@ -1081,21 +780,11 @@ class AppWindow:
             self.close_requested = True
             self.cancel()
             return
-        if self.external_window and not self.external_window.closed:
-            self.close_requested = True
-            self.external_window.close()
-            if not self.external_window.closed:
-                self._schedule(100, self.close)
-                return
         self.closed = True
         self.stop.set()
-        self.worker.join(timeout=.3)
         self._set_field("password", "")
         if self.connection_window and not self.connection_window.closed:
             self.connection_window.close()
-        for child in (self.settings_window, self.rooms_window, self.tracker_window, self.chat_window):
-            if child and not child.closed:
-                child.close()
         for identifier in self.after_ids:
             self.master.after_cancel(identifier)
         self.after_ids.clear()

@@ -13,14 +13,7 @@ contributions, are preserved in moteur/ootrr-ap/NOTICE and
 client/ootrr_triforce/NOTICE. Earlier OOTRR MIT notices are retained upstream.
 
 Python resource tools derived from Mozencaz/OotrR retain their MIT notice in
-client/credits/OotrR-MIT.txt. The full-network engine in client/ootrr_full/ is
-adapted from its 0.8.2 release, revision
-72198c684ac8b98a243e2a7040086fbe6de87049. Original resource hashes and provenance
-are retained in client/ootrr_full/UPSTREAM.json; integration changes must not
-be attributed to the upstream author. Its original logic and dependency
-notices are retained alongside the existing integration credits.
-PyYAML retains its MIT license in client/credits/PyYAML-MIT.txt.
-Python, Go and native dependencies retain their
+client/credits/OotrR-MIT.txt. Python, Go and native dependencies retain their
 own license files in client/credits/, client/websockets/, native/vendor/,
 distribution/runtime/ and distribution/sources/. Reference Triforce host
 sources retain their original notices and provenance in references/triforce/.

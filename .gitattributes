@@ -1,7 +1,2 @@
 * -text
-# Preserve byte-level release references; allow native Windows line endings.
-# Real trailing spaces and malformed indentation remain checked.
-* whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
-# Imported sources retain their upstream layout at end of file.
-client/ootrr_full/** whitespace=blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
 *.cmd text eol=crlf

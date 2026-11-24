@@ -1828,13 +1828,3 @@ LOCATION_IDS[MASTER_SWORD_LOCATION] = MASTER_SWORD_ID
 CHECK_FLAGS[MASTER_SWORD_LOCATION] = [3657094742]  # murmur3(MASTER_SWORD_FLAG_NAME)
 
 del _name
-
-# AP packet names specify exact yields. These native bundle actors encode other
-# amounts, so receipts use the unit actor once with the requested count.
-for _name, _actor, _amount in (
-    ("Bombs (10)", "Item_Bomb", 10), ("Bombs (20)", "Item_Bomb", 20),
-    ("Arrows (30)", "Item_Arrow_Normal", 30), ("Deku Seeds (30)", "Item_DekuSeed", 30),
-    ("Deku Nuts (5)", "Item_DekuNut", 5), ("Deku Nuts (10)", "Item_DekuNut", 10),
-):
-    ITEM_DATA[_name].update(grant_actor=_actor, grant_amount=_amount, quantity=_amount)
-del _name, _actor, _amount

@@ -300,7 +300,7 @@ mod tests {
         let demo: Bf = bf(&[("", 0)], vec![ev("X", Kind::Action { next: 0xFFFF, actor: 1, act: 0, params: cont("GameDataName", Val::Str("InDemo".to_string())) })]);
         let mut t: HM<String, Row> = HM::new();
         t.insert("Dm_X".to_string(), Row { stem: "Demo".to_string(), entry: String::new(), comp: String::new() });
-        let mut rf: Romfs = Romfs { root: std::path::PathBuf::from("."), zs: Zs::new(), members: None, reader: None };
+        let mut rf: Romfs = Romfs { root: std::path::PathBuf::from("."), zs: Zs::new() };
         let mut l: Loader = loader(&mut rf, &t, vec![("Main", main), ("Demo", demo)]);
         let r: Reach = walk(&mut l, "Main", "E").unwrap();
         assert_eq!(r.demos, vec!["Dm_X".to_string()]);
@@ -316,7 +316,7 @@ mod tests {
     fn missing_flows_and_entries_are_reported() {
         let main: Bf = bf(&[("E", 0)], vec![ev("A", Kind::Sub { next: 0xFFFF, params: None, flow: String::new(), entry: "Nope".to_string() })]);
         let t: HM<String, Row> = HM::new();
-        let mut rf: Romfs = Romfs { root: std::path::PathBuf::from("."), zs: Zs::new(), members: None, reader: None };
+        let mut rf: Romfs = Romfs { root: std::path::PathBuf::from("."), zs: Zs::new() };
         let mut l: Loader = loader(&mut rf, &t, vec![("Main", main)]);
         let r: Reach = walk(&mut l, "Main", "E").unwrap();
         assert_eq!(r.missing, vec!["Main:Nope".to_string()]);

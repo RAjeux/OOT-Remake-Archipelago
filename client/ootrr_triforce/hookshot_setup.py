@@ -244,7 +244,6 @@ def mutable_files(tools):
 
 def compiled_executable(romfs, tools=None):
     try:
-        from .native_setup import BUILD_MARK
         module = _bundle() / "archipelago.dll"
         if not module.is_file() and not getattr(__import__("sys"), "frozen", False):
             module = Path(__file__).resolve().parents[2] / "prebuilt/windows-x64/archipelago.dll"
@@ -254,21 +253,13 @@ def compiled_executable(romfs, tools=None):
             if not executable.is_file() or not renderer.is_file():
                 continue
             with executable.open("rb") as stream, mmap.mmap(stream.fileno(), 0, access=mmap.ACCESS_READ) as data:
-                if (data.find(BUILD_MARK) < 0 or data.find(expected) < 0
+                if (data.find(b"OOTRR-AP native ABI 1") < 0 or data.find(expected) < 0
                         or data.find("OOTRR_AP_BASE".encode("utf-16-le")) < 0):
                     continue
             with renderer.open("rb") as stream, mmap.mmap(stream.fileno(), 0, access=mmap.ACCESS_READ) as data:
                 if data.find(b"ootrr_ap_menu16") < 0 or data.find(b"AP Connect") < 0:
                     continue
             if tools:
-                for name in FILES:
-                    packaged = (_bundle()/name).read_bytes()
-                    if name == "ootrr_archipelago.inc":
-                        packaged = isolated_bridge(packaged)
-                    if (Path(tools)/"host"/name).read_bytes()!=packaged:
-                        return None
-                if (Path(tools)/"gpu/vk"/MENU).read_bytes()!=(_bundle()/MENU).read_bytes():
-                    return None
                 if any((Path(tools) / "host" / name).stat().st_mtime_ns > executable.stat().st_mtime_ns for name in FILES):
                     continue
                 if (Path(tools) / "gpu/vk" / MENU).stat().st_mtime_ns > renderer.stat().st_mtime_ns:

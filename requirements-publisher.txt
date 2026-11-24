@@ -1,2 +1,0 @@
-# Publisher tooling only; never bundled with the player application.
-cryptography>=44,<51

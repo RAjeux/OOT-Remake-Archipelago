@@ -15,7 +15,7 @@ static int (*ap_disconnect16)(void);
 static int (*ap_restore16)(uint8_t *,int);
 static void (*ap_restore_deferred16)(int);
 static int (*ap_receipt_replay16)(int,int);
-static uint32_t ap_cursor16, ap_seed_marker16, ap_flags16[4096];
+static uint32_t ap_cursor16, ap_flags16[4096];
 static int ap_flag_count16;
 static int ap_event_mode16;
 static uint64_t ap_delivery_actor16;
@@ -126,7 +126,6 @@ static int ap_boot16(void) {
     int (*start)(char*,char*)=(int(*)(char*,char*))GetProcAddress(lib,"AP_Start");
     int (*flags)(uint32_t*,int)=(int(*)(uint32_t*,int))GetProcAddress(lib,"AP_Flags");
     uint32_t (*cursor)(void)=(uint32_t(*)(void))GetProcAddress(lib,"AP_Cursor");
-    uint32_t (*seed_marker)(void)=(uint32_t(*)(void))GetProcAddress(lib,"AP_SeedMarker");
     ap_applied16=(void(*)(int))GetProcAddress(lib,"AP_Applied");
     ap_next16=(int(*)(int))GetProcAddress(lib,"AP_Next");
     ap_note16=(int(*)(char*,int))GetProcAddress(lib,"AP_Note");
@@ -145,9 +144,8 @@ static int ap_boot16(void) {
     snprintf(ap_profile16,sizeof ap_profile16,"%s\\user",utf8);
     hos_user_dir=ap_profile16;
     ap_flag_count16=flags(ap_flags16,4096);ap_cursor16=cursor();
-    ap_seed_marker16=seed_marker?seed_marker():0;
     ap_event_mode16=event_delivery();
-    hos_log("OOTRR-AP native ABI 1: host revision 2, mod active, Archipelago profile loaded");
+    hos_log("OOTRR-AP native ABI 1: mod active, Archipelago profile loaded");
     return 1;
 }
 
@@ -202,25 +200,12 @@ static void ap_invalidate_delivery16(void) {
    identifies Wait=0x28, Fishing=0x34 and Crawl=0xea. Only ordinary locomotion
    is interruptible here: an idle event manager alone does not mean Link can
    play a get animation. Unknown and transitional states fail closed.
-   QueryNaviIsWaitPlayerStateDrawnFishingRod (0x82a95c90) checks the Player
-   extension reached through the global manager, not the movement/life core.
-   The same native RTTI function (0x832b0430) returns that extension unchanged.
-   Keep the whole fishing session intact even between casts. */
-static int ap_fishing16(Ctx *c) {
-    const uint64_t manager=oot_singleton(c,0x84c9e178ULL);
-    if (!manager || recomp_load64(c,manager)!=0x84c89f98ULL) return -1;
-    const uint64_t table=recomp_load64(c,manager+0x1f0);
-    if (!table || recomp_load32(c,table+0x50)<0x23u) return -1;
-    const uint64_t entries=recomp_load64(c,table+0x58);
-    const uint64_t player=entries?recomp_load64(c,entries+0x110):0;
-    if (!player || recomp_load64(c,player)!=0x84bc16e0ULL) return -1;
-    return (recomp_load32(c,player+0xa38)&0x400u)!=0;
-}
-
-static int ap_can_receive16(Ctx *c,uint64_t components) {
+   QueryNaviIsWaitPlayerStateDrawnFishingRod (0x82a95c90) also checks bit 10
+   at Player+0xa38; keep the whole fishing session intact even between casts. */
+static int ap_can_receive16(Ctx *c,uint64_t components,uint64_t core) {
     int paused=0;
     if (!oot_gamedata_bool(c,0x604aebe1u,&paused) || paused) return 0; /* Sequence_IsPause */
-    if (ap_fishing16(c)!=0) return 0;
+    if (recomp_load32(c,core+0xa38)&0x400u) return 0;
     const uint64_t controller=recomp_load64(c,components+0x188);
     const uint64_t action=controller?recomp_load64(c,controller+0x1c0):0;
     if (!action) return 0;
@@ -251,10 +236,6 @@ static int ap_player16(Ctx *c,uint64_t actor,uint64_t components,int64_t now) {
     if (!ap_cursor16 || !ap_death16) { ap_invalidate_delivery16(); return 0; }
     uint64_t mgr=oot_singleton(c,OOT_GAMEDATA_SLOT);
     int loading=0;
-    int seed_matches=0;
-    if (ap_seed_marker16 && (!oot_gamedata_bool(c,ap_seed_marker16,&seed_matches) || !seed_matches)) {
-        ap_invalidate_delivery16(); ap_death16(-1); return 0;
-    }
     if (!actor || !components || !mgr || !oot_gd_int(c,mgr,ap_cursor16) ||
         oot_pouch_count(c,oot_item_names[0])<0 ||
         (oot_gamedata_bool(c,0xef2b60c2u,&loading)&&loading)) {
@@ -276,7 +257,7 @@ static int ap_player16(Ctx *c,uint64_t actor,uint64_t components,int64_t now) {
     int current=(int32_t)recomp_load32(c,life+8);
     if (current<=0) { ap_invalidate_delivery16(); ap_death16(1); return 0; }
     const uint64_t events=oot_singleton(c,OOT_EVENTMGR_SLOT);
-    ap_delivery_ready16=events && !recomp_load64(c,events+104) && ap_can_receive16(c,components);
+    ap_delivery_ready16=events && !recomp_load64(c,events+104) && ap_can_receive16(c,components,core);
     const int death_state=ap_delivery_ready16 ? 0 : 2;
     if (ap_death16(death_state)) {
         ap_invalidate_delivery16();

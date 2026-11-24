@@ -244,15 +244,8 @@ class Flowchart(BinaryObject):
             """Traverse the event graph and collect sub flow events."""
             if not entry:
                 return
-            # Large AP dispatchers can contain thousands of SwitchEvents. Keep
-            # the original traversal order (a branch finishes before its next
-            # sibling), with explicit deque frames instead of Python recursion.
-            frames = [deque([entry])]
-            while frames:
-                stack = frames[-1]
-                if not stack:
-                    frames.pop()
-                    continue
+            stack = deque([entry])
+            while stack:
                 event = stack.popleft()
                 if event in visited:
                     continue
@@ -262,10 +255,12 @@ class Flowchart(BinaryObject):
                     if data.nxt.v:
                         stack.append(data.nxt.v)
                 elif isinstance(data, SwitchEvent):
-                    frames.extend(deque([case.v]) for case in reversed(list(data.cases.values())) if case.v)
+                    for value, case in data.cases.items():
+                        traverse_events(case.v, sub_flow_events, visited)
                 elif isinstance(data, ForkEvent):
+                    for fork in data.forks:
+                        traverse_events(fork.v, sub_flow_events, visited)
                     stack.append(data.join.v)
-                    frames.extend(deque([fork.v]) for fork in reversed(data.forks) if fork.v)
                 elif isinstance(data, JoinEvent):
                     if data.nxt.v:
                         stack.append(data.nxt.v)
@@ -275,7 +270,8 @@ class Flowchart(BinaryObject):
                         stack.append(data.nxt.v)
                 elif isinstance(data, SubFlowSwitchEvent):
                     sub_flow_events[event] = None
-                    frames.extend(deque([case.v]) for case in reversed(list(data.cases.values())) if case.v)
+                    for case in data.cases.values():
+                        traverse_events(case.v, sub_flow_events, visited)
 
         for entry_point in self.entry_points:
             entry_point.main_event.set_index(event_to_idx)

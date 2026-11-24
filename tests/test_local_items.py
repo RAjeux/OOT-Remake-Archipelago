@@ -44,7 +44,6 @@ class Peer:
         self.uri, self.name, self.game, self.handling = uri, name, game, handling
         self.info = self.connected = None
         self.history, self.scouts, self.retrieved = [], {}, set()
-        self.bounces = []
         self.ws = self.reader = None
 
     async def send(self, *packets):
@@ -85,8 +84,6 @@ class Peer:
                             self.history[index:] = items
                     elif command == "Retrieved":
                         self.retrieved.update(packet["keys"])
-                    elif command == 'Bounced':
-                        self.bounces.append(packet)
 
         self.reader = asyncio.create_task(reading())
         await self.wait(lambda: self.info)

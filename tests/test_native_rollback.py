@@ -48,9 +48,6 @@ def worker(profile, token, library):
     dll.AP_Next.restype = C.c_int
     dll.AP_Applied.argtypes = [C.c_int]
     dll.AP_Cursor.restype = C.c_uint32
-    dll.AP_SeedMarker.restype = C.c_uint32
-    dll.AP_DeathLink.argtypes = [C.c_int]
-    dll.AP_DeathLink.restype = C.c_int
     dll.AP_Restore.argtypes = [C.POINTER(C.c_uint8), C.c_int]
     dll.AP_Restore.restype = C.c_int
     assert dll.AP_Start(str(profile).encode("utf-8"), token.encode("ascii")) == 1
@@ -70,7 +67,7 @@ def worker(profile, token, library):
         else:
             raise AssertionError("Native history did not terminate")
         return dict(info=json.loads(buffer.value), history=history,
-                    flags=list(flags[:count]), cursor_hash=dll.AP_Cursor(), seed_marker=dll.AP_SeedMarker())
+                    flags=list(flags[:count]), cursor_hash=dll.AP_Cursor())
 
     print(json.dumps(snapshot()), flush=True)
     for line in sys.stdin:
@@ -86,8 +83,6 @@ def worker(profile, token, library):
             result["restore"] = dll.AP_Restore(array, len(values))
         if "applied" in request:
             dll.AP_Applied(request["applied"])
-        if 'death' in request:
-            result['death'] = dll.AP_DeathLink(request['death'])
         print(json.dumps({**snapshot(), **result}), flush=True)
         if request.get("stop"):
             os._exit(0)  # The real Go client owns process-lifetime workers/locks.

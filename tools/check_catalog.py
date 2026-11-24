@@ -58,15 +58,6 @@ for name,actor in goods.items():
  assert row['quantity']>=1, f"Incorrect shop quantity: {name}"
 rewards.update(SHOP_ITEMS)
 rewards[MASTER_ITEM]=dict(actor=MASTER_ACTOR,mode='actor',kind='Item',quantity=1,advancement=True)
-# AP packet quantities are exact. The native bundle actor remains the display
-# identity; the receipt gives this unit actor the independently specified count.
-# Keep this explicit protocol contract separate from catalog.py's implementation.
-for name,unit,amount in (
- ('Bombs (10)','Item_Bomb',10), ('Bombs (20)','Item_Bomb',20),
- ('Arrows (30)','Item_Arrow_Normal',30), ('Deku Seeds (30)','Item_DekuSeed',30),
- ('Deku Nuts (5)','Item_DekuNut',5), ('Deku Nuts (10)','Item_DekuNut',10),
-):
- rewards[name].update(grant_actor=unit,grant_amount=amount,quantity=amount)
 assert rewards==ITEM_DATA, "Native rewards or quantities differ from OOTRR data."
 order=[*native_order,*sorted(SHOP_ITEMS),MASTER_ITEM]
 assert ITEM_IDS=={n:0x6F7100+i for i,n in enumerate(order)}, "Item IDs changed."

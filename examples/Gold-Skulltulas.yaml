@@ -3,7 +3,6 @@
 name: Zelda
 game: "Ocarina of Time Remake"
 "Ocarina of Time Remake":
-  generation_mode: legacy
   shuffle_chests: all
   # Values: off (native handling), pinned (44 checks), matched (76/77 checks).
   shuffle_skulltulas: matched

@@ -234,16 +234,6 @@ def build_receipt_flow(raw, token, names=None):
                 owner = OWNERS.get(tiers[index], tiers[index])
                 root = editor.switch(stem + "_Held" + str(index), "GameDataActor", "EventQueryCheckIsGet",
                                      {"ActorName": owner}, gives[min(index + 1, len(tiers) - 1)], root)
-        elif metadata.get("grant_amount"):
-            from .native_presentations import AMMO_BAGS, append_tier_choice
-            def exact_quantity(branch, actor):
-                node = editor.action(branch + "_Quantity", "PouchSystemActor", "EventTriggerAddOrRemovePouchContent",
-                                     {"Num": metadata["grant_amount"], "Actor": metadata["grant_actor"],
-                                      "IsEquipDIrect": False, "IsSetMessageTargetActorName": False, "IsGetEvent": False})
-                link(node, finish(branch))
-                return node
-            root = append_tier_choice(editor, metadata, stem, exact_quantity,
-                                     no_ammo=finish(stem + "_NoBag") if metadata["actor"] in AMMO_BAGS else None)
         else:
             # Bundle actors already encode their yield. Giving quantity copies
             # here would multiply a 20-Bombchu pickup into 400 Bombchus.
@@ -258,8 +248,7 @@ def build_receipt_flow(raw, token, names=None):
     return result, entries
 
 
-def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, native_info=None, ground_raw=None,
-                             item_data=None, item_ids=None):
+def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, native_info=None, ground_raw=None):
     """V2: native pickup/short/major gets, one inventory effect and AP ack."""
     from evfl.common import Argument
     from evfl.entry_point import EntryPoint
@@ -269,10 +258,8 @@ def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, nat
                                        append_recipe, append_tier_choice, copy_receipt_presenter, receipt_style)
     if not re.fullmatch("[a-f0-9]{64}", token):
         raise ValueError(tr('Invalid room identifier for native receipts.'))
-    recipes = ITEM_DATA if item_data is None else item_data
-    identifiers = ITEM_IDS if item_ids is None else item_ids
-    names = sorted(recipes if names is None else set(names))
-    if not set(names) <= recipes.keys() or not set(names) <= identifiers.keys():
+    names = sorted(ITEM_DATA if names is None else set(names))
+    if not set(names) <= ITEM_DATA.keys():
         raise ValueError(tr('Archipelago item has no native recipe.'))
     pouch = FlowEditor(pouch_raw, FLOW_PATH)
     presenter = FlowEditor(presenter_raw, PRESENTER_PATH)
@@ -283,7 +270,7 @@ def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, nat
     _silent_grant(pouch, ack, entry_name="OOTRR_APVisualGrant", prefix="OOTRR_APVisualNative")
     entries = {}
     for name in names:
-        metadata, item_id = recipes[name], identifiers[name]
+        metadata, item_id = ITEM_DATA[name], ITEM_IDS[name]
         stem = event_name(item_id)
         core_name = stem + "_Pouch"
         style = receipt_style(metadata, native_info)
@@ -300,15 +287,15 @@ def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, nat
         pouch.chart.entry_points.append(core)
         shown_entry = (copy_receipt_presenter(presenter, metadata, item_id, core_name,
                                              style=style, ground_raw=ground_raw)
-                       if style not in {"pickup", "text"} else None)
+                       if style != "pickup" else None)
 
         def present(branch, actor):
             save = pouch.action(branch + "_Save", "GameSystemActor", "EventTriggerRequestAutoSave", None)
             tail = save
-            if style in {"pickup", "text"}:
+            if style == "pickup":
                 # This is the game's own non-blocking pickup display, not its
                 # get-item dialogue. Recovery hearts suppress stock numbers.
-                if style == "pickup" and not native_info[actor].get("IsNotOpenStockNumDisplay", False):
+                if not native_info[actor].get("IsNotOpenStockNumDisplay", False):
                     popup = pouch.action(branch + "_Pickup", "UISystemActor",
                                           "EventTriggerRequestOpenPickUpWindow", {"ActorName": actor})
                     link(popup, tail)
@@ -321,7 +308,7 @@ def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, nat
             return show
 
         no_ammo_ack = None
-        if metadata.get("grant_actor", metadata["actor"]) in AMMO_BAGS:
+        if metadata["actor"] in AMMO_BAGS:
             no_ammo_save = pouch.action(stem + "_NoBag_Save", "GameSystemActor", "EventTriggerRequestAutoSave", None)
             no_ammo_ack = pouch.action(stem + "_NoBag_Acknowledge", "GameDataActor", "EventTriggerAddOrSubGameDataInt",
                                        {"GameDataName": CURSOR_PREFIX + token, "Index": -1, "Value": 1})
@@ -336,7 +323,7 @@ def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, nat
     return pouch_result, presenter_result, entries
 
 
-def prepare_receipts(romfs, mod, data, *, item_data=None, item_ids=None):
+def prepare_receipts(romfs, mod, data):
     """Add native receipt events to one staged mod; never touch the game dump."""
     from oot_rando.formats import byml_codec
     from oot_rando.game.resource_allocations import grow_resources
@@ -353,15 +340,13 @@ def prepare_receipts(romfs, mod, data, *, item_data=None, item_ids=None):
         return codec.decode(source(relative))
 
     native_presentations = bool(data.get("local_items"))
-    recipes = ITEM_DATA if item_data is None else item_data
-    identifiers = ITEM_IDS if item_ids is None else item_ids
     if native_presentations:
         from .native_presentations import PRESENTER_PATH, receipt_style
         native_info = {row["__RowId"]: row for row in byml_codec.load(
             read("RSDB/PouchActorInfo.Product.111.rstbl.byml.zs"))["root"]}
         changed_flow, changed_presenter, entries = build_presented_receipts(
             read(FLOW_PATH), read(PRESENTER_PATH), data["token"], native_info=native_info,
-            ground_raw=read("Event/EventFlow/Dm_SY_Get.bfevfl.zs"), item_data=recipes, item_ids=identifiers)
+            ground_raw=read("Event/EventFlow/Dm_SY_Get.bfevfl.zs"))
         modified = {FLOW_PATH: changed_flow, PRESENTER_PATH: changed_presenter}
     else:
         changed_flow, entries = build_receipt_flow(read(FLOW_PATH), data["token"])
@@ -376,17 +361,16 @@ def prepare_receipts(romfs, mod, data, *, item_data=None, item_ids=None):
     from functools import lru_cache
 
     @lru_cache(None)
-    def current_raw(name):
+    def current(name):
         relative = event_info.flow_path(name)
         return modified[relative] if relative in modified else read(relative)
 
-    current = event_info._cached_charts(current_raw)
     walk_memo = {}
-    item_names = {item_id: name for name, item_id in identifiers.items()}
+    item_names = {item_id: name for name, item_id in ITEM_IDS.items()}
     for item_id, name in entries.items():
         if name in existing or name in analyzed_existing:
             raise ValueError(tr('Receipt event already registered: ') + name)
-        style = receipt_style(recipes[item_names[item_id]], native_info) if native_presentations else None
+        style = receipt_style(ITEM_DATA[item_names[item_id]], native_info) if native_presentations else None
         dependencies, children = {"Dm_SY_Get", FLOW_NAME}, set()
         if native_presentations:
             # Analyse the entry we actually generated, including its copied

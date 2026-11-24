@@ -14,7 +14,13 @@ pub fn dict_id(z: &[u8]) -> Option<u32> {
     if z.get(..4)? != [0x28, 0xB5, 0x2F, 0xFD] {
         return None;
     }
-    crate::zs::dict_of(z)
+    let d: u8 = *z.get(4)?;
+    let n: usize = [0, 1, 2, 4][(d & 3) as usize];
+    let mut id: u32 = 0;
+    for i in 0..n {
+        id |= (*z.get(5 + i)? as u32) << (8 * i);
+    }
+    if n == 0 { None } else { Some(id) }
 }
 
 pub fn set_param(b: &mut Bf, r: &Req) -> Res<()> {

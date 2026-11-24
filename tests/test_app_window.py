@@ -168,15 +168,6 @@ class AppWindowTests(unittest.TestCase):
         window.setup_button.invoke()
         self.assertEqual(window.page, "setup")
 
-    def test_existing_room_resource_update_offers_same_player_setup_before_play(self):
-        self.service.discovery.update(ready=False, profile=str(self.base/'room'), reprepare_required=True)
-        window = self.open()
-        self.assertEqual(window.setup_button.cget('text'), tr(TEXT['update_room']))
-        self.assertEqual(str(window.play_button.cget('state')), 'disabled')
-        self.assertEqual(window.home_room.cget('text'), tr(TEXT['resource_update']))
-        window.setup_button.invoke()
-        self.assertEqual(window.page, 'setup')
-
     def test_discovery_preserves_text_entered_while_it_is_running(self):
         self.service.discover_gate = threading.Event()
         window = self.open(wait=False)
@@ -444,110 +435,6 @@ class AppWindowTests(unittest.TestCase):
         link, = [child for child in children if child.cget("text").startswith("https://github.com/")]
         self.assertTrue(link.bind("<Button-1>"))
         self.assertTrue(link.bind("<Return>"))
-
-    def test_settings_editor_changes_are_exported_and_import_preserves_legacy_mode(self):
-        from ootrr_triforce.settings_editor import PlayerConfiguration
-        window = self.open()
-        window.open_settings()
-        window.settings_window.variables["death_link"].set("true")
-        window.settings_window.apply()
-        self.assertTrue(window.yaml_document.values["death_link"])
-        self.dialogs.save = str(self.base / "full.yaml")
-        window.save_yaml()
-        self.pump(lambda: not window.busy)
-        self.assertEqual(PlayerConfiguration.read(self.dialogs.save).mode, "full_network")
-        original = PlayerConfiguration.new("legacy", "Old Link")
-        original.values["starting_hearts"] = 5
-        original.write(self.base / "legacy.yaml")
-        self.dialogs.open = str(self.base / "legacy.yaml")
-        window.import_configuration()
-        self.pump(lambda: not window.busy)
-        self.assertEqual(window.yaml_document.mode, "legacy")
-        self.assertEqual(window.player_name.get(), "Old Link")
-        self.assertEqual(window.yaml_document.values["starting_hearts"], 5)
-
-    def test_update_check_runs_on_worker_and_does_not_launch_a_game(self):
-        window = self.open()
-        (self.base / "VERSION").write_text("0.11.0-alpha.1\n", encoding="utf-8")
-        calls = []
-        def check(version, include_prereleases=False):
-            calls.append((version, include_prereleases, threading.get_ident()))
-            return None
-        runtime = types.SimpleNamespace(resource_root=lambda: self.base)
-        updater = types.SimpleNamespace(check_for_update=check)
-        with patch.dict(sys.modules, {"ootrr_triforce.app_runtime": runtime, "ootrr_triforce.update_service": updater}):
-            window.check_updates()
-            self.pump(lambda: not window.busy)
-        self.assertEqual(window.status_key, "up_to_date")
-        self.assertEqual(calls[0][:2], ("0.11.0-alpha.1", True))
-        self.assertNotEqual(calls[0][2], threading.get_ident())
-        self.assertFalse(self.service.calls)
-
-    def test_verified_update_is_staged_on_worker_without_replacing_the_application(self):
-        window = self.open()
-        target = self.base / "updates/new.exe"
-        calls = []
-        update = types.SimpleNamespace(path=target)
-        def prepare(release, destination):
-            calls.append((release, destination, threading.get_ident()))
-            return update
-        updater = types.SimpleNamespace(prepare_update=prepare)
-        release = types.SimpleNamespace(version="0.12.0", signed=True)
-        with patch.dict(sys.modules, {"ootrr_triforce.update_service": updater}):
-            window.download_update(release)
-            self.pump(lambda: not window.busy)
-        self.assertEqual(window.pending_update, update)
-        self.assertEqual(calls[0][1], self.base / "updates")
-        self.assertNotEqual(calls[0][2], threading.get_ident())
-        self.assertEqual(window.status_key, "verified_update")
-        self.assertFalse(self.service.calls)
-
-    def test_failed_updated_application_start_restores_previous_executable(self):
-        import hashlib
-        from ootrr_triforce.update_service import install_prepared
-        window = self.open()
-        executable, downloaded = self.base / "app.exe", self.base / "new.exe"
-        executable.write_bytes(b"previous executable")
-        downloaded.write_bytes(b"verified replacement")
-        window.pending_update = types.SimpleNamespace(path=downloaded, sha256=hashlib.sha256(downloaded.read_bytes()).hexdigest())
-        runtime = types.SimpleNamespace(spawn_process=lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("private error")))
-        updater = types.SimpleNamespace(install_prepared=install_prepared)
-        with patch.dict(sys.modules, {"ootrr_triforce.app_runtime": runtime, "ootrr_triforce.update_service": updater}), \
-             patch.object(sys, "frozen", True, create=True), patch.object(sys, "executable", str(executable)):
-            window.install_update()
-            self.pump(lambda: not window.busy)
-        self.assertEqual(executable.read_bytes(), b"previous executable")
-        self.assertEqual(window.status_key, "update_install_failed")
-        self.assertNotIn("private", window.status.cget("text"))
-
-    def test_connected_external_room_blocks_application_restart_without_replacing_files(self):
-        window = self.open()
-        window.pending_update = types.SimpleNamespace(path=self.base / "not-installed.exe")
-        window.external_window = types.SimpleNamespace(closed=False, runtime=object(), busy=False,
-                                                       close=lambda: None)
-        with patch.object(sys, "frozen", True, create=True):
-            window.install_update()
-        self.assertFalse(window.busy)
-        self.assertEqual(window.status_key, "external_update_busy")
-        self.assertFalse(window.pending_update.path.exists())
-        window.external_window = None
-
-    def test_help_uses_the_bundled_french_guide_with_language_matched_online_fallback(self):
-        opened = []
-        window = self.open(open_path=opened.append)
-        window.language = "fr"
-        guide = self.base / "distribution/Guide-FR.txt"
-        guide.parent.mkdir()
-        guide.write_text("Guide utilisateur de test.", encoding="utf-8")
-        runtime = types.SimpleNamespace(resource_root=lambda: self.base)
-        with patch.dict(sys.modules, {"ootrr_triforce.app_runtime": runtime}), \
-             patch("ootrr_triforce.app_window.webbrowser.open") as browser:
-            window.open_guide()
-            self.assertEqual(opened, [guide])
-            browser.assert_not_called()
-            window.language = "en"
-            window.open_guide()
-            self.assertTrue(browser.call_args.args[0].endswith("/distribution/Guide.txt"))
 
 
 class YamlTests(unittest.TestCase):

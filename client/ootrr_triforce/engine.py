@@ -26,7 +26,7 @@ def _wasi_paths(command, paths):
     vanilla data instead. A real working copy avoids that fallback. /load
     remains the original loader namespace, including sibling size tables.
     """
-    if os.name != "nt" or command not in ("patch", "shops", "skulls", "localize", "cow-classes", "full-extras") or len(paths) < 2:
+    if os.name != "nt" or command not in ("patch", "shops", "skulls", "localize") or len(paths) < 2:
         yield paths
         return
     mod = Path(paths[1]).resolve()
@@ -52,9 +52,7 @@ def _wasi_paths(command, paths):
         if len(str(short_load)) + 1 + longest >= 260:
             raise EnginePathError(tr("The Windows temporary folder path is too long. Choose a shorter temporary folder and try again."))
         shutil.copytree(loader, short_load)
-        source = Path(paths[0]).resolve()
-        short_source = short_load / source.relative_to(loader) if source.is_relative_to(loader) else paths[0]
-        adjusted = (short_source, short_load / relative_mod, *paths[2:])
+        adjusted = (paths[0], short_load / relative_mod, *paths[2:])
         yield adjusted
         # Publish only after a successful engine exit. Failed validation leaves
         # the caller's working mod intact, including its resource-size table.
