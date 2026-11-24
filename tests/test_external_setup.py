@@ -136,7 +136,7 @@ class SetupTests(unittest.TestCase):
         with patch.object(setup.subprocess, "Popen") as popen, patch.dict(os.environ, {"HOS_INPUT_EXCLUSIVE": "1"}):
             setup.launch(result["profile"])
         arguments = popen.call_args
-        self.assertEqual(arguments.args[0], [str(self.exe)])
+        self.assertEqual(arguments.args[0], [str(self.exe.resolve())])
         self.assertFalse(any(key.startswith("HOS_INPUT_") for key in arguments.kwargs["env"]))
         self.assertNotIn("--user", arguments.args[0])
         self.assert_preserved()
