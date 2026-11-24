@@ -24,6 +24,7 @@ REQUIRED_MODULES = {"ootrr_triforce.app_window", "ootrr_triforce.app_runtime", "
                     "ootrr_full.archipelago.bridge", "ootrr_full.patching.ammo_quantities", "yaml",
                     "ootrr_triforce.full_allocations", "ootrr_triforce.full_portable", "ootrr_triforce.full_settings",
                     "ootrr_triforce.full_scrub_hints", "ootrr_triforce.room_updates", "ootrr_triforce.upgrade_readiness",
+                    "ootrr_triforce.native_player_brain",
                     "ootrr_triforce.upgrade_deathlink", "ootrr_full.game.loose_keys",
                     "ootrr_full.game.native_key_limits", "ootrr_full.patching.key_adapter",
                     "tkinter", "zstandard"}

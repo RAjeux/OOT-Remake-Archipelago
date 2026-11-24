@@ -20,6 +20,15 @@ Older full mods need **Update prepared room** using the **same player file**. Th
 
 ## Current native-host gameplay checks
 
+Version 0.12.0-alpha.3 preserves the original Player AI on native hosts. An
+isolated headless Hookshot test with a copy of the affected room and save
+reproduced a deterministic fishing-rod handover freeze offline. Restoring only
+the Player brain member in the Base, Child and Adult actor overrides allowed
+the native handover and instructions to finish, restored the HUD and movement,
+and allowed a rod cast. Every other packed member was identical. This test
+does not establish external-runtime fishing compatibility or exercise a queued
+AP receipt during that session; native receipt guards remain in the C helper.
+
 Full-network generation and preparation currently require a Child start.
 Actual Triforce testing found a stall in the adult opening transition; adult
 player files remain readable, but that starting mode is blocked in this release.

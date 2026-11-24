@@ -32,7 +32,7 @@ def code_fingerprint():
               ("full_ap.py", "full_catalog.json", "full_mod.py", "full_events.py", "receipt_events.py", "catalog.py",
                "restoration.py", "native_presentations.py", "upgrade_readiness.py", "full_extra_recovery.py", "full_cows.py",
                "engine.wasm", "full_ammo.py", "upgrade_recovery.py", "upgrade_deathlink.py",
-               "full_settings.py", "full_scrub_hints.py", "full_portable.py", "full_allocations.py", "engine.py", "engine.cjs",
+               "full_settings.py", "full_scrub_hints.py", "full_portable.py", "full_allocations.py", "native_player_brain.py", "engine.py", "engine.cjs",
                "ap_trade.py", "trade_events.py", "trade_state.py", "trade_receipts.py")]
     for path in sorted(paths):
         if path.is_file() and path.suffix in {".py", ".json", ".in", ".wasm", ".cjs"} and "__pycache__" not in path.parts:
@@ -275,6 +275,7 @@ def _build_cached(root, settings, data):
     if output.exists():
         marker = output / "full-player.json"
         if marker.is_file() and _read_json(marker).get("token") == data["token"]:
+            refresh_native_player_brains(output, settings, data)
             refresh_small_key_poses(output, settings, data)
             return
         raise ValueError("The cached full-network mod is incomplete or belongs to another room.")
@@ -321,12 +322,26 @@ def _build_into(output, settings, data):
     if settings.get("native"):
         bind_romfs(Path(settings["romfs"]), output / "romfs", data, settings.get("baseline", 0))
         shutil.copy2(resource_root() / "native/archipelago.dll", output / "archipelago.dll")
-    from .upgrade_readiness import prepare_external_readiness
-    readiness = prepare_external_readiness(Path(settings["romfs"]), output / "romfs", data["token"])
+    if settings.get('native'):
+        # C hosts already guard receipts on the game thread. Keep the Player's
+        # original AI contract; the external readiness publisher can stall the
+        # native fishing-rod handover even with no network receipt pending.
+        from .native_player_brain import prepare_native_player_brains
+        native_brain, _, _ = prepare_native_player_brains(
+            Path(settings['romfs']), output, data['token'],
+            game_source=settings.get('game_source') or settings['romfs'])
+        readiness = None
+    else:
+        from .upgrade_readiness import prepare_external_readiness
+        readiness = prepare_external_readiness(Path(settings["romfs"]), output / "romfs", data["token"])
     generated = _read_json(output / "manifest.json")
     generated["portable_settings"] = portable
     generated["full_settings"] = full_settings
-    generated["external_readiness"] = readiness
+    if settings.get('native'):
+        generated['native_player_brain'] = native_brain
+        generated.pop('external_readiness', None)
+    else:
+        generated["external_readiness"] = readiness
     if not settings.get('native'):
         from .upgrade_deathlink import prepare_external_deathlink
         from ootrr_full.randomizer.randomizer_core import save_marker
@@ -340,6 +355,31 @@ def _build_into(output, settings, data):
     (output / "manifest.json").write_text(json.dumps(generated, ensure_ascii=False, indent=2), encoding="utf-8")
     refresh_artifact(output, data)
     (output / "full-player.json").write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+
+
+def refresh_native_player_brains(artifact, settings, data):
+    """Repair old native caches without changing placements, receipts or saves."""
+    if not settings.get('native'):
+        return ()
+    from .native_player_brain import prepare_native_player_brains
+    artifact = Path(artifact)
+    metadata, _, changed = prepare_native_player_brains(
+        Path(settings['romfs']), artifact, data['token'],
+        game_source=settings.get('game_source') or settings['romfs'])
+    generated = _read_json(artifact / 'manifest.json')
+    if (not changed and generated.get('native_player_brain') == metadata
+            and 'external_readiness' not in generated):
+        return ()
+    if changed:
+        from .full_allocations import prepare_allocations
+        generated['resource_allocations'] = prepare_allocations(
+            Path(settings['romfs']), artifact,
+            game_source=settings.get('game_source') or settings['romfs'])
+    generated['native_player_brain'] = metadata
+    generated.pop('external_readiness', None)
+    (artifact / 'manifest.json').write_text(json.dumps(generated, ensure_ascii=False, indent=2), encoding='utf8')
+    refresh_artifact(artifact, data)
+    return changed
 
 
 def refresh_small_key_poses(artifact, settings, data, *, refresh=True):
@@ -438,11 +478,13 @@ def _prepare_cached(root, settings, roster, data):
     import tempfile
     root = Path(root)
     source = root / "mods"
+    refresh_native_player_brains(source / 'Archipelago', settings, data)
     refresh_small_key_poses(source / 'Archipelago', settings, data)
     payload = json.dumps([data["token"], roster, code_fingerprint()], sort_keys=True, ensure_ascii=False)
     cache = root / "full-native" / hashlib.sha256(payload.encode()).hexdigest()[:20]
     final = cache / "mods"
     if (final / "Archipelago/romfs" / NATIVE_METADATA).is_file():
+        refresh_native_player_brains(final / 'Archipelago', settings, data)
         return final
     cache.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=settings.get('_work_root', cache.parent), prefix="prepare-") as temporary:

@@ -34,7 +34,7 @@ for check in ("test_full_ap", "test_full_adult_start", "test_full_resources", "t
               "test_full_cows", "test_full_directory_source", "test_full_native_sources", "test_full_events",
               "test_full_progressive_recovery", "test_upgrade_recovery",
               "test_full_weapon_capacity", "test_full_ammunition", "test_full_minor_pickups", "test_repeatable_cache",
-              "test_update_service", "test_upgrade_runtime", "test_upgrade_readiness",
+              "test_update_service", "test_upgrade_runtime", "test_upgrade_readiness", "test_native_player_brain", "test_native_brain_cache",
               "test_external_setup", "test_upgrade_deathlink"):
     run(f"tests/{check}.py")
 run("tools/check_catalog.py")

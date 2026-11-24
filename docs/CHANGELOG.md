@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.12.0-alpha.3
+
+Fix the native fishing-rod handover freezing Link with a hidden HUD. Native C
+hosts now preserve the original Player AI instead of installing the external
+readiness publisher. Their existing game-thread receipt guards remain active.
+Known older native caches are repaired with verified resource hashes; unknown
+Player graphs are rejected. Update the same player file to preserve the room,
+placements and save. External readiness behavior is unchanged.
+
+An isolated actual-host A/B reproduced the freeze offline and restored the
+native handover, HUD, movement and rod use by changing only the Player brain
+member in three actor packs. The user's running game and save were untouched.
+
 ## 0.12.0-alpha.2
 
 Fix APWorld installation through Archipelago: the adapted engine is now nested

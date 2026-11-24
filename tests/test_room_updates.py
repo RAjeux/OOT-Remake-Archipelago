@@ -26,6 +26,9 @@ class RoomUpdateTests(unittest.TestCase):
             self.assertEqual(marker.read_bytes(), before)
             full['resource_allocations'] = {'version': 1}
             marker.write_text(json.dumps(full), encoding='utf-8')
+            self.assertTrue(requires_reprepare(root))
+            full['native_player_brain'] = {'version': 1}
+            marker.write_text(json.dumps(full), encoding='utf-8')
             self.assertFalse(requires_reprepare(root))
             self.assertTrue(requires_reprepare(root, external=True))
             full.update(external_readiness={'version': 2}, external_deathlink={'version': 1, 'enabled': False})
@@ -33,6 +36,16 @@ class RoomUpdateTests(unittest.TestCase):
             self.assertFalse(requires_reprepare(root, external=True))
             full['external_readiness']['version'] = 1
             marker.write_text(json.dumps(full), encoding='utf-8')
+            self.assertTrue(requires_reprepare(root, external=True))
+
+    def test_native_brain_marker_never_substitutes_for_external_runtime_guards(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            value = {'archipelago': {'generation_mode': 'full_network'},
+                     'resource_allocations': {'version': 1},
+                     'native_player_brain': {'version': 1}}
+            (root / 'manifest.json').write_text(json.dumps(value), encoding='utf8')
+            self.assertFalse(requires_reprepare(root))
             self.assertTrue(requires_reprepare(root, external=True))
 
     def test_broken_full_marker_is_not_silently_treated_as_legacy(self):

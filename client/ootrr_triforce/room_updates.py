@@ -31,4 +31,5 @@ def requires_reprepare(artifact, *, external=False):
         readiness, life = value.get('external_readiness'), value.get('external_deathlink')
         return (not isinstance(readiness, dict) or readiness.get('version') != 2
                 or not isinstance(life, dict) or life.get('version') != 1)
-    return False
+    native = value.get('native_player_brain')
+    return not isinstance(native, dict) or native.get('version') != 1

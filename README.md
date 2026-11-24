@@ -1,6 +1,6 @@
 # Ocarina of Time Remake × Archipelago
 
-**0.12.0-alpha.1 — a Windows application with a full-network randomizer, 119 configuration controls and isolated room profiles.** Prepare the mod, connect to Archipelago and launch Zelda from one executable. Triforce keeps its in-game connection menu; the experimental Hookshot adapter has native controls too.
+**0.12.0-alpha.3 — a Windows application with a full-network randomizer, 119 configuration controls and isolated room profiles.** Prepare the mod, connect to Archipelago and launch Zelda from one executable. Triforce keeps its in-game connection menu; the experimental Hookshot adapter has native controls too.
 
 The **Full network** engine adapts [Mozencaz/OotrR](https://github.com/Mozencaz/OotrR), retaining its attribution and MIT notice. The new default catalogue has **1,106 real AP checks**, including 98 Gold Skulltulas, 64 shop slots across eight shops and two newly supported loose dungeon keys. Enabled source families participate in the multiworld instead of receiving a separate local randomizer reward. Individual dungeon keys can travel through AP, alongside optional key rings. The previous OOTRR engine remains available for existing configurations and player files.
 
@@ -8,7 +8,7 @@ This is an alpha. Current private gameplay tests cover Triforce title-screen con
 
 ## Play
 
-Download **`OOT-Remake-Archipelago-0.12.0-alpha.2.exe`** from [Releases](https://github.com/RAjeux/OOT-Remake-Archipelago/releases). Python and Node.js are included; normal setup needs no console or separate runtime installation.
+Download **`OOT-Remake-Archipelago-0.12.0-alpha.3.exe`** from [Releases](https://github.com/RAjeux/OOT-Remake-Archipelago/releases). Python and Node.js are included; normal setup needs no console or separate runtime installation.
 
 If Archipelago rejected the 0.12.0-alpha.1 APWorld with "expected a single directory", replace the application with this version and install its APWorld again.
 
@@ -41,6 +41,8 @@ Full-network preparation uses the bundled Python engine. **Legacy** uses the pin
 Settings are fixed at generation. Use a **new room and fresh save** to adopt the full-network engine or change placements. An application update or reconnection cannot convert an existing seed. Existing `.apootrr` files and legacy room identities remain readable.
 
 For bug fixes in an existing full room, use **Update prepared room** with the **same player file** after saving and closing Zelda. It refreshes resource allocations, native host helpers and external readiness/DeathLink resources while preserving the room identity, placements and saves. Older 0.11 rooms keep their 1,104-check catalogue and historical key behavior. New settings and the two added checks require a new generation.
+
+Version 0.12.0-alpha.3 fixes a native-host freeze when the fisherman hands over the rod. Native hosts keep the original Player AI and their C receipt guards; the external runtime retains its separate readiness gate. Update an existing room with the same player file to apply the fix without changing the seed or save.
 
 Choose **Child** as the starting age in Full network. Adult start is temporarily unavailable because its native opening transition can stall. Generation and preparation reject that mode; existing adult player files remain readable for diagnosis. Changing the starting age requires a new room and fresh save.
 
@@ -111,7 +113,7 @@ Use Windows x64 Python with Tcl/Tk support:
 ```powershell
 py -3 -m pip install -r requirements-app.txt
 py -3 tools/build_app.py
-py -3 tools/verify_app.py dist/OOT-Remake-Archipelago-0.12.0-alpha.2.exe
+py -3 tools/verify_app.py dist/OOT-Remake-Archipelago-0.12.0-alpha.3.exe
 ```
 
 The single executable bundles Python, Tk, Node.js, both engines, APWorld, bridge, adapters and notices. `VERSION` declares its version. The 0.12.0-alpha.1 executable passed payload inspection covering 526 Python modules and its isolated selftest in 10.94 seconds with a Unicode profile and only Windows System32 on PATH. The selftest checks hashes, a real child-process Codec and Tk responsiveness while the child holds its GIL; it does not launch a game or server. Full preparation uses isolated workers with bounded progress/log transport and cancellation confined to private build caches.
