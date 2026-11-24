@@ -5,6 +5,7 @@ from .catalog import GAME, LEGACY_GAME, ITEM_IDS
 
 
 _FR = {
+    "Master Sword": "Épée de légende",
     "Bolero of Fire": "Boléro du Feu", "Boomerang": "Boomerang", "Dins Fire": "Feu de Din",
     "Eponas Song": "Chant d'Épona", "Farores Wind": "Vent de Farore", "Fire Arrows": "Flèches de feu",
     "Gerudo Membership Card": "Carte Gerudo", "Goron Tunic": "Tunique Goron",

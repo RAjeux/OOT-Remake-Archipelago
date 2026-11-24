@@ -11,6 +11,9 @@ from .engine import run_engine
 from .options import OPTION_GROUPS, RemakeOptions, option_values
 from .settings import engine_settings
 from .shop_pool import SHOP_CHECK_MODE, shop_checks
+from .master_sword import (SETTING as MASTER_SWORD_SETTING, ITEM as MASTER_SWORD_ITEM,
+                           LOCATION as MASTER_SWORD_LOCATION, proof_wave as master_sword_wave,
+                           token_material as master_sword_token)
 
 
 class RemakeWeb(WebWorld):
@@ -44,6 +47,7 @@ class RemakeWorld(World):
         self.kokiri_shop_checks = False
         self.shuffle_skulltulas = values.get("shuffle_skulltulas", "off")
         self.adult_trade_shuffle = bool(values.get("adult_trade_shuffle", False))
+        self.shuffle_master_sword = bool(values.get(MASTER_SWORD_SETTING, False))
         eligible_skulls = (PINNED_SKULL_CHECKS if self.shuffle_skulltulas == "pinned" else
                            AP_SKULL_CHECKS if self.shuffle_skulltulas == "matched" else frozenset())
         self.local_skulltulas = {}
@@ -69,10 +73,19 @@ class RemakeWorld(World):
             raise ValueError("Adult trade shuffle requires all eleven supported trade rewards.")
         shops = self.seed_file.get("shops", {})
         rewards.update({name: shops[name]["item"] for name in self.shop_checks})
+        proof_waves = [list(names) for names in generated["waves"]]
+        if self.shuffle_master_sword:
+            # The native engine still proves vanilla sword ownership at the
+            # first draw. Export its grant independently of the Time Travel
+            # event, using the pedestal observer even when NPCs are vanilla.
+            sword_wave = (master_sword_wave(proof_waves, generated["master_sword_wave"])
+                          if "master_sword_wave" in generated else master_sword_wave(proof_waves))
+            proof_waves[sword_wave].append(MASTER_SWORD_LOCATION)
+            rewards[MASTER_SWORD_LOCATION] = MASTER_SWORD_ITEM
         self.waves = {}
         self.moved = {}
         self.goal_wave = None
-        for wave, names in enumerate(generated["waves"]):
+        for wave, names in enumerate(proof_waves):
             for name in names:
                 if name == "Ganon":
                     self.goal_wave = wave
@@ -90,7 +103,8 @@ class RemakeWorld(World):
         missing = set(rewards).difference(self.waves)
         if missing:
             raise ValueError("The engine did not prove access to these locations: " + ", ".join(sorted(missing)))
-        self.token = hashlib.sha256(f"{self.multiworld.seed_name}/{self.player}/{self.seed_file['checksum']}".encode()).hexdigest()
+        self.token = hashlib.sha256(master_sword_token(self.multiworld.seed_name, self.player,
+            self.seed_file['checksum'], self.shuffle_master_sword).encode()).hexdigest()
 
     def create_regions(self):
         start = Region("Menu", self.player, self.multiworld)
@@ -121,7 +135,10 @@ class RemakeWorld(World):
                             return item.player != player or not refill
                         location.item_rule = skull_item_rule
                     region.locations.append(location)
-        self.multiworld.completion_condition[self.player] = self.rules_at[self.goal_wave]
+        goal = self.rules_at[self.goal_wave]
+        self.multiworld.completion_condition[self.player] = (
+            (lambda state: goal(state) and state.has(MASTER_SWORD_ITEM, self.player))
+            if self.shuffle_master_sword else goal)
 
     def create_item(self, name):
         classification = ItemClassification.filler if name == FILLER else ItemClassification.progression
@@ -152,7 +169,8 @@ class RemakeWorld(World):
                 "local_items": True, "kokiri_shop_checks": self.kokiri_shop_checks,
                 "shop_check_mode": SHOP_CHECK_MODE, "shop_checks": sorted(self.shop_checks),
                 "foreign_only_shops": False, "shuffle_skulltulas": self.shuffle_skulltulas,
-                "local_skulltulas": self.local_skulltulas, "adult_trade_shuffle": self.adult_trade_shuffle}
+                "local_skulltulas": self.local_skulltulas, "adult_trade_shuffle": self.adult_trade_shuffle,
+                MASTER_SWORD_SETTING: self.shuffle_master_sword}
 
     def generate_output(self, output_directory):
         output = {"game": self.game, "protocol": PROTOCOL, "room": self.multiworld.seed_name, "slot": self.player_name,
@@ -162,6 +180,7 @@ class RemakeWorld(World):
                   "local_items": True, "kokiri_shop_checks": self.kokiri_shop_checks,
                   "shop_check_mode": SHOP_CHECK_MODE, "shop_checks": sorted(self.shop_checks),
                   "foreign_only_shops": False, "shuffle_skulltulas": self.shuffle_skulltulas,
-                  "local_skulltulas": self.local_skulltulas, "adult_trade_shuffle": self.adult_trade_shuffle}
+                  "local_skulltulas": self.local_skulltulas, "adult_trade_shuffle": self.adult_trade_shuffle,
+                  MASTER_SWORD_SETTING: self.shuffle_master_sword}
         path = Path(output_directory) / (self.multiworld.get_out_file_name_base(self.player) + ".apootrr")
         path.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")

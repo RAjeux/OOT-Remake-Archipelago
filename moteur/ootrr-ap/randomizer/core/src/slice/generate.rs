@@ -56,6 +56,10 @@ pub struct Generated {
     pub report: String,
     pub spoiler: Option<String>,
     pub spheres: Vec<Vec<(String, String)>>,
+    /// AP's optional sword check observes the fixed pedestal independently of
+    /// which reward families enter the native shuffled pool. Complete AP search
+    /// supplies this index without changing the seed or its exported spheres.
+    pub master_sword_wave: Option<usize>,
 }
 
 pub fn is_song(actor: &str) -> bool {
@@ -409,6 +413,7 @@ pub fn generate_data(d: &Data, s: &Settings, seed: &str, o: &GenOpts) -> Res<Gen
     if let Some(l) = &gates {
         seed_file.entrances = l.to_map();
     }
+    let mut master_sword_wave: Option<usize> = None;
     let (sp, spheres): (Option<String>, Steps) = if o.spoiler {
         let (mut t, st): (String, Steps) = spoiler_text(&w, &vanilla, &got, &pk)?;
         let fixed: BM<String, String> = if crate::slice::tier_fix::active(d, &w, &pk.free) {
@@ -438,8 +443,12 @@ pub fn generate_data(d: &Data, s: &Settings, seed: &str, o: &GenOpts) -> Res<Gen
         unseen.sort_unstable();
         unseen.dedup();
         if let Some(goal) = w.loc("Ganon") { unseen.push(goal); }
+        let pedestal = w.loc("Master Sword Pedestal");
         loop {
             let found = search.settle(&got, false);
+            if master_sword_wave.is_none() && pedestal.is_some_and(|l| search.loc_access(l)) {
+                master_sword_wave = Some(spheres.len());
+            }
             let mut row = Vec::new();
             unseen.retain(|&l| {
                 if search.loc_access(l) {
@@ -465,7 +474,7 @@ pub fn generate_data(d: &Data, s: &Settings, seed: &str, o: &GenOpts) -> Res<Gen
     if let Some(l) = &gates {
         rep.push_str(&crate::entr::text::report(l));
     }
-    Ok(Generated { seed_file, counts, report: rep, spoiler: sp, spheres })
+    Ok(Generated { seed_file, counts, report: rep, spoiler: sp, spheres, master_sword_wave })
 }
 
 pub fn plando_options(d: &Data, s: &Settings) -> Res<(Vec<String>, Vec<String>)> {
@@ -500,6 +509,24 @@ mod tests {
     use crate::settings::Value;
     use crate::slice::data::{CATALOG_JSON, ITEMS_JSON, REMAKE_JSON, VANILLA_JSON};
     use crate::slice::logic::world;
+
+    #[test]
+    fn ap_master_sword_observes_the_fixed_pedestal_without_randomizing_rauru() {
+        let d = Data::load().unwrap();
+        for rewards in ["off", "supported"] {
+            let mut s = with(&[("shuffle_rewards", rewards),
+                               ("shuffle_dungeon_rewards", "vanilla"), ("skip_cutscenes", "off")]);
+            s.set("shuffle_rewards_extra", Value::Bool(false)).unwrap();
+            let g = generate_data(&d, &s, "AP fixed pedestal proof", &GenOpts::default()).unwrap();
+            let wave = g.master_sword_wave.expect("the native search must prove first-draw access");
+            assert!(wave < g.spheres.len());
+            let goal = g.spheres.iter().position(|row| row.iter().any(|(name, _)| name == "Ganon")).unwrap();
+            assert!(wave <= goal);
+            assert!(!g.seed_file.placements.contains_key("Master Sword Pedestal"));
+            assert!(!g.seed_file.placements.contains_key("ToT Reward from Rauru"));
+            assert!(!g.spheres.iter().flatten().any(|(name, _)| name == "Master Sword Pedestal"));
+        }
+    }
 
     const BIG: [&str; 6] = [
         "Forest Temple Bow Chest",

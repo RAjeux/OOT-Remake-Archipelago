@@ -1815,4 +1815,16 @@ SHOP_CHECKS.update(ADDITIONAL_SHOP_CHECKS)
 LOCATION_IDS.update({name: metadata["id"] for name, metadata in ADDITIONAL_SHOP_CHECKS.items()})
 CHECK_FLAGS.update({name: [metadata["flag"]] for name, metadata in ADDITIONAL_SHOP_CHECKS.items()})
 
+# Master Sword is an AP-only extension. Append identities after every released
+# item/location so all existing rooms keep exactly the same protocol IDs.
+from .master_sword import (ACTOR as MASTER_SWORD_ACTOR, ITEM as MASTER_SWORD_ITEM,
+                          LOCATION as MASTER_SWORD_LOCATION, LOCATION_ID as MASTER_SWORD_ID,
+                          FLAG_NAME as MASTER_SWORD_FLAG_NAME)
+ITEM_DATA[MASTER_SWORD_ITEM] = dict(actor=MASTER_SWORD_ACTOR, mode="actor", kind="Item",
+                                   quantity=1, advancement=True)
+ITEM_IDS[MASTER_SWORD_ITEM] = 0x6F7100 + len(ITEM_IDS)
+EXPECTED[MASTER_SWORD_ITEM] = [MASTER_SWORD_ACTOR]
+LOCATION_IDS[MASTER_SWORD_LOCATION] = MASTER_SWORD_ID
+CHECK_FLAGS[MASTER_SWORD_LOCATION] = [3657094742]  # murmur3(MASTER_SWORD_FLAG_NAME)
+
 del _name

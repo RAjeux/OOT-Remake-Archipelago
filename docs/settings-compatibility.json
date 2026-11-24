@@ -3,7 +3,8 @@
   "native_setting_count": 118,
   "public_native_count": 93,
   "ap_only": [
-    "death_link"
+    "death_link",
+    "shuffle_master_sword"
   ],
   "engine_extensions": {
     "adult_trade_shuffle": {

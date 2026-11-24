@@ -52,6 +52,10 @@ def bind_romfs(source, mod, data, baseline):
     frame=read(GAME_DATA)
     before=codec.decode(frame)
     after=add_cursor(before,data["token"],baseline)
+    if data.get("shuffle_master_sword"):
+        from .master_sword import LOCATION as MASTER_SWORD_LOCATION
+        from .cursor_resource import append_saved_bool
+        after=append_saved_bool(after,CHECK_FLAGS[MASTER_SWORD_LOCATION][0])
     if data.get("kokiri_shop_checks") or data.get("shop_check_mode") == "special_deals":
         from .cursor_resource import append_saved_bool
         from .ap_shops import selected_shops

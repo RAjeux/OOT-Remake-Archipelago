@@ -21,6 +21,9 @@ from ootrr_triforce.catalog import (AP_SKULL_CHECKS, CHESTS, DEFAULT_SETTINGS, F
 from ootrr_triforce.trade_catalog import TRADE_ITEMS
 from ootrr_triforce.shop_pool import SHOP_CHECK_MODE, shop_checks
 from ootrr_triforce.settings import OPTION_SPECS, default_options, engine_settings, validate_options
+from ootrr_triforce.master_sword import (SETTING as MASTER_SWORD_SETTING, ITEM as MASTER_SWORD_ITEM,
+                                        LOCATION as MASTER_SWORD_LOCATION, proof_wave as master_sword_wave,
+                                        token_material as master_sword_token)
 
 DEAL_NAMES = tuple(next(name for name, row in SHOP_CHECKS.items() if row["shop"] == shop)
                    for shop in dict.fromkeys(row["shop"] for row in SHOP_CHECKS.values()))

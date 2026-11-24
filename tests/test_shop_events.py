@@ -25,7 +25,7 @@ from oot_rando.patching.progressive import FlowEditor, link
 from ootrr_triforce.shop_events import ENTRY, FLOW_PATH, PREFIX, SELECTED, patch_shop_flow, prepare_shop_events
 from ootrr_triforce.catalog import ITEM_DATA, SHOP_CHECKS
 from ootrr_triforce.receipt_events import DUNGEONS, OWNERS
-from ootrr_triforce.native_presentations import AMMO_BAGS, NO_AMMO_BAG, is_cure
+from ootrr_triforce.native_presentations import AMMO_BAGS, is_cure
 from test_receipt_events import native_flow
 
 
@@ -289,9 +289,10 @@ class ShopEventTests(unittest.TestCase):
                     elif metadata.get("bottle_item") and metadata.get("pouch_special") == "NotPushToPouch":
                         self.assertFalse(pouch)
                         self.assertEqual(sum(command == "EventTriggerPushToEmptyBottle" for command, _ in run.trace), 1)
+                    elif metadata["actor"] in AMMO_BAGS:
+                        self.assertFalse(pouch)
                     else:
-                        expected = NO_AMMO_BAG if metadata["actor"] in AMMO_BAGS else metadata["actor"]
-                        self.assertEqual([values.get("Actor", values.get("ActorName")) for values in pouch], [expected])
+                        self.assertEqual([values.get("Actor", values.get("ActorName")) for values in pouch], [metadata["actor"]])
                         self.assertEqual(pouch[0]["Num"], 1)
                     if is_cure(metadata):
                         self.assertEqual([values["ActorName"] for command, values in run.trace

@@ -237,8 +237,9 @@ def build_receipt_flow(raw, token, names=None):
         else:
             # Bundle actors already encode their yield. Giving quantity copies
             # here would multiply a 20-Bombchu pickup into 400 Bombchus.
-            from .native_presentations import append_tier_choice
-            root = append_tier_choice(editor, metadata, stem, grant)
+            from .native_presentations import AMMO_BAGS, append_tier_choice
+            root = append_tier_choice(editor, metadata, stem, grant,
+                                     no_ammo=finish(stem + "_NoBag") if metadata["actor"] in AMMO_BAGS else None)
         entry = EntryPoint(stem)
         entry.main_event = make_index(root)
         editor.chart.entry_points.append(entry)
@@ -253,7 +254,7 @@ def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, nat
     from evfl.entry_point import EntryPoint
     from evfl.util import make_index
     from oot_rando.patching.progressive import FlowEditor, link
-    from .native_presentations import (PRESENTER_NAME, PRESENTER_PATH,
+    from .native_presentations import (AMMO_BAGS, PRESENTER_NAME, PRESENTER_PATH,
                                        append_recipe, append_tier_choice, copy_receipt_presenter, receipt_style)
     if not re.fullmatch("[a-f0-9]{64}", token):
         raise ValueError(tr('Invalid room identifier for native receipts.'))
@@ -306,7 +307,13 @@ def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, nat
             link(show, tail)
             return show
 
-        root = append_tier_choice(pouch, metadata, stem, present)
+        no_ammo_ack = None
+        if metadata["actor"] in AMMO_BAGS:
+            no_ammo_save = pouch.action(stem + "_NoBag_Save", "GameSystemActor", "EventTriggerRequestAutoSave", None)
+            no_ammo_ack = pouch.action(stem + "_NoBag_Acknowledge", "GameDataActor", "EventTriggerAddOrSubGameDataInt",
+                                       {"GameDataName": CURSOR_PREFIX + token, "Index": -1, "Value": 1})
+            link(no_ammo_ack, no_ammo_save)
+        root = append_tier_choice(pouch, metadata, stem, present, no_ammo=no_ammo_ack)
         entry = EntryPoint(stem)
         entry.main_event = make_index(root)
         pouch.chart.entry_points.append(entry)

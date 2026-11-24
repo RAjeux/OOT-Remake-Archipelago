@@ -16,7 +16,7 @@ from oot_rando.patching.event_info import reachable
 from oot_rando.patching.progressive import FlowEditor, link
 from ootrr_triforce import ap_trade
 from ootrr_triforce.catalog import ITEM_DATA, ITEM_IDS
-from ootrr_triforce.native_presentations import CAMERA_FACING_FLOW, PRESENTER_NAME, is_cure
+from ootrr_triforce.native_presentations import AMMO_BAGS, CAMERA_FACING_FLOW, PRESENTER_NAME, is_cure
 from ootrr_triforce.receipt_events import CURSOR_PREFIX, OWNERS
 from ootrr_triforce.trade_catalog import TALON_AWAKE, TRADE_CHECKS, event_name
 from test_receipt_events import native_flow
@@ -178,6 +178,29 @@ class TradeRewardTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             ap_trade.trade_records({ANJU: dict(reward("Bow"), item_id=123)})
 
+    def test_missing_ammo_equipment_consumes_only_the_trade_input_without_item_scene(self):
+        for item, bag in (("Bombs (20)", "Item_BombBag_Medium"),
+                          ("Arrows (30)", "Item_Quiver_Large"),
+                          ("Deku Seeds (30)", "Item_BulletBag_Small")):
+            for owns_bag in (False, True):
+                with self.subTest(item=item, owns_bag=owns_bag):
+                    run = self.runner({COJIRO: reward(item)})
+                    run.inventory["Item_CojiroCucco"] = 1
+                    if owns_bag:
+                        run.inventory[bag] = 1
+                    run.trade(COJIRO)
+                    self.assertEqual(run.inventory["Item_CojiroCucco"], 0)
+                    self.assertEqual(run.inventory[ITEM_DATA[item]["actor"]], int(owns_bag))
+                    self.assertEqual(run.inventory["TBox_Rupee_Green"], 0)
+                    self.assertTrue(run.values[TRADE_CHECKS[COJIRO]["flag_name"]])
+                    self.assertEqual(len(run.saves), 1)
+                    if not owns_bag:
+                        self.assertFalse(any(cmd in {"FixtureNativeModel", "FixtureNativeSound", "EventTriggerSetForGetWindow",
+                                                     "EventTriggerRequestOpenPickUpWindow"} for cmd, _ in run.trace))
+                    before = run.inventory.copy()
+                    run.trade(COJIRO)
+                    self.assertEqual(run.inventory, before)
+
     def test_own_reward_replaces_quest_grant_consumes_only_its_input_once(self):
         run = self.runner({COJIRO: reward("Bomb Bag")})
         run.inventory.update(Item_CojiroCucco=1, Item_Prescription=1, Item_PoacherSaw=1)
@@ -303,7 +326,7 @@ class TradeRewardTests(unittest.TestCase):
                     metadata = ITEM_DATA[row["item"]]
                     positive = [params for action, params in run.trace
                                 if action == "EventTriggerAddOrRemovePouchContent" and params["Num"] > 0]
-                    special = (metadata["mode"] == "generic" or metadata["kind"] == "TCGSmallKey" or is_cure(metadata)
+                    special = (metadata["actor"] in AMMO_BAGS or metadata["mode"] == "generic" or metadata["kind"] == "TCGSmallKey" or is_cure(metadata)
                                or (metadata.get("bottle_item") and metadata.get("pouch_special") == "NotPushToPouch"))
                     self.assertEqual(len(positive), 0 if special else 1)
                     self.assertFalse(any(str(params.get("GameDataName", "")).startswith(CURSOR_PREFIX)

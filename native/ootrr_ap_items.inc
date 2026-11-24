@@ -241,6 +241,7 @@ static const char *ap_eventname16(int item) {
     case 7303625: return "OOTRR_APReceive_7303625";
     case 7303626: return "OOTRR_APReceive_7303626";
     case 7303627: return "OOTRR_APReceive_7303627";
+    case 7303628: return "OOTRR_APReceive_7303628";
     default: return NULL;
     }
 }

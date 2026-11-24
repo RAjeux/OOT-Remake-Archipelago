@@ -78,7 +78,7 @@ class DirectSettingsTests(unittest.TestCase):
         self.assertEqual(len(OPTION_SPECS), len(SPEC_BY_ID))
         rendered = yaml_options()
         names = re.findall(r"^  ([a-z_]+):", rendered, flags=re.M)
-        self.assertEqual(set(names), set(SPEC_BY_ID).difference(AP_ONLY))
+        self.assertEqual(set(names), set(SPEC_BY_ID).difference({"death_link"}))
         self.assertEqual(len(names), len(set(names)))
         self.assertNotIn("ootrr_settings:", rendered)
         self.assertNotIn("OOTRR1-", rendered)

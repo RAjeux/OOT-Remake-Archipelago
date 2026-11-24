@@ -294,6 +294,8 @@ def localize_mod(romfs, mod, seed_settings):
 def prepare(root, settings, roster, moved):
     if settings.get("adult_trade_shuffle") and not roster:
         raise ValueError(tr("Adult trade shuffle requires the connected room's item mapping."))
+    if settings.get("shuffle_master_sword") and not roster:
+        raise ValueError(tr("Master Sword shuffle requires the connected room's item mapping."))
     base = root / "mods"
     seed_settings = settings.get("_seed_settings")
     if not roster and seed_settings is None:
@@ -305,7 +307,8 @@ def prepare(root, settings, roster, moved):
     payload = json.dumps([REVISION, full_rewards, local_items, settings.get("kokiri_shop_checks", False),
                           settings.get("shop_check_mode"), settings.get("shop_checks", []),
                           settings.get("shop_prices", {}), settings.get("shuffle_skulltulas", "off"),
-                          bool(settings.get("adult_trade_shuffle")), seed_settings, roster, effective],
+                          bool(settings.get("adult_trade_shuffle")), bool(settings.get("shuffle_master_sword")),
+                          seed_settings, roster, effective],
                          ensure_ascii=False, sort_keys=True)
     digest = hashlib.sha256(payload.encode()).hexdigest()
     home = root / "v14"
@@ -333,6 +336,9 @@ def prepare(root, settings, roster, moved):
             if settings.get("shuffle_skulltulas", "off")!="off":
                 from .ap_skulls import prepare_skulls
                 prepare_skulls(romfs, mod, roster, settings)
+            if settings.get("shuffle_master_sword"):
+                from .ap_master_sword import prepare_master_sword
+                prepare_master_sword(romfs, mod, roster, settings)
             if settings.get("reward_mode")=="all_locations" and local_items:
                 from .restoration import prepare_restoration
                 prepare_restoration(romfs, mod, roster)

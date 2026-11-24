@@ -143,17 +143,17 @@ class RestorationFlowTests(unittest.TestCase):
         run = self.graph({CHEST: reward("Bombs (5)")})
         run.restore(CHEST)
         actor = "TBox_Rupee_Green"
-        self.assertEqual(run.inventory[actor], 1, "The native bundle is granted once")
+        self.assertFalse(run.inventory, "Missing equipment must not grant ammo, a bag or a replacement")
         self.assertEqual(run.inventory["Item_BombBundle_Small"], 0)
         self.assertEqual(run.inventory["Item_BombBag_Small"], 0)
-        self.assertTrue(run.values["Fixture.NativeBagHook"])
+        self.assertFalse(run.values.get("Fixture.NativeBagHook", False))
         self.assertEqual(run.values[restore.RESULT], LOCATION_IDS[CHEST])
         self.assertEqual(run.trace[-2][0], "EventTriggerRequestAutoSave")
         self.assertEqual(run.trace[-1][1]["GameDataName"], restore.RESULT)
         record = restore.restoration_records({CHEST: reward()})[0]
         self.assertTrue(all(run.saves[-1][0][flag] for flag in record["flags"]))
         run.restore(CHEST)
-        self.assertEqual(run.inventory[actor], 1)
+        self.assertFalse(any(run.inventory.values()))
         # A separate earlier save has no effect or flag; its recovery is needed.
         older = self.graph({CHEST: reward("Bombs (5)")})
         older.inventory["Item_BombBag_Small"] = 1
@@ -236,8 +236,10 @@ class RestorationFlowTests(unittest.TestCase):
 
     def test_restoration_uses_native_fallback_after_skull_dispatch_not_ap_ack(self):
         source = ap_skulls.patch_skull_flow(pouch(), ap_skulls.skull_records({SKULL: reward("Bombs (5)")}))
-        run = self.graph({SKULL: reward("Bombs (5)")}, source).restore(SKULL)
-        self.assertEqual(sum(run.inventory.values()), 1)
+        run = self.graph({SKULL: reward("Bombs (5)")}, source)
+        run.inventory["Item_BombBag_Small"] = 1
+        run.restore(SKULL)
+        self.assertEqual(run.inventory["Item_BombBundle_Small"], 1)
         self.assertNotIn(ap_skulls.SCRATCH, run.values)
 
     def test_trade_rollback_consumes_exact_input_and_late_source_cannot_restore_spent_token(self):

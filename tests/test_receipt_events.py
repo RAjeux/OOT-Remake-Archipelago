@@ -18,7 +18,7 @@ from oot_rando.patching.progressive import FlowEditor, link
 from oot_rando.patching.soul_adapter import murmur3
 from ootrr_triforce.catalog import ITEM_DATA, ITEM_IDS
 from ootrr_triforce.receipt_events import CURES, CURSOR_PREFIX, OWNERS, SILENT_ENTRY, build_receipt_flow, event_name
-from ootrr_triforce.native_presentations import AMMO_BAGS, NO_AMMO_BAG
+from ootrr_triforce.native_presentations import AMMO_BAGS
 
 TOKEN = "a" * 64
 CURSOR = CURSOR_PREFIX + TOKEN
@@ -163,9 +163,13 @@ class ReceiptFlowTests(unittest.TestCase):
                         cures = [params["ActorName"] for command, params in trace
                                  if command == "EventTriggerRecoverByCureItem"]
                         self.assertEqual(cures, [metadata["actor"]])
+                    elif metadata["actor"] in AMMO_BAGS:
+                        self.assertEqual(trace, [("EventTriggerAddOrSubGameDataInt",
+                                                 {"GameDataName": CURSOR, "Index": -1, "Value": 1}),
+                                                ("EventTriggerRequestAutoSave", {})])
+                        self.assertFalse(grants)
                     else:
-                        expected = NO_AMMO_BAG if metadata["actor"] in AMMO_BAGS else metadata["actor"]
-                        self.assertEqual([grant["Actor"] for grant in grants], [expected])
+                        self.assertEqual([grant["Actor"] for grant in grants], [metadata["actor"]])
                         played = [index for index, (command, values) in enumerate(trace)
                                   if command == "EventTriggerSetHavePlayedGetEvent"]
                         grant_index = next(index for index, (command, values) in enumerate(trace)
@@ -185,14 +189,14 @@ class ReceiptFlowTests(unittest.TestCase):
                     self.assert_receipt(trace)
                     grants = [values["Actor"] for command, values in trace
                               if command == "EventTriggerAddOrRemovePouchContent"]
-                    self.assertEqual(grants, [ITEM_DATA[name]["actor"] if owned.intersection(bags) else "TBox_Rupee_Green"])
+                    self.assertEqual(grants, [ITEM_DATA[name]["actor"]] if owned.intersection(bags) else [])
         held = set()
-        for name, expected in (("Bombs (20)", "TBox_Rupee_Green"), ("Bomb Bag", "Item_BombBag_Small"),
+        for name, expected in (("Bombs (20)", None), ("Bomb Bag", "Item_BombBag_Small"),
                                ("Bombs (20)", "Item_BombBundle_Small")):
             trace = GraphRun(self.flow.flowchart, held).run(event_name(ITEM_IDS[name]))
             self.assert_receipt(trace)
             self.assertEqual([values["Actor"] for command, values in trace
-                              if command == "EventTriggerAddOrRemovePouchContent"], [expected])
+                              if command == "EventTriggerAddOrRemovePouchContent"], [expected] if expected else [])
 
     def test_progressive_levels_advance_and_saturate(self):
         for name, metadata in ITEM_DATA.items():

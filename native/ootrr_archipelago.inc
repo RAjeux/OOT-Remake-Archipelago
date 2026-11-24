@@ -20,6 +20,8 @@ static int ap_flag_count16;
 static int ap_event_mode16;
 static uint64_t ap_delivery_actor16;
 static uint64_t ap_delivery_epoch16;
+static uint64_t ap_delivery_mgr16, ap_delivery_core16, ap_delivery_life16;
+static int ap_delivery_ready16;
 static char ap_profile16[4096];
 
 /* The renderer's Options tab discovers this narrow host entry point without
@@ -152,6 +154,7 @@ static int ap_boot16(void) {
    pouch/event actions own all item effects (including upgrades, bottles, magic
    and dungeon credit); the flow commits ReceivedIndex after its grant. */
 static int ap_request_item16(Ctx *c,uint64_t actor,const char *name) {
+    if (!ap_delivery_ready16 || actor!=ap_delivery_actor16) return 0;
     const uint64_t events=oot_singleton(c,OOT_EVENTMGR_SLOT);
     A64Fn make_arg=a64_lookup(0x80d99f10ULL),request=a64_lookup(0x80d9a820ULL);
     A64Fn set_link=a64_lookup(0x802dc440ULL),release_link=a64_lookup(0x8022b6f0ULL);
@@ -184,9 +187,44 @@ static int ap_request_item16(Ctx *c,uint64_t actor,const char *name) {
 }
 
 static void ap_invalidate_delivery16(void) {
+    ap_delivery_ready16=0;
     if (ap_delivery_actor16) {
         ap_delivery_actor16=0;
+        ap_delivery_mgr16=ap_delivery_core16=ap_delivery_life16=0;
         ap_delivery_epoch16++;
+    }
+}
+
+/* OOT 1.1.1's SelectorEventQueryCheckPlayerState (0x807672d0 /
+   0x80233970) reads this native action controller. ActionVerb's own enum table
+   identifies Wait=0x28, Fishing=0x34 and Crawl=0xea. Only ordinary locomotion
+   is interruptible here: an idle event manager alone does not mean Link can
+   play a get animation. Unknown and transitional states fail closed.
+   QueryNaviIsWaitPlayerStateDrawnFishingRod (0x82a95c90) also checks bit 10
+   at Player+0xa38; keep the whole fishing session intact even between casts. */
+static int ap_can_receive16(Ctx *c,uint64_t components,uint64_t core) {
+    int paused=0;
+    if (!oot_gamedata_bool(c,0x604aebe1u,&paused) || paused) return 0; /* Sequence_IsPause */
+    if (recomp_load32(c,core+0xa38)&0x400u) return 0;
+    const uint64_t controller=recomp_load64(c,components+0x188);
+    const uint64_t action=controller?recomp_load64(c,controller+0x1c0):0;
+    if (!action) return 0;
+    uint32_t verb=recomp_load32(c,action+0x28);
+    if (verb==0x11au) verb=recomp_load32(c,action+0x4c);
+    switch (verb) {
+    case 0x01: /* Walk */
+    case 0x02: /* WalkBackwards */
+    case 0x03: /* Strafe */
+    case 0x04: /* Run */
+    case 0x15: /* TurnAround */
+    case 0x16: /* Turn */
+    case 0x28: /* Wait */
+    case 0x41: /* LockOnWait */
+    case 0x42: /* LockOnMove */
+    case 0xd1: /* Idle */
+        return 1;
+    default:
+        return 0;
     }
 }
 
@@ -211,10 +249,16 @@ static int ap_player16(Ctx *c,uint64_t actor,uint64_t components,int64_t now) {
     uint64_t life=recomp_load64(c,core+7184);
     uint64_t type=life?recomp_load64(c,life):0;
     if (type!=0x84b83438ULL && type!=0x84b6c400ULL) { ap_invalidate_delivery16(); ap_death16(-1); return 0; }
+    if (ap_delivery_actor16 && (ap_delivery_actor16!=actor || ap_delivery_mgr16!=mgr ||
+            ap_delivery_core16!=core || ap_delivery_life16!=life)) {
+        ap_invalidate_delivery16();
+        ap_death16(-1); /* another context must not inherit a held death or report the old life's death */
+    }
     int current=(int32_t)recomp_load32(c,life+8);
     if (current<=0) { ap_invalidate_delivery16(); ap_death16(1); return 0; }
     const uint64_t events=oot_singleton(c,OOT_EVENTMGR_SLOT);
-    const int death_state=events && recomp_load64(c,events+104) ? 2 : 0;
+    ap_delivery_ready16=events && !recomp_load64(c,events+104) && ap_can_receive16(c,components,core);
+    const int death_state=ap_delivery_ready16 ? 0 : 2;
     if (ap_death16(death_state)) {
         ap_invalidate_delivery16();
         __atomic_store_n((uint32_t*)A64_PTR(life+8),0,__ATOMIC_SEQ_CST);
@@ -224,8 +268,8 @@ static int ap_player16(Ctx *c,uint64_t actor,uint64_t components,int64_t now) {
         hos_log("OOTRR-AP DeathLink: Link's life %d -> 0",current);
         return 0;
     }
-    if (ap_delivery_actor16 && ap_delivery_actor16!=actor) ap_delivery_epoch16++;
     ap_delivery_actor16=actor;
+    ap_delivery_mgr16=mgr;ap_delivery_core16=core;ap_delivery_life16=life;
     return 1;
 }
 
@@ -298,6 +342,10 @@ static void ap_tick16(Ctx *c,int64_t now) {
         }
     }
     pending=-1;
+    /* Reporting checks and observing a committed receipt are safe while Link
+       is busy. Starting another grant (including quiet/legacy restoration) is
+       not; leave its index and network queue untouched until normal control. */
+    if (!ap_delivery_ready16) return;
     int item=ap_next16(index);
     if (!item) {
         /* Network receipts have priority, including bottles/upgrades that can

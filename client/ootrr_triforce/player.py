@@ -62,12 +62,17 @@ def read_manifest(path):
     if data.get("game", LEGACY_GAME) not in (GAME, LEGACY_GAME):
         raise ValueError(tr('This file belongs to another Archipelago game.'))
     seed = data["seed_file"]
-    token = hashlib.sha256(f"{data['room']}/{data['player']}/{seed['checksum']}".encode()).hexdigest()
+    from .master_sword import token_material
+    token = hashlib.sha256(token_material(data['room'], data['player'], seed['checksum'],
+                                          data.get("shuffle_master_sword", False) is True).encode()).hexdigest()
     if (data["protocol"] != PROTOCOL or data["token"] != token
             or seed["generator"] != "ootrr-core 0.8.1" or seed["format"] != "ootrr-seed"):
         raise ValueError(tr('Incompatible player file or version.'))
     selected_shops = manifest_shop_checks(data)
     allowed=set(CHESTS) | set(selected_shops)
+    from .master_sword import manifest_reward
+    sword_reward = manifest_reward(data)
+    allowed.update(sword_reward)
     if type(data.get("adult_trade_shuffle", False)) is not bool:
         raise ValueError(tr("Invalid adult trade shuffle metadata."))
     if data.get("adult_trade_shuffle"):
@@ -93,6 +98,7 @@ def read_manifest(path):
     if mode not in ("legacy_gear", "all_chest_rewards", "all_locations"):
         raise ValueError(tr('Unknown Archipelago reward mode.'))
     rewards=dict(seed["placements"])
+    rewards.update(sword_reward)
     shops = seed.get("shops", {})
     rewards.update({name: shops[name]["item"] for name in selected_shops})
     if not set(data["checks"]) <= rewards.keys():
@@ -161,6 +167,10 @@ def preparation_settings(settings, data):
     else:
         result.pop("adult_trade_shuffle", None)
         result.pop("_ap_token", None)
+    if data.get("shuffle_master_sword"):
+        result["shuffle_master_sword"] = True
+    else:
+        result.pop("shuffle_master_sword", None)
     seed = data.get("seed_file", {})
     if "settings" in seed:
         result["_seed_settings"] = seed["settings"]
@@ -728,6 +738,7 @@ def main():
                    foreign_only_shops=bool(data.get("foreign_only_shops",False)),
                    shuffle_skulltulas=data.get("shuffle_skulltulas", "off"),
                    adult_trade_shuffle=bool(data.get("adult_trade_shuffle", False)),
+                   shuffle_master_sword=bool(data.get("shuffle_master_sword", False)),
                    shop_prices={name:row["price"] for name,row in data["seed_file"].get("shops",{}).items()
                                 if name in manifest_shop_checks(data)})
     if args.native_install:

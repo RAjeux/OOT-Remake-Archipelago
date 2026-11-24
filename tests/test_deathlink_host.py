@@ -55,15 +55,18 @@ header = r'''
 
 typedef int Ctx;
 enum { OOT_GAMEDATA_SLOT = 20, OOT_EVENTMGR_SLOT = 21 };
-static uint64_t core[1024], components_memory[128], actor_memory, event_manager[16];
+static uint64_t core[1024], components_memory[128], controller_memory[64], action_memory[16], actor_memory, event_manager[16];
 static struct Life { uint64_t type; int32_t current; uint32_t hash; } life, max_life;
-static int manager_exists, save_exists, pouch_count, loading, valid_core;
+static int manager_exists, save_exists, pouch_count, loading, valid_core, paused, pause_known;
 static int remote_pending, states[32], state_count, gd_count, marks, log_count;
+static int model_death_state, model_outgoing_deaths, model_remote_suppress;
 static uint32_t gd_hash, gd_value;
 static uint64_t marked_address;
 static int ap_cursor16;
 static uint64_t ap_delivery_actor16;
 static uint64_t ap_delivery_epoch16;
+static uint64_t ap_delivery_mgr16, ap_delivery_core16, ap_delivery_life16;
+static int ap_delivery_ready16;
 static const char *const oot_item_names[] = {"Item_Test"};
 
 static int contains(const void *base, size_t size, uint64_t address, size_t length) {
@@ -73,6 +76,8 @@ static int contains(const void *base, size_t size, uint64_t address, size_t leng
 static void *guest_pointer(uint64_t address, size_t length) {
     assert(contains(core, sizeof core, address, length) ||
            contains(components_memory, sizeof components_memory, address, length) ||
+           contains(controller_memory, sizeof controller_memory, address, length) ||
+           contains(action_memory, sizeof action_memory, address, length) ||
            contains(event_manager, sizeof event_manager, address, length) ||
            contains(&life, sizeof life, address, length) ||
            contains(&max_life, sizeof max_life, address, length));
@@ -109,7 +114,9 @@ static int oot_pouch_count(Ctx *c, const char *name) {
     (void)c; assert(!strcmp(name, "Item_Test")); return pouch_count;
 }
 static int oot_gamedata_bool(Ctx *c, uint32_t hash, int *value) {
-    (void)c; assert(hash == 0xef2b60c2u); *value = loading; return 1;
+    (void)c;
+    if (hash == 0xef2b60c2u) { *value = loading; return 1; }
+    assert(hash == 0x604aebe1u); *value = paused; return pause_known;
 }
 static int hos_oot_is_player(Ctx *c, uint64_t address) {
     (void)c; return valid_core && address == (uintptr_t)core;
@@ -123,7 +130,14 @@ static void hos_log(const char *format, ...) { (void)format; log_count++; }
 static int death_api(int state) {
     assert(state_count < 32 && state >= -1 && state <= 2);
     states[state_count++] = state;
-    if (state == 0 && remote_pending) { remote_pending = 0; return 1; }
+    const int previous=model_death_state;
+    model_death_state=state;
+    if (state==-1) { remote_pending=0;model_remote_suppress=0; }
+    if (state==1) {
+        if ((previous==0 || previous==2) && !model_remote_suppress) model_outgoing_deaths++;
+        remote_pending=0;model_remote_suppress=0;
+    }
+    if (state == 0 && remote_pending) { remote_pending = 0;model_remote_suppress=1; return 1; }
     return 0;
 }
 static int (*ap_death16)(int) = death_api;
@@ -131,17 +145,26 @@ static int (*ap_death16)(int) = death_api;
 static void reset(void) {
     memset(core, 0, sizeof core);
     memset(components_memory, 0, sizeof components_memory);
+    memset(controller_memory, 0, sizeof controller_memory);
+    memset(action_memory, 0, sizeof action_memory);
     memset(event_manager, 0, sizeof event_manager);
     life = (struct Life){0x84b83438ULL, 12, 0x31ab5580u};
     max_life = (struct Life){0x84b83438ULL, 20, 0xfbe01da1u};
     core[7184 / 8] = (uintptr_t)&life;
     core[7192 / 8] = (uintptr_t)&max_life;
     components_memory[800 / 8] = (uintptr_t)core + 0x1d50;
+    components_memory[0x188 / 8] = (uintptr_t)controller_memory;
+    controller_memory[0x1c0 / 8] = (uintptr_t)action_memory;
+    action_memory[0x28 / 8] = 0x28; /* native Wait */
     manager_exists = save_exists = valid_core = 1;
+    pause_known = 1; paused = 0;
     pouch_count = loading = remote_pending = state_count = gd_count = marks = log_count = 0;
     gd_hash = gd_value = 0xffffffffu; marked_address = 0;
     ap_cursor16 = 33; ap_death16 = death_api;
     ap_delivery_actor16 = ap_delivery_epoch16 = 0;
+    ap_delivery_mgr16 = ap_delivery_core16 = ap_delivery_life16 = 0;
+    ap_delivery_ready16 = 0;
+    model_death_state=-1;model_outgoing_deaths=model_remote_suppress=0;
 }
 '''
 checks = r'''
@@ -179,6 +202,7 @@ int main(void) {
     reset();
     assert(ap_player16(&c, actor, components, 1000000000));
     assert(ap_delivery_actor16 == actor);
+    assert(ap_delivery_ready16);
     assert(state_count == 1 && states[0] == 0);
     assert(life.current == 12 && max_life.current == 20 && !gd_count && !marks);
     loading = 1;
@@ -206,6 +230,7 @@ int main(void) {
     reset(); remote_pending = 1;
     event_manager[104 / 8] = 1;
     assert(ap_player16(&c, actor, components, 900000000));
+    assert(!ap_delivery_ready16);
     assert(state_count == 1 && states[0] == 2 && remote_pending);
     assert(life.current == 12 && !gd_count && !marks && !log_count);
     assert(ap_player16(&c, actor, components, 950000000));
@@ -221,6 +246,69 @@ int main(void) {
     assert(state_count == 2 && states[0] == 0 && states[1] == 1 && !remote_pending);
     assert(!ap_player16(&c, actor, components, 1100000000));
     assert(state_count == 3 && states[2] == 1 && gd_count == 1 && marks == 1);
+
+    /* Every constrained verb is deferred, not only the reported crawl/fishing.
+       Keep the live context/epoch: a pause must not retry an accepted receipt. */
+    for (unsigned verb=0;verb<0x130;verb++) {
+        reset();
+        action_memory[0x28 / 8] = verb;
+        const int safe=verb==1||verb==2||verb==3||verb==4||verb==0x15||verb==0x16||
+                       verb==0x28||verb==0x41||verb==0x42||verb==0xd1;
+        assert(ap_player16(&c,actor,components,1000000000));
+        assert(ap_delivery_ready16==safe && states[0]==(safe?0:2));
+        assert(ap_delivery_actor16==actor && !ap_delivery_epoch16 && !gd_count && !marks);
+    }
+    reset();
+    assert(ap_player16(&c,actor,components,1000000000));
+    paused=1; remote_pending=1;
+    assert(ap_player16(&c,actor,components,1100000000));
+    assert(!ap_delivery_ready16 && states[1]==2 && remote_pending && !ap_delivery_epoch16);
+    paused=0;
+    assert(!ap_player16(&c,actor,components,5000000000));
+    assert(!remote_pending && life.current==0 && gd_count==1);
+    reset(); pause_known=0;
+    assert(ap_player16(&c,actor,components,1000000000) && !ap_delivery_ready16 && states[0]==2);
+    reset(); components_memory[0x188 / 8]=0;
+    assert(ap_player16(&c,actor,components,1000000000) && !ap_delivery_ready16 && states[0]==2);
+    reset(); controller_memory[0x1c0 / 8]=0;
+    assert(ap_player16(&c,actor,components,1000000000) && !ap_delivery_ready16 && states[0]==2);
+    reset(); core[0xa38 / 8]=0x400; /* rod drawn even between casts */
+    assert(ap_player16(&c,actor,components,1000000000) && !ap_delivery_ready16 && states[0]==2);
+    reset(); action_memory[0x28 / 8]=0x11a;
+    ((uint32_t*)action_memory)[0x4c / 4]=0x28;
+    assert(ap_player16(&c,actor,components,1000000000) && ap_delivery_ready16 && states[0]==0);
+    ((uint32_t*)action_memory)[0x4c / 4]=0xea;
+    assert(ap_player16(&c,actor,components,1100000000) && !ap_delivery_ready16 && states[1]==2);
+
+    reset();
+    assert(ap_player16(&c,actor,components,1000000000));
+    assert(ap_player16(&c,actor+8,components,1100000000));
+    assert(states[1]==-1 && states[2]==0 && ap_delivery_epoch16==1 && ap_delivery_actor16==actor+8);
+    for (int identity=0;identity<3;identity++) {
+        reset();
+        assert(ap_player16(&c,actor,components,1000000000));
+        if(identity==0) ap_delivery_mgr16++;
+        if(identity==1) ap_delivery_core16++;
+        if(identity==2) ap_delivery_life16++;
+        assert(ap_player16(&c,actor,components,1100000000));
+        assert(states[1]==-1 && states[2]==0 && ap_delivery_epoch16==1);
+        assert(ap_delivery_mgr16==123 && ap_delivery_core16==(uintptr_t)core && ap_delivery_life16==(uintptr_t)&life);
+    }
+    /* An already-dead replacement context must invalidate the old held life
+       before reporting dead. Otherwise state2 -> state1 sends a false death. */
+    for (int identity=0;identity<4;identity++) {
+        reset(); action_memory[0x28 / 8]=0xea;
+        assert(ap_player16(&c,actor,components,1000000000));
+        assert(states[0]==2 && model_death_state==2);
+        remote_pending=1;
+        if(identity==0) ap_delivery_mgr16++;
+        if(identity==1) ap_delivery_core16++;
+        if(identity==2) ap_delivery_life16++;
+        life.current=0;
+        assert(!ap_player16(&c,identity==3?actor+8:actor,components,1100000000));
+        assert(state_count==3 && states[1]==-1 && states[2]==1);
+        assert(!remote_pending && !model_outgoing_deaths && !gd_count && !marks);
+    }
     return 0;
 }
 '''
@@ -234,4 +322,4 @@ executable = home / ("check_deathlink_host.exe" if os.name == "nt" else "check_d
 compiler = os.environ.get("CC") or shutil.which("gcc") or "clang"
 subprocess.run([compiler, "-std=c11", "-Wall", "-Werror", str(c_file), "-o", str(executable)], check=True)
 subprocess.run([str(executable)], check=True)
-print("PASS actual DeathLink host helper: title/save/loading/type guards, event-active remote death hold, alive/dead item gate, atomic remote life zero, saved Life sync, MaxLife preservation and remote acknowledgement.")
+print("PASS actual host helpers: title/save/loading/type/context guards; native action whitelist, pause/unknown/fishing/crawl/animation deferral; no temporary-state epoch reset; atomic remote life zero, MaxLife preservation and acknowledgement.")

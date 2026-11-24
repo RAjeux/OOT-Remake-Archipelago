@@ -189,6 +189,8 @@ _ADDITIONAL_SPECS = (
             "Shuffle Saria's Fairy Ocarina and Zelda's moat Ocarina of Time into the native pool. Requires shuffle_rewards: supported; their source events remain local.", "Shuffle"),
     _toggle("shuffle_kokiri_sword", False,
             "Shuffle the Kokiri Sword when overworld chests are shuffled. Its catalogued chest participates in AP.", "Shuffle"),
+    _toggle("shuffle_master_sword", False,
+            "Put the Master Sword in the multiworld and replace its first pedestal grant with one AP reward. Rauru's reward remains separate. Time travel still works without owning the sword. Later AP spheres and victory require the sword. Requires a new room and a new save.", "Shuffle"),
     _choice("shuffle_entrances", "off", ("off", "dungeons"),
             "Shuffle the dungeon entrances supported by OOTRR. The native logic and mod use the same rolled entrances. Overworld and mixed entrance shuffles are not implemented.", "World"),
     _choice("shuffle_merchants", "off", ("off", "beans", "no_beans", "all"),
@@ -217,7 +219,7 @@ _ADDITIONAL_SPECS = (
 OPTION_SPECS = _BASE_SPECS + _ADDITIONAL_SPECS + tuple(_toggle(name, False, description + " Experimental.", "Difficulty")
                                   for name, description in _DIFFICULTY)
 SPEC_BY_ID = {spec["id"]: spec for spec in OPTION_SPECS}
-AP_ONLY = frozenset({"death_link"})
+AP_ONLY = frozenset({"death_link", "shuffle_master_sword"})
 # Additions implemented by this integration's engine, not portable OOTRR 0.8.1.
 ENGINE_EXTENSIONS = {"adult_trade_shuffle": {"kind": "toggle", "default": False}}
 # The portable engine rejects its own schema's open value. Its existing native
@@ -375,7 +377,7 @@ def yaml_options(indent="  ", language="en"):
     lines = [indent + "# " + heading]
     previous = None
     for spec in OPTION_SPECS:
-        if spec["id"] in AP_ONLY:
+        if spec["id"] == "death_link":
             continue
         if spec["group"] != previous:
             lines += ["", indent + "# " + groups.get(spec["group"], spec["group"])]

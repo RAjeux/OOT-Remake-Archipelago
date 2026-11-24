@@ -23,6 +23,7 @@ enum { OOT_GAMEDATA_SLOT=20, OOT_EVENTMGR_SLOT=21, HOS_SHARE_NOTICE=10 };
 static uint32_t ap_cursor16=33,ap_flags16[]={101,102,103};
 static int ap_flag_count16=3,ap_event_mode16=1;
 static uint64_t ap_delivery_actor16=77,ap_delivery_epoch16,manager=1;
+static int ap_delivery_ready16=1;
 static int active,save_exists,loading,event_exists,event_busy,ready,whitelist;
 static int cursor,status,status_exists,queued_clear,clear_ok,request_ok;
 static int clear_calls,restore_calls,restore_requests,remote_requests,request_attempts;
@@ -76,6 +77,7 @@ static int oot_item_give(Ctx*c,const char*s,int n){(void)c;(void)s;(void)n;asser
 static int oot_capacity(Ctx*c,uint64_t mgr,const char*s,int*n){(void)c;(void)mgr;(void)s;(void)n;assert(0);return 0;}
 static void reset(void){
     manager++;ap_delivery_epoch16++;ap_delivery_actor16=77;ap_cursor16=33;ap_event_mode16=1;
+    ap_delivery_ready16=1;
     active=save_exists=event_exists=ready=whitelist=status_exists=clear_ok=request_ok=1;
     loading=event_busy=cursor=status=0;queued_clear=INT_MIN;deferred_until=0;
     clear_calls=restore_calls=restore_requests=remote_requests=request_attempts=deferred=last_deferred=acks=next_calls=network_item=want_second=unknown_snapshots=0;
@@ -113,6 +115,19 @@ int main(void){
     ready=1;flag_states[2]='-';tick(&c);assert(unknown_snapshots==1&&!restore_requests&&!clear_calls);
     flag_states[2]='?';tick(&c);assert(unknown_snapshots==2&&!restore_requests&&!clear_calls);
     flag_states[2]='0';status_exists=0;tick(&c);assert(!restore_requests&&!clear_calls);
+
+    /* ReceivedItems replay runs first, with its existing committed cursor. */
+    reset();network_item=1;ap_delivery_ready16=0;
+    tick(&c);assert(!next_calls&&!remote_requests&&!restore_calls&&!request_attempts&&cursor==0&&!acks);
+    ap_delivery_ready16=1;tick(&c);assert(remote_requests==1&&cursor==0&&!acks);
+    ap_delivery_ready16=0;cursor=1;tick(&c);
+    assert(acks==1&&!restore_calls&&!restore_requests); /* commit ACK stays observable while busy */
+    ap_delivery_ready16=1;tick(&c);assert(restore_requests==1&&acks==1&&cursor==1);
+    reset();ap_delivery_ready16=0;tick(&c);assert(!restore_calls&&!clear_calls&&!request_attempts);
+    ap_delivery_ready16=1;tick(&c);assert(restore_requests==1&&!acks&&cursor==0);
+    ap_delivery_ready16=0;now+=61000000000LL;tick(&c);
+    assert(restore_requests==1&&!remote_requests); /* accepted transaction stays pending */
+    ap_delivery_ready16=1;tick(&c);assert(restore_requests==1);
 
     /* ReceivedItems replay runs first, with its existing committed cursor. */
     reset();network_item=1;tick(&c);assert(remote_requests==1&&!restore_calls&&!restore_requests);

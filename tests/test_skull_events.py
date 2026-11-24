@@ -20,7 +20,7 @@ from oot_rando.patching.event_patch import _flow
 from oot_rando.patching.progressive import FlowEditor, link
 from ootrr_triforce.ap_skulls import PREFIX, SCRATCH, NATIVE_SCRATCH, patch_skull_flow, patch_pickup_presentation, skull_records
 from ootrr_triforce.catalog import AP_SKULL_CHECKS, ITEM_DATA, ITEM_IDS
-from ootrr_triforce.native_presentations import AMMO_BAGS, NO_AMMO_BAG, is_cure
+from ootrr_triforce.native_presentations import AMMO_BAGS, is_cure
 from ootrr_triforce.receipt_events import DUNGEONS, OWNERS
 
 
@@ -224,9 +224,11 @@ class SkullEventTests(unittest.TestCase):
                              if command == "EventTriggerAddOrRemovePouchContent"]
                     if metadata["mode"] == "generic" or metadata["kind"] == "TCGSmallKey" or is_cure(metadata):
                         self.assertFalse(pouch)
+                    elif metadata["actor"] in AMMO_BAGS:
+                        self.assertFalse(pouch)
+                        self.assertFalse(any(command == "EventTriggerSetForGetWindow" for command, args in run.trace))
                     else:
-                        expected = NO_AMMO_BAG if metadata["actor"] in AMMO_BAGS else metadata["actor"]
-                        self.assertEqual(pouch, [expected])
+                        self.assertEqual(pouch, [metadata["actor"]])
                         effects = [args for command, args in run.trace
                                    if command == "EventTriggerAddOrRemovePouchContent"]
                         self.assertTrue(all(args["IsGetEvent"] is False for args in effects))
@@ -236,7 +238,8 @@ class SkullEventTests(unittest.TestCase):
                         self.assertTrue(all(call["IsGetInEvent"] is False and call["IsTreasureBox"] is False
                                             and call["IsShowNumDisplay"] is True for call in calls))
                     self.assertNotIn(record["actor"], pouch)
-                    self.assertEqual(sum(command == "call:OpenGetWindow" for command, _ in run.trace), 1)
+                    self.assertEqual(sum(command == "call:OpenGetWindow" for command, _ in run.trace),
+                                     int(metadata["actor"] not in AMMO_BAGS))
                     committed = list(run.trace)
                     run.run(record["actor"])
                     self.assertEqual(sum(command == "EventTriggerAddOrRemovePouchContent" for command, _ in run.trace),
@@ -385,6 +388,34 @@ class SkullEventTests(unittest.TestCase):
                 self.assertEqual(run.windows[-1][0], rupees["native_actor"])
                 self.assertTrue(all(run.values[row["flag_name"]] for row in records))
 
+    def test_ground_ammo_without_equipment_has_no_window_or_effect_but_completes_once(self):
+        records = skull_records(roster(["Bombs (20)", "Arrows (30)", "Deku Seeds (30)"]))
+        pouch, effects = patch_skull_flow(self.native, records, return_entries=True)
+        for flow in ("Dm_SY_Get", "Dm_SY_Get_WithoutPlayer"):
+            patched = patch_pickup_presentation(ground_flow(flow), records, effects, flow)
+            entry = "PouchAddItem" if flow == "Dm_SY_Get" else flow
+            for record in records:
+                bags = AMMO_BAGS[record["native_actor"]]
+                for bag in (None, *bags):
+                    for alias in ("actor", "pickup"):
+                        with self.subTest(flow=flow, item=record["local_item"], bag=bag, alias=alias):
+                            run = Pickup({"GetPouchContent": pouch, flow: patched}, deferred_strings=True)
+                            if bag:
+                                run.held.add(bag)
+                            run.call(entry, {"ActorName": record[alias]}, flow)
+                            self.assertTrue(run.values[record["flag_name"]])
+                            self.assertEqual(len(run.windows), int(bag is not None))
+                            self.assertEqual([args["Actor"] for cmd, args in run.trace
+                                              if cmd == "EventTriggerAddOrRemovePouchContent"],
+                                             [record["native_actor"]] if bag else [])
+                            self.assertEqual(sum(cmd == "EventTriggerRequestOpenPickUpWindow" for cmd, _ in run.trace),
+                                             int(bag is not None))
+                            before = sum(cmd == "EventTriggerAddOrRemovePouchContent" for cmd, _ in run.trace)
+                            run.call(entry, {"ActorName": record[alias]}, flow)
+                            self.assertEqual(sum(cmd == "EventTriggerAddOrRemovePouchContent" for cmd, _ in run.trace), before)
+                            run.call(entry, {"ActorName": "Item_Token_Gold"}, flow)
+                            self.assertEqual(run.windows[-1][0], "Item_Token_Gold")
+
     def test_native_gain_after_a_collected_skull_ignores_the_previous_selection(self):
         records = skull_records(roster(["Bomb Bag"]))
         record = records[0]
@@ -436,6 +467,12 @@ class SkullEventTests(unittest.TestCase):
                         run.call("PouchAddItem" if name == "Dm_SY_Get" else name,
                                  {"ActorName": record["pickup"]}, name)
                         if "local_item" in record:
+                            if record["native_actor"] in AMMO_BAGS:
+                                self.assertFalse(run.windows)
+                                self.assertTrue(run.values[record["flag_name"]])
+                                self.assertFalse(any(cmd in {"EventTriggerAddOrRemovePouchContent", "EventTriggerAddOwnToPouch",
+                                                             "EventTriggerRequestOpenPickUpWindow"} for cmd, _ in run.trace))
+                                continue
                             expected = ITEM_DATA[record["local_item"]].get("tiers", [record["native_actor"]])[0]
                         else:
                             expected = record.get("actor", record["pickup"])

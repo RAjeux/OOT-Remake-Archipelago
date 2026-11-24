@@ -1,9 +1,9 @@
-OOT Remake Archipelago · 0.9.2-alpha.1
+OOT Remake Archipelago · 0.10.0-alpha.1
 One Windows x64 application for Triforce and experimental Hookshot 3.0.1.
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
 Before you start
-Download OOT-Remake-Archipelago-0.9.2-alpha.1.exe from the project releases.
+Download OOT-Remake-Archipelago-0.10.0-alpha.1.exe from the project releases.
 Python and Node.js are included. The compatible OOTRR 0.8.1 builder is
 downloaded automatically when first needed; an internet connection is
 required for that download. No separate runtime or randomizer installation
@@ -106,8 +106,8 @@ is restored without sending its reward again. Native-local rewards outside
 the AP catalogue continue to follow the selected save.
 
 Supported settings
-The YAML exposes 93 native OOTRR settings, the adult trade extension and
-DeathLink. In particular:
+The YAML exposes 93 native OOTRR settings, the adult trade and Master Sword
+extensions, and DeathLink. In particular:
 - shuffle_shops: random_deals (Random Deals) rolls zero to four special deals in each of the eight
   shops, including Kokiri. Only these deals become AP checks and can hold your
   own or another player's item. deals_1 through deals_4 request that many deals
@@ -121,10 +121,24 @@ DeathLink. In particular:
   quest items in the multiworld and replaces eleven trade rewards with AP
   items. An exchange consumes only its requested item. Wake Talon before
   returning the Pocket Cucco to Anju; expiry and the final wait are disabled.
+- shuffle_master_sword: true puts the Master Sword in the multiworld.
+  Its first pedestal grant becomes an AP reward. Rauru's reward and native
+  time travel remain separate. The default false keeps the native sword.
+  This choice requires a newly generated room and a new save.
 - bridge: open opens the bridge on approach. Leave bridge_rewards at its
   default 9 or use 0; this choice uses an effective threshold of zero.
 - death_link: true shares deaths with other participating games. A received
-  death waits for an active purchase or item receipt to finish.
+  death waits for normal control after an observed pause or constrained action.
+
+Network items and restored AP locations wait while Link crawls, fishes,
+climbs, swims, fights, uses an item, plays an event or has the game paused.
+Unknown player actions defer delivery too. A fishing rod remains protected
+between casts. Missing ammunition equipment consumes that AP reward without
+giving ammunition, equipment, a substitute rupee or a pickup animation.
+
+DeathLink retains a death across a long pause once the native bridge has
+observed that pause. A menu that stops every Link callback before pause is
+observed still needs an in-game check; see docs/DELIVERY-SAFETY.md.
 
 Random? rolls each field independently. Inactive sub-options are ignored:
 for example, a random Fixed Price has no effect when the price mode is Cheap.

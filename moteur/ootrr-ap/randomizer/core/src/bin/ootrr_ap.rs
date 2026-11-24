@@ -31,7 +31,11 @@ fn generate(j: &Json) -> Result<()> {
     let settings = read_settings(j)?;
     let g = slice::generate_with(&settings, field(j, "seed")?, &GenOpts::default())?;
     let waves = g.spheres.iter().map(|row| Json::strs(row.iter().map(|(loc, _)| loc.as_str()))).collect();
-    println!("{}", Json::obj().with("seed_file", g.seed_file.to_json()).with("waves", Json::Arr(waves)).pretty());
+    let mut output = Json::obj().with("seed_file", g.seed_file.to_json()).with("waves", Json::Arr(waves));
+    if let Some(wave) = g.master_sword_wave {
+        output = output.with("master_sword_wave", (wave as i64).into());
+    }
+    println!("{}", output.pretty());
     Ok(())
 }
 

@@ -170,8 +170,8 @@ func TestDeathLinkHeldUntilNativeTransactionFinishes(t *testing.T) {
 	if s.death.outgoing == nil {
 		t.Fatal("a real local death during an event was suppressed")
 	}
-	// Loading and callback gaps still invalidate old deaths; hold is not a
-	// longer lifetime for an event received at a title or a replaced save.
+	// Loading still invalidates old deaths; an explicit hold only spans the
+	// same live context, never a title or replaced save.
 	s.death.outgoing = nil
 	s.deathState(2, now.Add(10*time.Second))
 	s.receiveDeath(bounced("Ami", 101), now.Add(10*time.Second))
@@ -181,8 +181,33 @@ func TestDeathLinkHeldUntilNativeTransactionFinishes(t *testing.T) {
 	}
 	s.deathState(2, now.Add(12*time.Second))
 	s.receiveDeath(bounced("Ami", 102), now.Add(12*time.Second))
-	if s.deathState(0, now.Add(15*time.Second)) {
-		t.Fatal("a stale event callback carried a death across a menu/title gap")
+	if !s.deathState(0, now.Add(15*time.Second)) {
+		t.Fatal("an inventory pause discarded its held death")
+	}
+}
+
+func TestDeathLinkReceivedDuringSuspendedInventory(t *testing.T) {
+	s := deathClient(t, true)
+	s.ready = true
+	now := time.Now()
+	s.deathState(2, now) // native pause observed before Link's callbacks stop
+	s.receiveDeath(bounced("Ami", 200), now.Add(time.Minute))
+	s.receiveDeath(bounced("Other", 201), now.Add(2*time.Minute))
+	if s.death.pending == nil {
+		t.Fatal("a death received during a long inventory pause was lost")
+	}
+	if !s.deathState(0, now.Add(3*time.Minute)) || s.deathState(0, now.Add(3*time.Minute)) {
+		t.Fatal("closing inventory did not consume exactly one pending death")
+	}
+	s.deathState(1, now.Add(3*time.Minute))
+	if s.death.outgoing != nil {
+		t.Fatal("death received while paused echoed as a local death")
+	}
+	s.deathState(2, now.Add(4*time.Minute))
+	s.receiveDeath(bounced("Ami", 202), now.Add(5*time.Minute))
+	s.deathState(-1, now.Add(6*time.Minute)) // loading/title invalidates the live context
+	if s.deathState(0, now.Add(7*time.Minute)) {
+		t.Fatal("a held inventory death crossed a loading/title boundary")
 	}
 }
 

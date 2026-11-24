@@ -1,5 +1,52 @@
 # Stability fixes and upgrade scope
 
+## 0.10.0: safe delivery, empty ammunition rewards and optional Master Sword
+
+Incoming AP items and older-save restoration now use the native player's
+action state as well as the event manager. Only ordinary locomotion can start
+a grant. Crawling, fishing, item use, combat, swimming, climbing, pause and
+unknown actions defer it. The drawn fishing-rod state also blocks delivery
+between casts. No animation, camera or input is forced to make Link ready.
+Temporary busy states do not reset an accepted receipt's delivery epoch.
+
+DeathLink retains a queued death across a long explicitly observed busy or
+paused state. It waits for normal control instead of requiring an NPC event.
+Loading, a changed gameplay context and connection replacement invalidate the
+hold. One inventory edge case remains to be verified in-game: if the menu
+suspends every Link callback before pause is observed, the bridge cannot
+distinguish that stale state from a title screen. See
+[delivery safety](DELIVERY-SAFETY.md) for the native evidence and limits.
+
+Ammunition without its required bag, quiver or seed bag now has no item effect
+and no substitute rupee or presentation. The AP transaction still commits once
+and permits the next reward. Local AP chests retain their authored opening and
+cleanup; shops, Skulltulas, trades and restoration retain their location flags.
+Required trade inputs are still consumed. Actual native resource tests cover
+all 205 recipes, 72 ammunition cases and both chest presentation variants.
+
+The new `shuffle_master_sword` extension defaults to false. When true, generation
+adds a Master Sword item and a pedestal check without changing the pinned native
+seed or time-travel event. The native Rauru reward remains a separate reward.
+Later AP spheres conservatively require the sword, and victory requires it
+explicitly. The native era swap cannot create a missing sword; final-battle
+recovery requires its legitimate acquisition flag. See
+[Master Sword shuffle](MASTER-SWORD.md) for the scope and gameplay limits.
+
+The delivery and ammunition fixes can be installed with an existing player
+file after closing the game. This update requires rebuilding the host and
+preparing the mod because both the DLL and gameplay bridge changed. Saves,
+placements and the existing room's sword behavior are retained. Enabling the
+Master Sword shuffle needs a newly generated room and a new save. The engine
+now exports the pedestal's access sphere as separate proof metadata, including
+when Rauru stays vanilla; existing native seed bytes and sphere lists are
+unchanged. All earlier AP identities are retained; one item and one location
+are appended to the catalogue.
+
+Native-local rewards remain tied to the loaded save. They are not silently
+reported as extra AP checks or injected from a later save. See
+[items, checks and saves](ITEMS-AND-SAVES.md) for this distinction. No recipient
+quota or own-world placement restriction was added.
+
 ## 0.9.2: ammunition requires its equipment
 
 Native bomb, arrow and seed grants can create usable equipment when called

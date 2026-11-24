@@ -39,7 +39,7 @@ class LocalizationCatalogTests(unittest.TestCase):
         original = dict(ITEM_IDS)
         labels = item_names()
         self.assertEqual(set(labels), set(ITEM_IDS))
-        self.assertEqual(len(labels), 204)
+        self.assertEqual(len(labels), 205)
         for canonical, texts in labels.items():
             with self.subTest(item=canonical):
                 self.assertEqual(texts["en"], canonical)
@@ -80,7 +80,7 @@ class LocalizationCatalogTests(unittest.TestCase):
         def values(text):
             return {key: json.loads(value) for key, value in re.findall(r"^  ([a-z_]+): (.+)$", text, re.M)}
         self.assertEqual(values(english), values(french))
-        self.assertEqual(set(values(english)), set(SPEC_BY_ID).difference(AP_ONLY))
+        self.assertEqual(set(values(english)), set(SPEC_BY_ID).difference({"death_link"}))
         self.assertIn("Fixed goal: defeat Ganon", english)
         self.assertIn("Objectif fixe", french)
         self.assertIn("Starting inventory", english)

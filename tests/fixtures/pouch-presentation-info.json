@@ -3,6 +3,12 @@
   "resource": "RSDB/PouchActorInfo.Product.111.rstbl.byml.zs",
   "decoded_sha256": "ff56b92eeb7162b04a6137b8c78ecbf8b94a4eac0b6ae64f4e23cb1edf8d6a96",
   "actors": {
+    "Weapon_Sword_Master": {
+      "PouchGetType": "Small",
+      "PouchCategory": "Weapon",
+      "PouchSpecialDeal": "None",
+      "IsAutoSaveAfterGet": true
+    },
     "Item_AgonyStone": {
       "PouchGetType": "Large",
       "PouchCategory": "KeyItem",

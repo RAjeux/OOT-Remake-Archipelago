@@ -60,5 +60,10 @@ Broader exchange of the remaining NPC and freestanding rewards requires
 integrating their locations, checks and grants into AP. A forced ownership quota
 would not add those missing location families or their progression rules.
 
-See [settings compatibility](SETTINGS-COMPATIBILITY.md) and
-[adult trade rewards](ADULT-TRADE-REWARDS.md) for their current scope.
+The optional [Master Sword shuffle](MASTER-SWORD.md) adds one more network
+reward in newly generated rooms, independently of Rauru's native reward and
+time travel. It uses the same AP fill without a recipient restriction.
+
+See [settings compatibility](SETTINGS-COMPATIBILITY.md),
+[adult trade rewards](ADULT-TRADE-REWARDS.md) and
+[items and saves](ITEMS-AND-SAVES.md) for their current scope and recovery rules.

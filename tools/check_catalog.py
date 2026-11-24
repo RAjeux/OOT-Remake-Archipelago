@@ -5,6 +5,7 @@ import sys
 sys.path.insert(0,str(root/'client'))
 from ootrr_triforce.catalog import CHESTS, GEAR, LOCATION_IDS, ITEM_IDS, FILLER, ITEM_DATA, EXPECTED, SHOP_ITEMS, SHOP_CHECKS, LEGACY_SHOP_CHECKS, CHECK_FLAGS, SKULL_CHECKS, TRADE_CHECKS
 from ootrr_triforce.shop_catalog import ADDITIONAL_SHOP_CHECKS, SHOP_FIRST_ID
+from ootrr_triforce.master_sword import ACTOR as MASTER_ACTOR, ITEM as MASTER_ITEM, LOCATION as MASTER_LOCATION, LOCATION_ID as MASTER_ID, FLAG_NAME as MASTER_FLAG
 from oot_rando.patching.soul_adapter import murmur3
 data=root/'moteur/ootrr-ap/data'
 load=lambda x:json.loads((data/x).read_text(encoding='utf-8'))
@@ -35,6 +36,7 @@ assert LEGACY_SHOP_CHECKS==set(kokiri) and len(LEGACY_SHOP_CHECKS)==8, "Legacy K
 location_order=[*sorted(all_locs),*sorted(kokiri),*SKULL_CHECKS,*TRADE_CHECKS]
 expected_ids={n:0x6F7200+i for i,n in enumerate(location_order)}
 expected_ids.update({n:row['id'] for n,row in ADDITIONAL_SHOP_CHECKS.items()})
+expected_ids[MASTER_LOCATION]=MASTER_ID
 assert LOCATION_IDS==expected_ids, "Location IDs changed."
 assert set(LOCATION_IDS[n] for n in ADDITIONAL_SHOP_CHECKS)==set(range(SHOP_FIRST_ID,SHOP_FIRST_ID+56)), "Global shop ID reservation changed."
 assert len(set(LOCATION_IDS.values()))==len(LOCATION_IDS), "Location IDs overlap."
@@ -55,8 +57,9 @@ for name,actor in goods.items():
  assert row['actor']==actor and row['mode']=='shop' and row['kind']=='Shop', f"Incorrect shop goods: {name}"
  assert row['quantity']>=1, f"Incorrect shop quantity: {name}"
 rewards.update(SHOP_ITEMS)
+rewards[MASTER_ITEM]=dict(actor=MASTER_ACTOR,mode='actor',kind='Item',quantity=1,advancement=True)
 assert rewards==ITEM_DATA, "Native rewards or quantities differ from OOTRR data."
-order=[*native_order,*sorted(SHOP_ITEMS)]
+order=[*native_order,*sorted(SHOP_ITEMS),MASTER_ITEM]
 assert ITEM_IDS=={n:0x6F7100+i for i,n in enumerate(order)}, "Item IDs changed."
 for name,item in rewards.items():
  expected={item['actor'],*item.get('tiers',()),*item.get('world',())}
@@ -76,7 +79,8 @@ assert len(counters)==len(set(counters))==96, "Shop stock identities overlap."
 assert CHECK_FLAGS=={**{name:[ref['flag'] for ref in refs] for name,refs in CHESTS.items()},
                      **{name:[row['flag']] for name,row in SHOP_CHECKS.items()},
                      **{name:[row['flag']] for name,row in SKULL_CHECKS.items()},
-                     **{name:[row['flag']] for name,row in TRADE_CHECKS.items()}}, "Incomplete check flags."
+                     **{name:[row['flag']] for name,row in TRADE_CHECKS.items()},
+                     MASTER_LOCATION:[murmur3(MASTER_FLAG)]}, "Incomplete check flags."
 for family in (SKULL_CHECKS, TRADE_CHECKS):
  for name,row in family.items():
   assert row['flag']==murmur3(row['flag_name']), f"Incorrect saved check flag: {name}"

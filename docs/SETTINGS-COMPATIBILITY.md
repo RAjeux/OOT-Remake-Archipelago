@@ -2,7 +2,7 @@
 
 This comparison uses the **OOTRR remake 0.8.1** schema vendored by this project. It does not claim parity with every setting of the separate N64 OoT Randomizer or Ship of Harkinian. The remake's menu also contains placeholder controls which its own engine cannot apply.
 
-The native schema has **118 keys**. The current AP catalogue exposes **93 native keys**, the integration extension `adult_trade_shuffle`, and `death_link`. Some native choice lists are deliberately restricted to implemented values.
+The native schema has **118 keys**. The current AP catalogue exposes **93 native keys**, the integration extension `adult_trade_shuffle`, and `death_link`, `shuffle_master_sword`. Some native choice lists are deliberately restricted to implemented values.
 
 Archipelago rolls each Random? control independently. Before generation, unused sub-options are reset to their native defaults: for example, `scrub_price_fixed` is ignored unless enabled Scrub sales use `scrub_prices: fixed`. The same rule applies to inactive shop prices, merchant prices, goal counts and song colors. Active prices, goals and progression settings are preserved. Invalid combinations of active settings still report an error; choosing Random? for every option does not guarantee a valid combination.
 
@@ -11,6 +11,8 @@ A local shuffle can be compatible with AP without turning all of its locations i
 Settings which depend on the *final placement* need extra care. Native hint text, chest sizing and junk-only exclusions cannot simply be copied before AP replaces a reward. Silver Rupee shuffling also adds new item types that need AP IDs and receipt effects.
 
 The `adult_trade_shuffle` integration extension replaces the legacy additive trade control. It shuffles ten quest items and exports eleven trade checks, with independent inventory guards and native item delivery. It is implemented by this project's engine and client rather than the unmodified portable OOTRR 0.8.1 application. See [adult trade rewards](ADULT-TRADE-REWARDS.md). For local versus remote item ownership and the scope of the network pool, see [multiworld distribution](MULTIWORLD-DISTRIBUTION.md).
+
+The AP-only `shuffle_master_sword` extension adds the pedestal's sword grant to the network pool while retaining the native Rauru reward and time travel. It defaults to false. Enabling it requires a new room and save; later AP spheres and victory conservatively require the actual sword. The pinned native seed and settings protocol remain unchanged. See [Master Sword shuffle](MASTER-SWORD.md).
 
 The machine-readable companion is [settings-compatibility.json](settings-compatibility.json). Regenerate both files with `python tools/audit_settings.py --write-docs`; use `--ootrr <ootrr.exe>` to audit another installed native schema. These comparisons validate catalogue coverage, not gameplay for every combination.
 

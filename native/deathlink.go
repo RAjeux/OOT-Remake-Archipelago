@@ -17,7 +17,7 @@ type deathData struct {
 }
 
 type deathLink struct {
-	state             int // -1: inactive, 0: alive, 1: dead, 2: alive in an event (hold remote death)
+	state             int // -1: inactive, 0: alive, 1: dead, 2: alive but busy/paused (hold remote death)
 	tick              time.Time
 	pending, outgoing *deathData
 	suppress          bool // the game accepted a remote death; its dead transition is not sent
@@ -66,7 +66,8 @@ func (s *Client) receiveDeathEpoch(m wire, now time.Time, epoch uint64) {
 	if !s.rememberDeath(d) || d.Source == s.cfg.Slot || d.Source == s.names[s.cfg.Player] {
 		return
 	}
-	if !s.ready || (s.death.state != 0 && s.death.state != 2) || s.death.tick.IsZero() || now.Sub(s.death.tick) > 2*time.Second || s.death.suppress {
+	if !s.ready || (s.death.state != 0 && s.death.state != 2) || s.death.tick.IsZero() ||
+		(s.death.state != 2 && now.Sub(s.death.tick) > 2*time.Second) || s.death.suppress {
 		return
 	}
 	// Several linked players dying together still kill this life only once.
@@ -85,9 +86,11 @@ func (s *Client) deathState(state int, now time.Time) bool {
 		return false
 	}
 	previous := s.death.state
-	// A title/menu transition can stop Link's callbacks entirely. Treat the
-	// first callback after that gap as a new life even without an explicit -1.
-	if s.death.tick.IsZero() || now.Sub(s.death.tick) > 2*time.Second {
+	// A callback gap from ordinary gameplay is not proof of a live player.
+	// Explicit busy/paused state is different: the native inventory can stop
+	// Link's callbacks until it closes. Keep a held death across that pause;
+	// the host invalidates it on loading/title, death or a changed actor.
+	if s.death.tick.IsZero() || (previous != 2 && now.Sub(s.death.tick) > 2*time.Second) {
 		previous = -1
 		s.death.pending = nil
 		s.death.suppress = false
@@ -105,9 +108,10 @@ func (s *Client) deathState(state int, now time.Time) bool {
 		return false
 	}
 	if state == 2 {
-		// Native get scenes and shop purchases can span multiple frames between
-		// payment/presentation and their committed grant. Keep the event while
-		// callbacks stay fresh, then kill only after the transaction finishes.
+		// Native get scenes, purchases and constrained player actions must finish
+		// first. The inventory may suspend these callbacks for an arbitrary time.
+		// Closing it resumes normal control and consumes this death without any
+		// additional interaction or artificial event.
 		s.mu.Unlock()
 		return false
 	}

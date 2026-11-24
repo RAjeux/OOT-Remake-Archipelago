@@ -18,7 +18,7 @@ from evfl.util import make_index
 from oot_rando.patching.progressive import FlowEditor, link
 from ootrr_triforce.catalog import ITEM_DATA, ITEM_IDS
 from ootrr_triforce.native_presentations import (PRESENTER_ENTRY, PRESENTER_NAME, CAMERA_FACING_FLOW,
-                                                CAMERA_FACING_ENTRY, is_cure, receipt_style)
+                                                CAMERA_FACING_ENTRY, AMMO_BAGS, is_cure, receipt_style)
 from ootrr_triforce.receipt_events import CURSOR_PREFIX, OWNERS, build_presented_receipts, event_name
 from test_receipt_events import native_flow
 
@@ -210,6 +210,8 @@ class PresentedReceiptTests(unittest.TestCase):
             cls.charts[name] = flow.flowchart
 
     def check_scene(self, name, important=True, owned=None):
+        if owned is None:
+            owned = {AMMO_BAGS[ITEM_DATA[name]["actor"]][0]} if ITEM_DATA[name]["actor"] in AMMO_BAGS else set()
         run = SceneRun(self.charts, important=important, owned=owned)
         trace = run.run("GetPouchContent", event_name(ITEM_IDS[name]))
         self.assertFalse(any(entry in {"OpenRupeeUIIfNeed", "CloseRupeeUIIfNeed"}
@@ -296,7 +298,7 @@ class GroundStyleReceiptTests(unittest.TestCase):
                              for command, params in run.trace))
         return run, ack[0]
 
-    def test_ammo_without_a_bag_shows_and_grants_only_a_native_green_rupee(self):
+    def test_ammo_without_a_bag_consumes_receipt_without_effect_or_presentation(self):
         cases = (("Bombs (20)", "Item_BombBag_Small"),
                  ("Arrows (30)", "Item_Quiver_Large"),
                  ("Deku Seeds (30)", "Item_BulletBag_Medium"),
@@ -307,14 +309,19 @@ class GroundStyleReceiptTests(unittest.TestCase):
             for owned in (set(), {"Item_Hookshot"}, {bag}):
                 with self.subTest(item=name, owned=owned):
                     run, ack = self.execute(name, owned=set(owned))
-                    expected = ITEM_DATA[name]["actor"] if bag in owned else "TBox_Rupee_Green"
+                    expected = [ITEM_DATA[name]["actor"]] if bag in owned else []
                     grants = [(index, params["Actor"]) for index, (command, params) in enumerate(run.trace)
                               if command == "EventTriggerAddOrRemovePouchContent"]
-                    self.assertEqual([actor for index, actor in grants], [expected])
-                    self.assertLess(grants[0][0], ack)
+                    self.assertEqual([actor for index, actor in grants], expected)
+                    if grants:
+                        self.assertLess(grants[0][0], ack)
                     pickups = [params["ActorName"] for command, params in run.trace
                                if command == "EventTriggerRequestOpenPickUpWindow"]
-                    self.assertEqual(pickups, [expected])
+                    self.assertEqual(pickups, expected)
+                    if not expected:
+                        self.assertEqual(run.trace, [("EventTriggerAddOrSubGameDataInt",
+                                                     {"GameDataName": CURSOR, "Index": -1, "Value": 1}),
+                                                    ("EventTriggerRequestAutoSave", {})])
                     self.assertFalse(any("Camera" in command or "Wait" in command or command == "FixtureNativeModel"
                                          for command, params in run.trace))
                     self.assertFalse(any("BombBag" in params.get("GameDataName", "")
@@ -377,7 +384,7 @@ class GroundStyleReceiptTests(unittest.TestCase):
 
     def test_small_ammunition_and_cure_avoid_important_item_presentation(self):
         for name in ("Bombs (5)", "Recovery Heart"):
-            run, ack = self.execute(name)
+            run, ack = self.execute(name, owned={"Item_BombBag_Small"})
             self.assertFalse(any(flow == PRESENTER_NAME for flow, entry, params in run.calls))
             self.assertFalse(any("Camera" in command or command == "FixtureNativeModel" for command, params in run.trace))
             expected = "EventTriggerRecoverByCureItem" if name == "Recovery Heart" else "EventTriggerAddOrRemovePouchContent"
@@ -442,7 +449,7 @@ class GroundStyleReceiptTests(unittest.TestCase):
 
     def test_route_counts_and_facing_are_major_only_for_the_entire_catalogue(self):
         self.assertEqual(Counter(receipt_style(row, self.native_info) for row in ITEM_DATA.values()),
-                         {"pickup": 44, "medium": 17, "large": 143})
+                         {"pickup": 44, "medium": 17, "large": 144})
         for name, metadata in ITEM_DATA.items():
             with self.subTest(item=name):
                 run, _ = self.execute(name)

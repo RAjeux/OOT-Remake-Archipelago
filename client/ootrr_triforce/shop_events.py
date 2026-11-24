@@ -195,7 +195,7 @@ def patch_shop_flow(raw, records, *, pouch_raw=None):
             chart.entry_points.append(core)
             def give(branch, actor):
                 return editor.subflow(branch + "_Give", "", core_name, {"ActorName": actor})
-            reward = append_tier_choice(editor, metadata, stem, give)
+            reward = append_tier_choice(editor, metadata, stem, give, no_ammo=collected)
             # A retried successful-purchase callback must not grant a local
             # item twice. The saved location flag commits with its effect.
             reward = editor.switch(stem + "_AlreadyCollected", "GameDataActor", "EventQueryIsGameDataBool",

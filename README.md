@@ -1,6 +1,6 @@
 # Ocarina of Time Remake × Archipelago
 
-**0.9.2-alpha.1 — one Windows application for Triforce and experimental Hookshot support.** Download `OOT-Remake-Archipelago-0.9.2-alpha.1.exe` to prepare the mod, configure your room and launch the game. The application includes Python and Node.js, downloads the compatible OOTRR 0.8.1 builder when needed, and rebuilds the selected compatible host during setup.
+**0.10.0-alpha.1 — one Windows application for Triforce and experimental Hookshot support.** Download `OOT-Remake-Archipelago-0.10.0-alpha.1.exe` to prepare the mod, configure your room and launch the game. The application includes Python and Node.js, downloads the compatible OOTRR 0.8.1 builder when needed, and rebuilds the selected compatible host during setup.
 
 Title-screen connections, items received while the game was closed, local and remote chests, one Kokiri purchase, and DeathLink in both directions have been tested on **Triforce 0.6.0**. **Item presentation animations and some camera movements still need improvement.** All 64 shop identities have automated coverage; purchases in the seven newly connected shops have not been played through in the game.
 
@@ -8,11 +8,11 @@ Title-screen connections, items received while the game was closed, local and re
 
 Version 0.9.1 fixes setup with **Triforce 0.7.0**: its Achievements page and Mods transition remain intact when adding the AP menu. Setup checks the required source hooks before connecting or preparing resources. Existing player files remain compatible; this installer fix does not require a new room.
 
-Version 0.9.2 prevents AP ammunition from granting its missing equipment. Bombs, arrows and seeds received without their required capacity upgrade become a native green rupee, following OOTRR's handling. Prepare the existing player file again to update the mod; the room and game host can be retained.
+AP ammunition cannot grant its missing equipment. Bombs, arrows and seeds received without their required capacity upgrade are consumed without an inventory change, popup or substitute rupee. The received-item index still advances, so the next item can arrive normally.
 
 ## Play
 
-Download **`OOT-Remake-Archipelago-0.9.2-alpha.1.exe`** from the [project releases](https://github.com/RAjeux/OOT-Remake-Archipelago/releases). Keep this one file wherever you prefer; no archive extraction or separate Python, Node.js or OOTRR installation is required.
+Download **`OOT-Remake-Archipelago-0.10.0-alpha.1.exe`** from the [project releases](https://github.com/RAjeux/OOT-Remake-Archipelago/releases). Keep this one file wherever you prefer; no archive extraction or separate Python, Node.js or OOTRR installation is required.
 
 You need Windows x64, a working **Triforce installation with its build tools**, your own **version 1.1.1 game files**, and an active Archipelago room with your `.apootrr` player file. Hookshot users need the supported **3.0.1 installation, original build tools and retained build files** instead. An internet connection is needed for the first download of the compatible randomizer builder. No Nintendo game files are supplied.
 
@@ -40,7 +40,11 @@ Items from other worlds are delivered in order while a save is active, using the
 
 In a newly prepared `all_locations` room with personal physical rewards, loading an older save also restores previously checked AP locations. Your reward is granted once to that save; another player's reward only restores the completed location, without sending it again. A durable room journal and the server's checked locations supply this history. This covers AP chests, selected shop purchases, supported Gold Skulltulas and shuffled adult trades. OOTRR's native-local rewards outside that catalogue still follow the selected save; they do not have an AP check history. Reconfigure an existing player file to prepare the restoration events before using this feature.
 
+Native-local does not mean vanilla: a song, NPC gift or other non-AP reward can be shuffled by OOTRR while remaining entirely in Zelda. These rewards are not forced placements of AP items. They retain the game's per-save behavior. Adding a source to the AP pool requires a stable location identity, a replacement event, restoration support and a new generated room; reporting an existing native reward as an extra AP check would duplicate its effect. See [items, checks and saves](docs/ITEMS-AND-SAVES.md).
+
 Major received items use the game's native turn toward the player camera and item presentation pose. Ordinary pickups retain their native central display and sounds.
+
+New receipts and older-save restorations wait for normal player control. Crawling, fishing, climbing, swimming, combat, active events and pause defer delivery; unknown actions also defer it. Observed paused or busy DeathLink states retain a pending death until normal control returns. An inventory transition which suspends all callbacks before pause is observed still needs a gameplay check. See [delivery safety and validation limits](docs/DELIVERY-SAFETY.md).
 
 Reprepared adult-trade rooms silently recover remote quest items which a completed exchange has already consumed. The corresponding check and its personal reward still recover normally. A DeathLink packet from a replaced connection is discarded. See the [stability and update notes](docs/STABILITY.md) for the targeted story fixes and validation scope.
 
@@ -52,13 +56,15 @@ Archipelago reserves `random` (and the Random? control) for choosing a whole opt
 
 `adult_trade_shuffle: true` replaces the adult trade rewards with AP items and puts the ten quest items in the multiworld. Talk to the appropriate NPC while owning their requested item; hidden items in the shared inventory slot are accepted automatically, and other owned trade items are retained. This mode starts with a hatched Pocket Cucco, disables trade-item expiry and removes the final three-day wait. It requires `shuffle_rewards: supported` and a newly generated room. The old additive `shuffle_trade_checks` control has been removed from new YAMLs; previously generated rooms retain their original behavior. See the [adult trade guide](docs/ADULT-TRADE-REWARDS.md).
 
+`shuffle_master_sword: true` puts the Master Sword in the multiworld and replaces its first pedestal grant with an AP reward. Time travel and Rauru's separate native reward remain available. The default is `false`, retaining the native sword. This option needs a newly generated room and save; it does not change an existing room's sword. See the [Master Sword guide](docs/MASTER-SWORD.md).
+
 `shuffle_skulltulas` offers `off`, `pinned` for 44 firmly identified native locations, and `matched` for the supported researched matches. The AP check completes on collecting the reward, not on killing the enemy or receiving a token. `matched` normally has 76 eligible checks, or 77 with supported planted/starting beans; 23 uncertain matches remain native-local. Tests cover generation, resources and event flows, plus private in-game pickup sequences and older-save recovery. Every original site and reward has not been played through. See the [Gold Skulltula guide](docs/GOLD-SKULLTULAS.md) and [example YAML](examples/Gold-Skulltulas.yaml) for the coverage and remaining presentation limits.
 
 The mod automatically follows the host's selected game language: French uses French text, and other languages fall back to English. There is no YAML language setting. Other players' names, chat, and item names from other games retain their server wording. Configuration tools default to English and may reuse the known game language. YAML descriptions and developer documentation use English.
 
 Restart the game after changing its language. Both translations are installed together, so changing language does not require generating a new seed.
 
-The YAML exposes **93 native OOTRR settings, the adult trade extension and DeathLink**, with descriptions, allowed values and dependency checks. Native-local shuffles include supported NPC and song rewards, cows, ground pickups, destructibles, dungeon entrances, and prices. OOTRR builds those rewards from the same seed that proves the AP access rules; AP moves only its catalogued rewards. Experimental destructibles retain OOTRR's one-time break persistence: leaving their drop behind can lose it.
+The YAML exposes **93 native OOTRR settings, the adult trade and Master Sword extensions, and DeathLink**, with descriptions, allowed values and dependency checks. Native-local shuffles include supported NPC and song rewards, cows, ground pickups, destructibles, dungeon entrances, and prices. OOTRR builds those rewards from the same seed that proves the AP access rules; AP moves only its catalogued rewards. Experimental destructibles retain OOTRR's one-time break persistence: leaving their drop behind can lose it.
 
 Independently randomized sub-options are ignored while their parent setting is inactive. For example, a random fixed price does not affect a sale using Cheap prices. Active settings still follow their documented dependencies; Random? on every field can produce an invalid combination.
 
@@ -99,12 +105,12 @@ Use Windows x64 Python with Tcl/Tk support and install the packaging dependencie
 ```powershell
 py -3 -m pip install -r requirements-app.txt
 py -3 tools/build_app.py
-py -3 tools/verify_app.py dist/OOT-Remake-Archipelago-0.9.2-alpha.1.exe
+py -3 tools/verify_app.py dist/OOT-Remake-Archipelago-0.10.0-alpha.1.exe
 ```
 
 `tools/build_app.py` creates the single windowed executable in `dist/`. It bundles the Python runtime, Tk, the pinned Node.js runtime, the APWorld, native bridge, both host adapters and notices. The compatible OOTRR builder is downloaded by the application on first use; game files and the selected host are supplied by the player. `VERSION` declares the release version. The build uses the supplied native DLL and WebAssembly engine and does not build a user's game.
 
-For advanced CLI development, `py -3 tools/build.py` still assembles `dist/Archipelago-OOT-Remake-0.9.2-alpha.1.zip`, including `Client-OOT-Remake.pyz`, command wrappers, APWorld and engine sources. This is separate from the normal player download. After validating a legacy ZIP, record a new reference with `tools/verify_release.py --version <version> --record-reference`; retain older manifests unchanged.
+For advanced CLI development, `py -3 tools/build.py` still assembles `dist/Archipelago-OOT-Remake-0.10.0-alpha.1.zip`, including `Client-OOT-Remake.pyz`, command wrappers, APWorld and engine sources. This is separate from the normal player download. After validating a legacy ZIP, record a new reference with `tools/verify_release.py --version <version> --record-reference`; retain older manifests unchanged.
 
 To rebuild the supplied components:
 

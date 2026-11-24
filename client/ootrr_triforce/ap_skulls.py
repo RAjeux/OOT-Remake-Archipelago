@@ -101,7 +101,7 @@ def patch_skull_flow(raw, records, *, return_entries=False):
     from evfl.util import make_index
     from oot_rando.patching.event_info import reachable
     from oot_rando.patching.progressive import FlowEditor, link
-    from .native_presentations import append_recipe, append_tier_choice, copy_entry
+    from .native_presentations import NO_AMMO_BAG, append_recipe, append_tier_choice, copy_entry
     from .receipt_events import _action, _silent_grant
 
     records = _records(records)
@@ -160,7 +160,7 @@ def patch_skull_flow(raw, records, *, return_entries=False):
         def present(branch, actor):
             return editor.subflow(branch + "_Get", "", core, {"ActorName": actor})
 
-        reward = (append_tier_choice(editor, metadata, stem, present) if metadata is not None
+        reward = (append_tier_choice(editor, metadata, stem, present, no_ammo=commit) if metadata is not None
                   else present(stem, record["actor"]))
         guarded = editor.switch(stem + "_AlreadyCollected", "GameDataActor", "EventQueryIsGameDataBool",
                                 {"GameDataName": record["flag_name"], "Index": -1}, save, reward)
@@ -179,7 +179,10 @@ def patch_skull_flow(raw, records, *, return_entries=False):
             # The physical get flow opens its window before it grants. Resolve
             # the native item at that earlier boundary without changing inventory
             # or acknowledging the location.
-            register(effect_name + "_Preview", append_tier_choice(editor, metadata, stem + "_Preview", preview))
+            no_preview = editor.action(stem + "_PreviewNoAmmo", "GameDataActor", "EventTriggerSetGameDataString64",
+                                       {"GameDataName": NATIVE_SCRATCH, "Index": -1, "Value": NO_AMMO_BAG})
+            register(effect_name + "_Preview", append_tier_choice(editor, metadata, stem + "_Preview", preview,
+                                                                    no_ammo=no_preview))
             quiet = append_recipe(editor, metadata, stem + "_QuietRecipe", grant, commit, pickup=True)
             if isinstance(quiet.data, SubFlowEvent) and quiet.data.entry_point_name == grant:
                 link(quiet, commit)
@@ -190,7 +193,7 @@ def patch_skull_flow(raw, records, *, return_entries=False):
             register(quiet_core, target)
             def effect(branch, actor):
                 return editor.subflow(branch + "_Apply", "", quiet_core, {"ActorName": actor})
-            quiet_root = append_tier_choice(editor, metadata, stem + "_Quiet", effect)
+            quiet_root = append_tier_choice(editor, metadata, stem + "_Quiet", effect, no_ammo=commit)
             quiet_root = editor.switch(stem + "_QuietAlreadyCollected", "GameDataActor", "EventQueryIsGameDataBool",
                                        {"GameDataName": record["flag_name"], "Index": -1}, save, quiet_root)
         else:
@@ -231,6 +234,7 @@ def patch_pickup_presentation(raw, records, effect_entries, flow_name):
     from oot_rando.patching.event_info import reachable
     from oot_rando.patching.progressive import FlowEditor, link
     from .shop_events import _retarget
+    from .native_presentations import AMMO_BAGS, NO_AMMO_BAG, append_tier_choice
 
     records = _records(records)
     editor = FlowEditor(raw, flow_name)
@@ -293,6 +297,19 @@ def patch_pickup_presentation(raw, records, effect_entries, flow_name):
                 presentation = editor.action(PREFIX + f"GroundForeignMessage{number}_{index}",
                                              "PouchContentGuestPerformer", "EventTriggerSetOwnNameToMessage", None)
                 link(presentation, preview)
+            elif record["native_actor"] in AMMO_BAGS:
+                # Skip the authored item window as well as its actual grant.
+                # Continue through the native cleanup and commit this location.
+                empty = editor.subflow(PREFIX + f"GroundEmptyEffect{number}_{index}", "GetPouchContent",
+                                       effect_entries[record["actor"]], None)
+                link(empty, continuation)
+                mark = editor.action(PREFIX + f"GroundEmpty{number}_{index}", "GameDataActor",
+                                     "EventTriggerSetGameDataString64",
+                                     {"GameDataName": NATIVE_SCRATCH, "Index": -1, "Value": NO_AMMO_BAG})
+                link(mark, _after_writes(editor, PREFIX + f"GroundEmptyReady{number}_{index}", empty))
+                presentation = append_tier_choice(editor, ITEM_DATA[record["local_item"]],
+                                                  PREFIX + f"GroundAmmo{number}_{index}",
+                                                  lambda branch, actor, shown=presentation: shown, no_ammo=mark)
             for alias, identity in enumerate((record["actor"], record["pickup"])):
                 local_message = editor.switch(PREFIX + f"GroundMessage{number}_{index}_{alias}", "GameDataActor",
                                               "EventQueryIsGameDataString64",
@@ -335,6 +352,8 @@ def patch_pickup_presentation(raw, records, effect_entries, flow_name):
             branch = editor.switch(PREFIX + f"GroundWindowMatch{number}_{index}", "GameDataActor",
                                    "EventQueryIsGameDataString64",
                                    {"GameDataName": NATIVE_SCRATCH, "Index": -1, "Value": actor}, local, branch)
+        branch = editor.switch(PREFIX + f"GroundEmptyWindow{number}", "GameDataActor", "EventQueryIsGameDataString64",
+                               {"GameDataName": NATIVE_SCRATCH, "Index": -1, "Value": NO_AMMO_BAG}, data.nxt.v, branch)
         for previous in previous_nodes:
             _retarget(previous, event, branch)
         for entry in chart.entry_points:

@@ -12,6 +12,7 @@ from .catalog import (AP_SKULL_CHECKS, CHESTS, CHECK_FLAGS, ITEM_DATA, ITEM_IDS,
 from .cursor_resource import append_transient_index
 from .i18n import tr
 from .mod_codec import Codec
+from .master_sword import LOCATION as MASTER_SWORD_LOCATION, FLAG_NAME as MASTER_SWORD_FLAG_NAME
 
 FLOW_NAME = "GetPouchContent"
 FLOW_PATH = "Event/EventFlow/GetPouchContent.bfevfl.zs"
@@ -46,6 +47,8 @@ def restoration_records(roster):
             flags = [SKULL_CHECKS[name]["flag_name"]]
         elif name in TRADE_CHECKS:
             flags = [TRADE_CHECKS[name]["flag_name"]]
+        elif name == MASTER_SWORD_LOCATION:
+            flags = [MASTER_SWORD_FLAG_NAME]
         else:
             raise _invalid()
         if [murmur3(flag) for flag in flags] != CHECK_FLAGS[name]:
@@ -190,7 +193,7 @@ def build_restoration_flow(raw, roster):
             def give(branch, actor):
                 return editor.subflow(branch + "_Give", "", core_name, {"ActorName": actor})
 
-            reward = append_tier_choice(editor, metadata, stem, give)
+            reward = append_tier_choice(editor, metadata, stem, give, no_ammo=commit)
             if metadata.get("bottle_item") and metadata.get("pouch_special") == "NotPushToPouch":
                 deferred = status(stem + "_Deferred", -record["id"])
                 reward = editor.switch(stem + "_Bottle", "PouchSystemActor", "EventQueryIsAnyBottleEmpty",

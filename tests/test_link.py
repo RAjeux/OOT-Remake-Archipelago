@@ -12,7 +12,7 @@ header='''
 #include <stdio.h>
 typedef int Ctx;
 static int active, loading, save_exists, owned, cursor, coins, reward_request, pending_index, queued_balance, won, opened, notice, ack;
-static int ap_event_mode16, event_busy, event_accept=1, receipt_requests, last_receipt;
+static int ap_event_mode16, ap_delivery_ready16=1, event_busy, event_accept=1, receipt_requests, last_receipt;
 static int (*ap_restore16)(uint8_t *,int);
 static void (*ap_restore_deferred16)(int);
 static uint64_t ap_delivery_actor16=77;
@@ -102,6 +102,8 @@ typedef struct { uint64_t x[32]; } Ctx;
 typedef void (*A64Fn)(Ctx*);
 static unsigned char memory[65536];
 static int event_busy, reject, no_functions, small_buffer, requests, released, held_deaths;
+static int ap_delivery_ready16=1;
+static uint64_t ap_delivery_actor16=77;
 static int death_api(int state){assert(state==2);held_deaths++;return 0;}
 static int (*ap_death16)(int)=death_api;
 static int64_t wall_time=10000000000LL;
@@ -123,6 +125,9 @@ static void hos_log(const char *format,...){(void)format;}
 request_test=r'''
 int main(void){
     Ctx c={{0}},saved;c.x[31]=50000;c.x[1]=123;saved=c;
+    ap_delivery_ready16=0;assert(!ap_request_item16(&c,77,"OOTRR_APReceive_2000"));
+    ap_delivery_ready16=1;assert(!ap_request_item16(&c,78,"OOTRR_APReceive_2000"));
+    assert(!requests&&!released&&!held_deaths&&!memcmp(&c,&saved,sizeof c));
     assert(ap_request_item16(&c,77,"OOTRR_APReceive_2000"));assert(requests==1&&released==2&&held_deaths==1&&!memcmp(&c,&saved,sizeof c));
     event_busy=1;assert(!ap_request_item16(&c,77,"OOTRR_APReceive_2000"));assert(requests==1&&released==2);
     event_busy=0;teleport.requested_at=wall_time-1000000000LL;assert(!ap_request_item16(&c,77,"OOTRR_APReceive_2000"));

@@ -49,18 +49,19 @@ def trade_records(roster, *, require_all=False):
     return records
 
 
-def _preloads(editor):
+def _preloads(editor, prefix=PREFIX):
     from evfl.event import SubFlowEvent
     from oot_rando.patching.event_info import reachable
     for point in editor.chart.entry_points:
         for node in reachable(point.main_event.v):
-            if node.name.startswith(PREFIX) and isinstance(node.data, SubFlowEvent):
+            if node.name.startswith(prefix) and isinstance(node.data, SubFlowEvent):
                 index = editor.chart.events.index(node)
                 if index not in point._sub_flow_event_indices:
                     point._sub_flow_event_indices.append(index)
 
 
-def build_trade_rewards(pouch_raw, presenter_raw, roster, *, native_info=None, ground_raw=None):
+def build_trade_rewards(pouch_raw, presenter_raw, roster, *, native_info=None, ground_raw=None,
+                        records=None, prefix=PREFIX, event_stem=event_name, reconcile=True):
     """Return both changed charts and the location-bound NPC callback entries."""
     from evfl.common import Argument
     from evfl.entry_point import EntryPoint
@@ -68,18 +69,18 @@ def build_trade_rewards(pouch_raw, presenter_raw, roster, *, native_info=None, g
     from evfl.util import make_index
     from oot_rando.patching.progressive import FlowEditor, link
     from .ap_skulls import _after_writes
-    from .native_presentations import (PRESENTER_NAME, append_recipe, append_tier_choice,
+    from .native_presentations import (AMMO_BAGS, PRESENTER_NAME, append_recipe, append_tier_choice,
                                        copy_entry, copy_receipt_presenter, receipt_style)
     from .receipt_events import _action, _silent_grant
     from .restoration import _native_source
     from .trade_state import append_reconcile
 
-    records = trade_records(roster)
+    records = trade_records(roster) if records is None else list(records)
     if not records:
         return pouch_raw, presenter_raw, {}
     pouch, presenter = FlowEditor(pouch_raw, FLOW_PATH), FlowEditor(presenter_raw, PRESENTER_PATH)
     if (pouch.chart.name != FLOW_NAME or presenter.chart.name != PRESENTER_NAME
-            or any(point.name.startswith(PREFIX) for editor in (pouch, presenter)
+            or any(point.name.startswith(prefix) for editor in (pouch, presenter)
                    for point in editor.chart.entry_points)):
         raise _invalid()
 
@@ -92,26 +93,28 @@ def build_trade_rewards(pouch_raw, presenter_raw, roster, *, native_info=None, g
     if any(record["local"] for record in records):
         native = FlowEditor(pouch_raw, "Native adult trade grant source")
         _native_source(native)
-        _silent_grant(native, None, entry_name=GRANT + "Source", prefix=GRANT + "Source")
-        grant = copy_entry(native.chart, pouch, GRANT + "Source", GRANT,
+        grant_name = prefix + "QuietGrant"
+        _silent_grant(native, None, entry_name=grant_name + "Source", prefix=grant_name + "Source")
+        grant = copy_entry(native.chart, pouch, grant_name + "Source", grant_name,
                            skip=lambda node: _action(node) in {
                                "EventTriggerSetForGetWindow", "EventTriggerSetHavePlayedGetEvent"})
 
     # Native display may request a caption save before the grant. The trade's
     # single save must follow its input, reward and completed-location flag.
-    display = copy_entry(pouch.chart, pouch, "DisplayGetByActorName", DISPLAY,
+    display = copy_entry(pouch.chart, pouch, "DisplayGetByActorName", prefix + "Display",
                          local_closure=True,
                          skip=lambda node: _action(node) == "EventTriggerRequestAutoSave")
 
     entries = {}
     for record in records:
-        stem = event_name(record["id"])
+        stem = event_stem(record["id"])
         metadata = (ITEM_DATA[record["item"]] if record["local"]
                     else dict(actor=record["actor"], mode="actor", kind="Item"))
         style = receipt_style(metadata, native_info) if record["local"] else "large"
         core_name = stem + "_Pouch"
         save = pouch.action(stem + "_Save", "GameSystemActor", "EventTriggerRequestAutoSave", None)
-        reconciled = append_reconcile(pouch, stem + "_Reconcile", save)
+        reconciled = (append_reconcile(pouch, stem + "_Reconcile", save) if reconcile
+                      else _after_writes(pouch, stem + "_SavedFlag", save))
         commit = pouch.action(stem + "_Complete", "GameDataActor", "EventTriggerSetGameDataBool",
                               {"GameDataName": record["flag_name"], "Index": -1, "Value": True})
         link(commit, reconciled)
@@ -148,14 +151,14 @@ def build_trade_rewards(pouch_raw, presenter_raw, roster, *, native_info=None, g
 
         register(pouch, core_name, guard(stem + "_Core", core))
         shown = (copy_receipt_presenter(presenter, metadata, record["id"], core_name, style=style,
-                                       ground_raw=ground_raw, prefix=PREFIX + "Show_" + str(record["id"]))
+                                       ground_raw=ground_raw, prefix=prefix + "Show_" + str(record["id"]))
                  if style != "pickup" else None)
         if shown:
             # Retain all native model/sound/camera actions, except intermediate
             # save requests. Only the callback above commits this transaction.
             from .shop_events import _retarget
             for node in list(presenter.chart.events):
-                if node.name.startswith(PREFIX + "Show_" + str(record["id"])) and _action(node) == "EventTriggerRequestAutoSave":
+                if node.name.startswith(prefix + "Show_" + str(record["id"])) and _action(node) == "EventTriggerRequestAutoSave":
                     for parent in list(presenter.chart.events):
                         _retarget(parent, node, node.data.nxt.v)
                     for point in presenter.chart.entry_points:
@@ -183,13 +186,20 @@ def build_trade_rewards(pouch_raw, presenter_raw, roster, *, native_info=None, g
             window = pouch.subflow(stem + "_Window", "", display, {"ActorName": Argument("ActorName")})
             link(window, recipe_root)
             point.main_event = make_index(window)
-        root = (append_tier_choice(pouch, metadata, stem + "_Present", present) if record["local"]
+        no_ammo = commit
+        if required and metadata["actor"] in AMMO_BAGS:
+            consumed_empty = pouch.action(stem + "_EmptyConsume", "PouchSystemActor", "EventTriggerAddOrRemovePouchContent",
+                                          {"Actor": required, "Num": -1, "IsEquipDIrect": False,
+                                           "IsSetMessageTargetActorName": False, "IsGetEvent": False})
+            link(consumed_empty, _after_writes(pouch, stem + "_EmptyConsumed", commit))
+            no_ammo = consumed_empty
+        root = (append_tier_choice(pouch, metadata, stem + "_Present", present, no_ammo=no_ammo) if record["local"]
                 else present(stem + "_Present", record["actor"]))
         register(pouch, stem, guard(stem + "_Outer", root))
         entries[record["id"]] = stem
 
-    _preloads(pouch)
-    _preloads(presenter)
+    _preloads(pouch, prefix)
+    _preloads(presenter, prefix)
     return pouch.write("Native Archipelago adult trade rewards")[0], presenter.write("Native adult trade presentations")[0], entries
 
 
