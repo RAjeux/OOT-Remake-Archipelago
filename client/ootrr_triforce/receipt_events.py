@@ -13,6 +13,7 @@ import re
 from .catalog import ITEM_DATA, ITEM_IDS
 from .medallions import REST
 from .mod_codec import Codec
+from oot_rando.patching.event_info import analysis_scope
 
 FLOW_NAME = "GetPouchContent"
 FLOW_PATH = "Event/EventFlow/GetPouchContent.bfevfl.zs"
@@ -52,6 +53,53 @@ def _query(event):
     return holder.v.v if holder is not None else None
 
 
+def native_starter_exit(event):
+    """The sole exit of an exact native first-weapon companion hook."""
+    from evfl.event import ActionEvent, SwitchEvent
+    from .native_presentations import STARTER_KITS
+    allowed_owns = {OWNERS.get(actor, actor) for actor in STARTER_KITS}
+    allowed_owns.update(bag for bags, _, _ in STARTER_KITS.values() for bag in bags)
+    allowed_adds = {(bags[0], 1) for bags, _, _ in STARTER_KITS.values()}
+    allowed_adds.update((ammo, amount) for _, ammo, amount in STARTER_KITS.values())
+    pending, visited, exits = [event], set(), set()
+    while pending:
+        node = pending.pop()
+        if node is None or not node.name.startswith(("OOTRRBag", "OOTRRGiveBag")):
+            exits.add(node)
+            continue
+        if node in visited:
+            continue
+        visited.add(node)
+        data = node.data
+        params = data.params.data if getattr(data, "params", None) else {}
+        if isinstance(data, ActionEvent):
+            if (node.name.startswith("OOTRRGiveBag")
+                    and str(data.actor.v.identifier) == "EventSystemActor"
+                    and _action(node) == "EventWait"
+                    and dict(params) == {"Frames": 1, "IsWaitEnd": True}
+                    and data.nxt.v is None):
+                # starter_bags::after keeps terminal native gifts on this
+                # exact wait. Preserve it as cleanup, never as a pouch grant.
+                exits.add(node)
+                continue
+            if (str(data.actor.v.identifier) != "PouchSystemActor"
+                    or _action(node) != "EventTriggerAddOrRemovePouchContent"
+                    or (params.get("Actor"), params.get("Num")) not in allowed_adds):
+                raise ValueError(tr('Unrecognized native get-item step: ') + node.name)
+            pending.append(data.nxt.v)
+        elif isinstance(data, SwitchEvent):
+            if (str(data.actor.v.identifier) != "GameDataActor" or _query(node) != "EventQueryCheckIsGet"
+                    or set(params) != {"ActorName"} or params["ActorName"] not in allowed_owns
+                    or set(data.cases) != {0, 1}):
+                raise ValueError(tr('Unrecognized native get-item step: ') + node.name)
+            pending.extend(case.v for case in data.cases.values())
+        else:
+            raise ValueError(tr('Unrecognized native get-item step: ') + node.name)
+    if len(exits) != 1:
+        raise ValueError(tr('Unrecognized native get-item step: ') + event.name)
+    return next(iter(exits))
+
+
 def _silent_grant(editor, acknowledgement, *, entry_name=SILENT_ENTRY, prefix="OOTRR_APSilent"):
     """Copy the native grant path, retaining effects and removing only UI/save."""
     from evfl.entry_point import EntryPoint
@@ -64,6 +112,12 @@ def _silent_grant(editor, acknowledgement, *, entry_name=SILENT_ENTRY, prefix="O
     if source is None:
         raise ValueError(tr('Native get-item event not found.'))
     ui = {"OpenGetWindow", "OpenRupeeUIIfNeed", "CloseRupeeUIIfNeed"}
+    hook_exits = {}
+
+    def starter_exit(event):
+        if event not in hook_exits:
+            hook_exits[event] = native_starter_exit(event)
+        return hook_exits[event]
 
     def resolve(event):
         seen = set()
@@ -72,7 +126,16 @@ def _silent_grant(editor, acknowledgement, *, entry_name=SILENT_ENTRY, prefix="O
                 raise ValueError(tr('Loop in native item preparation.'))
             seen.add(event)
             data = event.data
-            if (getattr(data, "res_flowchart_name", None) == ""
+            if event.name.startswith(("OOTRRBag", "OOTRRGiveBag")):
+                # AP recipes know the actual first weapon before granting it.
+                # The native global repair tests ownership after the pouch add,
+                # which is deferred and can miss or repeat a bag. Leave the
+                # original native entry unchanged; bypass this hook only here.
+                following = starter_exit(event)
+                if following is event:
+                    return event
+                event = following
+            elif (getattr(data, "res_flowchart_name", None) == ""
                     and getattr(data, "entry_point_name", None) in ui):
                 event = data.nxt.v
             elif _action(event) == "EventTriggerRequestAutoSave":
@@ -182,12 +245,13 @@ def build_receipt_flow(raw, token, names=None):
                 if actor is None else after)
 
     def grant(stem, actor):
+        from .native_presentations import append_starter_kit
         tail = finish(stem, actor)
         give = editor.subflow(stem + "_Give", "", SILENT_ENTRY,
                               {"ActorName": actor, "IsGetInEvent": True,
                                "IsShowNumDisplay": False, "IsTreasureBox": False})
         link(give, tail)
-        return give
+        return append_starter_kit(editor, actor, stem + "_Starter", give)
 
     entries = {}
     for name in names:
@@ -256,6 +320,7 @@ def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, nat
     from oot_rando.patching.progressive import FlowEditor, link
     from .native_presentations import (AMMO_BAGS, PRESENTER_NAME, PRESENTER_PATH,
                                        append_recipe, append_tier_choice, copy_receipt_presenter, receipt_style)
+    from .presentation_models import SHOW_ACTOR_ARGUMENT, model_actor, needs_model_alias
     if not re.fullmatch("[a-f0-9]{64}", token):
         raise ValueError(tr('Invalid room identifier for native receipts.'))
     names = sorted(ITEM_DATA if names is None else set(names))
@@ -302,8 +367,11 @@ def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, nat
                     tail = popup
                 show = pouch.subflow(branch + "_Get", "", core_name, {"ActorName": actor})
             else:
+                arguments = {"ActorName": actor, "IsNpcEventStarter": False}
+                if needs_model_alias(metadata):
+                    arguments[SHOW_ACTOR_ARGUMENT] = model_actor(actor)
                 show = pouch.subflow(branch + "_Show", PRESENTER_NAME, shown_entry,
-                                     {"ActorName": actor, "IsNpcEventStarter": False})
+                                     arguments)
             link(show, tail)
             return show
 
@@ -323,6 +391,7 @@ def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, nat
     return pouch_result, presenter_result, entries
 
 
+@analysis_scope()
 def prepare_receipts(romfs, mod, data):
     """Add native receipt events to one staged mod; never touch the game dump."""
     from oot_rando.formats import byml_codec
@@ -341,6 +410,8 @@ def prepare_receipts(romfs, mod, data):
 
     native_presentations = bool(data.get("local_items"))
     if native_presentations:
+        from .presentation_models import prepare_presentation_models
+        prepare_presentation_models(romfs, mod)
         from .native_presentations import PRESENTER_PATH, receipt_style
         native_info = {row["__RowId"]: row for row in byml_codec.load(
             read("RSDB/PouchActorInfo.Product.111.rstbl.byml.zs"))["root"]}

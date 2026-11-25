@@ -241,13 +241,13 @@ class Flowchart(BinaryObject):
 
         # A dict is used to have set-like properties *and* keep insertion order.
         def traverse_events(entry: typing.Optional[Event], sub_flow_events: typing.Dict[Event, None], visited: typing.Set[Event]) -> None:
-            """Traverse the event graph and collect sub flow events."""
+            """Collect subflows in native DFS order without Python recursion."""
             if not entry:
                 return
-            stack = deque([entry])
+            stack = [entry]
             while stack:
-                event = stack.popleft()
-                if event in visited:
+                event = stack.pop()
+                if event is None or event in visited:
                     continue
                 visited.add(event)
                 data = event.data
@@ -255,12 +255,10 @@ class Flowchart(BinaryObject):
                     if data.nxt.v:
                         stack.append(data.nxt.v)
                 elif isinstance(data, SwitchEvent):
-                    for value, case in data.cases.items():
-                        traverse_events(case.v, sub_flow_events, visited)
+                    stack.extend(case.v for case in reversed(list(data.cases.values())))
                 elif isinstance(data, ForkEvent):
-                    for fork in data.forks:
-                        traverse_events(fork.v, sub_flow_events, visited)
                     stack.append(data.join.v)
+                    stack.extend(fork.v for fork in reversed(data.forks))
                 elif isinstance(data, JoinEvent):
                     if data.nxt.v:
                         stack.append(data.nxt.v)
@@ -270,8 +268,7 @@ class Flowchart(BinaryObject):
                         stack.append(data.nxt.v)
                 elif isinstance(data, SubFlowSwitchEvent):
                     sub_flow_events[event] = None
-                    for case in data.cases.values():
-                        traverse_events(case.v, sub_flow_events, visited)
+                    stack.extend(case.v for case in reversed(list(data.cases.values())))
 
         for entry_point in self.entry_points:
             entry_point.main_event.set_index(event_to_idx)

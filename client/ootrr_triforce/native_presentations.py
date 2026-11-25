@@ -34,6 +34,34 @@ AMMO_BAGS.update({"Shop_DekuSeedBundle_0" + str(index): AMMO_BAGS["Item_DekuSeed
 # Private preview marker, deliberately not a native pouch actor. Missing ammo
 # equipment consumes the AP transaction without an item, rupee or presentation.
 NO_AMMO_BAG = "OOTRR_APNoAmmo"
+STARTER_KITS = {
+    "Item_Range_Bow": (("Item_Quiver_Small", "Item_Quiver_Medium", "Item_Quiver_Large"), "Item_Arrow_Normal", 30),
+    "Item_Range_SlingShot": (("Item_BulletBag_Small", "Item_BulletBag_Medium", "Item_BulletBag_Large"), "Item_DekuSeed", 30),
+}
+SMALL_KEY_MODEL = "Obj_MiniGame_SmallKey"
+
+
+def append_starter_kit(editor, actor, stem, then):
+    """Resolve first-weapon ownership before any queued pouch write occurs."""
+    from oot_rando.patching.progressive import link
+    from .receipt_events import OWNERS
+    kit = STARTER_KITS.get(actor)
+    if kit is None:
+        return then
+    bags, ammo, amount = kit
+    def add(label, item, count, following):
+        event = editor.action(stem + label, "PouchSystemActor", "EventTriggerAddOrRemovePouchContent",
+                              {"Actor": item, "Num": count, "IsGetEvent": False,
+                               "IsEquipDIrect": False, "IsSetMessageTargetActorName": False})
+        link(event, following)
+        return event
+    root = add("_Bag", bags[0], 1, add("_Ammo", ammo, amount, then))
+    # A higher progressive tier, or a weapon already owned without its bag,
+    # never receives a small bag or an extra ammunition refill here.
+    for index, owned in enumerate((OWNERS.get(actor, actor), *bags)):
+        root = editor.switch(stem + "_Owned" + str(index), "GameDataActor", "EventQueryCheckIsGet",
+                             {"ActorName": owned}, then, root)
+    return root
 
 
 def is_cure(metadata):
@@ -114,9 +142,20 @@ def append_recipe(editor, metadata, stem, grant_entry, commit, *, pickup=False):
                               "IsPushToSelectedBottle": False, "BigPoeFenceId": 0})
         link(node, commit)
         return node
-    return editor.subflow(stem + "_Give", "", grant_entry,
-                          {"ActorName": Argument("ActorName"), "IsGetInEvent": not pickup,
-                           "IsShowNumDisplay": pickup, "IsTreasureBox": not pickup})
+    arguments = {"ActorName": Argument("ActorName"), "IsGetInEvent": not pickup,
+                 "IsShowNumDisplay": pickup, "IsTreasureBox": not pickup}
+    if metadata["actor"] not in STARTER_KITS:
+        return editor.subflow(stem + "_Give", "", grant_entry, arguments)
+    from evfl.entry_point import EntryPoint
+    from evfl.util import make_index
+    # Keep the recipe's public result a SubFlowEvent: callers own its normal
+    # continuation and can override stock-display arguments for quiet recovery.
+    native = editor.subflow(stem + "_Give", "", grant_entry,
+                            {name: Argument(name) for name in arguments})
+    entry = EntryPoint(stem + "_Equipment")
+    entry.main_event = make_index(append_starter_kit(editor, metadata["actor"], stem + "_Starter", native))
+    editor.chart.entry_points.append(entry)
+    return editor.subflow(stem + "_WithEquipment", "", entry.name, arguments)
 
 
 def copy_receipt_presenter(editor, metadata, item_id, core_name, *, style="large", ground_raw=None, prefix=None):
@@ -134,9 +173,11 @@ def copy_receipt_presenter(editor, metadata, item_id, core_name, *, style="large
     from evfl.event import SubFlowEvent
     from evfl.util import make_rindex
     from oot_rando.patching.progressive import FlowEditor
+    from .presentation_models import SHOW_ACTOR_ARGUMENT, needs_model_alias
     from .receipt_events import FLOW_NAME, _action
 
     natural_camera = ground_raw is not None
+    separate_model = needs_model_alias(metadata)
     cleanup = None
     if natural_camera:
         ground = FlowEditor(ground_raw, "Native ground item presentation")
@@ -161,6 +202,10 @@ def copy_receipt_presenter(editor, metadata, item_id, core_name, *, style="large
                 and data.entry_point_name == "GetPouchContentByActorName_ForGetInEvent"):
             event.data.entry_point_name = core_name
             replaced.append(event.name)
+        elif separate_model and not data.res_flowchart_name and not event.data.res_flowchart_name:
+            if event.data.params is None:
+                event.data.params = Container()
+            event.data.params.data[SHOW_ACTOR_ARGUMENT] = Argument(SHOW_ACTOR_ARGUMENT)
 
     def skip(event):
         data, action = event.data, _action(event)
@@ -178,6 +223,11 @@ def copy_receipt_presenter(editor, metadata, item_id, core_name, *, style="large
             "EventMoveToTargetPosCamera", "EventMoveCameraToSavePoint", "EventNorifyCutChangeForGraphics"}
 
     def transform(event, original):
+        if (_action(original) == "EventCreateShowItemFromActorFileName"
+                and separate_model):
+            # The native v1.1.1 command calls this input Actor (unlike its
+            # ActorName entry argument and the pouch/window commands).
+            event.data.params.data["Actor"] = Argument(SHOW_ACTOR_ARGUMENT)
         if not natural_camera or style == "medium":
             return
         if _action(original) == "EventMoveToTargetPosCamera":
@@ -322,13 +372,14 @@ def append_local_chests(editor, pouch_raw, rewards, *, small_raw=None):
 
 
 def copy_entry(source, editor, entry_name, prefix, *, local_closure=False,
-               callback=None, skip=None, after=None, transform=None):
+               callback=None, skip=None, after=None, transform=None, bind_arguments=False):
     """Copy an entry and its graph, optionally its local callees, into a chart.
 
     Native actor bindings, typed arguments, queries, forks and return values are
     retained. A callback may replace a copied external subflow's target.
     """
     from evfl.entry_point import EntryPoint
+    from evfl.common import ActorIdentifier
     from evfl.event import ActionEvent, SwitchEvent, ForkEvent, JoinEvent, SubFlowEvent, SubFlowSwitchEvent, Event
     from evfl.util import make_index, make_rindex
 
@@ -356,6 +407,20 @@ def copy_entry(source, editor, entry_name, prefix, *, local_closure=False,
         return []
 
     wanted, nodes, pending_entries = {}, {}, [entry_name]
+    source_actors = {actor.identifier: actor for actor in source.actors}
+
+    def argument_scopes(value):
+        if isinstance(value, ActorIdentifier):
+            owner = source_actors.get(value)
+            if owner is not None and owner.argument_entry_point.v is not None:
+                yield owner.argument_entry_point.v.name
+        elif isinstance(value, dict):
+            for item in value.values():
+                yield from argument_scopes(item)
+        elif isinstance(value, (list, tuple)):
+            for item in value:
+                yield from argument_scopes(item)
+
     while pending_entries:
         name = pending_entries.pop()
         if name in wanted:
@@ -369,22 +434,71 @@ def copy_entry(source, editor, entry_name, prefix, *, local_closure=False,
             nodes[event] = None
             stack.extend(successors(event))
             data = event.data
+            if bind_arguments:
+                owner = getattr(data, "actor", None)
+                if owner is not None and owner.v.argument_entry_point.v is not None:
+                    pending_entries.append(owner.v.argument_entry_point.v.name)
+                if getattr(data, "params", None) is not None:
+                    pending_entries.extend(argument_scopes(data.params.data))
             if (local_closure and isinstance(data, (SubFlowEvent, SubFlowSwitchEvent))
                     and not data.res_flowchart_name):
                 if data.entry_point_name not in entries:
                     raise ValueError(tr('Native subflow not found: ') + data.entry_point_name)
                 pending_entries.append(data.entry_point_name)
 
+    # Actor arguments belong to a specific entry, including that entry's name
+    # in ActorIdentifier.sub_name. Allocate the copied scopes before copying
+    # actors so every bound actor points to an entry in the destination chart.
+    cloned_entries = {}
+    if bind_arguments:
+        existing_entries = {point.name for point in editor.chart.entry_points}
+        for name, original in wanted.items():
+            target_name = prefix + "_" + name
+            if target_name in existing_entries:
+                raise ValueError(tr('Native presentation already copied: ') + target_name)
+            point = EntryPoint(target_name)
+            point.variable_defs = copy.deepcopy(original.variable_defs)
+            cloned_entries[name] = point
+
     def actor_for(original):
+        binding = original.argument_entry_point.v
+        identifier = original.identifier
+        target_binding = None
+        if binding is not None and bind_arguments:
+            target_binding = cloned_entries.get(binding.name)
+            if target_binding is None:
+                raise ValueError(tr('Native actor belongs to another entry: ') + str(identifier))
+            if not identifier.sub_name.startswith(binding.name + "(") or not identifier.sub_name.endswith(")"):
+                raise ValueError(tr('Native actor belongs to another entry: ') + str(identifier))
+            identifier = ActorIdentifier(identifier.name, target_binding.name + identifier.sub_name[len(binding.name):])
         owner = next((actor for actor in editor.chart.actors
-                      if actor.identifier == original.identifier), None)
+                      if actor.identifier == identifier), None)
         if owner is None:
-            if original.argument_entry_point.v is not None:
+            if binding is not None and not bind_arguments:
                 raise ValueError(tr('Native actor belongs to another entry: ') + str(original.identifier))
             owner = copy.deepcopy(original)
-            owner.argument_entry_point = make_index(None)
+            owner.identifier = copy.deepcopy(identifier)
+            owner.argument_entry_point = make_index(target_binding)
             editor.chart.actors.append(owner)
+        elif target_binding is not None and (owner.argument_entry_point.v is not target_binding
+                                             or owner.argument_name != original.argument_name):
+            raise ValueError(tr('Native actor belongs to another entry: ') + str(identifier))
         return owner
+
+    def bound_value(value):
+        if isinstance(value, ActorIdentifier):
+            original = next((actor for actor in source.actors if actor.identifier == value), None)
+            if (original is not None and original.argument_entry_point.v is not None
+                    and original.argument_entry_point.v.name in cloned_entries):
+                return copy.deepcopy(actor_for(original).identifier)
+            return value
+        if isinstance(value, dict):
+            return {key: bound_value(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [bound_value(item) for item in value]
+        if isinstance(value, tuple):
+            return tuple(bound_value(item) for item in value)
+        return value
 
     occupied = {event.name for event in editor.chart.events}
     for original in nodes:
@@ -431,11 +545,14 @@ def copy_entry(source, editor, entry_name, prefix, *, local_closure=False,
         if transform is not None:
             transform(event, original)
             data = event.data
+        if bind_arguments and getattr(data, "params", None) is not None:
+            data.params.data = bound_value(data.params.data)
         editor.expected[event.name] = (dict(data.params.data) if getattr(data, "params", None) is not None else None)
     editor.chart.events.extend(nodes.values())
     for name, original in wanted.items():
-        entry = EntryPoint(prefix + "_" + name)
-        entry.variable_defs = copy.deepcopy(original.variable_defs)
+        entry = cloned_entries[name] if bind_arguments else EntryPoint(prefix + "_" + name)
+        if not bind_arguments:
+            entry.variable_defs = copy.deepcopy(original.variable_defs)
         entry.main_event = make_index(target(original.main_event.v))
         editor.chart.entry_points.append(entry)
     return prefix + "_" + entry_name

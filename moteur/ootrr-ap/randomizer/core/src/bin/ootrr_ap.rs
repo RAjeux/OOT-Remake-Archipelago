@@ -31,7 +31,12 @@ fn generate(j: &Json) -> Result<()> {
     let settings = read_settings(j)?;
     let g = slice::generate_with(&settings, field(j, "seed")?, &GenOpts::default())?;
     let waves = g.spheres.iter().map(|row| Json::strs(row.iter().map(|(loc, _)| loc.as_str()))).collect();
-    let mut output = Json::obj().with("seed_file", g.seed_file.to_json()).with("waves", Json::Arr(waves));
+    let sources = network_sources::selected(&g.seed_file)?;
+    let optional = network_sources::optional_sources(&g.seed_file, &g.spheres)?;
+    let mut output = Json::obj().with("seed_file", g.seed_file.to_json()).with("waves", Json::Arr(waves))
+        .with("network_sources_schema", 1_i64.into()).with("network_sources", sources)
+        .with("optional_sources", optional)
+        .with("progression_items", Json::strs(g.progression_items.iter().map(String::as_str)));
     if let Some(wave) = g.master_sword_wave {
         output = output.with("master_sword_wave", (wave as i64).into());
     }
@@ -270,6 +275,12 @@ fn shops(j: &Json) -> Result<()> {
 }
 #[path = "ootrr_ap/skulls.rs"]
 mod ap_skulls;
+#[path = "ootrr_ap/network_sources.rs"]
+mod network_sources;
+#[path = "ootrr_ap/network_pickups.rs"]
+mod network_pickups;
+#[path = "ootrr_ap/network_flow_base.rs"]
+mod network_flow_base;
 
 fn run() -> Result<()> {
     let mut input = String::new();
@@ -277,13 +288,16 @@ fn run() -> Result<()> {
     let j=json::parse(&input)?;
     match env::args().nth(1).as_deref() {
         Some("generate") => generate(&j),
+        Some("catalog") => { println!("{}", network_sources::catalog()?.pretty()); Ok(()) },
+        Some("sources") => network_pickups::run(&j),
+        Some("network-flow-base") => network_flow_base::run(&j),
         Some("base-seed") => base_seed(&j),
         Some("settings") => inspect_settings(&j),
         Some("localize") => localize(&j),
         Some("patch") => patch(&j),
         Some("shops") => shops(&j),
         Some("skulls") => ap_skulls::run(&j),
-        _ => Err("expected generate, base-seed, settings, localize, patch, shops or skulls".into()),
+        _ => Err("expected generate, catalog, sources, network-flow-base, base-seed, settings, localize, patch, shops or skulls".into()),
     }
 }
 fn main() {

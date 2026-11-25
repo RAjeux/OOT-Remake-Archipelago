@@ -68,8 +68,28 @@ def read_manifest(path):
     if (data["protocol"] != PROTOCOL or data["token"] != token
             or seed["generator"] != "ootrr-core 0.8.1" or seed["format"] != "ootrr-seed"):
         raise ValueError(tr('Incompatible player file or version.'))
+    from .network_catalog import enabled, validate_sources
+    if enabled(data):
+        sources = validate_sources(data)
+        from .master_sword import manifest_reward
+        expected = {name: row["generated_item"] for name, row in sources.items()}
+        expected.update(manifest_reward(data))
+        selected = manifest_shop_checks(data)
+        if (data.get("shop_check_mode") != "randomized_stock"
+                or selected != set(data["seed_file"].get("shops", {}))
+                or not isinstance(data.get("checks"), list)
+                or len(data["checks"]) != len(set(data["checks"]))
+                or set(data["checks"]) != set(expected)
+                or data.get("moved") != expected
+                or not set(expected.values()) <= ITEM_IDS.keys()
+                or data.get("reward_mode") != "all_locations" or data.get("local_items") is not True
+                or type(data.get("shops_always_open", False)) is not bool
+                or type(data.get("adult_trade_shuffle", False)) is not bool):
+            raise ValueError("The network reward list does not match this room's native seed.")
+        return data
     selected_shops = manifest_shop_checks(data)
-    allowed=set(CHESTS) | set(selected_shops)
+    from .catalog import LEGACY_CHESTS
+    allowed=set(LEGACY_CHESTS) | set(selected_shops)
     from .master_sword import manifest_reward
     sword_reward = manifest_reward(data)
     allowed.update(sword_reward)
@@ -155,6 +175,14 @@ def patch_request(data):
 def preparation_settings(settings, data):
     """Bind text localization to the player's canonical seed, never UI defaults."""
     result = dict(settings)
+    from .network_catalog import enabled, validate_sources
+    if enabled(data):
+        result["network_sources_schema"] = data["network_sources_schema"]
+        result["network_sources"] = validate_sources(data)
+    else:
+        result.pop("network_sources_schema", None)
+        result.pop("network_sources", None)
+    result["shops_always_open"] = bool(data.get("shops_always_open", False))
     if "shop_check_mode" in data:
         result["shop_check_mode"] = data["shop_check_mode"]
         result["shop_checks"] = sorted(manifest_shop_checks(data))
@@ -205,6 +233,9 @@ def build(root, settings, data):
         run_process([settings["ootrr"], "build", str(native), str(romfs), str(stage),
                         "Archipelago", "--host", settings.get("host","nx2navi"), "--no-title-logo"], check=True)
         mod = stage / "Archipelago" / "romfs"
+        if data.get("network_sources_schema"):
+            print(run_engine("network-flow-base", {"seed_file": data["seed_file"],
+                             "adult_trade_shuffle": bool(data.get("adult_trade_shuffle"))}, romfs, mod).strip(), flush=True)
         print(run_engine("patch", patch_request(data), romfs, mod).strip(), flush=True)
         write_title(romfs, mod)
         from .story_fixes import prepare_story_fixes
@@ -213,6 +244,8 @@ def build(root, settings, data):
         prepare_quest_fixes(romfs, mod)
         from .fortress_fixes import prepare_fortress_fixes
         prepare_fortress_fixes(romfs, mod)
+        from .shop_hours import prepare_shop_hours
+        prepare_shop_hours(romfs, mod, bool(data.get("shops_always_open", False)))
         if data.get("adult_trade_shuffle"):
             from .trade_state import prepare_trade_state
             prepare_trade_state(romfs, mod, data)

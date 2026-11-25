@@ -64,7 +64,7 @@ fn jobs(j: &Json) -> Result<Vec<Job>> {
     Ok(out)
 }
 
-fn donor(actor: &str) -> &str {
+pub(super) fn donor(actor: &str) -> &str {
     if actor.starts_with("Item_Melody_") { return "Dm_Item_Sheik_Harp"; }
     match actor {
         "Item_Ocarina_Fairy" => "Dm_Item_Ocarina_Fairy",
@@ -73,7 +73,7 @@ fn donor(actor: &str) -> &str {
     }
 }
 
-fn pickup_input(mut pack: Vec<sarc::Entry>, actor: &str) -> Result<Vec<sarc::Entry>> {
+pub(super) fn pickup_input(mut pack: Vec<sarc::Entry>, actor: &str) -> Result<Vec<sarc::Entry>> {
     // AP chest models carry a custom presentation AINB. A physical pickup
     // uses Obj_Item_Base's authored PouchContent performer instead. The kit
     // copies only the reachable parameter closure, so this discarded chest
@@ -86,7 +86,7 @@ fn pickup_input(mut pack: Vec<sarc::Entry>, actor: &str) -> Result<Vec<sarc::Ent
     Ok(pack)
 }
 
-fn display_row(target: &mut Node, native: &Node) -> Result<()> {
+pub(super) fn display_row(target: &mut Node, native: &Node) -> Result<()> {
     let category = native.get("PouchCategory").and_then(Node::as_str).ok_or("native reward has no pouch category")?;
     let get_type = native.get("PouchGetType").and_then(Node::as_str).unwrap_or("Small");
     target.set("PouchCategory", Node::Str(category.to_string()));
@@ -94,7 +94,7 @@ fn display_row(target: &mut Node, native: &Node) -> Result<()> {
     Ok(())
 }
 
-fn display_kit(plan: &mut ootrr_core::pickup_pack::build::Plan, native: &Node) -> Result<()> {
+pub(super) fn display_kit(plan: &mut ootrr_core::pickup_pack::build::Plan, native: &Node) -> Result<()> {
     // This new, unique leaf carries display metadata only. Keep its AP pouch
     // identity, neutral special-deal handling and token persistence untouched.
     // Never edit the shared KeyItemDefault component carried by the AP source.
@@ -114,7 +114,7 @@ fn display_kit(plan: &mut ootrr_core::pickup_pack::build::Plan, native: &Node) -
     Ok(())
 }
 
-fn write(overlay: &Path, path: &str, raw: &[u8], dictionary: Option<u32>) -> Result<()> {
+pub(super) fn write(overlay: &Path, path: &str, raw: &[u8], dictionary: Option<u32>) -> Result<()> {
     let target = overlay.join(modpack::rel(path)?);
     fs::create_dir_all(target.parent().ok_or("invalid skulltula output")?)?;
     fs::write(target, zs::compress_raw(raw, dictionary)?)?;

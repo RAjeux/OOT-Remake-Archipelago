@@ -102,12 +102,14 @@ def contract_module():
 
 
 def world_options(ap_options):
+    from ootrr_triforce import settings_labels
     package = types.ModuleType("_ootrr_ap_options_test")
     package.__path__ = []
     spec = importlib.util.spec_from_file_location(package.__name__ + ".options", ROOT / "apworld/ootrr_remake/options.py")
     module = importlib.util.module_from_spec(spec)
     modules = {"Options": ap_options, package.__name__: package,
-               package.__name__ + ".settings": settings, spec.name: module}
+               package.__name__ + ".settings": settings,
+               package.__name__ + ".settings_labels": settings_labels, spec.name: module}
     with patch.dict(sys.modules, modules):
         spec.loader.exec_module(module)
     return module
@@ -156,6 +158,13 @@ class APChoiceContractTests(unittest.TestCase):
     def setUpClass(cls):
         cls.ap = contract_module()
         cls.world = world_options(cls.ap)
+
+    def test_option_creator_uses_the_same_category_order_without_duplicates(self):
+        from ootrr_triforce.settings_labels import GROUP_ORDER
+        self.assertEqual([group.name for group in self.world.OPTION_GROUPS], list(GROUP_ORDER))
+        grouped = [option for group in self.world.OPTION_GROUPS for option in group.options]
+        self.assertEqual(len(grouped), len(settings.OPTION_SPECS))
+        self.assertEqual(set(grouped), set(self.world.OPTION_TYPES.values()))
 
     def test_every_exposed_choice_loads_with_reserved_key_checks_enabled(self):
         for name, option in self.world.OPTION_TYPES.items():
@@ -251,8 +260,7 @@ class APChoiceContractTests(unittest.TestCase):
                    shuffle_shops="deals_1", shopsanity_prices="giant")
         self.assertEqual(self.world.option_values(self.rolled_options(**raw)), settings.validate_options(raw))
         for invalid in (dict(shuffle_cows=True), dict(open_kakariko="open"),
-                        dict(early_beds=True, time_always_passes=False), dict(shuffle_merchants="beans"),
-                        dict(shuffle_chests="off")):
+                        dict(early_beds=True, time_always_passes=False), dict(shuffle_merchants="beans")):
             with self.subTest(active_invalid=invalid), self.assertRaises(ValueError):
                 self.world.option_values(self.rolled_options(**invalid))
 

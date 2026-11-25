@@ -21,7 +21,7 @@ from oot_rando.formats import byml_codec
 from oot_rando.game import resource_allocations
 from oot_rando.patching import chest_flags, event_info
 from oot_rando.patching.progressive import FlowEditor
-from ootrr_triforce import receipt_events
+from ootrr_triforce import receipt_events, presentation_models
 from ootrr_triforce.catalog import ITEM_IDS
 from ootrr_triforce.native_presentations import PRESENTER_PATH, CAMERA_FACING_FLOW
 from test_presented_receipts import native_flow, native_ground_camera, native_presenter, native_facing_animation
@@ -125,9 +125,11 @@ class ReceiptRegistrationTests(unittest.TestCase):
             return build(pouch, presenter, token, names, **kwargs)
 
         with patch.object(receipt_events, "Codec", IdentityCodec), \
+                patch.object(presentation_models, "prepare_presentation_models") as models, \
                 patch.object(receipt_events, "build_presented_receipts", side_effect=selected), \
                 patch.object(resource_allocations, "grow_resources", return_value=(b"grown sizes", {})):
             receipt_events.prepare_receipts(romfs, mod, {"token": "c" * 64, "local_items": True})
+            models.assert_called_once_with(romfs, mod)
         cls.settings = {row["__RowId"]: row for row in byml_codec.load(
             (mod / chest_flags.EVENT_SETTINGS).read_bytes())["root"]}
         cls.analyzed = {row["__RowId"]: row for row in byml_codec.load(

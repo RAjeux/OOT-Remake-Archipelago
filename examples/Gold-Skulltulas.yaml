@@ -4,11 +4,11 @@ name: Zelda
 game: "Ocarina of Time Remake"
 "Ocarina of Time Remake":
   shuffle_chests: all
-  # Values: off (native handling), pinned (44 checks), matched (76/77 checks).
+  # Values: off (unchanged), pinned (44-site subset), matched (all 100 native sites).
   shuffle_skulltulas: matched
-  # This also proves the Zora River bean route: up to 77 AP skull checks.
-  # Without planted/starting beans, that one reward remains native-local.
+  # Pre-plant the native bean platforms. All selected sites still become AP checks
+  # without this shortcut; known optional bean routes use conservative late rules.
   plant_beans: true
-  # The 23 uncertain native matches never become AP checks.
-  # Native resource/flow tests cover this new path; in-game pickup testing remains required.
+  # The 23 uncertain sites remain AP checks but are filler-only: no progression
+  # or Zelda tokens. The expanded catalogue has not been manually completed.
   death_link: false

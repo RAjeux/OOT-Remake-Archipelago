@@ -7,6 +7,7 @@ __pycache__/
 
 # Private notes and settings kept on the development machine.
 /CONTEXTE-CODEX.md
+/bug.txt
 .codex/
 .claude/
 /.vscode/settings.json

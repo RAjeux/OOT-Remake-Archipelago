@@ -56,7 +56,8 @@ class LocalizationPipelineTests(unittest.TestCase):
                 actions.append("shops")
                 put(mod / "Event/shop-flow", b"AP purchase recipe")
 
-            def patch_restoration(_game, mod, *_args):
+            def patch_restoration(_game, mod, *_args, **kwargs):
+                self.assertEqual(kwargs["settings"], settings)
                 actions.append("restoration")
                 put(mod / "Event/restore-flow", b"AP restoration recipe")
 
@@ -135,7 +136,8 @@ class LocalizationPipelineTests(unittest.TestCase):
             data = {"player": 2, "checks": [], "moved": {}, "seed_file": {"settings": "canonical seed settings"}}
             session = player.Session(root, "auto", data)
             session.visual.roster = lambda: {}
-            config = {"assets": root / "cache", "_seed_settings": "stale configuration settings"}
+            config = {"assets": root / "cache", "_seed_settings": "stale configuration settings",
+                      "shops_always_open": True}
             source = root / "prepared/mods"
             async def run():
                 await session.ready_mod(config)
@@ -145,8 +147,10 @@ class LocalizationPipelineTests(unittest.TestCase):
                 asyncio.run(run())
             self.assertEqual(prepare.call_count, 1)
             self.assertEqual(prepare.call_args.args[1]["_seed_settings"], "canonical seed settings")
+            self.assertIs(prepare.call_args.args[1]["shops_always_open"], False)
             self.assertEqual(config["_seed_settings"], "stale configuration settings")
-            self.assertEqual(player.preparation_settings(config, {"seed_file": {}}), {"assets": root / "cache"})
+            self.assertEqual(player.preparation_settings(config, {"seed_file": {}}),
+                             {"assets": root / "cache", "shops_always_open": False})
 
     def test_build_only_upgrades_the_same_room_after_preparing_localized_text(self):
         with tempfile.TemporaryDirectory() as directory:

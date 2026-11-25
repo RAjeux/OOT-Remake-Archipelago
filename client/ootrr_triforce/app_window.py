@@ -76,9 +76,10 @@ TEXT = {
     "build_needed": "Preparation is complete, but the selected host still needs to build the game.",
     "yaml_intro": "Create a configuration with all supported settings, then generate a room with the other players' YAML files in Archipelago.",
     "player_name": "Player name",
+    "yaml_settings": "Choose settings…",
     "save_yaml": "Save YAML…",
     "yaml_name_error": "Choose a name of 1 to 16 characters other than Archipelago.",
-    "yaml_saved": "YAML saved. Edit its settings before generating your room.",
+    "yaml_saved": "YAML saved. Generate your room in Archipelago.",
     "saving_yaml": "Saving YAML…",
     "yaml_failed": "The YAML could not be saved. Choose a writable folder and try again.",
     "install_world": "Install APWorld…",
@@ -97,18 +98,22 @@ TEXT = {
 }
 
 
-def yaml_content(name):
-    """Build the same supported, English YAML as the command-line exporter."""
+def yaml_content(name, values=None, language="en"):
+    """Export the selected typed settings, with comments in the UI language."""
     from .catalog import GAME
-    from .settings import yaml_options
+    from .settings import validate_options, yaml_options
+    from .settings_labels import description, is_french
     name = name.strip()
     if not name or len(name) > 16 or name == "Archipelago" or any(ord(char) < 32 for char in name):
         raise ValueError("invalid_player_name")
-    return ("# Supported OOT Remake Archipelago settings.\n"
-            "# Edit the values below before generating the room.\n"
+    selected = validate_options({} if values is None else values)
+    heading = ("# Réglages OOT Remake Archipelago.\n# Génère une salle avec ce fichier et ceux des autres joueurs.\n"
+               if is_french(language) else
+               "# Supported OOT Remake Archipelago settings.\n# Generate a room with this file and the other players' files.\n")
+    return (heading +
             f"name: {json.dumps(name, ensure_ascii=False)}\n"
-            f"game: {json.dumps(GAME)}\n{json.dumps(GAME)}:\n" + yaml_options() +
-            "\n  # Share deaths with other DeathLink players.\n  death_link: false\n")
+            f"game: {json.dumps(GAME)}\n{json.dumps(GAME)}:\n" + yaml_options(language=language, values=selected) +
+            "\n  # " + description("death_link", language) + "\n  death_link: " + json.dumps(selected["death_link"]) + "\n")
 
 
 @dataclass
@@ -159,6 +164,9 @@ class AppWindow:
         self.extra_folders = tk.BooleanVar(value=False)
         self.show_password = tk.BooleanVar(value=False)
         self.player_name = tk.StringVar(value="Link")
+        from .settings import default_options
+        self.yaml_values = default_options()
+        self.settings_window = None
         self._build()
         for name, variable in self.fields.items():
             variable.trace_add("write", lambda *_args, name=name: self._edited(name))
@@ -342,8 +350,12 @@ class AppWindow:
         self.name_entry = ttk.Entry(pane, textvariable=self.player_name)
         self.name_entry.grid(row=3, column=0, sticky="ew")
         self.form_widgets.append(self.name_entry)
-        self.save_yaml_button = self._button(pane, "save_yaml", self.save_yaml, style="App.Action.TButton")
-        self.save_yaml_button.grid(row=4, column=0, sticky="w", pady=(16, 24))
+        actions = ttk.Frame(pane)
+        actions.grid(row=4, column=0, sticky="ew", pady=(16, 24))
+        self.settings_button = self._button(actions, "yaml_settings", self.open_settings, style="App.Action.TButton")
+        self.settings_button.grid(row=0, column=0, padx=(0, 12))
+        self.save_yaml_button = self._button(actions, "save_yaml", self.save_yaml, style="App.Action.TButton")
+        self.save_yaml_button.grid(row=0, column=1)
         ttk.Separator(pane).grid(row=5, column=0, sticky="ew", pady=(0, 18))
         self._label(pane, "world_intro", wraplength=680).grid(row=6, column=0, sticky="ew", pady=(0, 14))
         self.world_button = self._button(pane, "install_world", self.install_world)
@@ -597,7 +609,7 @@ class AppWindow:
         self.home_room.configure(text=detail)
         self.play_button.configure(state="normal" if ready and not self.busy else "disabled")
         self.connection_button.configure(state="normal" if self.current.get("profile") and not self.busy else "disabled")
-        for widget in (self.setup_button, self.yaml_button, self.save_yaml_button, self.world_button, *self.form_widgets):
+        for widget in (self.setup_button, self.yaml_button, self.settings_button, self.save_yaml_button, self.world_button, *self.form_widgets):
             widget.configure(state="disabled" if self.busy else "normal")
         can_install = bool(self.manifest_info and self.installation_info and self.installation_info.get("valid")
                            and self.fields["game"].get().strip() and self.fields["server"].get().strip())
@@ -667,7 +679,7 @@ class AppWindow:
         if self.busy:
             return
         try:
-            content = yaml_content(self.player_name.get())
+            content = yaml_content(self.player_name.get(), self.yaml_values, self.language)
         except ValueError:
             self.status_key = "yaml_name_error"
             self._render()
@@ -683,6 +695,18 @@ class AppWindow:
                 atomic(Path(target), content.encode("utf-8"))
                 return {}
             self._start("yaml", save, "saving_yaml")
+
+    def open_settings(self):
+        if self.busy:
+            return
+        if self.settings_window and not self.settings_window.closed:
+            self.settings_window.window.lift()
+            return
+        from .settings_window import SettingsWindow
+        def apply(values):
+            self.yaml_values = values
+        self.settings_window = SettingsWindow(self.master, values=self.yaml_values,
+                                               language=self.language, on_apply=apply)
 
     def install_world(self):
         if self.busy:

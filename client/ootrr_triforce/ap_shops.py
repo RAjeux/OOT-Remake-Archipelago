@@ -8,10 +8,10 @@ from .engine import run_engine
 
 
 def selected_shops(roster, settings):
-    """Resolve trusted shelf names without turning ordinary goods into checks."""
+    """Resolve the room's stock checks; old rooms keep their released selection."""
     actual = set(roster).intersection(SHOP_CHECKS)
     mode = settings.get("shop_check_mode")
-    if mode == "special_deals":
+    if mode in ("special_deals", "randomized_stock"):
         selected = settings.get("shop_checks")
         if (not isinstance(selected, (list, tuple))
                 or any(not isinstance(name, str) or name not in SHOP_CHECKS for name in selected)

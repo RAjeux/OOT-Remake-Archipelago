@@ -18,7 +18,7 @@ from evfl.util import make_index
 from oot_rando.patching.progressive import FlowEditor, link
 from ootrr_triforce.catalog import ITEM_DATA, ITEM_IDS
 from ootrr_triforce.native_presentations import (PRESENTER_ENTRY, PRESENTER_NAME, CAMERA_FACING_FLOW,
-                                                CAMERA_FACING_ENTRY, AMMO_BAGS, is_cure, receipt_style)
+                                                CAMERA_FACING_ENTRY, AMMO_BAGS, STARTER_KITS, is_cure, receipt_style)
 from ootrr_triforce.receipt_events import CURSOR_PREFIX, OWNERS, build_presented_receipts, event_name
 from test_receipt_events import native_flow
 
@@ -153,7 +153,8 @@ class SceneRun:
                 self.actions.append((str(data.actor.v.identifier), command, params))
                 self.trace.append((command, params))
                 if command == "EventTriggerAddOrRemovePouchContent":
-                    assert params["Num"] == 1
+                    assert params["Num"] == 1 or (params["Actor"], params["Num"]) in {
+                        (ammo, amount) for _, ammo, amount in STARTER_KITS.values()}
                     self.owned.add(OWNERS.get(params["Actor"], params["Actor"]))
                 node = data.nxt.v
             elif isinstance(data, SwitchEvent):

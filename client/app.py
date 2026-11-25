@@ -34,6 +34,9 @@ def self_test(destination):
         assert getattr(library, symbol)
     settings = json.loads(run_engine("settings", {"settings": DEFAULT_SETTINGS}))
     assert settings["settings_string"].startswith("OOTRR1-")
+    from ootrr_triforce.network_catalog import SCHEMA, SOURCES
+    native_catalog = json.loads(run_engine("catalog", {}))
+    assert native_catalog == {"schema": SCHEMA, "sources": SOURCES}
     frame = zstandard.ZstdCompressor().compress(build_sarc({"probe": b"synthetic"}))
     codec = Codec(frame)
     value = b"Standalone codec round trip."
@@ -44,6 +47,16 @@ def self_test(destination):
     window.withdraw()
     ttk.Label(window, text="Runtime verification").pack()
     window.update_idletasks()
+    from ootrr_triforce.settings import OPTION_SPECS, validate_options
+    from ootrr_triforce.settings_window import SettingsWindow
+    for language in ("en", "fr"):
+        editor = SettingsWindow(window, language=language)
+        assert len(editor.controls) == len(OPTION_SPECS)
+        editor.search_var.set("skull")
+        window.update_idletasks()
+        assert "shuffle_skulltulas" in editor.visible_names
+        assert editor.selected_values() == validate_options({})
+        editor.close()
     window.destroy()
     temporary_root = Path(tempfile.gettempdir()).resolve()
     with tempfile.TemporaryDirectory(prefix="ootrr-app-check-", dir=temporary_root) as temporary:
@@ -61,6 +74,8 @@ def self_test(destination):
         assert hashlib.sha256(node.read_bytes()).hexdigest() == manifest["payload"]["runtime/node/node.exe"]
         assert node.with_name("LICENSE").read_bytes() == (at / "runtime/node/LICENSE").read_bytes()
         with ZipFile(installed) as world:
+            assert {name.split("/")[0] for name in world.namelist()} == {"ootrr_remake"}
+            assert json.loads(world.read("ootrr_remake/network_sources.json")) == native_catalog
             for name in ("engine.cjs", "engine.wasm"):
                 (work / name).write_bytes(world.read("ootrr_remake/" + name))
         run = app_runtime.run_process([str(node), "--no-warnings", str(work / "engine.cjs"),
@@ -75,6 +90,8 @@ def self_test(destination):
                   hookshot_resources=True,
                   apworld_install=True, previous_apworld_preserved=True,
                   persistent_node_engine=True,
+                  network_catalogue=True, native_sources=len(SOURCES),
+                  yaml_editor_languages=["en", "fr"], yaml_editor_controls=len(OPTION_SPECS),
                   game_started=False, server_connected=False)
     Path(destination).write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     return 0

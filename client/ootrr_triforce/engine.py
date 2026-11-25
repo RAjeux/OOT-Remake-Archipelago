@@ -26,7 +26,7 @@ def _wasi_paths(command, paths):
     vanilla data instead. A real working copy avoids that fallback. /load
     remains the original loader namespace, including sibling size tables.
     """
-    if os.name != "nt" or command not in ("patch", "shops", "skulls", "localize") or len(paths) < 2:
+    if os.name != "nt" or command not in ("patch", "shops", "skulls", "sources", "network-flow-base", "localize") or len(paths) < 2:
         yield paths
         return
     mod = Path(paths[1]).resolve()

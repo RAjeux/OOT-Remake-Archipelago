@@ -13,6 +13,7 @@ from .cursor_resource import append_transient_index
 from .i18n import tr
 from .mod_codec import Codec
 from .master_sword import LOCATION as MASTER_SWORD_LOCATION, FLAG_NAME as MASTER_SWORD_FLAG_NAME
+from oot_rando.patching.event_info import analysis_scope
 
 FLOW_NAME = "GetPouchContent"
 FLOW_PATH = "Event/EventFlow/GetPouchContent.bfevfl.zs"
@@ -22,6 +23,7 @@ PREFIX = "OOTRR_APRestore_"
 RESULT = "Archipelago.RestoreResult"
 MARKER = "Archipelago/restore-v1.json"
 GRANT = "OOTRR_APRestoreQuietGrant"
+TRADE_RECONCILE = "OOTRR_APRestoreTradeReconcile"
 
 
 def _invalid():
@@ -32,9 +34,11 @@ def event_name(location_id):
     return PREFIX + str(location_id)
 
 
-def restoration_records(roster):
+def restoration_records(roster, settings=None):
     """Resolve only known AP identities and verify each native saved hash."""
     from oot_rando.patching.soul_adapter import murmur3
+    from .network_catalog import enabled, SOURCES, flag_names, check_flags
+    network = enabled(settings or {})
     records = []
     for name, reward in sorted(roster.items()):
         counters = []
@@ -43,6 +47,8 @@ def restoration_records(roster):
         elif name in SHOP_CHECKS:
             flags = [SHOP_CHECKS[name]["flag_name"]]
             counters = list(SHOP_CHECKS[name]["counters"])
+        elif network and name in SOURCES and SOURCES[name]["kind"] not in {"chest", "shop"} and name not in TRADE_CHECKS:
+            flags = flag_names(name, network=True)
         elif name in AP_SKULL_CHECKS:
             flags = [SKULL_CHECKS[name]["flag_name"]]
         elif name in TRADE_CHECKS:
@@ -51,7 +57,7 @@ def restoration_records(roster):
             flags = [MASTER_SWORD_FLAG_NAME]
         else:
             raise _invalid()
-        if [murmur3(flag) for flag in flags] != CHECK_FLAGS[name]:
+        if [murmur3(flag) for flag in flags] != (check_flags(name, network=True) if network else CHECK_FLAGS[name]):
             raise _invalid()
         if not isinstance(reward, dict) or type(reward.get("local")) is not bool:
             raise _invalid()
@@ -116,7 +122,7 @@ def _native_source(editor):
     point.main_event = make_index(node)
 
 
-def build_restoration_flow(raw, roster):
+def build_restoration_flow(raw, roster, settings=None):
     """Append quiet, location-bound restoration entries; never advance AP history."""
     from evfl.common import Argument
     from evfl.entry_point import EntryPoint
@@ -127,7 +133,7 @@ def build_restoration_flow(raw, roster):
     from .native_presentations import append_recipe, append_tier_choice, copy_entry
     from .receipt_events import _action, _silent_grant
 
-    records = restoration_records(roster)
+    records = restoration_records(roster, settings)
     if not records:
         return raw, {}
     editor = FlowEditor(raw, FLOW_PATH)
@@ -149,6 +155,15 @@ def build_restoration_flow(raw, roster):
 
     entries = {}
     trade_mode = bool(set(roster).intersection(TRADE_CHECKS))
+    if trade_mode:
+        from .trade_state import append_reconcile
+        # Every recovery performs the same native stock reconciliation, with
+        # the same two FIFO barriers. Share its body, and let each local call
+        # return to its own save/result continuation. Duplicating this body
+        # for a large room could exceed BFEVFL's 16-bit event index space.
+        settle = EntryPoint(TRADE_RECONCILE)
+        settle.main_event = make_index(append_reconcile(editor, PREFIX + "SharedTradeState", None))
+        chart.entry_points.append(settle)
     for record in records:
         stem = event_name(record["id"])
         done = status(stem + "_Done", record["id"])
@@ -156,8 +171,8 @@ def build_restoration_flow(raw, roster):
         link(save, done)
         commit = save
         if trade_mode:
-            from .trade_state import append_reconcile
-            commit = append_reconcile(editor, stem + "_TradeSettle", save)
+            commit = editor.subflow(stem + "_TradeSettle", "", TRADE_RECONCILE, None)
+            link(commit, save)
         # Sold-out counters are location state, not a second purchase/payment.
         for index, counter in reversed(list(enumerate(record["counters"]))):
             sold = editor.action(stem + "_Sold" + str(index), "GameDataActor", "EventTriggerSetGameDataInt",
@@ -181,7 +196,7 @@ def build_restoration_flow(raw, roster):
             metadata = ITEM_DATA[record["item"]]
             core_name = stem + "_Pouch"
             recipe = append_recipe(editor, metadata, core_name, grant_entry, commit, pickup=True)
-            if isinstance(recipe.data, SubFlowEvent) and recipe.data.entry_point_name == grant_entry:
+            if isinstance(recipe.data, SubFlowEvent):
                 recipe.data.params.data["IsShowNumDisplay"] = False
                 recipe.data.params.data["IsTreasureBox"] = False
                 editor.expected[recipe.name] = dict(recipe.data.params.data)
@@ -217,6 +232,8 @@ def build_restoration_flow(raw, roster):
                 index = chart.events.index(event)
                 if index not in point._sub_flow_event_indices:
                     point._sub_flow_event_indices.append(index)
+    if len(chart.events) >= 65535 or len(chart.entry_points) >= 65535:
+        raise ValueError("The Archipelago restoration exceeds the native event format capacity.")
     return editor.write(tr("The native Archipelago restoration"))[0], entries
 
 
@@ -237,6 +254,7 @@ def _status_field(raw):
     return True
 
 
+@analysis_scope()
 def _register_restorations(modified, entries, read):
     """Register the exact quiet routes and only their actual dependencies."""
     from functools import lru_cache
@@ -337,14 +355,14 @@ def prepared_locations(mod, expected):
         raise _invalid() from None
 
 
-def prepare_restoration(romfs, mod, roster):
+def prepare_restoration(romfs, mod, roster, *, settings=None):
     """Add the status field and registered AP recovery routes inside staging."""
     from oot_rando.game.resource_allocations import grow_resources
     from oot_rando.patching.soul_adapter import murmur3
     romfs, mod = Path(romfs), Path(mod)
     if mod.name != "romfs" or mod.parent.name != "Archipelago":
         raise _invalid()
-    records = restoration_records(roster)
+    records = restoration_records(roster, settings)
     if not records:
         return {"locations": [], "changed": False}
 
@@ -356,7 +374,7 @@ def prepare_restoration(romfs, mod, roster):
     def read(path):
         return codec.decode(source(path))
 
-    flow, entries = build_restoration_flow(read(FLOW_PATH), roster)
+    flow, entries = build_restoration_flow(read(FLOW_PATH), roster, settings)
     data = read(GAME_DATA)
     if _status_field(data):
         raise _invalid()

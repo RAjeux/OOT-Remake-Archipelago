@@ -9,7 +9,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
 from oot_rando.patching.soul_adapter import murmur3
-from ootrr_triforce.catalog import (CHECK_FLAGS, CHESTS, LEGACY_SHOP_CHECKS,
+from ootrr_triforce.catalog import (CHECK_FLAGS, CHESTS, LEGACY_CHESTS, LEGACY_SHOP_CHECKS,
                                     LOCATION_IDS, SHOP_CHECKS, SKULL_CHECKS,
                                     TRADE_CHECKS)
 from ootrr_triforce.shop_catalog import ADDITIONAL_SHOP_CHECKS, SHOP_FIRST_ID
@@ -21,7 +21,7 @@ def digest(value):
 
 class ShopCatalogueTests(unittest.TestCase):
     def test_all_preexisting_ids_and_kokiri_metadata_are_unchanged(self):
-        old_names = {*CHESTS, *LEGACY_SHOP_CHECKS, *SKULL_CHECKS, *TRADE_CHECKS}
+        old_names = {*LEGACY_CHESTS, *LEGACY_SHOP_CHECKS, *SKULL_CHECKS, *TRADE_CHECKS}
         old_ids = {name: LOCATION_IDS[name] for name in old_names}
         self.assertEqual(len(old_ids), 247)
         self.assertEqual(digest(old_ids), "86de26d2549fc0ead84e555d2eedd9e073294d9521a86992c2e909baf5f9072b")

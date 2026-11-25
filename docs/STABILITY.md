@@ -1,5 +1,88 @@
 # Stability fixes and upgrade scope
 
+## 0.10.1 alpha 2: settings clarity and broader interaction checks
+
+The YAML editor adds bilingual search, ordered categories, optional advanced
+and inactive controls, an explanation for the current choice and a selection
+summary. Hiding a control or temporarily disabling its parent no longer loses
+its pending selection. Applying still validates and normalizes inactive
+subsettings using the shared schema; native option keys and defaults remain
+unchanged.
+
+Configurations without ordinary shuffled chests no longer need the old
+shop-deal/Skulltula/trade subset. The native source export already includes
+ground heart pieces, NPCs, ordinary shop stock and destructibles. Existing
+dungeon-item constraints remain enforced. This changes new-room validation,
+not the contents of existing player files or saves.
+
+Expanded checks combine real local AP connections and the shipped DLL with
+event-graph/native-memory models. These include offline delivery, old-save
+recovery, duplicate protection, DeathLink, busy player states and a reproducible
+matrix of source families, doors, economy, dungeon-item scopes and starting
+inventory. They complement, rather than replace, a manual gameplay traversal.
+See [test coverage](TEST-COVERAGE.md) for the scope and remaining visual checks.
+
+## 0.10.1: selected native sources become AP checks
+
+The existing native engine and settings format are retained. New generation
+exports every source selected by that engine instead of keeping shuffled NPCs,
+ordinary shop stock, ground items and destructibles outside AP. A maximum
+configuration has 1,211 selected checks, or 1,212 with the Master Sword; the
+default configuration has 169. Fixed and unselected rewards stay native.
+
+All 100 selected Skulltulas and all 64 purchases in an enabled shop shuffle are
+networked. Their previous reward is replaced, not granted alongside an AP item.
+Collection commits the check; killing an enemy or breaking a container does
+not. Uncollected containers reset on an area change so their dropped reward
+can be retried. A collected source stays hidden through its saved AP presence
+flag, including supported age/layout variants and old-save restoration.
+
+Native filler-only restrictions are preserved for 35 possible sources: 23
+Skulltulas, nine chests and three ground pickups. Their final AP contents cannot
+be progression from any game or Zelda tokens. A known list of native optional
+sources receives conservative late access rules; unknown missing proofs fail
+generation. The 100-token reward separately requires every moved token.
+
+The engine exports its actual logical item set. AP access rules retain counts
+for those items, including repeated keys, but do not demand unrelated rupees,
+maps or bottle refills to unlock every later sphere. Scarce placement-only
+items use AP's restrictive phase with progression balancing disabled. Explicit
+dungeon-item, song-only, end-of-dungeon and LACS restrictions survive the final
+AP fill, including when the candidate location belongs to another game.
+AP's standard prefill reserves these narrow pools before unrestricted rewards;
+compatible songs and dungeon rewards can cross between Zelda players.
+
+The application adds an English/French editor driven by the same 97-control
+schema as YAML/APWorld. Applied values and the UI language are used for export.
+`shops_always_open` opens the eight item shops and Mask Shop at either time of
+day, while retaining quest requirements and minigame hours. Native enum values
+and all previous defaults remain intact. The 0.10 title and cinematic behavior
+are retained: automatic introduction skipping and manual skip permissions are
+separate controls.
+
+All 205 item IDs and 304 location IDs/flags released in 0.10.0 are unchanged.
+New IDs use an append-only registry; the protocol is unchanged. Existing
+`.apootrr` files keep their original catalogue, placements and internal
+compatibility path. Generate a new room and use a dedicated new save for the
+expanded sources. Updating an old player file does not convert its rewards.
+
+Older-save recovery shares one native adult-trade settlement subflow instead
+of copying its body into every location. The two write/query waits and each
+location's own save/result continuation are preserved. The native-resource
+stress test with 1,212 personal rewards from the normal generated pool, 968
+source callbacks and all 205 remote receipt entries uses about 30,600 events
+before the separate mastered trade/sword adapters, leaving ample room within
+the native 65,535-event format. This is a composition test; the final prepared
+room is checked separately. See [the capacity test](../tests/test_restoration_capacity.py).
+
+Validation includes real Archipelago 0.6.8 solo and mixed generations, combined
+song/end-of-dungeon/LACS settings, and Zelda with Bloodborne and Dark Souls
+Remastered. Audits verify exact source/item conservation, final placement
+rules, serialized native item IDs and filler-only flags. Native resource and
+event tests complement these checks. The expanded catalogue has not been
+manually completed in the game; earlier 0.10 gameplay evidence is not a manual
+test of every new source, option or presentation.
+
 ## 0.10.0: safe delivery, empty ammunition rewards and optional Master Sword
 
 Incoming AP items and older-save restoration now use the native player's
@@ -42,10 +125,10 @@ when Rauru stays vanilla; existing native seed bytes and sphere lists are
 unchanged. All earlier AP identities are retained; one item and one location
 are appended to the catalogue.
 
-Native-local rewards remain tied to the loaded save. They are not silently
-reported as extra AP checks or injected from a later save. See
-[items, checks and saves](ITEMS-AND-SAVES.md) for this distinction. No recipient
-quota or own-world placement restriction was added.
+In these older generated rooms, native-local rewards remain tied to the loaded
+save. They are not silently converted into extra AP checks by a client update.
+See [items, checks and saves](ITEMS-AND-SAVES.md) for the distinction between
+existing rooms and the expanded catalogue in newly generated 0.10.1 rooms.
 
 ## 0.9.2: ammunition requires its equipment
 

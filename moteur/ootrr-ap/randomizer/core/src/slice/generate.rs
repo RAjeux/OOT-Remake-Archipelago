@@ -56,6 +56,9 @@ pub struct Generated {
     pub report: String,
     pub spoiler: Option<String>,
     pub spheres: Vec<Vec<(String, String)>>,
+    /// The actual rolled world's logical advancement flags, including its
+    /// conditional heart goals and any native shop item definitions.
+    pub progression_items: Vec<String>,
     /// AP's optional sword check observes the fixed pedestal independently of
     /// which reward families enter the native shuffled pool. Complete AP search
     /// supplies this index without changing the seed or its exported spheres.
@@ -440,6 +443,9 @@ pub fn generate_data(d: &Data, s: &Settings, seed: &str, o: &GenOpts) -> Res<Gen
         // ordinary goods that are not special deals and stay outside pk.free.
         // Observe them in the same rolled world and price rules as the deals.
         unseen.extend((1..=8).filter_map(|slot| w.loc(&format!("KF Shop Item {slot}"))));
+        // Every shelf participates when shops are shuffled, including ordinary
+        // goods. Observe the existing rolled layout without rolling it again.
+        unseen.extend(seed_file.shops.keys().filter_map(|name| w.loc(name)));
         unseen.sort_unstable();
         unseen.dedup();
         if let Some(goal) = w.loc("Ganon") { unseen.push(goal); }
@@ -474,7 +480,10 @@ pub fn generate_data(d: &Data, s: &Settings, seed: &str, o: &GenOpts) -> Res<Gen
     if let Some(l) = &gates {
         rep.push_str(&crate::entr::text::report(l));
     }
-    Ok(Generated { seed_file, counts, report: rep, spoiler: sp, spheres, master_sword_wave })
+    let mut progression_items: Vec<String> = w.items.names.iter().zip(&w.items.adv)
+        .filter(|(_, advances)| **advances).map(|(name, _)| name.clone()).collect();
+    progression_items.sort();
+    Ok(Generated { seed_file, counts, report: rep, spoiler: sp, spheres, progression_items, master_sword_wave })
 }
 
 pub fn plando_options(d: &Data, s: &Settings) -> Res<(Vec<String>, Vec<String>)> {

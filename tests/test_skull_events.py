@@ -20,7 +20,7 @@ from oot_rando.patching.event_patch import _flow
 from oot_rando.patching.progressive import FlowEditor, link
 from ootrr_triforce.ap_skulls import PREFIX, SCRATCH, NATIVE_SCRATCH, patch_skull_flow, patch_pickup_presentation, skull_records
 from ootrr_triforce.catalog import AP_SKULL_CHECKS, ITEM_DATA, ITEM_IDS
-from ootrr_triforce.native_presentations import AMMO_BAGS, is_cure
+from ootrr_triforce.native_presentations import AMMO_BAGS, STARTER_KITS, is_cure
 from ootrr_triforce.receipt_events import DUNGEONS, OWNERS
 
 
@@ -228,7 +228,8 @@ class SkullEventTests(unittest.TestCase):
                         self.assertFalse(pouch)
                         self.assertFalse(any(command == "EventTriggerSetForGetWindow" for command, args in run.trace))
                     else:
-                        self.assertEqual(pouch, [metadata["actor"]])
+                        kit = STARTER_KITS.get(metadata["actor"])
+                        self.assertEqual(pouch, ([kit[0][0], kit[1]] if kit else []) + [metadata["actor"]])
                         effects = [args for command, args in run.trace
                                    if command == "EventTriggerAddOrRemovePouchContent"]
                         self.assertTrue(all(args["IsGetEvent"] is False for args in effects))
@@ -302,8 +303,10 @@ class SkullEventTests(unittest.TestCase):
                     expected = metadata["tiers"][min(held, len(metadata["tiers"]) - 1)]
                     self.assertEqual([args["Actor"] for command, args in run.trace
                                       if command == "EventTriggerSetForGetWindow"], [expected])
+                    kit = STARTER_KITS.get(expected) if not held else None
                     self.assertEqual([args["Actor"] for command, args in run.trace
-                                      if command == "EventTriggerAddOrRemovePouchContent"], [expected])
+                                      if command == "EventTriggerAddOrRemovePouchContent"],
+                                     ([kit[0][0], kit[1]] if kit else []) + [expected])
                     self.assertTrue(run.values[record["flag_name"]])
 
     def test_real_ground_boundaries_preview_then_grant_and_native_notifications(self):

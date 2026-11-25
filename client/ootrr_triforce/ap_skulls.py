@@ -69,7 +69,13 @@ def skull_records(roster):
 def _records(records):
     out, identities, hashes = [], set(), set()
     for record in records:
-        metadata = SKULL_CHECKS.get(record.get("name")) if record.get("name") in AP_SKULL_CHECKS else None
+        network = record.get("network_source") == 1
+        if network:
+            from .network_rewards import validate_record
+            source = validate_record(record)
+            metadata = dict(actor=record["hash"], files=record["files"], flag_name=record["flag_name"])
+        else:
+            metadata = SKULL_CHECKS.get(record.get("name")) if record.get("name") in AP_SKULL_CHECKS else None
         actor, pickup = record.get("actor"), record.get("pickup")
         if (metadata is None or record.get("hash") != metadata["actor"]
                 or record.get("files") != list(metadata["files"])
@@ -144,7 +150,7 @@ def patch_skull_flow(raw, records, *, return_entries=False):
             recipe = editor.subflow(stem + "_Recipe_Give", "", grant,
                                    {"ActorName": Argument("ActorName"), "IsGetInEvent": False,
                                     "IsShowNumDisplay": True, "IsTreasureBox": False})
-        if isinstance(recipe.data, SubFlowEvent) and recipe.data.entry_point_name == grant:
+        if isinstance(recipe.data, SubFlowEvent):
             link(recipe, close)
         amount = editor.subflow(stem + "_Counter", "", "OpenRupeeUIIfNeed",
                                 {"ActorName": Argument("ActorName"), "IsShowNumDisplay": True})
@@ -184,7 +190,7 @@ def patch_skull_flow(raw, records, *, return_entries=False):
             register(effect_name + "_Preview", append_tier_choice(editor, metadata, stem + "_Preview", preview,
                                                                     no_ammo=no_preview))
             quiet = append_recipe(editor, metadata, stem + "_QuietRecipe", grant, commit, pickup=True)
-            if isinstance(quiet.data, SubFlowEvent) and quiet.data.entry_point_name == grant:
+            if isinstance(quiet.data, SubFlowEvent):
                 link(quiet, commit)
             target = editor.action(stem + "_QuietTarget", "PouchSystemActor", "EventTriggerSetForGetWindow",
                                    {"Actor": Argument("ActorName")})
@@ -213,13 +219,12 @@ def patch_skull_flow(raw, records, *, return_entries=False):
 
     # Every entry that reaches the dispatcher must preload the new local calls.
     # Existing native/receipt preload lists retain their original prefix.
+    positions = {event: index for index, event in enumerate(chart.events)}
     for point in chart.entry_points:
-        reached = set(reachable(point.main_event.v))
-        for call in chart.events:
-            if call.name.startswith(PREFIX) and isinstance(call.data, SubFlowEvent) and call in reached:
-                position = chart.events.index(call)
-                if position not in point._sub_flow_event_indices:
-                    point._sub_flow_event_indices.append(position)
+        existing = set(point._sub_flow_event_indices)
+        calls = sorted(positions[event] for event in reachable(point.main_event.v)
+                       if event.name.startswith(PREFIX) and isinstance(event.data, SubFlowEvent))
+        point._sub_flow_event_indices.extend(index for index in calls if index not in existing)
     result, _ = editor.write("Archipelago Gold Skulltula pickups")
     return (result, effect_entries) if return_entries else result
 
@@ -359,12 +364,15 @@ def patch_pickup_presentation(raw, records, effect_entries, flow_name):
         for entry in chart.entry_points:
             if entry.main_event.v is event:
                 entry.main_event = make_index(branch)
+    positions = {event: index for index, event in enumerate(chart.events)}
     for entry in chart.entry_points:
+        existing = set(entry._sub_flow_event_indices)
         for event in reachable(entry.main_event.v):
             if event.name.startswith(PREFIX) and isinstance(event.data, SubFlowEvent):
-                index = chart.events.index(event)
-                if index not in entry._sub_flow_event_indices:
+                index = positions[event]
+                if index not in existing:
                     entry._sub_flow_event_indices.append(index)
+                    existing.add(index)
     return editor.write("Native Skulltula pickup presentation")[0]
 
 
@@ -380,6 +388,16 @@ def prepare_skulls(romfs, mod, roster, settings=None):
         raise ValueError(tr("Invalid Archipelago Skulltula metadata."))
     print(tr("Preparing Archipelago Gold Skulltula rewards…"), flush=True)
     print(run_engine("skulls", {"skulls": records}, romfs, mod).strip(), flush=True)
+    return prepare_pickup_callbacks(romfs, mod, records)
+
+
+def prepare_pickup_callbacks(romfs, mod, records):
+    """Install one dispatcher shared by all room-bound native get callbacks."""
+    from oot_rando.game.resource_allocations import grow_resources
+    romfs, mod = Path(romfs), Path(mod)
+    records = _records(records)
+    if not records:
+        return {}
     codec = Codec((romfs / "Pack/ZsDic.pack.zs").read_bytes())
 
     def source(path):
@@ -394,7 +412,9 @@ def prepare_skulls(romfs, mod, roster, settings=None):
         path = "Event/EventFlow/" + name + ".bfevfl.zs"
         old_frame = source(path)
         old = codec.decode(old_frame)
-        changed[path] = (patch_pickup_presentation(old, records, effects, name), old_frame, len(old))
+        ground = [row for row in records if row.get("metadata", {}).get("kind", "skull") != "flow"]
+        if ground:
+            changed[path] = (patch_pickup_presentation(old, ground, effects, name), old_frame, len(old))
     table, allocations = grow_resources(codec.decode(table_frame),
                                          {path: max(0, len(raw) - size) for path, (raw, _, size) in changed.items()})
     encoded = {path: codec.encode(raw, old) for path, (raw, old, _) in changed.items()}
@@ -403,4 +423,4 @@ def prepare_skulls(romfs, mod, roster, settings=None):
         target = mod / path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(content)
-    return {"purchases": 0, "pickups": len(records), "allocations": allocations}
+    return {"purchases": 0, "pickups": len(records), "allocations": allocations, "effects": effects}

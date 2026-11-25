@@ -1,10 +1,11 @@
-"""Select AP shop checks from the native seed's actual special deals.
+"""Select shuffled stock for new rooms and preserve historical shop selections.
 
-Older player files keep their eight Kokiri purchases. New rooms use only the
-one-time deals rolled by OOTRR, across the complete shelf-shop catalogue.
+Schema-1 network rooms include all randomized shelves. Older player files
+retain either their rolled special deals or their eight Kokiri purchases.
 """
 from .catalog import LEGACY_SHOP_CHECKS, SHOP_CHECKS
 from .i18n import tr
+from .network_catalog import SHOP_MODE as NETWORK_SHOP_MODE
 
 SHOP_CHECK_MODE = "special_deals"
 
@@ -19,14 +20,14 @@ def shop_checks(seed, *, mode=SHOP_CHECK_MODE, legacy=False):
         selected = LEGACY_SHOP_CHECKS if legacy else frozenset()
         if not selected <= shops.keys():
             raise ValueError(tr("The seed does not contain all eight Kokiri purchases."))
-    elif mode == SHOP_CHECK_MODE and not legacy:
+    elif mode in (SHOP_CHECK_MODE, NETWORK_SHOP_MODE) and not legacy:
         if shops and set(shops) != set(SHOP_CHECKS):
             raise ValueError(tr("The native shop catalogue is incomplete."))
         selected = set()
         for name, row in shops.items():
             if not isinstance(row, dict) or type(row.get("deal", False)) is not bool:
                 raise ValueError(tr("Invalid native shop reward list."))
-            if row.get("deal", False):
+            if mode == NETWORK_SHOP_MODE or row.get("deal", False):
                 selected.add(name)
     else:
         raise ValueError(tr("Invalid Archipelago shop mode."))

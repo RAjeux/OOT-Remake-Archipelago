@@ -25,6 +25,20 @@ CHANGED = {"shuffle_shops": "shuffle", "open_forest": "open", "open_kakariko": "
 
 @unittest.skipUnless(os.environ.get("OOTRR_NODE") or shutil.which("node"), "Node.js needed for real WASM checks")
 class NativeSettingsTests(unittest.TestCase):
+    def test_chests_off_exports_real_network_checks_for_each_supported_source_family(self):
+        from ootrr_triforce.network_catalog import validate_sources
+        for additions, kind in (({}, "pickup"), ({"shuffle_shops": "shuffle"}, "shop"),
+                                ({"shuffle_pots": "all"}, "container"),
+                                ({"shuffle_rewards": "supported"}, "flow")):
+            with self.subTest(additions=additions):
+                native = engine_settings(dict(shuffle_chests="off", **additions))
+                generated = json.loads(run_engine("generate", {"settings": native, "seed": "AP-NO-ORDINARY-CHESTS"}))
+                sources = validate_sources(generated)
+                self.assertIn(kind, {row["kind"] for row in sources.values()})
+                self.assertIn("Ganon", {name for wave in generated["waves"] for name in wave})
+                if kind == "shop":
+                    self.assertEqual({name for name, row in sources.items() if row["kind"] == "shop"}, set(SHOP_CHECKS))
+
     def inspect(self, settings):
         return json.loads(run_engine("settings", {"settings": settings}))
 

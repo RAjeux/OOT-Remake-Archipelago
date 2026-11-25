@@ -6,12 +6,32 @@ item effect in Zelda; a remote reward is sent to its owner. The old reward at
 that source is replaced. The AP item pool is filled by Archipelago under each
 game's access rules, without a Zelda recipient quota.
 
-Other sources remain native-local. Depending on the selected settings, OOTRR can
-shuffle their rewards among its own locations, including songs, NPC gifts,
-dungeon rewards and ground pickups. They do not become network checks just
-because their item model also exists in the AP catalogue. These local rewards
-can explain why a player finds important Zelda equipment in Zelda even while
-the exported AP items are spread across the multiworld.
+In new 0.10.1 rooms, every source actually selected by the native randomizer is
+exported to AP. This includes supported songs, NPCs, cows, merchants, shops,
+ground items and destructibles when enabled. Fixed or unselected rewards keep
+their native handling; enabling one family does not enable every other family.
+The maximum-coverage configuration has 1,211 selected sources, plus an optional
+Master Sword check. The default configuration has 169 checks.
+
+An item for Zelda at an AP source is still an AP reward. Its local appearance
+does not mean that it escaped the network shuffle. Archipelago can put your
+equipment in another game and another player's reward in Zelda. Source prices
+and native stock choices do not impose a recipient quota.
+
+Explicit restrictions remain meaningful after the AP fill. Dungeon-only keys,
+maps and compasses stay in the recipient's Hyrule and requested dungeon or
+region; keysanity can place them in other games. Song-only and end-of-dungeon
+pools can mix compatible songs or Stones/Medallions between Zelda players.
+Ganon's Boss Key in LACS mode stays at that player's Light Arrows scene. These
+constraints are selected settings, not a general requirement to keep progression
+in Zelda. AP uses its standard restrictive placement for these scarce pools.
+
+The native catalogue marks 35 possible sources as filler-only: 23 Skulltulas,
+nine chests and three ground pickups. They remain AP checks when selected, but
+cannot contain progression from any game or Zelda tokens. Unknown missing
+access proofs are rejected; a short, explicit list of native optional sources
+uses conservative late access rules. The 100-token reward also requires every
+moved token, so the final token cannot unlock itself from behind that reward.
 
 ## Loading an older save
 
@@ -21,11 +41,23 @@ locations also recover from the room journal and server history. Personal
 rewards restore once to that save; another player's reward restores only the
 completed location and is not sent twice.
 
-Native-local rewards follow the selected save, like ordinary game progress.
-Loading a save from before a local reward means that source and reward can be
-collected again in that save. The mod does not inject those gains from a later
-save. This keeps the inventory and the native quests, counters and consumed
-items consistent with the loaded save.
+Fixed and unselected native rewards follow the selected save, like ordinary
+game progress. Loading a save from before one of these rewards does not inject
+its later inventory or quest state. Older generated rooms also keep any
+native-local randomized rewards which were outside their original AP catalogue;
+updating the client does not silently convert them into extra checks.
+
+For a new AP pot, crate, rock, grass or hive source, breaking it is not
+collection. The check completes only after its dropped reward is picked up.
+An uncollected source can be tried again after reloading the area. After
+collection, the AP presence flag hides its age/layout variants; loading an
+older save uses the same checked-source recovery as other AP locations.
+
+Adult-trade stock settlement uses one shared native subflow during recovery.
+It keeps the original write/query waits and returns to each recovered location's
+own save completion. Spent quest items, AP receipt history and the received-item
+cursor follow the same rules; sharing the code avoids exceeding the native
+event format in large rooms.
 
 Keep a save dedicated to each room. A different room has different placements;
 its saves and reward history are independent. Triforce and Hookshot also keep
@@ -39,6 +71,8 @@ recovery before it can join the AP pool. It must be exported during generation.
 Simply reporting an already granted native item as a check can grant a second
 reward and cannot retroactively change a room's placements.
 
-Existing rooms keep their generated catalogue and placements after a mod
-update. Updates can fix delivery and presentation without rerolling a room;
-new shuffle choices and added network locations require a newly generated room.
+Existing `.apootrr` files keep their generated catalogue, identities and
+placements. All 205 item IDs and 304 location IDs/flags from 0.10.0 are retained;
+new location IDs are appended through a versioned registry. The protocol is
+unchanged. Generate a new room and use a dedicated new save to enable the
+expanded catalogue. Do not edit an old player file to convert its mode.

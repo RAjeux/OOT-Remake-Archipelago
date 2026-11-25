@@ -2,21 +2,23 @@
 name: Zelda
 game: "Ocarina of Time Remake"
 "Ocarina of Time Remake":
-  # Fixed goal: defeat Ganon. AP-compatible settings only.
+  # Supported settings; unlisted controls keep their defaults.
 
   # Shuffle
   # Shuffle all chests, overworld chests, or dungeon chests. off requires AP shops or Skulltulas.
   # Only catalogued chests become network checks.
   # Values: off, all, overworld, dungeons
   shuffle_chests: "all"
-  # Use OOTRR's shop shuffle or add one to four special deals per shop. The eight Kokiri purchases
-  # become AP checks; other shops retain their native local rewards. Goods can belong to you or
-  # another player.
-  # Values: off, shuffle, deals_1, deals_2, deals_3, deals_4, random
+  # Any enabled mode turns all 64 purchases across eight shops into AP checks. Shuffle mixes the
+  # native stock; Deals adds special deals to the native item pool and price layout before AP
+  # fills the checks. These choices never force a recipient. random_deals rolls zero to four deals
+  # per shop; Archipelago's random chooses a whole shop mode, which may be Off.
+  # Values: off, shuffle, deals_1, deals_2, deals_3, deals_4, random_deals
   shuffle_shops: "off"
-  # Shuffle Gold Skulltula rewards: pinned uses 44 firmly identified locations; matched adds the
-  # supported researched matches, normally 76 checks or 77 with planted/starting beans. Uncertain
-  # matches stay local. A check is sent only after collecting the reward.
+  # Off keeps Gold Skulltulas unchanged. Pinned selects 44 native sites; Matched selects all 100
+  # as AP checks. Native filler-only restrictions remain at uncertain sites: no progression or
+  # Zelda tokens can be placed there. Collect the dropped reward to complete its check; killing
+  # the enemy alone does not complete it.
   # Values: off, pinned, matched
   shuffle_skulltulas: "off"
 
@@ -39,7 +41,8 @@ game: "Ocarina of Time Remake"
   shuffle_mapcompass: "dungeon"
 
   # World
-  # closed keeps Mido and the opening quest; open unlocks the forest exit and the Deku Tree.
+  # Closed keeps Mido's sword-and-shield requirement and the opening quest. Open allows access to
+  # the Deku Tree and the forest exit from the start.
   # Values: closed, open
   open_forest: "closed"
   # open unlocks the Death Mountain gate and skips the Zelda visit. Requires open_forest: open;
@@ -70,25 +73,25 @@ game: "Ocarina of Time Remake"
   door_of_time_song: true
 
   # Goal
-  # Ganon bridge: native condition, a total number of stones and medallions (dungeons),
-  # or no dungeon rewards (open). The bridge appears when approached.
+  # Ganon bridge: native condition, a total number of stones and medallions set by bridge_rewards,
+  # or open without rewards when approached. open fixes bridge_rewards at zero.
   # Values: vanilla, dungeons, open
   bridge: "vanilla"
-  # Number of stones and medallions required; only used with bridge: dungeons.
-  # With bridge: open, use 0 or leave the default 9; the effective threshold is 0.
-  # Integer: 0 to 9.
+  # Number of stones and medallions required with bridge: dungeons. bridge: open fixes this count
+  # at zero; leave the default value or set it to zero.
+  # Integer: 0 to 9, step 1.
   bridge_rewards: 9
   # Reach Ganon's Tower without completing the trials.
   skip_ganon_trials: false
   # Number of trials required when skip_ganon_trials is disabled.
-  # Integer: 0 to 6.
+  # Integer: 0 to 6, step 1.
   trials: 6
 
   # Starting inventory
   # Number of hearts at the start of the game.
-  # Integer: 1 to 20.
+  # Integer: 1 to 20, step 1.
   starting_hearts: 3
-  # Native starting equipment, removed from the local pool. The highest selected upgrade wins.
+  # Starting equipment, removed from the randomized pool. The highest selected upgrade wins.
   # Starting Bombchus also require a bomb bag; Zelda's Letter is not selectable.
   # Values: ocarina, slingshot, boomerang, bow, bomb_bag, bombchus, hookshot, longshot,
   # megaton_hammer, lens_of_truth, magic_meter, dins_fire, farores_wind, nayrus_love, fire_arrows,
@@ -117,7 +120,9 @@ game: "Ocarina of Time Remake"
   skip_intro: true
   # Suppress the first pickup message for small consumables.
   skip_first_pickup_text: false
-  # Allow skipping no cutscenes, the opening and ending, or also the title-screen demos.
+  # Keep native manual skipping, allow skipping the opening and credits, or also allow title-
+  # screen demos to be skipped. This does not automatically skip every cutscene; Skip introduction
+  # separately skips the opening movie and Link waking up.
   # Values: off, story, all
   skip_cutscenes: "off"
   # One Cucco is enough for Anju's bottle; logic follows this setting.
@@ -161,82 +166,78 @@ game: "Ocarina of Time Remake"
   more_enemies: 100
 
   # Shuffle
-  # Shuffle rewards in the supported pots, including flying pots. Native local rewards retain
-  # their seed assignments. Experimental: destroyed sources stay used; leaving a dropped reward
-  # behind can lose it. Save before breaking shuffled sources.
+  # Shuffle rewards in the supported pots, including flying pots. Enabled sources become AP checks
+  # only after collecting the drop. An uncollected source can be tried again after reloading the
+  # area; collected sources stay completed.
   # Values: off, overworld, dungeons, all
   shuffle_pots: "off"
-  # Shuffle rewards in the supported crates. Native local rewards retain their seed assignments.
-  # Experimental: destroyed sources stay used; leaving a dropped reward behind can lose it. Save
-  # before breaking shuffled sources.
+  # Shuffle rewards in the supported crates. Enabled sources become AP checks only after
+  # collecting the drop. An uncollected source can be tried again after reloading the area;
+  # collected sources stay completed.
   # Values: off, overworld, dungeons, all
   shuffle_crates: "off"
-  # Shuffle rewards under the supported rocks. Native local rewards retain their seed assignments.
-  # Experimental: destroyed sources stay used; leaving a dropped reward behind can lose it. Save
-  # before breaking shuffled sources.
+  # Shuffle rewards under the supported rocks. Enabled sources become AP checks only after
+  # collecting the drop. An uncollected source can be tried again after reloading the area;
+  # collected sources stay completed.
   # Values: off, overworld, dungeons, all
   shuffle_rocks: "off"
-  # Shuffle supported grass drops; Lost Woods bug grass is preserved. Native local rewards retain
-  # their seed assignments. Experimental: destroyed sources stay used; leaving a dropped reward
-  # behind can lose it. Save before breaking shuffled sources.
+  # Shuffle supported grass drops; Lost Woods bug grass is preserved. Enabled sources become AP
+  # checks only after collecting the drop. An uncollected source can be tried again after
+  # reloading the area; collected sources stay completed.
   # Values: off, overworld, dungeons, all
   shuffle_grass: "off"
-  # Shuffle the supported beehive drops. Native local rewards retain their seed assignments.
-  # Experimental: destroyed sources stay used; leaving a dropped reward behind can lose it. Save
-  # before breaking shuffled sources.
+  # Shuffle the supported beehive drops. Enabled sources become AP checks only after collecting
+  # the drop. An uncollected source can be tried again after reloading the area; collected sources
+  # stay completed.
   shuffle_beehives: false
-  # Shuffle supported ground pickups. pieces limits this to heart pieces. Non-AP pickups keep
-  # their native local rewards; sources shared between ages retain OOTRR's duplication
-  # restrictions.
+  # Shuffle supported ground pickups as AP checks. Off and Pieces both shuffle heart pieces in
+  # this engine. All also includes ordinary rupees and recovery hearts; Dungeons or Overworld adds
+  # those pickups only in that area. Sources shared between ages keep their existing duplication
+  # rules.
   # Values: off, pieces, all, dungeons, overworld
   shuffle_freestanding_items: "off"
-  # Shuffle supported NPC, minigame, fairy and story rewards locally with OOTRR. Songs and dungeon
-  # rewards have separate controls. These sources do not become AP checks.
+  # Turn supported NPC, minigame, Great Fairy and story rewards into AP checks. Songs and dungeon
+  # rewards have separate controls.
   # Values: off, supported
   shuffle_rewards: "off"
-  # Also shuffle the supported 20-token reward, Biggoron and Medigoron locally. Requires
-  # shuffle_rewards: supported.
+  # Also turn the supported 20-token reward, Biggoron and Medigoron rewards into AP checks.
+  # Requires NPC rewards to be enabled.
   shuffle_rewards_extra: false
-  # Shuffle boss heart-container pickups locally. The assigned reward appears after the boss
+  # Turn boss heart-container pickups into AP checks. The assigned reward appears after the boss
   # falls.
   shuffle_boss_hearts: false
-  # Shuffle the native song lessons among themselves or into the wider pool. Native lessons remain
-  # local; songs placed at AP locations join AP. Scarecrow's Song is preserved. Experimental.
+  # Turn supported song lessons into AP checks, with songs restricted to lessons or mixed into the
+  # wider pool. Scarecrow's Song is preserved. Experimental.
   # Values: off, own, anywhere
   shuffle_songs: "off"
-  # Shuffle the Market Potion Shop's empty-bottle and bug-tutorial potion rewards locally.
-  # Requires shuffle_rewards: supported; both checks need an empty bottle.
+  # Turn the Market Potion Shop's empty-bottle and bug-tutorial potion rewards into AP checks.
+  # Requires NPC rewards and an empty bottle.
   shuffle_potion_shop: false
   # Replace adult trade rewards with Archipelago items and shuffle the ten quest items into the
   # multiworld. NPCs automatically accept their required owned item. The starting Cucco is already
   # hatched, timed items do not expire, and the final Claim Check exchange has no three-day wait.
   # Requires shuffle_rewards: supported.
   adult_trade_shuffle: false
-  # Shuffle the first supported set of Deku Scrub sales locally. Requires shuffle_rewards:
-  # supported.
+  # Turn the first supported set of Deku Scrub purchases into AP checks. Requires NPC rewards.
   shuffle_scrubs_a: false
-  # Shuffle the second supported set of Deku Scrub sales locally. Requires shuffle_rewards:
-  # supported.
+  # Turn the second supported set of Deku Scrub purchases into AP checks. Requires NPC rewards.
   shuffle_scrubs_b: false
-  # Shuffle supported cow rewards locally. Requires shuffle_rewards: supported; the native plan
-  # includes its other supported cows too.
+  # Turn supported cow rewards into AP checks. Requires NPC rewards; includes all cows supported
+  # by the engine.
   shuffle_cows: false
-  # Shuffle the Treasure Chest Game's first-win heart piece locally; later wins retain their
-  # native reward.
+  # Turn the Treasure Chest Game's first-win heart piece into an AP check; later wins retain their
+  # normal reward.
   shuffle_treasure_reward: false
-  # Keep Spiritual Stones and Medallions vanilla, put them in the wider pool, or restrict them to
-  # dungeon rewards. Requires shuffled NPC rewards for non-vanilla modes; native reward events
-  # remain local.
+  # Keep Spiritual Stones and Medallions unchanged, put them in the AP pool, or restrict them to
+  # dungeon reward checks. Non-vanilla modes require NPC rewards.
   # Values: vanilla, anywhere, dungeons
   shuffle_dungeon_rewards: "vanilla"
-  # Shuffle the five supported first-time frog-song rewards locally. Requires shuffle_rewards:
-  # supported.
+  # Turn the five supported first-time frog-song rewards into AP checks. Requires NPC rewards.
   shuffle_frog_songs: false
-  # Shuffle the frog bug game's first-win heart piece locally. Requires shuffle_rewards:
-  # supported.
+  # Turn the frog bug game's first-win heart piece into an AP check. Requires NPC rewards.
   shuffle_frog_bug_heart: false
-  # Shuffle Saria's Fairy Ocarina and Zelda's moat Ocarina of Time into the native pool. Requires
-  # shuffle_rewards: supported; their source events remain local.
+  # Turn Saria's Fairy Ocarina and Zelda's moat Ocarina of Time into AP checks and mix the
+  # instruments into the pool. Requires NPC rewards.
   shuffle_ocarinas: false
   # Shuffle the Kokiri Sword when overworld chests are shuffled. Its catalogued chest participates
   # in AP.
@@ -249,8 +250,8 @@ game: "Ocarina of Time Remake"
   shuffle_entrances: "off"
 
   # Shuffle
-  # Shuffle the supported Bean Merchant and Medigoron sales locally. Requires shuffled NPC
-  # rewards; beans and all also require plant_beans.
+  # Turn supported Bean Merchant and Medigoron purchases into AP checks. Requires NPC rewards;
+  # Beans and All also require pre-planted beans.
   # Values: off, beans, no_beans, all
   shuffle_merchants: "off"
 
@@ -260,35 +261,35 @@ game: "Ocarina of Time Remake"
   # their prices.
   # Values: affordable, starting, adult, giant
   shopsanity_prices: "starting"
-  # Set prices for the enabled native-local Scrub sales. A non-default price mode requires
-  # shuffle_scrubs_a or shuffle_scrubs_b.
+  # Set prices for enabled Deku Scrub purchases. Requires at least one Scrub shuffle. Cheap
+  # charges 10 rupees; Fixed uses the amount below.
   # Values: vanilla, cheap, fixed
   scrub_prices: "vanilla"
   # Price of each enabled shuffled Scrub sale with scrub_prices: fixed.
-  # Integer: 0 to 99.
+  # Integer: 0 to 99, step 1.
   scrub_price_fixed: 10
-  # Enabled shuffled Scrubs name the actual native-local item instead of a mystery item. Requires
-  # a supported Scrub shuffle.
+  # Show the assigned item in enabled Deku Scrub offers instead of a mystery item. Requires at
+  # least one Scrub shuffle.
   scrub_hint_text: false
-  # Set prices for the enabled native-local merchant sales. A non-default value requires
-  # shuffle_merchants.
+  # Set prices for enabled merchant purchases. Cheap charges 10 rupees for every purchase,
+  # including each bean; Vanilla keeps the increasing bean prices. Fixed uses the amount below.
   # Values: vanilla, cheap, fixed
   merchant_prices: "vanilla"
   # Price of each enabled shuffled merchant sale with merchant_prices: fixed.
-  # Integer: 0 to 99.
+  # Integer: 0 to 99, step 1.
   merchant_price_fixed: 10
-  # Set the offering requested by the six native Great Fairies. Works with their vanilla or
-  # shuffled local rewards.
+  # Set the offering requested by the six Great Fairies, whether their rewards are unchanged or
+  # shuffled.
   # Values: vanilla, cheap, fixed
   fairy_prices: "vanilla"
   # Offering requested by each Great Fairy with fairy_prices: fixed.
-  # Integer: 0 to 99.
+  # Integer: 0 to 99, step 1.
   fairy_price_fixed: 10
 
   # Goal
   # Total Spiritual Stones and Medallions needed for the native Light Arrows scene to grant
   # Ganon's Boss Key with shuffle_ganon_bosskey: lacs_dungeons.
-  # Integer: 1 to 9.
+  # Integer: 1 to 9, step 1.
   lacs_rewards: 9
 
   # Quality of life
@@ -335,5 +336,6 @@ game: "Ocarina of Time Remake"
   # A fairy released from a bottle also heals awake enemies and bosses. Experimental.
   fairy_helps_enemies: false
 
+  # Archipelago
   # Share deaths with other DeathLink players.
   death_link: false

@@ -1,9 +1,11 @@
 # Master Sword shuffle
 
 `shuffle_master_sword: false` keeps the native Master Sword at the first draw.
-The separate reward from Rauru still exists, as in the base game. With shuffled
-native NPC rewards it can be any supported native item. Sheik's Temple of Time
-song is another independent reward when its normal conditions are met.
+The separate reward from Rauru still exists, as in the base game. Its dungeon-
+reward setting controls whether it becomes an AP check in a new room; its item
+can then belong to Zelda or another player, subject to the selected placement
+mode. Sheik's Temple of Time song is another independent reward when its normal
+conditions are met.
 
 `shuffle_master_sword: true` adds one **ToT Master Sword** AP check and one
 **Master Sword** item to the multiworld. Drawing the pedestal gives its assigned

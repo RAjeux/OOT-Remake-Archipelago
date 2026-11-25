@@ -194,7 +194,9 @@ class RestorationFlowTests(unittest.TestCase):
             run.restore(name)
             self.assertTrue(all(run.values[counter] == 1 for counter in SHOP_CHECKS[name]["counters"]))
         self.assertEqual(run.inventory, inventory)
-        self.assertEqual(sum(inventory.values()), 4)
+        self.assertEqual(inventory, Counter({"Weapon_Range_Bow": 1, "Item_Quiver_Small": 1,
+                                             "Item_Arrow_Normal": 30, "Item_Quiver_Medium": 1,
+                                             "Item_Quiver_Large": 2}))
         self.assertEqual(len(run.saves), 16)
         for name in set(SHOP_CHECKS).difference(names):
             self.assertNotIn(SHOP_CHECKS[name]["flag_name"], run.values)

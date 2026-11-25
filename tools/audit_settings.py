@@ -16,16 +16,16 @@ sys.path.insert(0, str(ROOT / "client"))
 from ootrr_triforce.settings import AP_ONLY, BRIDGE_OPEN_ALIAS, ENGINE_EXTENSIONS, FIXED_SETTINGS, SPEC_BY_ID
 
 SCHEMA = ROOT / "tests/fixtures/ootrr-settings-schema.json"
-LOCAL_SHUFFLES = frozenset({
+SOURCE_SHUFFLES = frozenset({
     "shuffle_pots", "shuffle_crates", "shuffle_rocks", "shuffle_grass",
     "shuffle_beehives", "shuffle_freestanding_items", "shuffle_rewards",
     "shuffle_rewards_extra", "shuffle_boss_hearts", "shuffle_songs",
     "shuffle_trade_checks", "shuffle_scrubs_a", "shuffle_scrubs_b", "shuffle_cows",
     "shuffle_frog_songs", "shuffle_frog_bug_heart", "shuffle_potion_shop",
     "shuffle_treasure_reward", "shuffle_dungeon_rewards", "shuffle_ocarinas",
-    "shuffle_kokiri_sword", "shuffle_merchants", "shuffle_entrances",
+    "shuffle_kokiri_sword", "shuffle_merchants",
 })
-NETWORK_SHUFFLES = frozenset({"shuffle_chests", "shuffle_shops", "shuffle_skulltulas"})
+NETWORK_SHUFFLES = SOURCE_SHUFFLES | frozenset({"shuffle_chests", "shuffle_shops", "shuffle_skulltulas"})
 SPECIAL = {
     "shuffle_trade_checks": ("legacy_additive_replaced", "This portable OOTRR setting adds a bonus while retaining vanilla quest items. New AP rooms use the integration's adult_trade_shuffle extension for complete replacement; old generated rooms retain their additive behavior."),
     "open_door_of_time": ("legacy_alias", "The legacy boolean is superseded by door_of_time_condition and its related controls."),
@@ -33,7 +33,7 @@ SPECIAL = {
     "shuffle_hideoutkeys": ("native_rejected", "The native planner accepts only vanilla; roaming hideout-key placement is not implemented."),
     "shuffle_cows_other": ("derived_alias", "The native reward plan derives cows_other from shuffle_cows and does not read this independent flag."),
     "shuffle_silver_rupees": ("delivery_missing", "The native shuffle introduces dungeon-specific Silver Rupee items which have no AP item IDs or native AP receipt recipes."),
-    "disabled_locations": ("placement_adapter_missing", "Native disabled locations receive junk rather than disappearing. AP refill would have to preserve that constraint, including its filler pool and counted access rules."),
+    "disabled_locations": ("placement_adapter_missing", "Custom disabled locations need a validated AP exclusion selector and matching filler allocation. The native engine's built-in junk-only guards already survive the final AP fill."),
     "gossip_hints": ("ap_mapping_missing", "Native hints describe OOTRR's pre-AP placements. They need the final AP item and owner mapping to avoid misleading hints."),
     "misc_hints": ("ap_mapping_missing", "Character hints may reference locations whose items AP moves later. An AP-aware hint pass is required."),
     "chests_match_contents": ("ap_mapping_missing", "Native chest size is selected before AP replaces chest contents. Sizes must be recalculated from the final AP reward."),
@@ -118,14 +118,15 @@ def report(schema):
             for name in ("min", "max", "step"):
                 if name in public:
                     row["ap_" + name] = public[name]
-            if key in LOCAL_SHUFFLES:
-                status = "public_native_local"
-                reason = "OOTRR keeps these non-catalogued rewards local; AP moves only its separately catalogued locations. The native search settles local rewards before each counted AP sphere."
-                if key == "shuffle_trade_checks":
-                    reason += " This adds a first-time bonus to each supported adult trade hand-in; the normal quest item is also given. Full replacement/shuffling of adult trade items is not implemented."
-            elif key in NETWORK_SHUFFLES:
+            if key in NETWORK_SHUFFLES:
                 status = "public_network"
-                reason = "The supported AP location family is connected to native checks and rewards; see the setting description for its exact scope."
+                reason = "Every supported source selected by the native engine becomes an AP check in new rooms; fixed or unselected rewards remain native. Existing player files retain their generated catalogue."
+                if key == "shuffle_shops":
+                    reason += " Every enabled mode includes all 64 purchases; deal modes affect the native pool and price layout, not recipient quotas."
+                elif key == "shuffle_skulltulas":
+                    reason += " Pinned selects 44 sites; Matched selects all 100. The 23 uncertain sites retain filler-only guards."
+                elif key == "shuffle_freestanding_items":
+                    reason += " Native Off and Pieces are aliases which both shuffle supported heart pieces."
             else:
                 status = "public"
                 reason = "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
@@ -139,7 +140,7 @@ def report(schema):
             reason = "Implemented by the native schema but absent from the AP catalogue; review its dependencies, staging and reward coverage before enabling it."
         row.update(status=status, reason=reason)
         if key in DESTRUCTIBLE_SHUFFLES:
-            row["native_caution"] = "These experimental native drops persist when their container is broken. Leaving before collecting a required drop can lose it; save before breaking containers."
+            row["network_persistence"] = "An AP source completes only on pickup. Uncollected containers can be retried after an area reload; collected sources remain hidden through their saved AP presence flag."
         if key in FIXED_SETTINGS:
             row["ap_fixed_value"] = FIXED_SETTINGS[key]
         rows.append(row)
@@ -161,10 +162,10 @@ def markdown(result):
              "This comparison uses the **OOTRR remake 0.8.1** schema vendored by this project. It does not claim parity with every setting of the separate N64 OoT Randomizer or Ship of Harkinian. The remake's menu also contains placeholder controls which its own engine cannot apply.", "",
              f"The native schema has **{result['native_setting_count']} keys**. The current AP catalogue exposes **{result['public_native_count']} native keys**, the integration extension {', '.join('`' + key + '`' for key in result['engine_extensions'])}, and {', '.join('`' + key + '`' for key in result['ap_only'])}. Some native choice lists are deliberately restricted to implemented values.", "",
              "Archipelago rolls each Random? control independently. Before generation, unused sub-options are reset to their native defaults: for example, `scrub_price_fixed` is ignored unless enabled Scrub sales use `scrub_prices: fixed`. The same rule applies to inactive shop prices, merchant prices, goal counts and song colors. Active prices, goals and progression settings are preserved. Invalid combinations of active settings still report an error; choosing Random? for every option does not guarantee a valid combination.", "",
-             "A local shuffle can be compatible with AP without turning all of its locations into network checks: OOTRR builds the complete canonical seed, then the AP pass changes only catalogued locations. The native search collects reachable local rewards before recording each AP sphere. Requiring every earlier AP reward preserves that conservative reachability proof. Local pickups and NPC rewards must remain present and must not receive an additional AP grant.", "",
-             "Settings which depend on the *final placement* need extra care. Native hint text, chest sizing and junk-only exclusions cannot simply be copied before AP replaces a reward. Silver Rupee shuffling also adds new item types that need AP IDs and receipt effects.", "",
+             "New rooms export every supported source selected by the existing native randomizer as an AP check. Fixed and unselected rewards retain native handling. Known optional sources use conservative late requirements; unknown missing proofs are rejected. Access rules count the engine's actual logical items, not unrelated filler. Existing player files retain their generated catalogue and any older native-local rewards.", "",
+             "Explicit dungeon-item, song-only, end-of-dungeon and LACS choices are enforced on final AP placements, including foreign-game locations. Standard AP restrictive prefill reserves scarce categories without a general owner quota; compatible songs and dungeon rewards can cross between Zelda players. Built-in native junk-only guards remain enforced. User-defined exclusions, hint text and chest sizing still need their own final-placement adapters; Silver Rupee shuffling needs additional AP item IDs and receipt effects.", "",
              "The `adult_trade_shuffle` integration extension replaces the legacy additive trade control. It shuffles ten quest items and exports eleven trade checks, with independent inventory guards and native item delivery. It is implemented by this project's engine and client rather than the unmodified portable OOTRR 0.8.1 application. See [adult trade rewards](ADULT-TRADE-REWARDS.md). For local versus remote item ownership and the scope of the network pool, see [multiworld distribution](MULTIWORLD-DISTRIBUTION.md).", "",
-             "The AP-only `shuffle_master_sword` extension adds the pedestal's sword grant to the network pool while retaining the native Rauru reward and time travel. It defaults to false. Enabling it requires a new room and save; later AP spheres and victory conservatively require the actual sword. The pinned native seed and settings protocol remain unchanged. See [Master Sword shuffle](MASTER-SWORD.md).", "",
+             "The AP-only `shuffle_master_sword` extension adds the pedestal's sword grant to the network pool while retaining Rauru's separate reward and time travel. It defaults to false. Enabling it requires a new room and save; later AP spheres and victory conservatively require the actual sword. The native engine and settings protocol are retained. `shops_always_open` separately opens the eight item shops and Mask Shop at either time of day, retaining quest locks and minigame hours. See [Master Sword shuffle](MASTER-SWORD.md).", "",
              "The machine-readable companion is [settings-compatibility.json](settings-compatibility.json). Regenerate both files with `python tools/audit_settings.py --write-docs`; use `--ootrr <ootrr.exe>` to audit another installed native schema. These comparisons validate catalogue coverage, not gameplay for every combination.", "",
              "| Native key | AP status | Details |", "| --- | --- | --- |"]
     for row in result["settings"]:
@@ -172,8 +173,8 @@ def markdown(result):
         if row.get("omitted_native_choices"):
             detail += " Omitted native choices: " + ", ".join("`" + value + "`" for value in row["omitted_native_choices"]) + "."
             detail += " " + row["omitted_native_reason"]
-        if row.get("native_caution"):
-            detail += " " + row["native_caution"]
+        if row.get("network_persistence"):
+            detail += " " + row["network_persistence"]
         if row.get("integration_choice_aliases"):
             detail += " The integration's `open` choice uses `bridge: dungeons` with `bridge_rewards: 0`; the bridge opens on approach without requiring dungeon rewards."
         lines.append(f"| `{row['id']}` | `{row['status']}` | {detail} |")

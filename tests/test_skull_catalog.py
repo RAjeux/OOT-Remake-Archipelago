@@ -9,12 +9,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
 from oot_rando.patching.soul_adapter import murmur3
 from ootrr_triforce.catalog import (AP_SKULL_CHECKS, CHECK_FLAGS, CHESTS, LOCATION_IDS,
-                                    PINNED_SKULL_CHECKS, LEGACY_SHOP_CHECKS, SKULL_CHECKS)
+                                    PINNED_SKULL_CHECKS, LEGACY_CHESTS, LEGACY_SHOP_CHECKS, SKULL_CHECKS)
 
 
 class SkullCatalogueTests(unittest.TestCase):
     def test_original_chest_and_shop_ids_are_frozen(self):
-        original = {name: LOCATION_IDS[name] for name in (*CHESTS, *LEGACY_SHOP_CHECKS)}
+        original = {name: LOCATION_IDS[name] for name in (*LEGACY_CHESTS, *LEGACY_SHOP_CHECKS)}
         digest = hashlib.sha256(json.dumps(original, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
         self.assertEqual(len(original), 136)
         self.assertEqual(digest, "1e6cec3f013237b6224bddc9531ec49756d5bdccef14142150ed97fdf2d1f3df")

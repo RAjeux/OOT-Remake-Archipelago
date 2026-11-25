@@ -93,15 +93,21 @@ class CompiledGameTests(unittest.TestCase):
                 changed_sources = root / "changed-sources"
                 changed_sources.mkdir()
                 for source in original_resources("ootrr_triforce").iterdir():
-                    if source.is_file() and source.name.endswith((".py", ".cjs", ".wasm")):
+                    if source.is_file() and source.name.endswith((".py", ".cjs", ".wasm", ".json")):
                         (changed_sources / source.name).write_bytes(source.read_bytes())
                 with patch.object(resources,"files",return_value=changed_sources):
                     baseline = cache / runtime_cache_name(0)
                     self.assertEqual(baseline, updated, "An exact source copy must keep the cache key.")
                     receipt = changed_sources / "receipt_events.py"
-                    receipt.write_bytes(receipt.read_bytes() + b"\n# receipt update\n")
+                    original_receipt = receipt.read_bytes()
+                    receipt.write_bytes(original_receipt + b"\n# receipt update\n")
                     self.assertNotEqual(cache / runtime_cache_name(0), baseline,
                                         "Receipt updates must also invalidate the generated native mod.")
+                    receipt.write_bytes(original_receipt)
+                    catalogue = changed_sources / "network_sources.json"
+                    catalogue.write_bytes(catalogue.read_bytes() + b"\n")
+                    self.assertNotEqual(cache / runtime_cache_name(0), baseline,
+                                        "The source catalogue must participate in mod cache invalidation.")
 
 
 class TradeReplaySessionTests(unittest.TestCase):

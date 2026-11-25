@@ -485,5 +485,7 @@
   "Master Sword shuffle requires physical all_locations rewards.": "Le mélange de l’Épée de légende exige les récompenses physiques all_locations.",
   "The Master Sword pedestal check is missing.": "Le check du piédestal de l’Épée de légende est absent.",
   "Master Sword shuffle requires starting as child Link.": "Le mélange de l’Épée de légende exige de commencer avec Link enfant.",
-  "The Master Sword pedestal requires shuffle_master_sword.": "Le check du piédestal exige shuffle_master_sword."
+  "The Master Sword pedestal requires shuffle_master_sword.": "Le check du piédestal exige shuffle_master_sword.",
+  "Choose settings…": "Choisir les réglages…",
+  "YAML saved. Generate your room in Archipelago.": "YAML enregistré. Génère ta salle dans Archipelago."
 }

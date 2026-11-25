@@ -16,7 +16,7 @@ from .mod_codec import Codec
 REST = "System/Resource/ResourceSizeTable.Product.111.Nin_Ounce_NVN2.rsizetable.zs"
 GET = ("Dm_SY_GetInEvent", "GetInEvent_NotTurn_NotNpc")
 CHEST_ENTRY = "Success_"
-REVISION = 16
+REVISION = 18
 
 
 def chest_flows(raw, records, *, native_pouch=None, small_raw=None):
@@ -83,6 +83,7 @@ def chest_flows(raw, records, *, native_pouch=None, small_raw=None):
 
 
 def plan_maps(placements, moved, read, settings_rows, *, preserve_local=True, local_rewards=None):
+    from .presentation_models import chest_model_actor
     from oot_rando.formats.byml_writer import patch_strings
     from oot_rando.formats.inspect_resources import Byml
     from oot_rando.patching.ap_item import ap_actor
@@ -111,25 +112,31 @@ def plan_maps(placements, moved, read, settings_rows, *, preserve_local=True, lo
             name = wanted.get(a.get("Hash"))
             if name is None:
                 continue
-            if not a.get("Gyaml", "").startswith("Obj_TBox"):
+            if (not a.get("Gyaml", "").startswith("Obj_TBox")
+                    and a.get("Gyaml") not in {"Obj_HrlCity_Shop_TBox_A_01", "Obj_HrlCity_Shop_TBox_A_02"}):
                 raise ValueError(tr('Unexpected actor for {value0}.', value0=name))
             found.add(name)
             local_reward = local_rewards.get(name)
             actor = ITEM_DATA[local_reward]["actor"] if local_reward else ap_actor(placements[name])
+            # A new local AP chest gives through its real-item callback, while
+            # its physical guest must have a working native get-item AS.
+            # Historical moved chests retain their original native grant path.
+            shown = (chest_model_actor(actor) if local_reward and not (preserve_local and name in moved)
+                     else actor)
             dyn = a.get("Dynamic", {})
             def change(field, value):
                 edits.append({"path": ("Actors", i, "Dynamic", field), "before": dyn.get(field), "after": value})
             if preserve_local and name in moved:
                 if dyn.get("Drop__DropActor") != "TBox_Rupee_Green":
                     raise ValueError(tr('The base mod no longer matches the seed: ') + name)
-                change("Drop__DropActor", actor)
+                change("Drop__DropActor", shown)
                 if dyn.get("Drop__DropActor_Substitute") == "TBox_Rupee_Green":
-                    change("Drop__DropActor_Substitute", actor)
+                    change("Drop__DropActor_Substitute", shown)
                 continue
             if not preserve_local:
-                change("Drop__DropActor", actor)
+                change("Drop__DropActor", shown)
                 # An absent substitute also has an actor default to override.
-                change("Drop__DropActor_Substitute", actor)
+                change("Drop__DropActor_Substitute", shown)
             base = ((dyn.get("GetEventName") or default_event(a["Gyaml"]))
                     if preserve_local else default_event(a["Gyaml"]))
             row = settings_rows.get(base, {})
@@ -235,7 +242,7 @@ def patch_mod(romfs, mod, roster, moved, *, full_rewards=False, local_items=Fals
         local = bool(local_items and isinstance(reward, dict) and reward.get("local"))
         # Shop shelves need a unique per-location actor even for local goods.
         # The shop pass replaces its display with the native item presentation.
-        if not local or name in SHOP_CHECKS or name in AP_SKULL_CHECKS:
+        if not local or name not in CHESTS:
             labels[key] = (item, player, reward.get("game")) if isinstance(reward, dict) else (item, player)
         if name in CHESTS:
             placements[name] = key
@@ -308,6 +315,8 @@ def prepare(root, settings, roster, moved):
                           settings.get("shop_check_mode"), settings.get("shop_checks", []),
                           settings.get("shop_prices", {}), settings.get("shuffle_skulltulas", "off"),
                           bool(settings.get("adult_trade_shuffle")), bool(settings.get("shuffle_master_sword")),
+                          settings.get("network_sources_schema"), settings.get("network_sources"),
+                          bool(settings.get("shops_always_open")),
                           seed_settings, roster, effective],
                          ensure_ascii=False, sort_keys=True)
     digest = hashlib.sha256(payload.encode()).hexdigest()
@@ -333,7 +342,10 @@ def prepare(root, settings, roster, moved):
                 prepare_trade_events(romfs, mod, roster, settings)
                 from .trade_receipts import prepare_trade_receipt_guard
                 prepare_trade_receipt_guard(romfs, mod, settings["_ap_token"])
-            if settings.get("shuffle_skulltulas", "off")!="off":
+            if settings.get("network_sources_schema"):
+                from .network_rewards import prepare_network_rewards
+                prepare_network_rewards(romfs, mod, roster, settings)
+            elif settings.get("shuffle_skulltulas", "off")!="off":
                 from .ap_skulls import prepare_skulls
                 prepare_skulls(romfs, mod, roster, settings)
             if settings.get("shuffle_master_sword"):
@@ -341,9 +353,12 @@ def prepare(root, settings, roster, moved):
                 prepare_master_sword(romfs, mod, roster, settings)
             if settings.get("reward_mode")=="all_locations" and local_items:
                 from .restoration import prepare_restoration
-                prepare_restoration(romfs, mod, roster)
+                prepare_restoration(romfs, mod, roster, settings=settings)
         if seed_settings is not None:
             localize_mod(romfs, mod, seed_settings)
+        if roster and settings.get("network_sources_schema") == 1:
+            from .network_offer_texts import prepare_offer_texts
+            prepare_offer_texts(romfs, mod, roster, settings)
         if settings.get("adult_trade_shuffle"):
             from .trade_receipts import finalize_trade_receipts
             finalize_trade_receipts(romfs, mod, settings["_ap_token"])

@@ -25,7 +25,7 @@ from oot_rando.patching.progressive import FlowEditor, link
 from ootrr_triforce.shop_events import ENTRY, FLOW_PATH, PREFIX, SELECTED, patch_shop_flow, prepare_shop_events
 from ootrr_triforce.catalog import ITEM_DATA, SHOP_CHECKS
 from ootrr_triforce.receipt_events import DUNGEONS, OWNERS
-from ootrr_triforce.native_presentations import AMMO_BAGS, is_cure
+from ootrr_triforce.native_presentations import AMMO_BAGS, STARTER_KITS, is_cure
 from test_receipt_events import native_flow
 
 
@@ -249,7 +249,9 @@ class ShopEventTests(unittest.TestCase):
                 self.assertTrue(run.values[row["flag_name"]])
                 self.assertTrue(all(run.values[counter] == 1 for counter in row["counters"]))
                 grants = sum(command == "EventTriggerAddOrRemovePouchContent" for command, _ in run.trace)
-                self.assertEqual(grants, 1)
+                self.assertEqual([(values["Actor"], values["Num"]) for command, values in run.trace
+                                  if command == "EventTriggerAddOrRemovePouchContent"],
+                                 [("Item_Quiver_Small", 1), ("Item_Arrow_Normal", 30), ("Item_Range_Bow", 1)])
                 for counter in row["counters"]:
                     run.values[counter] = 0
                 run.run(ENTRY)
@@ -292,8 +294,12 @@ class ShopEventTests(unittest.TestCase):
                     elif metadata["actor"] in AMMO_BAGS:
                         self.assertFalse(pouch)
                     else:
-                        self.assertEqual([values.get("Actor", values.get("ActorName")) for values in pouch], [metadata["actor"]])
-                        self.assertEqual(pouch[0]["Num"], 1)
+                        actor = metadata["actor"]
+                        expected = [(actor, 1)]
+                        if actor in STARTER_KITS:
+                            bags, ammo, amount = STARTER_KITS[actor]
+                            expected = [(bags[0], 1), (ammo, amount), *expected]
+                        self.assertEqual([(values["Actor"], values["Num"]) for values in pouch], expected)
                     if is_cure(metadata):
                         self.assertEqual([values["ActorName"] for command, values in run.trace
                                           if command == "EventTriggerRecoverByCureItem"], [metadata["actor"]])
@@ -330,8 +336,11 @@ class ShopEventTests(unittest.TestCase):
             for entry in ("FirstBuy", "RepeatBuy"):
                 run = Purchase(raw, rewards[0]["actor"], rewards=rewards, owned=held)
                 run.run(entry)
-                self.assertEqual([values["Actor"] for command, values in run.trace
-                                  if command == "EventTriggerAddOrRemovePouchContent"], [actor])
+                expected = [(actor, 1)]
+                if not index:
+                    expected = [("Item_Quiver_Small", 1), ("Item_Arrow_Normal", 30), *expected]
+                self.assertEqual([(values["Actor"], values["Num"]) for command, values in run.trace
+                                  if command == "EventTriggerAddOrRemovePouchContent"], expected)
         poor = Purchase(raw, rewards[0]["actor"], money=0, rewards=rewards)
         poor.run("FirstBuy")
         self.assertFalse(poor.values)

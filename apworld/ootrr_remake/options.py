@@ -5,6 +5,7 @@ from Options import (Choice, OptionGroup, OptionSet, PerGameCommonOptions, Range
                      random_weighted_range)
 
 from .settings import OPTION_SPECS, default_options, validate_options
+from .settings_labels import GROUP_ORDER, setting_label
 
 
 class SteppedRange(Range):
@@ -39,7 +40,7 @@ class SteppedRange(Range):
 def _option_type(spec):
     name = "".join(part.title() for part in spec["id"].split("_"))
     attrs = {"__module__": __name__, "__doc__": spec["description"],
-             "display_name": spec["label"], "rich_text_doc": False}
+             "display_name": setting_label(spec["id"], "en"), "rich_text_doc": False}
     kind = spec["kind"]
     if kind == "choice":
         base = Choice
@@ -108,7 +109,7 @@ RemakeOptions = make_dataclass(
 
 OPTION_GROUPS = [OptionGroup(group, [OPTION_TYPES[spec["id"]] for spec in OPTION_SPECS if spec["group"] == group],
                             start_collapsed=group == "Difficulty")
-                 for group in dict.fromkeys(spec["group"] for spec in OPTION_SPECS)]
+                 for group in GROUP_ORDER]
 
 
 def _normalize_inactive_options(values):

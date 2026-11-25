@@ -18,7 +18,7 @@ from oot_rando.patching.progressive import FlowEditor, link
 from oot_rando.patching.soul_adapter import murmur3
 from ootrr_triforce.catalog import ITEM_DATA, ITEM_IDS
 from ootrr_triforce.receipt_events import CURES, CURSOR_PREFIX, OWNERS, SILENT_ENTRY, build_receipt_flow, event_name
-from ootrr_triforce.native_presentations import AMMO_BAGS
+from ootrr_triforce.native_presentations import AMMO_BAGS, STARTER_KITS
 
 TOKEN = "a" * 64
 CURSOR = CURSOR_PREFIX + TOKEN
@@ -88,7 +88,9 @@ class GraphRun:
                 self.trace.append((command, params))
                 if command == "EventTriggerAddOrRemovePouchContent":
                     actor = params["Actor"]
-                    assert params["Num"] == 1, "A bundle must be granted once, not multiplied by its yield"
+                    assert params["Num"] == 1 or (params["Actor"], params["Num"]) in {
+                        (ammo, amount) for _, ammo, amount in STARTER_KITS.values()
+                    }, "Only a first-weapon kit gives native single ammunition in quantity"
                     self.owned.add(OWNERS.get(actor, actor))
                 if command == "EventTriggerRequestAutoSave":
                     assert any(command == "EventTriggerAddOrSubGameDataInt" and values["GameDataName"] == CURSOR
@@ -169,11 +171,13 @@ class ReceiptFlowTests(unittest.TestCase):
                                                 ("EventTriggerRequestAutoSave", {})])
                         self.assertFalse(grants)
                     else:
-                        self.assertEqual([grant["Actor"] for grant in grants], [metadata["actor"]])
+                        kit = STARTER_KITS.get(metadata["actor"])
+                        expected = ([(kit[0][0], 1), (kit[1], kit[2])] if kit else []) + [(metadata["actor"], 1)]
+                        self.assertEqual([(grant["Actor"], grant["Num"]) for grant in grants], expected)
                         played = [index for index, (command, values) in enumerate(trace)
                                   if command == "EventTriggerSetHavePlayedGetEvent"]
                         grant_index = next(index for index, (command, values) in enumerate(trace)
-                                           if command == "EventTriggerAddOrRemovePouchContent")
+                                           if command == "EventTriggerAddOrRemovePouchContent" and values["Actor"] == metadata["actor"])
                         self.assertEqual(len(played), 1)
                         self.assertLess(played[0], grant_index)
                         hooks = [params for command, params in trace if params.get("GameDataName") == "Fixture.NativeBagHook"]
@@ -209,7 +213,9 @@ class ReceiptFlowTests(unittest.TestCase):
                 self.assert_receipt(trace)
                 actual.extend(values["Actor"] for command, values in trace
                               if command == "EventTriggerAddOrRemovePouchContent")
-            self.assertEqual(actual, [*metadata["tiers"], metadata["tiers"][-1], metadata["tiers"][-1]])
+            kit = STARTER_KITS.get(metadata["actor"])
+            self.assertEqual(actual, ([kit[0][0], kit[1]] if kit else []) +
+                             [*metadata["tiers"], metadata["tiers"][-1], metadata["tiers"][-1]])
             for index, tier in enumerate(metadata["tiers"]):
                 trace = GraphRun(self.flow.flowchart, {OWNERS.get(tier, tier)}).run(event_name(ITEM_IDS[name]))
                 grants = [values["Actor"] for command, values in trace

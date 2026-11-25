@@ -3,7 +3,8 @@ from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 import sys
 sys.path.insert(0,str(root/'client'))
-from ootrr_triforce.catalog import CHESTS, GEAR, LOCATION_IDS, ITEM_IDS, FILLER, ITEM_DATA, EXPECTED, SHOP_ITEMS, SHOP_CHECKS, LEGACY_SHOP_CHECKS, CHECK_FLAGS, SKULL_CHECKS, TRADE_CHECKS
+from ootrr_triforce.catalog import CHESTS, LEGACY_CHESTS, GEAR, LOCATION_IDS, ITEM_IDS, FILLER, ITEM_DATA, EXPECTED, SHOP_ITEMS, SHOP_CHECKS, LEGACY_SHOP_CHECKS, CHECK_FLAGS, SKULL_CHECKS, TRADE_CHECKS
+from ootrr_triforce.network_catalog import APPENDED_IDS, SOURCES
 from ootrr_triforce.shop_catalog import ADDITIONAL_SHOP_CHECKS, SHOP_FIRST_ID
 from ootrr_triforce.master_sword import ACTOR as MASTER_ACTOR, ITEM as MASTER_ITEM, LOCATION as MASTER_LOCATION, LOCATION_ID as MASTER_ID, FLAG_NAME as MASTER_FLAG
 from oot_rando.patching.soul_adapter import murmur3
@@ -29,7 +30,7 @@ for l in load('locations.json')['locations']:
   refs.append({'actor':ref['hash'],'flag':flags[n],'files':ref['files']})
  else:
   if refs:all_locs[l['name']]=refs
-assert all_locs==CHESTS and recipes==GEAR, "The catalogue differs from OOTRR data."
+assert all_locs=={name:CHESTS[name] for name in LEGACY_CHESTS} and recipes==GEAR, "The released catalogue differs from OOTRR data."
 shops=load('shops.json')
 kokiri={row['name']:row for row in shops['slots'] if row['shop']=='KF Shop'}
 assert LEGACY_SHOP_CHECKS==set(kokiri) and len(LEGACY_SHOP_CHECKS)==8, "Legacy Kokiri locations differ from the engine."
@@ -37,6 +38,7 @@ location_order=[*sorted(all_locs),*sorted(kokiri),*SKULL_CHECKS,*TRADE_CHECKS]
 expected_ids={n:0x6F7200+i for i,n in enumerate(location_order)}
 expected_ids.update({n:row['id'] for n,row in ADDITIONAL_SHOP_CHECKS.items()})
 expected_ids[MASTER_LOCATION]=MASTER_ID
+expected_ids.update(APPENDED_IDS)
 assert LOCATION_IDS==expected_ids, "Location IDs changed."
 assert set(LOCATION_IDS[n] for n in ADDITIONAL_SHOP_CHECKS)==set(range(SHOP_FIRST_ID,SHOP_FIRST_ID+56)), "Global shop ID reservation changed."
 assert len(set(LOCATION_IDS.values()))==len(LOCATION_IDS), "Location IDs overlap."
@@ -76,14 +78,16 @@ for row in shops['slots']:
 assert len({row['flag'] for row in SHOP_CHECKS.values()})==64, "Shop saved flags overlap."
 counters=[counter for row in SHOP_CHECKS.values() for counter in row['counters']]
 assert len(counters)==len(set(counters))==96, "Shop stock identities overlap."
-assert CHECK_FLAGS=={**{name:[ref['flag'] for ref in refs] for name,refs in CHESTS.items()},
+expected_flags={**{name:[murmur3('Archipelago.Source.'+str(LOCATION_IDS[name]))] for name in SOURCES},
+                     **{name:[ref['flag'] for ref in refs] for name,refs in CHESTS.items()},
                      **{name:[row['flag']] for name,row in SHOP_CHECKS.items()},
                      **{name:[row['flag']] for name,row in SKULL_CHECKS.items()},
                      **{name:[row['flag']] for name,row in TRADE_CHECKS.items()},
-                     MASTER_LOCATION:[murmur3(MASTER_FLAG)]}, "Incomplete check flags."
+                     MASTER_LOCATION:[murmur3(MASTER_FLAG)]}
+assert CHECK_FLAGS==expected_flags, "Incomplete check flags."
 for family in (SKULL_CHECKS, TRADE_CHECKS):
  for name,row in family.items():
   assert row['flag']==murmur3(row['flag_name']), f"Incorrect saved check flag: {name}"
   if family is TRADE_CHECKS:
    assert row['id']==LOCATION_IDS[name], f"Incorrect adult trade ID: {name}"
-print(f"{len(all_locs)} chests, {len(SHOP_CHECKS)} shop slots (including {len(kokiri)} legacy Kokiri purchases), {len(SKULL_CHECKS)} reserved Skulltulas and {len(TRADE_CHECKS)} adult trades; {len(ITEM_IDS)} items. Frozen IDs and all check flags match.")
+print(f"{len(CHESTS)} chests ({len(all_locs)} released identities), {len(SOURCES)} native sources, {len(LOCATION_IDS)} reserved locations and {len(ITEM_IDS)} items. Frozen IDs and all check flags match.")

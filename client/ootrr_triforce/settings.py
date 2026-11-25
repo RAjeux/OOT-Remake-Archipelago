@@ -1,7 +1,7 @@
 """Public AP settings, shared by the YAML writer and APWorld without AP imports.
 
-Only tracked chest/shop shuffles are exposed. Native item strings remain an
-internal seed-file format, so old player files still build with OOTRR 0.8.1.
+The editor and exporters use this single typed schema. Native item strings
+remain an internal format for reading historical player files.
 """
 import copy
 from importlib import resources
@@ -51,23 +51,25 @@ MAP_COMPASS = ("remove", "startwith", "vanilla", "dungeon", "regional", "any_dun
 
 _BASE_SPECS = (
     _toggle("death_link", False, "Share deaths with other DeathLink players.", "Archipelago"),
+    _toggle("shops_always_open", False,
+            "Keep the eight item shops and the Happy Mask Shop open by day and night. Quest requirements still apply; minigames keep their normal hours.", "World"),
     _choice("shuffle_chests", "all", ("off", "all", "overworld", "dungeons"),
-            "Shuffle all chests, overworld chests, or dungeon chests. off requires AP shops or Skulltulas. Only catalogued chests become network checks.", "Shuffle"),
+            "Choose which ordinary chest rewards become AP checks: everywhere, outside dungeons, inside dungeons, or none. The three heart-piece chests follow Ground pickups and heart pieces instead, so Off does not disable them. Other enabled source families still work.", "Shuffle"),
     _choice("shuffle_shops", "off", ("off", "shuffle", "deals_1", "deals_2", "deals_3", "deals_4", "random"),
-            "Shuffle shop goods locally, or add special deals across all eight shops. Only the generated special deals become AP checks and can hold your own or another player's items. In YAML, random_deals rolls zero to four deals per shop, including Kokiri; random instead lets Archipelago choose one shop mode for the entire seed. Ordinary goods retain native purchases.", "Shuffle"),
+            "Any enabled mode turns all 64 purchases across eight shops into AP checks. Shuffle mixes the native stock; Deals adds special deals to the native item pool and price layout before AP fills the checks. These choices never force a recipient. random_deals rolls zero to four deals per shop; Archipelago's random chooses a whole shop mode, which may be Off.", "Shuffle"),
     _choice("shuffle_skulltulas", "off", ("off", "pinned", "matched"),
-            "Shuffle Gold Skulltula rewards: pinned uses 44 firmly identified locations; matched adds the supported researched matches, normally 76 checks or 77 with planted/starting beans. Uncertain matches stay local. A check is sent only after collecting the reward.", "Shuffle"),
+            "Off keeps Gold Skulltulas unchanged. Pinned selects 44 native sites; Matched selects all 100 as AP checks. Native filler-only restrictions remain at uncertain sites: no progression or Zelda tokens can be placed there. Collect the dropped reward to complete its check; killing the enemy alone does not complete it.", "Shuffle"),
     _choice("shuffle_smallkeys", "dungeon", SMALL_KEYS,
-            "Keep small keys vanilla, in their own dungeon, in any dungeon, or anywhere. The last two choices require shuffled dungeon chests.", "Dungeon items"),
+            "Keep small keys at their original rewards, restrict them to their own or any dungeon in your world, or mix them across Archipelago. Moving them to other dungeons or games requires shuffled dungeon chests.", "Dungeon items"),
     _choice("shuffle_bosskeys", "dungeon", BOSS_KEYS,
-            "Boss key placement. remove unlocks the doors from the start. Placements outside the original dungeon require shuffled dungeon chests.", "Dungeon items"),
+            "Choose where your boss keys can appear. Dungeon, region and overworld restrictions keep them in your own Zelda world; Anywhere allows other games. Remove opens the corresponding locks from the start. Moving keys outside their dungeon requires shuffled dungeon chests.", "Dungeon items"),
     _choice("shuffle_ganon_bosskey", "dungeon", (*BOSS_KEYS, "lacs_dungeons"),
-            "Ganon boss key placement. remove unlocks access from the start. lacs_dungeons grants it through the native Light Arrows scene after lacs_rewards; requires shuffled NPC rewards and dungeon chests.", "Dungeon items"),
+            "Choose where to find your Ganon Boss Key, remove its lock, or receive it from Zelda in the Light Arrows scene. The scene option counts your Stones and Medallions using lacs_rewards and puts the Light Arrows into the AP pool; it requires NPC rewards and dungeon chests.", "Dungeon items"),
     _choice("shuffle_mapcompass", "dungeon", MAP_COMPASS,
-            "Map and compass placement. remove or startwith grants their effects from the start.",
+            "Choose where maps and compasses can appear. Dungeon and region restrictions stay in your own Zelda world; Anywhere allows other games. Remove and Start with both grant their map effects from the start.",
             "Dungeon items"),
     _choice("open_forest", "closed", ("closed", "open"),
-            "closed keeps Mido and the opening quest; open unlocks the forest exit and the Deku Tree."),
+            "Closed keeps Mido's sword-and-shield requirement and the opening quest. Open allows access to the Deku Tree and the forest exit from the start."),
     _choice("open_kakariko", "closed", ("closed", "open"),
             "open unlocks the Death Mountain gate and skips the Zelda visit. Requires open_forest: open; Zelda's Letter and Impa's song are granted at the start."),
     _choice("zora_fountain", "closed", ("closed", "open"),
@@ -76,22 +78,22 @@ _BASE_SPECS = (
     _toggle("time_always_passes", True, "Enable the day/night cycle from the start of the game.", "World"),
     _toggle("early_beds", False, "Sleep until morning or night before meeting Zelda; requires time_always_passes.", "World"),
     _choice("gerudo_fortress", "normal", ("normal", "fast", "open"),
-            "Rescue four carpenters, rescue one, or start with the fortress open."),
+            "Rescue all four carpenters, rescue only the last one, or start with everyone rescued and the Membership Card already owned."),
     _choice("door_of_time_condition", "vanilla", ("vanilla", "stones", "song", "open"),
-            "Door of Time: complete Dodongo and Jabu-Jabu, collect all three stones, play only the Song of Time, or start with the door open."),
+            "Open the Door of Time by clearing Dodongo and Jabu-Jabu, by holding the three Stones, with the Song of Time alone, or from the start. The first two choices use the separate Song of Time switch; Open and Song only use the separate Zelda's escape setting."),
     _choice("door_of_time_escape", "moat", ("vanilla", "stones", "moat"),
             "With the open or song condition, Zelda's escape waits for the two dungeons or three stones, or is skipped with the Ocarina available in the moat from the start."),
     _toggle("door_of_time_song", True,
-            "With the vanilla or stones condition, also require the Song of Time to open the door.", "World"),
+            "With Original game or Three Spiritual Stones, require playing the Song of Time at the altar. If disabled, the door opens when the chosen requirement is met. Ignored with Open or Song of Time only.", "World"),
     _choice("bridge", "vanilla", ("vanilla", "dungeons", "open"),
-            "Ganon bridge: native condition, a total number of stones and medallions set by bridge_rewards, or open without rewards when approached. open fixes bridge_rewards at zero.", "Goal"),
+            "Make Ganon's bridge appear after the native Light Arrows scene, after a chosen combined Stone/Medallion count, or with no requirement when approached. The count only applies to Count Stones and Medallions; Open uses zero. This is separate from the Door of Time and Ganon Boss Key.", "Goal"),
     _range("bridge_rewards", 9, 0, 9,
-           "Number of stones and medallions required with bridge: dungeons. bridge: open fixes this count at zero; leave the default value or set it to zero.", "Goal"),
+           "Total Stones and Medallions you must hold for Count Stones and Medallions: any mix of the three Stones and six Medallions counts. Nine requires all nine; zero requires none. Unused with the original bridge condition.", "Goal"),
     _toggle("skip_ganon_trials", False, "Reach Ganon's Tower without completing the trials.", "Goal"),
-    _range("trials", 6, 0, 6, "Number of trials required when skip_ganon_trials is disabled.", "Goal"),
+    _range("trials", 6, 0, 6, "Number of Ganon's Castle trials required: six keeps all; zero skips all. Which trials remain is chosen for the seed. Ignored when Skip Ganon's trials is enabled.", "Goal"),
     _range("starting_hearts", 3, 1, 20, "Number of hearts at the start of the game.", "Starting inventory"),
     _spec("starting_items", "set", [],
-          "Native starting equipment, removed from the local pool. The highest selected upgrade wins. Starting Bombchus also require a bomb bag; Zelda's Letter is not selectable.",
+          "Starting equipment, removed from the randomized pool. The highest selected upgrade wins. Starting Bombchus also require a bomb bag; Zelda's Letter is not selectable.",
           "Starting inventory", choices=STARTING_ITEMS),
     _spec("starting_songs", "set", [], "Songs known from the start; an ocarina is still needed to play them.",
           "Starting inventory", choices=STARTING_SONGS),
@@ -103,15 +105,15 @@ _BASE_SPECS = (
     _toggle("skip_intro", True, "Skip the opening movie and Link's wake-up scene."),
     _toggle("skip_first_pickup_text", False, "Suppress the first pickup message for small consumables."),
     _choice("skip_cutscenes", "off", ("off", "story", "all"),
-            "Allow skipping no cutscenes, the opening and ending, or also the title-screen demos.",
+            "Keep native manual skipping, allow skipping the opening and credits, or also allow title-screen demos to be skipped. This does not automatically skip every cutscene; Skip introduction separately skips the opening movie and Link waking up.",
             "Quality of life"),
     _toggle("anju_one_cucco", False, "One Cucco is enough for Anju's bottle; logic follows this setting."),
     _toggle("big_poe_one", False, "One Big Poe is enough for the Poe Collector's bottle."),
     _choice("navi_return", "everywhere", ("off", "dungeons", "everywhere"),
-            "Navi offers to return to the dungeon entrance, or also to Kokiri Forest/the Temple of Time outside dungeons.",
+            "Call Navi with the D-pad for a return-travel question: dungeon entrance only, or also Kokiri Forest as a child and the Temple of Time as an adult outside dungeons. Boss and miniboss arenas never offer it. It replaces ordinary area hints, not enemy-targeting hints.",
             "Quality of life"),
     _choice("bunny_hood", "off", ("off", "speed", "jump"),
-            "Bunny Hood: normal effect, faster running, or faster running and enhanced jumps. Experimental.",
+            "While wearing the Bunny Hood, keep normal movement, run about 1.5 times as fast, or also jump farther. This does not grant the mask. Experimental.",
             "Quality of life"),
     _toggle("skip_epona_race", True, "Epona's Song grants Epona without racing Ingo.", "World"),
     _toggle("skip_mask_quest", False, "All masks are available when the shop opens.", "World"),
@@ -128,8 +130,8 @@ _DIFFICULTY = (
     ("enemy_backup", "Some enemies call for reinforcements during a prolonged fight."),
     ("no_heart_drops", "Random drops no longer give recovery hearts."),
     ("no_gossip_fairies", "Gossip stones no longer spawn fairies."),
-    ("no_ammo_drops", "Random drops no longer give ammunition; shops and chests remain available."),
-    ("lose_heart_on_death", "Lose one heart container after a Game Over, down to a minimum of three hearts."),
+    ("no_ammo_drops", "Remove ordinary ammunition drops, including Deku sticks and nuts, seeds, arrows, bombs and Bombchus. Shuffled AP rewards and shop purchases are separate."),
+    ("lose_heart_on_death", "After Game Over, lose one heart container if you have more than three. A starting health value below three is not raised."),
     ("no_bottles_in_combat", "Prevent bottle use while combat music is playing."),
     ("no_z_targeting", "Disable enemy targeting; interactions remain available."),
     ("no_dupe_items", "Native captures and refills reject contents already held in another bottle."),
@@ -138,77 +140,77 @@ _DIFFICULTY = (
     ("boss_minions", "Add lesser enemies to compatible boss arenas."),
     ("bean_pitch", "The Bean Seller occasionally mentions difficulty mods."),
     ("zora_ambush", "Add a Skulltula ambush to the Zora's Domain caves."),
-    ("enemy_gates", "Block the Deku Tree passage until both Deku Babas are defeated; closed forest only."),
+    ("enemy_gates", "Add combat barriers on ten overworld paths, including the Deku Tree, Sacred Forest Meadow, Death Mountain Trail, Zora's River and adult Gerudo routes. Defeat their nearby guards to pass. Requires a closed forest and original dungeon entrances."),
     ("cucco_revenge", "One hit on a Cucco triggers the Cucco attack."),
-    ("enemy_spawn_combo", "Enable the native two-stick/D-pad shortcut to spawn practice enemies."),
+    ("enemy_spawn_combo", "Hold both stick buttons and press D-pad Down to spawn a random practice enemy; Up repeats the last kind. Only enemies loaded by the current area can appear, with at most twelve kept at once."),
     ("fairy_helps_enemies", "A fairy released from a bottle also heals awake enemies and bosses."),
 )
-_LOCAL_PICKUP_WARNING = (" Native local rewards retain their seed assignments. Experimental: destroyed sources stay used; "
-                         "leaving a dropped reward behind can lose it. Save before breaking shuffled sources.")
+_PICKUP_NOTE = (" Enabled sources become AP checks only after collecting the drop. "
+                "An uncollected source can be tried again after reloading the area; collected sources stay completed.")
 _ADDITIONAL_SPECS = (
     _choice("shuffle_pots", "off", ("off", "overworld", "dungeons", "all"),
-            "Shuffle rewards in the supported pots, including flying pots." + _LOCAL_PICKUP_WARNING, "Shuffle"),
+            "Shuffle rewards in the supported pots, including flying pots." + _PICKUP_NOTE, "Shuffle"),
     _choice("shuffle_crates", "off", ("off", "overworld", "dungeons", "all"),
-            "Shuffle rewards in the supported crates." + _LOCAL_PICKUP_WARNING, "Shuffle"),
+            "Shuffle rewards in the supported crates." + _PICKUP_NOTE, "Shuffle"),
     _choice("shuffle_rocks", "off", ("off", "overworld", "dungeons", "all"),
-            "Shuffle rewards under the supported rocks." + _LOCAL_PICKUP_WARNING, "Shuffle"),
+            "Shuffle rewards under the supported rocks." + _PICKUP_NOTE, "Shuffle"),
     _choice("shuffle_grass", "off", ("off", "overworld", "dungeons", "all"),
-            "Shuffle supported grass drops; Lost Woods bug grass is preserved." + _LOCAL_PICKUP_WARNING, "Shuffle"),
+            "Shuffle supported grass drops; Lost Woods bug grass is preserved." + _PICKUP_NOTE, "Shuffle"),
     _toggle("shuffle_beehives", False,
-            "Shuffle the supported beehive drops." + _LOCAL_PICKUP_WARNING, "Shuffle"),
+            "Shuffle the supported beehive drops." + _PICKUP_NOTE, "Shuffle"),
     _choice("shuffle_freestanding_items", "off", ("off", "pieces", "all", "dungeons", "overworld"),
-            "Shuffle supported ground pickups. pieces limits this to heart pieces. Non-AP pickups keep their native local rewards; sources shared between ages retain OOTRR's duplication restrictions.", "Shuffle"),
+            "Shuffle supported ground pickups as AP checks. Off and Pieces both shuffle heart pieces in this engine, including three dedicated heart-piece chests. All also adds ordinary rupees and recovery hearts; Dungeons or Overworld adds those ordinary pickups only in that area, while heart pieces stay enabled everywhere.", "Shuffle"),
     _choice("shuffle_rewards", "off", ("off", "supported"),
-            "Shuffle supported NPC, minigame, fairy and story rewards locally with OOTRR. Songs and dungeon rewards have separate controls. These sources do not become AP checks.", "Shuffle"),
+            "Turn supported NPC, minigame, Great Fairy and story rewards into AP checks. Songs and dungeon rewards have separate controls.", "Shuffle"),
     _toggle("shuffle_rewards_extra", False,
-            "Also shuffle the supported 20-token reward, Biggoron and Medigoron locally. Requires shuffle_rewards: supported.", "Shuffle"),
+            "Also turn the supported 20-token reward, Biggoron and Medigoron rewards into AP checks. Requires NPC rewards to be enabled.", "Shuffle"),
     _toggle("shuffle_boss_hearts", False,
-            "Shuffle boss heart-container pickups locally. The assigned reward appears after the boss falls.", "Shuffle"),
+            "Turn boss heart-container pickups into AP checks. The assigned reward appears after the boss falls.", "Shuffle"),
     _choice("shuffle_songs", "off", ("off", "own", "anywhere"),
-            "Shuffle the native song lessons among themselves or into the wider pool. Native lessons remain local; songs placed at AP locations join AP. Scarecrow's Song is preserved. Experimental.", "Shuffle"),
+            "Turn supported song lessons into AP checks, with songs restricted to lessons or mixed into the wider pool. Scarecrow's Song is preserved. Experimental.", "Shuffle"),
     _toggle("shuffle_potion_shop", False,
-            "Shuffle the Market Potion Shop's empty-bottle and bug-tutorial potion rewards locally. Requires shuffle_rewards: supported; both checks need an empty bottle.", "Shuffle"),
+            "Turn the Market Potion Shop's empty-bottle and bug-tutorial potion rewards into AP checks. Requires NPC rewards and an empty bottle.", "Shuffle"),
     _toggle("adult_trade_shuffle", False,
-            "Replace adult trade rewards with Archipelago items and shuffle the ten quest items into the multiworld. NPCs automatically accept their required owned item. The starting Cucco is already hatched, timed items do not expire, and the final Claim Check exchange has no three-day wait. Requires shuffle_rewards: supported.",
+            "Make the adult trading quest AP checks and mix its ten quest items across the multiworld. Each NPC still requires and consumes the correct owned input, then gives only the AP reward. The starting Cucco is hatched, timed items never expire, and the final Claim Check has no three-day wait. Requires NPC rewards.",
             "Shuffle", label="Adult Trade Shuffle"),
     _toggle("shuffle_scrubs_a", False,
-            "Shuffle the first supported set of Deku Scrub sales locally. Requires shuffle_rewards: supported.", "Shuffle"),
+            "Add the three one-time sellers in Death Mountain Crater and the Lost Woods (near the bridge and front of the grotto) as AP checks. Requires NPC rewards; ordinary repeatable stock is separate.", "Shuffle"),
     _toggle("shuffle_scrubs_b", False,
-            "Shuffle the second supported set of Deku Scrub sales locally. Requires shuffle_rewards: supported.", "Shuffle"),
+            "Add the Jabu-Jabu seller and the rear Lost Woods grotto seller as one-time AP checks instead of their ordinary menus. Requires NPC rewards.", "Shuffle"),
     _toggle("shuffle_cows", False,
-            "Shuffle supported cow rewards locally. Requires shuffle_rewards: supported; the native plan includes its other supported cows too.", "Shuffle"),
+            "Turn supported cow rewards into AP checks. Requires NPC rewards; includes all cows supported by the engine.", "Shuffle"),
     _toggle("shuffle_treasure_reward", False,
-            "Shuffle the Treasure Chest Game's first-win heart piece locally; later wins retain their native reward.", "Shuffle"),
+            "Turn the Treasure Chest Game's first-win heart piece into an AP check; later wins retain their normal reward.", "Shuffle"),
     _choice("shuffle_dungeon_rewards", "vanilla", ("vanilla", "anywhere", "dungeons"),
-            "Keep Spiritual Stones and Medallions vanilla, put them in the wider pool, or restrict them to dungeon rewards. Requires shuffled NPC rewards for non-vanilla modes; native reward events remain local.", "Shuffle"),
+            "Keep Spiritual Stones and Medallions unchanged, put them in the AP pool, or restrict them to dungeon reward checks. Non-vanilla modes require NPC rewards.", "Shuffle"),
     _toggle("shuffle_frog_songs", False,
-            "Shuffle the five supported first-time frog-song rewards locally. Requires shuffle_rewards: supported.", "Shuffle"),
+            "Turn the five supported first-time frog-song rewards into AP checks. Requires NPC rewards.", "Shuffle"),
     _toggle("shuffle_frog_bug_heart", False,
-            "Shuffle the frog bug game's first-win heart piece locally. Requires shuffle_rewards: supported.", "Shuffle"),
+            "Turn the frog bug game's first-win heart piece into an AP check. Requires NPC rewards.", "Shuffle"),
     _toggle("shuffle_ocarinas", False,
-            "Shuffle Saria's Fairy Ocarina and Zelda's moat Ocarina of Time into the native pool. Requires shuffle_rewards: supported; their source events remain local.", "Shuffle"),
+            "Turn Saria's Fairy Ocarina and Zelda's moat Ocarina of Time into AP checks and mix the instruments into the pool. Requires NPC rewards.", "Shuffle"),
     _toggle("shuffle_kokiri_sword", False,
             "Shuffle the Kokiri Sword when overworld chests are shuffled. Its catalogued chest participates in AP.", "Shuffle"),
     _toggle("shuffle_master_sword", False,
-            "Put the Master Sword in the multiworld and replace its first pedestal grant with one AP reward. Rauru's reward remains separate. Time travel still works without owning the sword. Later AP spheres and victory require the sword. Requires a new room and a new save.", "Shuffle"),
+            "Mix the Master Sword into the multiworld and replace its first pedestal gift with one AP reward. Rauru's reward stays separate. You can travel in time before finding the sword, but must find it to finish the game. Requires a new room and a new save.", "Shuffle"),
     _choice("shuffle_entrances", "off", ("off", "dungeons"),
             "Shuffle the dungeon entrances supported by OOTRR. The native logic and mod use the same rolled entrances. Overworld and mixed entrance shuffles are not implemented.", "World"),
     _choice("shuffle_merchants", "off", ("off", "beans", "no_beans", "all"),
-            "Shuffle the supported Bean Merchant and Medigoron sales locally. Requires shuffled NPC rewards; beans and all also require plant_beans.", "Shuffle"),
+            "Choose the Bean Merchant's one AP purchase, Medigoron, or both. This does not include every NPC who asks for rupees. Later bean purchases stay native. Requires NPC rewards; Beans and All also require pre-planted beans.", "Shuffle"),
     _choice("shopsanity_prices", "starting", ("affordable", "starting", "adult", "giant"),
-            "Set the native special-deal price range by wallet tier. Requires a deals or random shop mode for a non-default value. Kokiri deals remain within the starting wallet; ordinary goods keep their prices.", "Economy"),
+            "Set special-deal prices: 10 rupees each, or random prices up to 200, 500 or 995 rupees. The wallets hold 200, 500 and 1,000. Kokiri deals never exceed 200; ordinary goods keep their prices. Only used by a special-deal or random-deal shop mode.", "Economy"),
     _choice("scrub_prices", "vanilla", ("vanilla", "cheap", "fixed"),
-            "Set prices for the enabled native-local Scrub sales. A non-default price mode requires shuffle_scrubs_a or shuffle_scrubs_b.", "Economy"),
+            "Set enabled Deku Scrub sale prices: native, low random prices from 0 to 95 in steps of 5, or the fixed amount below. Cheap favors low prices; it does not mean 10 rupees each. Requires at least one Scrub shuffle.", "Economy"),
     _range("scrub_price_fixed", 10, 0, 99,
            "Price of each enabled shuffled Scrub sale with scrub_prices: fixed.", "Economy"),
     _toggle("scrub_hint_text", False,
-            "Enabled shuffled Scrubs name the actual native-local item instead of a mystery item. Requires a supported Scrub shuffle.", "Economy"),
+            "Show the assigned item in enabled Deku Scrub offers instead of a mystery item. Requires at least one Scrub shuffle.", "Economy"),
     _choice("merchant_prices", "vanilla", ("vanilla", "cheap", "fixed"),
-            "Set prices for the enabled native-local merchant sales. A non-default value requires shuffle_merchants.", "Economy"),
+            "Set the selected merchant-sale prices: native, low random prices from 0 to 95 in steps of 5, or the fixed amount below. Cheap is random, not a fixed 10 rupees. This does not reprice every ordinary repeat purchase. Requires shuffled merchants.", "Economy"),
     _range("merchant_price_fixed", 10, 0, 99,
            "Price of each enabled shuffled merchant sale with merchant_prices: fixed.", "Economy"),
     _choice("fairy_prices", "vanilla", ("vanilla", "cheap", "fixed"),
-            "Set the offering requested by the six native Great Fairies. Works with their vanilla or shuffled local rewards.", "Economy"),
+            "Set the six Great Fairy offerings: native, low random amounts from 0 to 95 in steps of 5, or the fixed amount below. This applies whether their gifts are unchanged or shuffled; Cheap is not a fixed 10 rupees.", "Economy"),
     _range("fairy_price_fixed", 10, 0, 99,
            "Offering requested by each Great Fairy with fairy_prices: fixed.", "Economy"),
     _range("lacs_rewards", 9, 1, 9,
@@ -219,15 +221,15 @@ _ADDITIONAL_SPECS = (
 OPTION_SPECS = _BASE_SPECS + _ADDITIONAL_SPECS + tuple(_toggle(name, False, description + " Experimental.", "Difficulty")
                                   for name, description in _DIFFICULTY)
 SPEC_BY_ID = {spec["id"]: spec for spec in OPTION_SPECS}
-AP_ONLY = frozenset({"death_link", "shuffle_master_sword"})
+AP_ONLY = frozenset({"death_link", "shuffle_master_sword", "shops_always_open"})
 # Additions implemented by this integration's engine, not portable OOTRR 0.8.1.
 ENGINE_EXTENSIONS = {"adult_trade_shuffle": {"kind": "toggle", "default": False}}
 # The portable engine rejects its own schema's open value. Its existing native
 # reward gate at zero gives the same unrestricted access on approaching it.
 BRIDGE_OPEN_ALIAS = {"bridge": "dungeons", "bridge_rewards": 0}
 
-# These are internal constraints, never free-form YAML options. In particular,
-# bosses, pots, NPCs and other untracked rewards retain their native sources.
+# These native-engine constraints are not free-form YAML options. Public
+# settings below replace their fixed values before the engine is invoked.
 FIXED_SETTINGS = {
     "logic_rules": "glitchless", "starting_age": "child", "triforce_hunt": False,
     "shuffle_pots": "off", "shuffle_crates": "off", "shuffle_rocks": "off", "shuffle_grass": "off",
@@ -242,8 +244,8 @@ FIXED_SETTINGS = {
     "shuffle_treasure_reward": False, "shuffle_entrances": "off", "bombchus_in_logic": False,
     "gossip_hints": False, "misc_hints": [], "chests_match_contents": False,
 }
-# Native-local sources keep the complete OOTRR seed reward. Only the explicit
-# AP catalogue is moved a second time by Archipelago.
+# Public source selectors use the same native randomization pass. The AP
+# catalogue and delivery layer bind the selected checks after that pass.
 for _specification in _ADDITIONAL_SPECS:
     FIXED_SETTINGS.pop(_specification["id"],None)
 del _specification
@@ -312,9 +314,9 @@ def validate_options(values):
         if result[name] == "overworld" and result["shuffle_chests"] == "dungeons":
             raise ValueError(name + ": overworld requires shuffle_chests: all.")
     if result["shuffle_chests"]=="off":
-        if (result["shuffle_shops"] not in {"deals_1", "deals_2", "deals_3", "deals_4", "random"}
-                and result["shuffle_skulltulas"]=="off" and not result["adult_trade_shuffle"]):
-            raise ValueError("shuffle_chests: off requires AP shop deals, Skulltulas or adult trades.")
+        # The native source export includes ground rewards, NPCs and ordinary
+        # shop stock too. Its exact selected catalogue, not a historical list
+        # of AP-enabled families, determines whether a room has checks.
         for name in ("shuffle_smallkeys", "shuffle_bosskeys", "shuffle_ganon_bosskey", "shuffle_mapcompass"):
             if result[name] in {"regional", "overworld", "any_dungeon", "keysanity", "lacs_dungeons"}:
                 raise ValueError(name + " requires shuffled chests for this placement mode.")
@@ -366,8 +368,9 @@ def engine_settings(values):
     return result
 
 
-def yaml_options(indent="  ", language="en"):
+def yaml_options(indent="  ", language="en", values=None):
     """OOTRR-only YAML block; the caller writes DeathLink separately."""
+    selected = validate_options({} if values is None else values)
     french = str(language).lower().replace("_", "-").startswith("fr")
     descriptions = json.loads(resources.files(__package__).joinpath("settings_fr.json").read_text(encoding="utf-8")) if french else {}
     groups = {"Shuffle": "Mélange", "Dungeon items": "Objets de donjon", "World": "Monde", "Goal": "Objectif",
@@ -391,5 +394,8 @@ def yaml_options(indent="  ", language="en"):
             step = ((f", pas de {spec['step']}" if french else f", step {spec['step']}") if spec["step"] > 1 else "")
             limits = f"Entier : {spec['min']} à {spec['max']}" if french else f"Integer: {spec['min']} to {spec['max']}"
             lines.append(indent + f"# {limits}{step}.")
-        lines.append(indent + spec["id"] + ": " + json.dumps(spec["default"], ensure_ascii=False))
+        value = selected[spec["id"]]
+        if spec["id"] == "shuffle_shops" and value == "random":
+            value = "random_deals"
+        lines.append(indent + spec["id"] + ": " + json.dumps(value, ensure_ascii=False))
     return "\n".join(lines) + "\n"

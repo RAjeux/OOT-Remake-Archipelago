@@ -1,9 +1,10 @@
-OOT Remake Archipelago · 0.10.0-alpha.1
+OOT Remake Archipelago · 0.10.1-alpha.2
 One Windows x64 application for Triforce and experimental Hookshot 3.0.1.
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
 Before you start
-Download OOT-Remake-Archipelago-0.10.0-alpha.1.exe from the project releases.
+Player package: OOT-Remake-Archipelago-0.10.1-alpha.2.exe.
+Published packages are listed on the project's GitHub releases page.
 Python and Node.js are included. The compatible OOTRR 0.8.1 builder is
 downloaded automatically when first needed; an internet connection is
 required for that download. No separate runtime or randomizer installation
@@ -54,9 +55,13 @@ Create a room
 The same application provides Create YAML for the room's organizer.
 1. Choose Install APWorld and select the existing Archipelago installation
    on the computer that will generate the room. Restart Archipelago.
-2. Enter your player name and choose Save YAML. The file contains all
-   supported settings and their descriptions. Edit these before generation.
-3. Generate and host the room with Archipelago and the other players' YAML
+2. Enter your player name and choose Choose settings. The English/French
+   editor groups the same supported settings used by the APWorld. Disabled
+   sub-options explain which parent setting they require. Apply your choices.
+3. Choose Save YAML. The file contains your chosen values and comments in
+   the app's language; YAML keys remain unchanged. Manual weighted YAMLs
+   also remain supported.
+4. Generate and host the room with Archipelago and the other players' YAML
    files as usual, then distribute each player's generated file.
 
 Room generation and hosting remain in Archipelago. The application does not
@@ -84,10 +89,10 @@ adult trade shuffle. Reconnecting does not change an old room's placements.
 Items and checks
 Your own AP rewards use native item models and effects. Another player's
 item uses the AP medal and is sent to its recipient. The old local reward
-is replaced. Network checks cover the catalogued chests and, when enabled,
-selected special deals across all eight shops, supported Gold Skulltulas
-and eleven adult trades. Old rooms keep their original Kokiri purchases.
-Other shuffled sources retain OOTRR's native local handling.
+is replaced. In new rooms, every supported source selected by the native
+randomizer becomes an AP check, including enabled NPCs, songs, ground items,
+destructibles and all 64 purchases in an enabled shop shuffle. Old rooms
+keep their own catalogue, purchases and native-local rewards.
 
 Triforce 0.7.0 setup
 Version 0.9.1 supports the updated Achievements page and Mods input transition.
@@ -102,21 +107,29 @@ with its received-item index. Save before quitting normally.
 With a prepared all_locations room using personal physical rewards,
 loading an older save also restores previously checked AP locations.
 Your rewards are restored once to that save. Another player's location
-is restored without sending its reward again. Native-local rewards outside
-the AP catalogue continue to follow the selected save.
+is restored without sending its reward again. Fixed or unselected native
+rewards follow the selected save. Older rooms retain any native-local rewards
+which were outside their own generated AP catalogue.
 
 Supported settings
-The YAML exposes 93 native OOTRR settings, the adult trade and Master Sword
-extensions, and DeathLink. In particular:
-- shuffle_shops: random_deals (Random Deals) rolls zero to four special deals in each of the eight
-  shops, including Kokiri. Only these deals become AP checks and can hold your
-  own or another player's item. deals_1 through deals_4 request that many deals
-  per shop; shuffle keeps ordinary goods local. Existing rooms retain their
-  original shop checks; generate a new room for the new selection.
-  Archipelago's plain random / Random? chooses a whole shop mode instead.
-- shuffle_skulltulas: pinned enables 44 identified checks. matched enables
-  76 supported checks, or 77 with supported planted or starting beans.
-  Collect the reward to complete its check. Uncertain sites stay local.
+The single schema exposes 93 native OOTRR settings, adult trades, the Master
+Sword, DeathLink and shop hours: 97 controls. In particular:
+- Every enabled shuffle_shops mode turns all 64 purchases in eight shops
+  into AP checks. shuffle mixes native stock; deals_1 through deals_4 and
+  random_deals change the native pool and special-deal price layout before
+  AP fills the checks. No mode forces a recipient. Plain random / Random?
+  chooses a whole shop mode, which may be Off.
+- Gold Skulltulas: All 100 native sites uses shuffle_skulltulas: matched.
+  The 44-site subset uses pinned. Collect the drop to complete a check.
+  The 23 uncertain sites retain their filler-only restrictions; they cannot
+  contain progression or Zelda tokens, but remain AP checks.
+- shops_always_open keeps the eight item shops and the Mask Shop open by
+  day and night. Quest locks remain; minigames keep their normal hours.
+- Ground pickups and heart pieces uses shuffle_freestanding_items.
+  Off and Pieces both shuffle supported heart pieces in this engine.
+  All adds rupees and recovery hearts; Dungeons or Overworld limits those
+  extra pickups by area. The three dedicated heart-piece chests follow this
+  setting too; other chests and NPC rewards have separate controls.
 - adult_trade_shuffle: true with shuffle_rewards: supported puts ten
   quest items in the multiworld and replaces eleven trade rewards with AP
   items. An exchange consumes only its requested item. Wake Talon before
@@ -127,6 +140,11 @@ extensions, and DeathLink. In particular:
   This choice requires a newly generated room and a new save.
 - bridge: open opens the bridge on approach. Leave bridge_rewards at its
   default 9 or use 0; this choice uses an effective threshold of zero.
+- The forest is Closed by default. Open under Deku Tree and forest access
+  removes Mido's opening requirement and opens the forest exit too.
+- Skip introduction automatically skips the opening movie and Link waking.
+  Manual cutscene skipping unlocks the existing skip action; it does not
+  automatically skip every cinematic. The 0.10 behavior is retained.
 - death_link: true shares deaths with other participating games. A received
   death waits for normal control after an observed pause or constrained action.
 
@@ -145,23 +163,40 @@ for example, a random Fixed Price has no effect when the price mode is Cheap.
 Active settings still follow their documented dependencies, so selecting
 Random? everywhere does not guarantee a valid combination.
 
-Supported native-local shuffles include songs, NPC rewards, cows, ground
-items, destructibles, dungeon entrances and prices. Experimental breakable
-sources stay broken; collect their drop before leaving.
+Every source actually selected by the existing native randomizer becomes
+an AP check in new rooms, including enabled songs, NPCs, cows, ground
+items and destructibles. Fixed/unselected rewards stay native. A maximum
+configuration has 1,211 checks, or 1,212 with the Master Sword; the default
+configuration has 169. Old player files keep their original catalogue.
+Generate a new room and use a dedicated new save for the expanded checks.
+
+Breaking a shuffled container does not complete its check. An uncollected
+source can be tried again after reloading the area; collected sources stay
+completed. A native guard keeps 35 possible sources filler-only, including
+the 23 uncertain Skulltulas. They cannot hold progression from any game or
+Zelda tokens. This does not remove their AP checks.
+
+AP has no general Zelda recipient quota. Explicit dungeon-only, song-only,
+end-of-dungeon and LACS settings still constrain the final placements.
+Keysanity permits keys in other games; compatible songs and dungeon rewards
+can cross between Zelda players. Cheap merchant prices deliberately charge
+10 rupees for every purchase, including each bean; Vanilla retains the
+increasing bean prices.
 See docs/SETTINGS-COMPATIBILITY.md in the repository for all 118 native
 settings and the reasons for the 25 omitted controls.
 
 Language and current limits
 The application and mod follow the game language: French uses French text,
-and other languages fall back to English. YAML keys and descriptions use
-English. Other players' names and items from other games keep their server
+and other languages fall back to English. YAML comments use the app language;
+keys remain stable. Other players' names and items from other games keep their server
 wording. Restart Zelda after changing its language in Triforce.
 
-Native gameplay has been tested with Triforce 0.6.0. Item presentation and
-some camera movements can still need improvement. Automated checks cover
-more sources than have been played manually; every option combination and
-every original Skulltula site has not been completed in the game.
-Hookshot and Fritchii are not supported by this release's native installer.
+The 0.10 baseline has gameplay evidence with Triforce 0.6.0. This update
+retains its title/cinematic behavior. Item presentation and some camera
+movements can still need improvement. Automated real AP generation includes
+solo rooms, Zelda with Dark Souls III, and Zelda with Bloodborne and Dark
+Souls Remastered. The expanded catalogue has not been manually completed.
+Hookshot 3.0.1 remains experimental; Fritchii has no AP gameplay backend.
 
 Help and credits
 Help > Open log opens the application log. Help > Licenses and source

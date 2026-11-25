@@ -187,8 +187,7 @@ def patch_shop_flow(raw, records, *, pouch_raw=None):
             recipe = append_recipe(editor, metadata, core_name, grant_entry, collected)
             # A normal pouch subflow returns here; direct dungeon/cure recipes
             # already terminate at the purchase commit supplied above.
-            if (isinstance(recipe.data, SubFlowEvent)
-                    and recipe.data.entry_point_name == grant_entry):
+            if isinstance(recipe.data, SubFlowEvent):
                 link(recipe, collected)
             core = EntryPoint(core_name)
             core.main_event = make_index(recipe)

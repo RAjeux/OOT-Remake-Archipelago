@@ -136,7 +136,8 @@ def run_simple(raw, entry, *, stock=0, values=None):
 class MasterSwordTests(unittest.TestCase):
     def test_preparation_follows_the_room_without_retaining_another_rooms_sword_flag(self):
         config = {"assets": "cache", "shuffle_master_sword": True}
-        self.assertEqual(preparation_settings(config, {"seed_file": {}}), {"assets": "cache"})
+        self.assertEqual(preparation_settings(config, {"seed_file": {}}),
+                         {"assets": "cache", "shops_always_open": False})
         enabled = preparation_settings({"assets": "cache"}, {"seed_file": {}, "shuffle_master_sword": True})
         self.assertIs(enabled["shuffle_master_sword"], True)
         self.assertIs(config["shuffle_master_sword"], True)
@@ -145,7 +146,7 @@ class MasterSwordTests(unittest.TestCase):
         self.assertIs(default_options()["shuffle_master_sword"], False)
         self.assertEqual(engine_settings({}), engine_settings({"shuffle_master_sword": True}))
         self.assertIn("  shuffle_master_sword: false\n", yaml_options())
-        self.assertIn("Épée de légende", yaml_options(language="fr"))
+        self.assertIn("épée de légende", yaml_options(language="fr").casefold())
         self.assertEqual(CHECK_FLAGS[LOCATION], [murmur3(FLAG_NAME)])
         self.assertEqual(LOCATION_IDS[LOCATION], LOCATION_ID)
         self.assertEqual(ITEM_IDS[ITEM], 0x6F71CC)

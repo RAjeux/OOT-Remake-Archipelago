@@ -9,13 +9,13 @@ not be compared directly with the remake's 118 native setting keys.
 
 The [native compatibility table](SETTINGS-COMPATIBILITY.md) accounts for all 118
 keys: 93 are exposed, and each omitted key has a specific implementation or
-compatibility reason. The full adult trade extension and DeathLink are additional
-controls. Some supported concepts have different names or narrower scopes:
+compatibility reason. Adult trades, the Master Sword, DeathLink and shop hours
+are additional integration controls. Some concepts have different names or narrower scopes:
 
 | Concept | Integration control or scope |
 | --- | --- |
 | Songs and shops | `shuffle_songs`, `shuffle_shops` |
-| Gold Skulltulas | `shuffle_skulltulas`; researched reward mappings, rather than every N64 tokensanity mode |
+| Gold Skulltulas | `shuffle_skulltulas`: 44-site subset or all 100 native sites; no separate N64 tokensanity scopes |
 | Dungeon entrances | `shuffle_entrances: dungeons`; no boss or mixed entrance shuffle |
 | Maps and Compasses | One combined `shuffle_mapcompass` control |
 | Starting equipment | `starting_items`, `starting_songs` and AP `start_inventory` |

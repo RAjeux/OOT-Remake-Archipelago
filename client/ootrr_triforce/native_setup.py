@@ -56,18 +56,32 @@ def bind_romfs(source, mod, data, baseline):
         from .master_sword import LOCATION as MASTER_SWORD_LOCATION
         from .cursor_resource import append_saved_bool
         after=append_saved_bool(after,CHECK_FLAGS[MASTER_SWORD_LOCATION][0])
-    if data.get("kokiri_shop_checks") or data.get("shop_check_mode") == "special_deals":
+    if data.get("kokiri_shop_checks") or data.get("shop_check_mode") in ("special_deals", "randomized_stock"):
         from .cursor_resource import append_saved_bool
         from .ap_shops import selected_shops
-        for name in sorted(selected_shops(data["checks"], data)):
-            after=append_saved_bool(after,SHOP_CHECKS[name]["flag"])
-    skulls=set(data.get("checks", ())).intersection(AP_SKULL_CHECKS)
+        selected=sorted(selected_shops(data["checks"], data))
+        if data.get("network_sources_schema")==1 and data.get("shop_check_mode")=="randomized_stock":
+            from .cursor_resource import append_saved_bools
+            after=append_saved_bools(after,[SHOP_CHECKS[name]["flag"] for name in selected])
+        else:
+            for name in selected:
+                after=append_saved_bool(after,SHOP_CHECKS[name]["flag"])
+    from .network_catalog import enabled, callback_sources, source_flags
+    network = enabled(data)
+    skulls=set(data.get("checks", ())).intersection(AP_SKULL_CHECKS) if not network else set()
     if skulls:
         from .ap_skulls import SCRATCH, NATIVE_SCRATCH
         from .cursor_resource import append_saved_bool, append_transient_string64
         from oot_rando.patching.soul_adapter import murmur3
         for name in sorted(skulls):
             after=append_saved_bool(after,SKULL_CHECKS[name]["flag"])
+        after=append_transient_string64(after,murmur3(SCRATCH))
+        after=append_transient_string64(after,murmur3(NATIVE_SCRATCH))
+    if network:
+        from .ap_skulls import SCRATCH, NATIVE_SCRATCH
+        from .cursor_resource import append_saved_bools, append_transient_string64
+        from .network_catalog import murmur3
+        after=append_saved_bools(after, [source_flags(name)[0] for name in callback_sources(data["checks"], data)])
         after=append_transient_string64(after,murmur3(SCRATCH))
         after=append_transient_string64(after,murmur3(NATIVE_SCRATCH))
     table=read(REST)
@@ -177,10 +191,12 @@ def save_session(root, config, data, roster, *, prepared=None):
     old=root/"native-session.json"
     previous=json.loads(old.read_bytes()) if old.is_file() else {}
     checks={}
+    from .network_catalog import enabled, check_flags
+    network = enabled(data)
     for n in data["checks"]:
         row=roster.get(n,("",""))
         item,owner=(row["item"],row["player"]) if isinstance(row,dict) else row
-        checks[LOCATION_IDS[n]]=dict(Name=n,Flags=CHECK_FLAGS[n],Item=item,Owner=owner)
+        checks[LOCATION_IDS[n]]=dict(Name=n,Flags=check_flags(n, network=True) if network else CHECK_FLAGS[n],Item=item,Owner=owner)
         if isinstance(row,dict):
             checks[LOCATION_IDS[n]]["ItemID"]=row.get("item_id",0)
             checks[LOCATION_IDS[n]]["Recipient"]=row.get("owner",0)
@@ -228,7 +244,7 @@ def runtime_cache_name(baseline):
     if getattr(sys, "frozen", False) and version.is_file():
         digest.update(version.read_bytes())
     for source in sorted(resources.files(__package__).iterdir(), key=lambda path:path.name):
-        if source.is_file() and source.name.endswith((".py", ".cjs", ".wasm")):
+        if source.is_file() and source.name.endswith((".py", ".cjs", ".wasm", ".json")):
             digest.update(source.name.encode("utf-8")); digest.update(source.read_bytes())
     return "jeu-016-mod-"+str(baseline)+"-"+digest.hexdigest()[:16]
 

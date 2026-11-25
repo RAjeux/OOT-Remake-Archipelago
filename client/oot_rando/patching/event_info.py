@@ -25,6 +25,28 @@ Field arrival lists that event, so from an item get the transition never started
 ``ActionGuide_IsRequestOcarina`` (not saved: cleared by a reload) stayed true.
 """
 import copy
+from contextlib import contextmanager
+from contextvars import ContextVar
+
+
+_analysis_cache = ContextVar("ootrr_event_analysis_cache", default=None)
+
+
+@contextmanager
+def analysis_scope():
+    """Reuse read-only parsed flow snapshots only within this preparation.
+
+    A fresh context isolates nested/threaded preparations. Byte content is the
+    version key; changed buffers never reuse an older graph. Explicit cleanup
+    releases large charts on success and exceptions, without a process cache.
+    """
+    cache = {}
+    token = _analysis_cache.set(cache)
+    try:
+        yield
+    finally:
+        cache.clear()
+        _analysis_cache.reset(token)
 
 GAME_ANALYZED_EVENT_INFO = 'RSDB/GameAnalyzedEventInfo.Product.111.rstbl.byml.zs'
 FLOWS = 'Event/EventFlow/'
@@ -49,8 +71,23 @@ def flow_name(path):
 
 
 def _chart(raw):
+    return _parsed(raw)[0]
+
+
+def _parsed(raw):
     from oot_rando.patching.event_patch import _flow
-    return _flow(raw).flowchart
+    cache = _analysis_cache.get()
+    key = bytes(raw)
+    result = cache.get(key) if cache is not None else None
+    if result is None:
+        chart = _flow(key).flowchart
+        events = {}
+        for event in chart.events:
+            events.setdefault(event.name, []).append(event)
+        result = chart, {point.name: point for point in chart.entry_points}, events
+        if cache is not None:
+            cache[key] = result
+    return result
 
 
 def _successors(event):
@@ -100,13 +137,12 @@ def entry_transitions(raw, entry):
 def _entry_walk(raw, entry, start=None):
     """(external calls, transition events) reachable from ``entry`` (or from the event named ``start``)."""
     from evfl.event import ActionEvent, SubFlowEvent
-    chart = _chart(raw) if raw is not None else None
-    if chart is None:
+    if raw is None:
         return set(), set()
-    entries = {e.name: e for e in chart.entry_points}
+    chart, entries, by_name = _parsed(raw)
     calls, transitions, seen_entries, seen = set(), set(), set(), set()
     stack = [entries[entry]] if entry in entries else []
-    events = [e for e in chart.events if e.name == start] if start is not None else []
+    events = list(by_name.get(start, ())) if start is not None else []
     while stack or events:
         if events:
             event = events.pop()

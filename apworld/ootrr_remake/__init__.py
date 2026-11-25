@@ -14,6 +14,8 @@ from .shop_pool import SHOP_CHECK_MODE, shop_checks
 from .master_sword import (SETTING as MASTER_SWORD_SETTING, ITEM as MASTER_SWORD_ITEM,
                            LOCATION as MASTER_SWORD_LOCATION, proof_wave as master_sword_wave,
                            token_material as master_sword_token)
+from .network_catalog import SCHEMA as NETWORK_SCHEMA, SHOP_MODE as NETWORK_SHOP_MODE, validate_sources
+from .network_placement import allowed as allowed_placement, placement_priority, prefill_scoped_items
 
 
 class RemakeWeb(WebWorld):
@@ -39,42 +41,50 @@ class RemakeWorld(World):
 
     def generate_early(self):
         values = option_values(self.options)
+        self.native_options = dict(values)
         settings = engine_settings(values)
         local_seed = f"AP-{self.random.getrandbits(64):016X}"
         generated = json.loads(run_engine("generate", {"settings": settings, "seed": local_seed}))
+        progression = generated.get("progression_items")
+        if (not isinstance(progression, list) or any(not isinstance(name, str) for name in progression)
+                or len(progression) != len(set(progression))):
+            raise ValueError("The packaged engine does not expose its progression proof.")
+        self.progression_items = set(progression) & ITEM_IDS.keys()
         self.seed_file = generated["seed_file"]
-        self.shop_checks = shop_checks(self.seed_file)
+        self.network_sources = validate_sources(generated)
+        if not self.network_sources:
+            raise ValueError("The packaged engine does not expose randomized network sources.")
+        self.shop_checks = shop_checks(self.seed_file, mode=NETWORK_SHOP_MODE)
+        self.shops_always_open = bool(values.get("shops_always_open", False))
         self.kokiri_shop_checks = False
         self.shuffle_skulltulas = values.get("shuffle_skulltulas", "off")
         self.adult_trade_shuffle = bool(values.get("adult_trade_shuffle", False))
         self.shuffle_master_sword = bool(values.get(MASTER_SWORD_SETTING, False))
-        eligible_skulls = (PINNED_SKULL_CHECKS if self.shuffle_skulltulas == "pinned" else
-                           AP_SKULL_CHECKS if self.shuffle_skulltulas == "matched" else frozenset())
         self.local_skulltulas = {}
-        if self.shuffle_skulltulas != "off":
-            self.local_skulltulas = {
-                name: ("Native-only: actor mapping is outside the pinned set; OOTRR's reward stays local."
-                       if self.shuffle_skulltulas == "pinned" else
-                       "Native-only: uncertain actor mapping; OOTRR's generated reward stays local.")
-                for name in self.seed_file["placements"] if name in SKULL_CHECKS and name not in eligible_skulls}
-            reachable = {name for wave in generated["waves"] for name in wave}
-            bean_ride = "ZR GS Near Raised Grottos"
-            # OOTRR explicitly marks this optional bean ride out of logic until
-            # beans are preplanted or the player starts with all ten beans.
-            # Keep its native reward rather than exporting an unproved AP check.
-            if (bean_ride in self.seed_file["placements"] and bean_ride not in reachable
-                    and not values.get("plant_beans") and "magic_beans" not in values.get("starting_items", ())):
-                self.local_skulltulas[bean_ride] = (
-                    "Native-only: OOTRR does not prove this bean ride without preplanted or starting beans.")
-        rewards = {name: prize for name, prize in self.seed_file["placements"].items()
-                   if name in CHESTS or (name in eligible_skulls and name not in self.local_skulltulas)
-                   or (self.adult_trade_shuffle and name in TRADE_CHECKS)}
+        rewards = {name: row["generated_item"] for name, row in self.network_sources.items()}
         if self.adult_trade_shuffle and not set(TRADE_CHECKS) <= rewards.keys():
             raise ValueError("Adult trade shuffle requires all eleven supported trade rewards.")
         shops = self.seed_file.get("shops", {})
         rewards.update({name: shops[name]["item"] for name in self.shop_checks})
         proof_waves = [list(names) for names in generated["waves"]]
+        missing = set(rewards) - {name for names in proof_waves for name in names}
+        self.optional_sources = {name: row for name, row in generated.get("optional_sources", {}).items()
+                                 if name in missing}
+        if missing != set(self.optional_sources):
+            raise ValueError("The engine did not prove access to these locations: "
+                             + ", ".join(sorted(missing - self.optional_sources.keys())))
+        # Native out-of-logic collectibles stay networked. They cannot provide
+        # anything needed by the native proof: their region requires every
+        # proven logical reward first. Unknown unproved sources still fail generation.
+        if missing:
+            hundred = "Kak 100 Gold Skulltula Reward"
+            ordinary = sorted(missing - {hundred})
+            if ordinary:
+                proof_waves.append(ordinary)
+            if hundred in missing:
+                proof_waves.append([hundred])
         if self.shuffle_master_sword:
+            self.progression_items.add(MASTER_SWORD_ITEM)
             # The native engine still proves vanilla sword ownership at the
             # first draw. Export its grant independently of the Time Travel
             # event, using the pedestal observer even when NPCs are vanilla.
@@ -111,12 +121,20 @@ class RemakeWorld(World):
         self.multiworld.regions.append(start)
         self.rules_at = {}
         for wave in sorted({*self.waves.values(), self.goal_wave}):
-            # The native search already collects reachable non-AP rewards, including
-            # events, shops and starting inventory. Requiring every AP reward from
-            # earlier spheres preserves that reachability proof after AP moves them.
-            # Counts matter: repeated keys, hearts and progressive tiers are distinct.
+            # Preserve the native search's logical inventory, including counted
+            # keys, conditional hearts and progressive tiers. Nonlogical junk
+            # must not create extra gates merely because it enters the AP pool.
             required = tuple(sorted(Counter(prize for name, prize in self.moved.items()
-                                            if self.waves[name] < wave).items()))
+                                            if self.waves[name] < wave and prize in self.progression_items).items()))
+            if ("Kak 100 Gold Skulltula Reward" in self.optional_sources
+                    and self.waves["Kak 100 Gold Skulltula Reward"] == wave):
+                counts = Counter(dict(required))
+                token = "Gold Skulltula Token"
+                # Unshuffled tokens retain their native sources. Every moved
+                # token must be owned before the 100-token reward, even when
+                # the native seed originally left that last token here.
+                counts[token] = max(counts[token], sum(prize == token for prize in self.moved.values()))
+                required = tuple(sorted((name, count) for name, count in counts.items() if count))
             rule = lambda state, counts=required: all(state.has(name, self.player, count) for name, count in counts)
             self.rules_at[wave] = rule
             region = Region(f"Hyrule {wave + 1}", self.player, self.multiworld)
@@ -125,10 +143,9 @@ class RemakeWorld(World):
             for name, depth in self.waves.items():
                 if depth == wave:
                     location = RemakeLocation(self.player, name, LOCATION_IDS[name], region)
-                    if name in AP_SKULL_CHECKS:
-                        # The native drop commits collection after its get event.
-                        # A refill could fail without an empty bottle, so keep
-                        # those local rewards at sources that can refuse them.
+                    if self.network_sources.get(name, {}).get("kind") != "shop":
+                        # Shelf purchases can refuse a refill before payment.
+                        # Other sources must always complete their own reward.
                         def skull_item_rule(item, player=self.player):
                             metadata = ITEM_DATA.get(getattr(item, "name", ""), {})
                             refill = metadata.get("bottle_item") and metadata.get("pouch_special") == "NotPushToPouch"
@@ -141,8 +158,49 @@ class RemakeWorld(World):
             if self.shuffle_master_sword else goal)
 
     def create_item(self, name):
-        classification = ItemClassification.filler if name == FILLER else ItemClassification.progression
+        if name in self.progression_items:
+            classification = ItemClassification.progression
+        else:
+            # Maps/compasses and refills can have few legal locations. Use
+            # AP's restrictive placement phase without counting them as logical
+            # requirements or using them for progression balancing.
+            classification = (ItemClassification.progression_skip_balancing
+                              if placement_priority(name, self.native_options) else ItemClassification.filler)
         return RemakeItem(name, classification, ITEM_IDS[name], self.player)
+
+    @classmethod
+    def stage_set_rules(cls, multiworld):
+        """Apply explicit Zelda placement modes to every world's AP locations.
+
+        A keysanity item can leave Hyrule. A dungeon-only item must also be
+        rejected by another game's location, so a Zelda-only rule is not enough.
+        AP calls this hook after all worlds have installed their own rules.
+        """
+        for location in multiworld.get_locations():
+            source_world = multiworld.worlds[location.player]
+            source_options = getattr(source_world, "native_options", {})
+            descriptor = getattr(source_world, "network_sources", {}).get(location.name, {})
+            if location.name == MASTER_SWORD_LOCATION and source_world.game == GAME:
+                descriptor = {"native_kind": "master_sword",
+                              "placement": {"dungeon": None, "region_group": "castle"}}
+            previous = location.item_rule
+            def rule(item, previous=previous, source=location, source_world=source_world,
+                     descriptor=descriptor, source_options=source_options):
+                recipient = multiworld.worlds[item.player]
+                if descriptor.get("placement", {}).get("junk_only"):
+                    token = item.game == GAME and ITEM_DATA.get(item.name, {}).get("kind") == "Token"
+                    if item.advancement or token:
+                        return False
+                return previous(item) and allowed_placement(
+                    item.name, item.player, item.game, getattr(recipient, "native_options", {}),
+                    source.name, source.player, source_world.game, descriptor, source_options)
+            location.item_rule = rule
+
+    @classmethod
+    def stage_pre_fill(cls, multiworld):
+        """Let AP place narrowly scoped pools before unrestricted rewards."""
+        from Fill import fill_restrictive, sweep_from_pool
+        prefill_scoped_items(multiworld, fill_restrictive, sweep_from_pool)
 
     def get_filler_item_name(self):
         return FILLER
@@ -167,7 +225,8 @@ class RemakeWorld(World):
         return {"protocol": PROTOCOL, "token": self.token, "checks": sorted(LOCATION_IDS[n] for n in self.waves),
                 "death_link": bool(self.options.death_link.value), "reward_mode": LOCATION_REWARD_MODE,
                 "local_items": True, "kokiri_shop_checks": self.kokiri_shop_checks,
-                "shop_check_mode": SHOP_CHECK_MODE, "shop_checks": sorted(self.shop_checks),
+                "shop_check_mode": NETWORK_SHOP_MODE, "shop_checks": sorted(self.shop_checks),
+                "network_sources_schema": NETWORK_SCHEMA, "shops_always_open": self.shops_always_open,
                 "foreign_only_shops": False, "shuffle_skulltulas": self.shuffle_skulltulas,
                 "local_skulltulas": self.local_skulltulas, "adult_trade_shuffle": self.adult_trade_shuffle,
                 MASTER_SWORD_SETTING: self.shuffle_master_sword}
@@ -178,7 +237,9 @@ class RemakeWorld(World):
                   "checks": sorted(self.waves), "moved": self.moved,
                   "death_link": bool(self.options.death_link.value), "reward_mode": LOCATION_REWARD_MODE,
                   "local_items": True, "kokiri_shop_checks": self.kokiri_shop_checks,
-                  "shop_check_mode": SHOP_CHECK_MODE, "shop_checks": sorted(self.shop_checks),
+                  "shop_check_mode": NETWORK_SHOP_MODE, "shop_checks": sorted(self.shop_checks),
+                  "network_sources_schema": NETWORK_SCHEMA, "network_sources": self.network_sources,
+                  "shops_always_open": self.shops_always_open,
                   "foreign_only_shops": False, "shuffle_skulltulas": self.shuffle_skulltulas,
                   "local_skulltulas": self.local_skulltulas, "adult_trade_shuffle": self.adult_trade_shuffle,
                   MASTER_SWORD_SETTING: self.shuffle_master_sword}

@@ -1828,3 +1828,22 @@ LOCATION_IDS[MASTER_SWORD_LOCATION] = MASTER_SWORD_ID
 CHECK_FLAGS[MASTER_SWORD_LOCATION] = [3657094742]  # murmur3(MASTER_SWORD_FLAG_NAME)
 
 del _name
+
+# The same native engine now exposes every selected source. Append new IDs;
+# never renumber an identity from a released player file.
+from .network_catalog import SOURCES as NETWORK_SOURCES, extend_ids, murmur3
+LEGACY_CHESTS = frozenset(CHESTS)
+extend_ids(LOCATION_IDS)
+for _name, _source in NETWORK_SOURCES.items():
+    if _source["kind"] == "chest" and _name not in CHESTS:
+        _refs = {}
+        for _variant in _source["variants"]:
+            _hash = _variant["actor"]
+            _ref = _refs.setdefault(_hash, {"actor": _hash, "files": [],
+                                           "flag": murmur3("IsTreasureBoxOpen." + _hash)})
+            _ref["files"].append(_variant["file"])
+        CHESTS[_name] = list(_refs.values())
+        CHECK_FLAGS[_name] = [_ref["flag"] for _ref in CHESTS[_name]]
+    elif _name not in CHECK_FLAGS:
+        CHECK_FLAGS[_name] = [murmur3("Archipelago.Source." + str(LOCATION_IDS[_name]))]
+del _name, _source

@@ -72,6 +72,7 @@ def build_trade_rewards(pouch_raw, presenter_raw, roster, *, native_info=None, g
     from .native_presentations import (AMMO_BAGS, PRESENTER_NAME, append_recipe, append_tier_choice,
                                        copy_entry, copy_receipt_presenter, receipt_style)
     from .receipt_events import _action, _silent_grant
+    from .presentation_models import SHOW_ACTOR_ARGUMENT, model_actor, needs_model_alias
     from .restoration import _native_source
     from .trade_state import append_reconcile
 
@@ -121,7 +122,7 @@ def build_trade_rewards(pouch_raw, presenter_raw, roster, *, native_info=None, g
         effect = commit
         if record["local"]:
             effect = append_recipe(pouch, metadata, core_name, grant, commit, pickup=style == "pickup")
-            if isinstance(effect.data, SubFlowEvent) and effect.data.entry_point_name == grant:
+            if isinstance(effect.data, SubFlowEvent):
                 link(effect, commit)
 
         # All mutation lives in the presentation's real grant callback. A quit
@@ -173,8 +174,10 @@ def build_trade_rewards(pouch_raw, presenter_raw, roster, *, native_info=None, g
                                          {"ActorName": actor})
                     link(call, popup)
                 return call
-            call = pouch.subflow(branch + "_Show", PRESENTER_NAME, shown,
-                                 {"ActorName": actor, "IsNpcEventStarter": False})
+            arguments = {"ActorName": actor, "IsNpcEventStarter": False}
+            if needs_model_alias(metadata):
+                arguments[SHOW_ACTOR_ARGUMENT] = model_actor(actor)
+            call = pouch.subflow(branch + "_Show", PRESENTER_NAME, shown, arguments)
             return call
 
         # The copied native presenter enters the effect callback directly.

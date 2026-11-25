@@ -1,0 +1,1432 @@
+{
+  "flags": {
+    "Bottom of the Well Back Left Bombable Chest": [
+      190510511
+    ],
+    "Bottom of the Well Center Skulltula Chest": [
+      969453275
+    ],
+    "Bottom of the Well Fire Keese Chest": [
+      1673615830
+    ],
+    "Bottom of the Well Front Center Bombable Chest": [
+      193051954
+    ],
+    "Bottom of the Well Front Left Fake Wall Chest": [
+      4188699192
+    ],
+    "Bottom of the Well GS East Inner Room": [
+      1084002996
+    ],
+    "Bottom of the Well GS Like Like Cage": [
+      3487426574
+    ],
+    "Bottom of the Well GS West Inner Room": [
+      4130854379
+    ],
+    "Bottom of the Well Invisible Chest": [
+      2131010186
+    ],
+    "Bottom of the Well Map Chest": [
+      2663093503
+    ],
+    "Bottom of the Well Right Bottom Fake Wall Chest": [
+      1323349268
+    ],
+    "Colossus GS Bean Patch": [
+      1071668362
+    ],
+    "Colossus GS Hill": [
+      1360452363
+    ],
+    "Colossus GS Tree": [
+      3309945843
+    ],
+    "Colossus Grotto Beamos Chest": [
+      1357593998
+    ],
+    "DMC GS Bean Patch": [
+      3332083260
+    ],
+    "DMC GS Crate": [
+      3226032416
+    ],
+    "DMC Hammer Grotto Chest": [
+      574873167
+    ],
+    "DMC Upper Grotto Chest": [
+      1961810782
+    ],
+    "DMT Biggoron": [
+      3358687849
+    ],
+    "DMT Chest": [
+      1775851429
+    ],
+    "DMT GS Above Dodongos Cavern": [
+      2524200215
+    ],
+    "DMT GS Bean Patch": [
+      3171612443
+    ],
+    "DMT GS Falling Rocks Path": [
+      4204831327
+    ],
+    "DMT GS Near Kak": [
+      2298615470
+    ],
+    "DMT Trade Broken Sword": [
+      3077600440
+    ],
+    "DMT Trade Eyedrops": [
+      1573822383
+    ],
+    "Deku Tree Basement Chest": [
+      605224955
+    ],
+    "Deku Tree Compass Room Side Chest": [
+      4178261177
+    ],
+    "Deku Tree GS Basement Back Room": [
+      2395513594
+    ],
+    "Deku Tree GS Basement Gate": [
+      3766339304
+    ],
+    "Deku Tree GS Basement Vines": [
+      2537989309
+    ],
+    "Deku Tree GS Compass Room": [
+      2505188707
+    ],
+    "Deku Tree Slingshot Room Side Chest": [
+      1293491650
+    ],
+    "Dodongos Cavern Bomb Flower Platform Chest": [
+      601865423
+    ],
+    "Dodongos Cavern End of Bridge Chest": [
+      902257305
+    ],
+    "Dodongos Cavern GS Alcove Above Stairs": [
+      378001134
+    ],
+    "Dodongos Cavern GS Back Room": [
+      1703291886
+    ],
+    "Dodongos Cavern GS Scarecrow": [
+      3672002515
+    ],
+    "Dodongos Cavern GS Side Room Near Lower Lizalfos": [
+      353076719
+    ],
+    "Dodongos Cavern GS Vines Above Stairs": [
+      1896018465
+    ],
+    "Dodongos Cavern Lobby Bombable Chest": [
+      3295293238
+    ],
+    "Dodongos Cavern Lower Lizalfos Chest": [
+      2072470569
+    ],
+    "Dodongos Cavern Staircase Top Bombable Chest": [
+      2848396638
+    ],
+    "Dodongos Cavern Upper Lizalfos Chest": [
+      2292971855
+    ],
+    "Fire Temple Big Lava Room Blocked Door Chest": [
+      885548230
+    ],
+    "Fire Temple Boulder Maze Shortcut Chest": [
+      3811910781
+    ],
+    "Fire Temple Boulder Maze Upper Chest": [
+      1482831027
+    ],
+    "Fire Temple Flare Dancer Chest": [
+      2988341838
+    ],
+    "Fire Temple GS Boss Key Loop": [
+      1752665075
+    ],
+    "Fire Temple GS Boulder Maze": [
+      3871003270
+    ],
+    "Fire Temple GS Scarecrow Climb": [
+      4214251373
+    ],
+    "Fire Temple GS Scarecrow Top": [
+      1531617244
+    ],
+    "Fire Temple GS Song of Time Room": [
+      2579697477
+    ],
+    "Fire Temple Highest Goron Chest": [
+      1230557683
+    ],
+    "Fire Temple Scarecrow Chest": [
+      1307652362
+    ],
+    "Fire Temple Scarecrow Ledge Second Chest": [
+      945296694
+    ],
+    "Fire Temple Scarecrow Ledge Third Chest": [
+      3931281414
+    ],
+    "Forest Temple Basement Chest": [
+      1418713553
+    ],
+    "Forest Temple Eye Switch Chest": [
+      2786780332
+    ],
+    "Forest Temple First Room Chest": [
+      2342141199
+    ],
+    "Forest Temple First Stalfos Chest": [
+      2230201688
+    ],
+    "Forest Temple Floormaster Chest": [
+      426439574
+    ],
+    "Forest Temple GS Basement": [
+      1039829253
+    ],
+    "Forest Temple GS First Room": [
+      3153534286
+    ],
+    "Forest Temple GS Level Island Courtyard": [
+      131679527
+    ],
+    "Forest Temple GS Lobby": [
+      280574213
+    ],
+    "Forest Temple GS Raised Island Courtyard": [
+      1081346038
+    ],
+    "Forest Temple Red Poe Chest": [
+      2603488607
+    ],
+    "Forest Temple Well Chest": [
+      1863128383
+    ],
+    "GC GS Boulder Maze": [
+      3472573057
+    ],
+    "GC GS Center Platform": [
+      2824206327
+    ],
+    "GC Maze Center Chest": [
+      1052436092
+    ],
+    "GC Maze Left Chest": [
+      2000110264
+    ],
+    "GC Maze Right Chest": [
+      4106085104
+    ],
+    "GC Maze Silver Chest": [
+      2466978460
+    ],
+    "GC Shop Item 1": [
+      2607540219
+    ],
+    "GC Shop Item 2": [
+      1562093429
+    ],
+    "GC Shop Item 3": [
+      948821012
+    ],
+    "GC Shop Item 4": [
+      1843498639
+    ],
+    "GC Shop Item 5": [
+      1925471978
+    ],
+    "GC Shop Item 6": [
+      51940895
+    ],
+    "GC Shop Item 7": [
+      2621615877
+    ],
+    "GC Shop Item 8": [
+      1406555697
+    ],
+    "GF Chest": [
+      1755114472
+    ],
+    "GF GS Archery Range": [
+      1297449995
+    ],
+    "GF GS Top Floor": [
+      1108419056
+    ],
+    "GF Hideout Hole Chest": [
+      3853133985
+    ],
+    "GV Chest": [
+      368262048
+    ],
+    "GV GS Bean Patch": [
+      1805044300
+    ],
+    "GV GS Behind Tent": [
+      696872552
+    ],
+    "GV GS Pillar": [
+      2834196544
+    ],
+    "GV GS Small Bridge": [
+      1946273873
+    ],
+    "GV Octorok Grotto Chest": [
+      4207438301
+    ],
+    "GV Storms Grotto Chest": [
+      2717300398
+    ],
+    "GV Storms Grotto Lens Chest": [
+      1938222105,
+      1787567071
+    ],
+    "GV Trade Poachers Saw": [
+      2917022404
+    ],
+    "Ganons Castle Forest Trial Chest": [
+      382178283
+    ],
+    "Ganons Castle Light Trial First Left Chest": [
+      3309686743
+    ],
+    "Ganons Castle Light Trial Invisible Enemies Chest": [
+      2522688064
+    ],
+    "Ganons Castle Light Trial Lullaby Chest": [
+      611316640
+    ],
+    "Ganons Castle Light Trial Lullaby Room Invisible Chest": [
+      4134181619
+    ],
+    "Ganons Castle Light Trial Second Right Chest": [
+      846048197
+    ],
+    "Ganons Castle Light Trial Third Left Chest": [
+      3414708626
+    ],
+    "Ganons Castle Shadow Trial Front Chest": [
+      1447194364
+    ],
+    "Ganons Castle Spirit Trial Crystal Switch Chest": [
+      2233873468
+    ],
+    "Ganons Castle Water Trial Right Chest": [
+      4047565456
+    ],
+    "Ganons Tower Boss Key Chest": [
+      3585653778
+    ],
+    "Gerudo Training Ground Beamos Chest": [
+      1980317873
+    ],
+    "Gerudo Training Ground Before Heavy Block Chest": [
+      4124864288
+    ],
+    "Gerudo Training Ground Eye Statue Chest": [
+      1727074269
+    ],
+    "Gerudo Training Ground Freestanding Key": [
+      3933003337
+    ],
+    "Gerudo Training Ground Hammer Room Switch Chest": [
+      2179705387
+    ],
+    "Gerudo Training Ground Heavy Block Fifth Chest": [
+      2248327974
+    ],
+    "Gerudo Training Ground Heavy Block First Chest": [
+      435478221
+    ],
+    "Gerudo Training Ground Heavy Block Second Chest": [
+      1229209380
+    ],
+    "Gerudo Training Ground Heavy Block Third Chest": [
+      776396307
+    ],
+    "Gerudo Training Ground Hidden Ceiling Chest": [
+      2105620594
+    ],
+    "Gerudo Training Ground Lobby Right Chest": [
+      1111203405
+    ],
+    "Gerudo Training Ground Maze Path First Chest": [
+      2421499340
+    ],
+    "Gerudo Training Ground Maze Path Second Chest": [
+      749318105
+    ],
+    "Gerudo Training Ground Maze Path Third Chest": [
+      3552031247
+    ],
+    "Gerudo Training Ground Maze Right Central Chest": [
+      4259375778
+    ],
+    "Gerudo Training Ground Maze Right Side Chest": [
+      1634430530
+    ],
+    "Gerudo Training Ground Near Scarecrow Chest": [
+      4080865971
+    ],
+    "Gerudo Training Ground Stalfos Chest": [
+      3751945967
+    ],
+    "Gerudo Training Ground Underwater Silver Rupee Chest": [
+      730436757
+    ],
+    "Graveyard GS Bean Patch": [
+      3881327907
+    ],
+    "Graveyard GS Wall": [
+      2652574563
+    ],
+    "Graveyard Heart Piece Grave Chest": [
+      2626274661
+    ],
+    "Graveyard Shield Grave Chest": [
+      971290604
+    ],
+    "HC GS Storms Grotto": [
+      1113916800
+    ],
+    "HC GS Tree": [
+      422882388
+    ],
+    "HF East Poe Chest": [
+      2982691321
+    ],
+    "HF GS Cow Grotto": [
+      999257077
+    ],
+    "HF GS Near Kak Grotto": [
+      1337870630
+    ],
+    "HF Lake Poe Chest": [
+      4115265555
+    ],
+    "HF Open Grotto Chest": [
+      3390613229
+    ],
+    "HF Redead Grotto Chest": [
+      2020938610
+    ],
+    "HF South Poe Chest": [
+      1994906518
+    ],
+    "HF Tunnel Ledge Chest": [
+      2416810057
+    ],
+    "Ice Cavern Compass Chest": [
+      665008794
+    ],
+    "Ice Cavern GS Heart Piece Room": [
+      2211023347
+    ],
+    "Ice Cavern GS Push Block Room": [
+      2971100548
+    ],
+    "Ice Cavern GS Spinning Scythe Room": [
+      4172341241
+    ],
+    "Ice Cavern Map Chest": [
+      3029639833
+    ],
+    "Ice Cavern Push Block Room Chest": [
+      3688108408
+    ],
+    "Jabu Jabus Belly Basement 2 Octoroks Chest": [
+      3744916514
+    ],
+    "Jabu Jabus Belly GS Lobby Basement Lower": [
+      3085953678
+    ],
+    "Jabu Jabus Belly GS Lobby Basement Upper": [
+      4028469827
+    ],
+    "Jabu Jabus Belly GS Near Boss": [
+      745946829
+    ],
+    "Jabu Jabus Belly GS Water Switch Room": [
+      1231962787
+    ],
+    "Jabu Jabus Belly Map Chest": [
+      1179700852
+    ],
+    "KF GS Bean Patch": [
+      1319123148
+    ],
+    "KF GS House of Twins": [
+      1929979081
+    ],
+    "KF GS Know It All House": [
+      2121729955
+    ],
+    "KF Midos Bottom Left Chest": [
+      829262368
+    ],
+    "KF Midos Bottom Right Chest": [
+      4168142859
+    ],
+    "KF Midos Top Left Chest": [
+      1181753597
+    ],
+    "KF Midos Top Right Chest": [
+      3362011206
+    ],
+    "KF Shop Item 1": [
+      2391631128
+    ],
+    "KF Shop Item 2": [
+      3754317122
+    ],
+    "KF Shop Item 3": [
+      3627787682
+    ],
+    "KF Shop Item 4": [
+      643523738
+    ],
+    "KF Shop Item 5": [
+      908325396
+    ],
+    "KF Shop Item 6": [
+      3881979448
+    ],
+    "KF Shop Item 7": [
+      2733564042
+    ],
+    "KF Shop Item 8": [
+      1369278633
+    ],
+    "KF Storms Grotto Chest": [
+      3052080685
+    ],
+    "KF West Ledge Chest": [
+      3843384773
+    ],
+    "Kak Anju Trade Pocket Cucco": [
+      3753071489
+    ],
+    "Kak Anju as Adult": [
+      871549555
+    ],
+    "Kak Bazaar Item 1": [
+      2380855029
+    ],
+    "Kak Bazaar Item 2": [
+      4249640796
+    ],
+    "Kak Bazaar Item 3": [
+      1966279373
+    ],
+    "Kak Bazaar Item 4": [
+      2371327152
+    ],
+    "Kak Bazaar Item 5": [
+      1173644999
+    ],
+    "Kak Bazaar Item 6": [
+      3459624267
+    ],
+    "Kak Bazaar Item 7": [
+      2269739505
+    ],
+    "Kak Bazaar Item 8": [
+      3602510405
+    ],
+    "Kak GS Above Impas House": [
+      1481907516
+    ],
+    "Kak GS House Under Construction": [
+      846545703
+    ],
+    "Kak GS Near Gate Guard": [
+      2400449050
+    ],
+    "Kak GS Skulltula House": [
+      2672377516
+    ],
+    "Kak GS Tree": [
+      1385139988
+    ],
+    "Kak GS Watchtower": [
+      4103178845
+    ],
+    "Kak Granny Trade Odd Mushroom": [
+      598682940
+    ],
+    "Kak Open Grotto Chest": [
+      1826940282
+    ],
+    "Kak Potion Shop Item 1": [
+      2096403900
+    ],
+    "Kak Potion Shop Item 2": [
+      1254541268
+    ],
+    "Kak Potion Shop Item 3": [
+      1535694759
+    ],
+    "Kak Potion Shop Item 4": [
+      3827864419
+    ],
+    "Kak Potion Shop Item 5": [
+      1656422775
+    ],
+    "Kak Potion Shop Item 6": [
+      2190867676
+    ],
+    "Kak Potion Shop Item 7": [
+      2515517248
+    ],
+    "Kak Potion Shop Item 8": [
+      2279557089
+    ],
+    "Kak Windmill Roof Chest": [
+      2378071281,
+      453461903
+    ],
+    "LH GS Bean Patch": [
+      3490598089
+    ],
+    "LH GS Lab Crate": [
+      2298363202
+    ],
+    "LH GS Lab Wall": [
+      2529067745
+    ],
+    "LH GS Small Island": [
+      52638640
+    ],
+    "LH GS Tree": [
+      3714902993
+    ],
+    "LH Trade Eyeball Frog": [
+      2509098768
+    ],
+    "LLR GS Back Wall": [
+      941078848
+    ],
+    "LLR GS House Window": [
+      827563049
+    ],
+    "LLR GS Rain Shed": [
+      213171911
+    ],
+    "LLR GS Tree": [
+      1981300375
+    ],
+    "LW GS Above Theater": [
+      823265271
+    ],
+    "LW GS Bean Patch Near Bridge": [
+      3582578071
+    ],
+    "LW GS Bean Patch Near Theater": [
+      830063021
+    ],
+    "LW Trade Cojiro": [
+      1958497851
+    ],
+    "LW Trade Odd Potion": [
+      2561926672
+    ],
+    "Market Bazaar Item 1": [
+      3421016306
+    ],
+    "Market Bazaar Item 2": [
+      1870583649
+    ],
+    "Market Bazaar Item 3": [
+      709063589
+    ],
+    "Market Bazaar Item 4": [
+      1855862444
+    ],
+    "Market Bazaar Item 5": [
+      4230325185
+    ],
+    "Market Bazaar Item 6": [
+      1989297048
+    ],
+    "Market Bazaar Item 7": [
+      788060179
+    ],
+    "Market Bazaar Item 8": [
+      3396034306
+    ],
+    "Market Bombchu Shop Item 1": [
+      3680976896
+    ],
+    "Market Bombchu Shop Item 2": [
+      1806523265
+    ],
+    "Market Bombchu Shop Item 3": [
+      1762712872
+    ],
+    "Market Bombchu Shop Item 4": [
+      1040773138
+    ],
+    "Market Bombchu Shop Item 5": [
+      1848518822
+    ],
+    "Market Bombchu Shop Item 6": [
+      334985890
+    ],
+    "Market Bombchu Shop Item 7": [
+      3674925158
+    ],
+    "Market Bombchu Shop Item 8": [
+      659707089
+    ],
+    "Market GS Guard House": [
+      3427813955
+    ],
+    "Market Potion Shop Item 1": [
+      3523354564
+    ],
+    "Market Potion Shop Item 2": [
+      3829115065
+    ],
+    "Market Potion Shop Item 3": [
+      566170870
+    ],
+    "Market Potion Shop Item 4": [
+      647685223
+    ],
+    "Market Potion Shop Item 5": [
+      2702621147
+    ],
+    "Market Potion Shop Item 6": [
+      383512441
+    ],
+    "Market Potion Shop Item 7": [
+      967211084
+    ],
+    "Market Potion Shop Item 8": [
+      1466683511
+    ],
+    "OGC GS": [
+      2226147927
+    ],
+    "SFM GS": [
+      3457880838
+    ],
+    "SFM Time Block Grotto Chest": [
+      2473051484
+    ],
+    "SFM Wolfos Grotto Chest": [
+      989192419
+    ],
+    "Shadow Temple After Wind Enemy Chest": [
+      3081815556
+    ],
+    "Shadow Temple After Wind Hidden Chest": [
+      3549298180
+    ],
+    "Shadow Temple Early Silver Rupee Chest": [
+      2473667363
+    ],
+    "Shadow Temple Falling Spikes Lower Chest": [
+      2667034826
+    ],
+    "Shadow Temple Falling Spikes Switch Chest": [
+      1652069460
+    ],
+    "Shadow Temple GS Falling Spikes Room": [
+      3167099751
+    ],
+    "Shadow Temple GS Invisible Blades Room": [
+      740741030
+    ],
+    "Shadow Temple GS Near Ship": [
+      642332621
+    ],
+    "Shadow Temple GS Single Giant Pot": [
+      103248881
+    ],
+    "Shadow Temple GS Triple Giant Pot": [
+      1844128020
+    ],
+    "Shadow Temple Invisible Blades Invisible Chest": [
+      2138134535
+    ],
+    "Shadow Temple Invisible Blades Visible Chest": [
+      2210036084
+    ],
+    "Shadow Temple Invisible Floormaster Chest": [
+      1507271454
+    ],
+    "Shadow Temple Spike Walls Left Chest": [
+      1629692153
+    ],
+    "Shadow Temple Wind Hint Chest": [
+      460481007
+    ],
+    "Spirit Temple Child Bridge Chest": [
+      83765489
+    ],
+    "Spirit Temple Child Climb North Chest": [
+      2127176983
+    ],
+    "Spirit Temple Child Early Torches Chest": [
+      3598952997
+    ],
+    "Spirit Temple Early Adult Right Chest": [
+      3451948149
+    ],
+    "Spirit Temple First Mirror Right Chest": [
+      4016708087
+    ],
+    "Spirit Temple GS Boulder Room": [
+      1137382804
+    ],
+    "Spirit Temple GS Hall After Sun Block Room": [
+      3785997201
+    ],
+    "Spirit Temple GS Lobby": [
+      3750443919
+    ],
+    "Spirit Temple GS Metal Fence": [
+      3444068679
+    ],
+    "Spirit Temple GS Sun on Floor Room": [
+      3263321540
+    ],
+    "Spirit Temple Hallway Left Invisible Chest": [
+      3402823158
+    ],
+    "Spirit Temple Hallway Right Invisible Chest": [
+      79200074
+    ],
+    "Spirit Temple Map Chest": [
+      3839268083
+    ],
+    "Spirit Temple Near Four Armos Chest": [
+      1312221387
+    ],
+    "Spirit Temple Statue Room Hand Chest": [
+      3336695085
+    ],
+    "Spirit Temple Sun Block Room Chest": [
+      1718885013
+    ],
+    "Spirit Temple Topmost Chest": [
+      2904530331
+    ],
+    "ToT Master Sword": [
+      3657094742
+    ],
+    "Wasteland Chest": [
+      3535074057
+    ],
+    "Wasteland GS": [
+      1920812405
+    ],
+    "Water Temple Central Pillar Chest": [
+      1655888428
+    ],
+    "Water Temple Compass Room Chest": [
+      3065382667
+    ],
+    "Water Temple GS Behind Gate": [
+      1802698246
+    ],
+    "Water Temple GS Central Pillar": [
+      3405960235
+    ],
+    "Water Temple GS Falling Platform Room": [
+      3569838000
+    ],
+    "Water Temple GS Near Boss Key Chest": [
+      3552644063
+    ],
+    "Water Temple GS River": [
+      1383487253
+    ],
+    "Water Temple Torches Chest": [
+      2299831558
+    ],
+    "ZD Chest": [
+      2707918553
+    ],
+    "ZD GS Frozen Waterfall": [
+      1335034763
+    ],
+    "ZD Shop Item 1": [
+      4031151110
+    ],
+    "ZD Shop Item 2": [
+      2360209357
+    ],
+    "ZD Shop Item 3": [
+      2356401184
+    ],
+    "ZD Shop Item 4": [
+      78546937
+    ],
+    "ZD Shop Item 5": [
+      1401209922
+    ],
+    "ZD Shop Item 6": [
+      3245386527
+    ],
+    "ZD Shop Item 7": [
+      253474831
+    ],
+    "ZD Shop Item 8": [
+      1873045334
+    ],
+    "ZD Trade Prescription": [
+      3553804453
+    ],
+    "ZF GS Above the Log": [
+      1986298802
+    ],
+    "ZF GS Hidden Cave": [
+      2461776251
+    ],
+    "ZF GS Tree": [
+      3880495938
+    ],
+    "ZF Scarecrow Ledge Chest": [
+      975836505
+    ],
+    "ZR GS Above Bridge": [
+      800980989
+    ],
+    "ZR GS Ladder": [
+      1922447133
+    ],
+    "ZR GS Near Raised Grottos": [
+      588791093
+    ],
+    "ZR GS Tree": [
+      2981707848
+    ],
+    "ZR Open Grotto Chest": [
+      1867008566
+    ]
+  },
+  "items": {
+    "Arrows (10)": 7303453,
+    "Arrows (30)": 7303454,
+    "Arrows (5)": 7303455,
+    "Biggoron Sword": 7303456,
+    "Blue Potion": 7303457,
+    "Blue Rupee (5)": 7303452,
+    "Bolero of Fire": 7303424,
+    "Bomb (1)": 7303458,
+    "Bomb Bag": 7303459,
+    "Bombchus": 7303460,
+    "Bombchus (10)": 7303461,
+    "Bombchus (20)": 7303462,
+    "Bombchus (5)": 7303463,
+    "Bombs (10)": 7303464,
+    "Bombs (20)": 7303465,
+    "Bombs (5)": 7303466,
+    "Boomerang": 7303425,
+    "Boss Key": 7303467,
+    "Boss Key (Fire Temple)": 7303468,
+    "Boss Key (Forest Temple)": 7303469,
+    "Boss Key (Ganons Castle)": 7303470,
+    "Boss Key (Shadow Temple)": 7303471,
+    "Boss Key (Spirit Temple)": 7303472,
+    "Boss Key (Water Temple)": 7303473,
+    "Bottle": 7303474,
+    "Bottle with Big Poe": 7303475,
+    "Bottle with Blue Fire": 7303476,
+    "Bottle with Blue Potion": 7303477,
+    "Bottle with Bugs": 7303478,
+    "Bottle with Fairy": 7303479,
+    "Bottle with Fish": 7303480,
+    "Bottle with Green Potion": 7303481,
+    "Bottle with Milk": 7303482,
+    "Bottle with Poe": 7303483,
+    "Bottle with Red Potion": 7303484,
+    "Bow": 7303485,
+    "Broken Sword": 7303486,
+    "Bunny Hood": 7303487,
+    "Business Scrub Seed": 7303488,
+    "Buy Arrows (10)": 7303592,
+    "Buy Arrows (30)": 7303593,
+    "Buy Arrows (50)": 7303594,
+    "Buy Blue Fire": 7303595,
+    "Buy Bombchu (1)": 7303596,
+    "Buy Bombchu (10)": 7303597,
+    "Buy Bombchu (15)": 7303598,
+    "Buy Bombchu (20)": 7303599,
+    "Buy Bombchu (3)": 7303600,
+    "Buy Bombchu (30)": 7303601,
+    "Buy Bombchu (5)": 7303602,
+    "Buy Bombchu (8)": 7303603,
+    "Buy Bombs (10)": 7303604,
+    "Buy Bombs (20)": 7303605,
+    "Buy Bombs (30)": 7303606,
+    "Buy Bombs (5) for 25 Rupees": 7303607,
+    "Buy Bombs (5) for 35 Rupees": 7303608,
+    "Buy Bottle Bug": 7303609,
+    "Buy Deku Nut (10)": 7303610,
+    "Buy Deku Nut (5)": 7303611,
+    "Buy Deku Seeds (10)": 7303612,
+    "Buy Deku Seeds (30)": 7303613,
+    "Buy Deku Shield": 7303614,
+    "Buy Deku Stick (1)": 7303615,
+    "Buy Deku Stick (5)": 7303616,
+    "Buy Fairy's Spirit": 7303617,
+    "Buy Fish": 7303618,
+    "Buy Goron Tunic": 7303619,
+    "Buy Green Potion": 7303620,
+    "Buy Half Milk": 7303621,
+    "Buy Heart": 7303622,
+    "Buy Hylian Shield": 7303623,
+    "Buy Magic Bean": 7303489,
+    "Buy Magic Jar": 7303624,
+    "Buy Poe": 7303625,
+    "Buy Red Potion for 30 Rupees": 7303626,
+    "Buy Zora Tunic": 7303627,
+    "Chicken": 7303490,
+    "Claim Check": 7303491,
+    "Cojiro": 7303492,
+    "Compass": 7303493,
+    "Compass (Bottom of the Well)": 7303494,
+    "Compass (Deku Tree)": 7303495,
+    "Compass (Dodongos Cavern)": 7303496,
+    "Compass (Fire Temple)": 7303497,
+    "Compass (Forest Temple)": 7303498,
+    "Compass (Ice Cavern)": 7303499,
+    "Compass (Jabu Jabus Belly)": 7303500,
+    "Compass (Shadow Temple)": 7303501,
+    "Compass (Spirit Temple)": 7303502,
+    "Compass (Water Temple)": 7303503,
+    "Deku Nut Capacity": 7303504,
+    "Deku Nuts (10)": 7303505,
+    "Deku Nuts (5)": 7303506,
+    "Deku Seeds (30)": 7303507,
+    "Deku Shield": 7303508,
+    "Deku Stick (1)": 7303509,
+    "Deku Stick Capacity": 7303510,
+    "Deku Sticks (3)": 7303511,
+    "Dins Fire": 7303426,
+    "Double Defense": 7303512,
+    "Eponas Song": 7303427,
+    "Eyeball Frog": 7303513,
+    "Eyedrops": 7303514,
+    "Fairy Drop": 7303515,
+    "Farores Wind": 7303428,
+    "Fire Arrows": 7303429,
+    "Fire Medallion": 7303516,
+    "Forest Medallion": 7303517,
+    "Gerudo Mask": 7303518,
+    "Gerudo Membership Card": 7303430,
+    "Giants Knife": 7303519,
+    "Gold Skulltula Token": 7303520,
+    "Goron Mask": 7303521,
+    "Goron Ruby": 7303522,
+    "Goron Tunic": 7303431,
+    "Heart Container": 7303523,
+    "Hover Boots": 7303432,
+    "Hylian Shield": 7303524,
+    "Ice Arrows": 7303433,
+    "Iron Boots": 7303434,
+    "Keaton Mask": 7303525,
+    "Kokiri Emerald": 7303526,
+    "Kokiri Sword": 7303527,
+    "Lens of Truth": 7303435,
+    "Light Arrows": 7303436,
+    "Light Medallion": 7303528,
+    "Magic Bean": 7303529,
+    "Magic Jar (Large)": 7303530,
+    "Magic Meter": 7303531,
+    "Map": 7303532,
+    "Map (Bottom of the Well)": 7303533,
+    "Map (Deku Tree)": 7303534,
+    "Map (Dodongos Cavern)": 7303535,
+    "Map (Fire Temple)": 7303536,
+    "Map (Forest Temple)": 7303537,
+    "Map (Ice Cavern)": 7303538,
+    "Map (Jabu Jabus Belly)": 7303539,
+    "Map (Shadow Temple)": 7303540,
+    "Map (Spirit Temple)": 7303541,
+    "Map (Water Temple)": 7303542,
+    "Mask of Truth": 7303543,
+    "Master Sword": 7303628,
+    "Megaton Hammer": 7303437,
+    "Milk": 7303544,
+    "Minuet of Forest": 7303438,
+    "Mirror Shield": 7303439,
+    "Nayrus Love": 7303440,
+    "Nocturne of Shadow": 7303441,
+    "Ocarina": 7303545,
+    "Odd Mushroom": 7303546,
+    "Odd Potion": 7303547,
+    "Piece of Heart": 7303548,
+    "Piece of Heart (Out of Logic)": 7303549,
+    "Piece of Heart (Treasure Chest Game)": 7303550,
+    "Poachers Saw": 7303551,
+    "Pocket Cucco": 7303552,
+    "Pocket Egg": 7303553,
+    "Prelude of Light": 7303442,
+    "Prescription": 7303554,
+    "Progressive Hookshot": 7303555,
+    "Progressive Scale": 7303556,
+    "Progressive Strength Upgrade": 7303557,
+    "Progressive Wallet": 7303558,
+    "Recovery Heart": 7303559,
+    "Requiem of Spirit": 7303443,
+    "Rupee (1)": 7303560,
+    "Rupee (Treasure Chest Game) (1)": 7303561,
+    "Rupees (20)": 7303562,
+    "Rupees (200)": 7303563,
+    "Rupees (5)": 7303564,
+    "Rupees (50)": 7303565,
+    "Rupees (Treasure Chest Game) (20)": 7303566,
+    "Rupees (Treasure Chest Game) (5)": 7303567,
+    "Rupees (Treasure Chest Game) (50)": 7303568,
+    "Rutos Letter": 7303569,
+    "Sarias Song": 7303444,
+    "Scarecrow Song": 7303570,
+    "Serenade of Water": 7303445,
+    "Shadow Medallion": 7303571,
+    "Skull Mask": 7303572,
+    "Slingshot": 7303573,
+    "Small Key": 7303574,
+    "Small Key (Bottom of the Well)": 7303575,
+    "Small Key (Fire Temple)": 7303576,
+    "Small Key (Forest Temple)": 7303577,
+    "Small Key (Ganons Castle)": 7303578,
+    "Small Key (Gerudo Training Ground)": 7303579,
+    "Small Key (Shadow Temple)": 7303580,
+    "Small Key (Spirit Temple)": 7303581,
+    "Small Key (Thieves Hideout)": 7303582,
+    "Small Key (Treasure Chest Game)": 7303583,
+    "Small Key (Water Temple)": 7303584,
+    "Song of Storms": 7303446,
+    "Song of Time": 7303447,
+    "Spirit Medallion": 7303585,
+    "Spooky Mask": 7303586,
+    "Stone of Agony": 7303448,
+    "Suns Song": 7303449,
+    "Water Medallion": 7303587,
+    "Weird Egg": 7303588,
+    "Zeldas Letter": 7303589,
+    "Zeldas Lullaby": 7303450,
+    "Zora Mask": 7303590,
+    "Zora Sapphire": 7303591,
+    "Zora Tunic": 7303451
+  },
+  "locations": {
+    "Bottom of the Well Back Left Bombable Chest": 7303680,
+    "Bottom of the Well Center Skulltula Chest": 7303681,
+    "Bottom of the Well Fire Keese Chest": 7303682,
+    "Bottom of the Well Front Center Bombable Chest": 7303683,
+    "Bottom of the Well Front Left Fake Wall Chest": 7303684,
+    "Bottom of the Well GS East Inner Room": 7303816,
+    "Bottom of the Well GS Like Like Cage": 7303817,
+    "Bottom of the Well GS West Inner Room": 7303818,
+    "Bottom of the Well Invisible Chest": 7303685,
+    "Bottom of the Well Map Chest": 7303686,
+    "Bottom of the Well Right Bottom Fake Wall Chest": 7303687,
+    "Colossus GS Bean Patch": 7303819,
+    "Colossus GS Hill": 7303820,
+    "Colossus GS Tree": 7303821,
+    "Colossus Grotto Beamos Chest": 7303688,
+    "DMC GS Bean Patch": 7303822,
+    "DMC GS Crate": 7303823,
+    "DMC Hammer Grotto Chest": 7303689,
+    "DMC Upper Grotto Chest": 7303690,
+    "DMT Biggoron": 7303926,
+    "DMT Chest": 7303691,
+    "DMT GS Above Dodongos Cavern": 7303824,
+    "DMT GS Bean Patch": 7303825,
+    "DMT GS Falling Rocks Path": 7303826,
+    "DMT GS Near Kak": 7303827,
+    "DMT Trade Broken Sword": 7303922,
+    "DMT Trade Eyedrops": 7303925,
+    "Deku Tree Basement Chest": 7303692,
+    "Deku Tree Compass Room Side Chest": 7303693,
+    "Deku Tree GS Basement Back Room": 7303828,
+    "Deku Tree GS Basement Gate": 7303829,
+    "Deku Tree GS Basement Vines": 7303830,
+    "Deku Tree GS Compass Room": 7303831,
+    "Deku Tree Slingshot Room Side Chest": 7303694,
+    "Dodongos Cavern Bomb Flower Platform Chest": 7303695,
+    "Dodongos Cavern End of Bridge Chest": 7303696,
+    "Dodongos Cavern GS Alcove Above Stairs": 7303832,
+    "Dodongos Cavern GS Back Room": 7303833,
+    "Dodongos Cavern GS Scarecrow": 7303834,
+    "Dodongos Cavern GS Side Room Near Lower Lizalfos": 7303835,
+    "Dodongos Cavern GS Vines Above Stairs": 7303836,
+    "Dodongos Cavern Lobby Bombable Chest": 7303697,
+    "Dodongos Cavern Lower Lizalfos Chest": 7303698,
+    "Dodongos Cavern Staircase Top Bombable Chest": 7303699,
+    "Dodongos Cavern Upper Lizalfos Chest": 7303700,
+    "Fire Temple Big Lava Room Blocked Door Chest": 7303701,
+    "Fire Temple Boulder Maze Shortcut Chest": 7303702,
+    "Fire Temple Boulder Maze Upper Chest": 7303703,
+    "Fire Temple Flare Dancer Chest": 7303704,
+    "Fire Temple GS Boss Key Loop": 7303837,
+    "Fire Temple GS Boulder Maze": 7303838,
+    "Fire Temple GS Scarecrow Climb": 7303839,
+    "Fire Temple GS Scarecrow Top": 7303840,
+    "Fire Temple GS Song of Time Room": 7303841,
+    "Fire Temple Highest Goron Chest": 7303705,
+    "Fire Temple Scarecrow Chest": 7303706,
+    "Fire Temple Scarecrow Ledge Second Chest": 7303707,
+    "Fire Temple Scarecrow Ledge Third Chest": 7303708,
+    "Forest Temple Basement Chest": 7303709,
+    "Forest Temple Eye Switch Chest": 7303710,
+    "Forest Temple First Room Chest": 7303711,
+    "Forest Temple First Stalfos Chest": 7303712,
+    "Forest Temple Floormaster Chest": 7303713,
+    "Forest Temple GS Basement": 7303842,
+    "Forest Temple GS First Room": 7303843,
+    "Forest Temple GS Level Island Courtyard": 7303844,
+    "Forest Temple GS Lobby": 7303845,
+    "Forest Temple GS Raised Island Courtyard": 7303846,
+    "Forest Temple Red Poe Chest": 7303714,
+    "Forest Temple Well Chest": 7303715,
+    "GC GS Boulder Maze": 7303847,
+    "GC GS Center Platform": 7303848,
+    "GC Maze Center Chest": 7303716,
+    "GC Maze Left Chest": 7303717,
+    "GC Maze Right Chest": 7303718,
+    "GC Maze Silver Chest": 7303719,
+    "GC Shop Item 1": 7311360,
+    "GC Shop Item 2": 7311361,
+    "GC Shop Item 3": 7311362,
+    "GC Shop Item 4": 7311363,
+    "GC Shop Item 5": 7311364,
+    "GC Shop Item 6": 7311365,
+    "GC Shop Item 7": 7311366,
+    "GC Shop Item 8": 7311367,
+    "GF Chest": 7303720,
+    "GF GS Archery Range": 7303849,
+    "GF GS Top Floor": 7303850,
+    "GF Hideout Hole Chest": 7303721,
+    "GV Chest": 7303722,
+    "GV GS Bean Patch": 7303851,
+    "GV GS Behind Tent": 7303852,
+    "GV GS Pillar": 7303853,
+    "GV GS Small Bridge": 7303854,
+    "GV Octorok Grotto Chest": 7303723,
+    "GV Storms Grotto Chest": 7303724,
+    "GV Storms Grotto Lens Chest": 7303725,
+    "GV Trade Poachers Saw": 7303921,
+    "Ganons Castle Forest Trial Chest": 7303726,
+    "Ganons Castle Light Trial First Left Chest": 7303727,
+    "Ganons Castle Light Trial Invisible Enemies Chest": 7303728,
+    "Ganons Castle Light Trial Lullaby Chest": 7303729,
+    "Ganons Castle Light Trial Lullaby Room Invisible Chest": 7303730,
+    "Ganons Castle Light Trial Second Right Chest": 7303731,
+    "Ganons Castle Light Trial Third Left Chest": 7303732,
+    "Ganons Castle Shadow Trial Front Chest": 7303733,
+    "Ganons Castle Spirit Trial Crystal Switch Chest": 7303734,
+    "Ganons Castle Water Trial Right Chest": 7303735,
+    "Ganons Tower Boss Key Chest": 7303736,
+    "Gerudo Training Ground Beamos Chest": 7303737,
+    "Gerudo Training Ground Before Heavy Block Chest": 7303738,
+    "Gerudo Training Ground Eye Statue Chest": 7303739,
+    "Gerudo Training Ground Freestanding Key": 7303740,
+    "Gerudo Training Ground Hammer Room Switch Chest": 7303741,
+    "Gerudo Training Ground Heavy Block Fifth Chest": 7303742,
+    "Gerudo Training Ground Heavy Block First Chest": 7303743,
+    "Gerudo Training Ground Heavy Block Second Chest": 7303744,
+    "Gerudo Training Ground Heavy Block Third Chest": 7303745,
+    "Gerudo Training Ground Hidden Ceiling Chest": 7303746,
+    "Gerudo Training Ground Lobby Right Chest": 7303747,
+    "Gerudo Training Ground Maze Path First Chest": 7303748,
+    "Gerudo Training Ground Maze Path Second Chest": 7303749,
+    "Gerudo Training Ground Maze Path Third Chest": 7303750,
+    "Gerudo Training Ground Maze Right Central Chest": 7303751,
+    "Gerudo Training Ground Maze Right Side Chest": 7303752,
+    "Gerudo Training Ground Near Scarecrow Chest": 7303753,
+    "Gerudo Training Ground Stalfos Chest": 7303754,
+    "Gerudo Training Ground Underwater Silver Rupee Chest": 7303755,
+    "Graveyard GS Bean Patch": 7303855,
+    "Graveyard GS Wall": 7303856,
+    "Graveyard Heart Piece Grave Chest": 7303756,
+    "Graveyard Shield Grave Chest": 7303757,
+    "HC GS Storms Grotto": 7303857,
+    "HC GS Tree": 7303858,
+    "HF East Poe Chest": 7303758,
+    "HF GS Cow Grotto": 7303859,
+    "HF GS Near Kak Grotto": 7303860,
+    "HF Lake Poe Chest": 7303759,
+    "HF Open Grotto Chest": 7303760,
+    "HF Redead Grotto Chest": 7303761,
+    "HF South Poe Chest": 7303762,
+    "HF Tunnel Ledge Chest": 7303763,
+    "Ice Cavern Compass Chest": 7303764,
+    "Ice Cavern GS Heart Piece Room": 7303861,
+    "Ice Cavern GS Push Block Room": 7303862,
+    "Ice Cavern GS Spinning Scythe Room": 7303863,
+    "Ice Cavern Map Chest": 7303765,
+    "Ice Cavern Push Block Room Chest": 7303766,
+    "Jabu Jabus Belly Basement 2 Octoroks Chest": 7303767,
+    "Jabu Jabus Belly GS Lobby Basement Lower": 7303864,
+    "Jabu Jabus Belly GS Lobby Basement Upper": 7303865,
+    "Jabu Jabus Belly GS Near Boss": 7303866,
+    "Jabu Jabus Belly GS Water Switch Room": 7303867,
+    "Jabu Jabus Belly Map Chest": 7303768,
+    "KF GS Bean Patch": 7303868,
+    "KF GS House of Twins": 7303869,
+    "KF GS Know It All House": 7303870,
+    "KF Midos Bottom Left Chest": 7303769,
+    "KF Midos Bottom Right Chest": 7303770,
+    "KF Midos Top Left Chest": 7303771,
+    "KF Midos Top Right Chest": 7303772,
+    "KF Shop Item 1": 7303808,
+    "KF Shop Item 2": 7303809,
+    "KF Shop Item 3": 7303810,
+    "KF Shop Item 4": 7303811,
+    "KF Shop Item 5": 7303812,
+    "KF Shop Item 6": 7303813,
+    "KF Shop Item 7": 7303814,
+    "KF Shop Item 8": 7303815,
+    "KF Storms Grotto Chest": 7303773,
+    "KF West Ledge Chest": 7303774,
+    "Kak Anju Trade Pocket Cucco": 7303917,
+    "Kak Anju as Adult": 7303916,
+    "Kak Bazaar Item 1": 7311368,
+    "Kak Bazaar Item 2": 7311369,
+    "Kak Bazaar Item 3": 7311370,
+    "Kak Bazaar Item 4": 7311371,
+    "Kak Bazaar Item 5": 7311372,
+    "Kak Bazaar Item 6": 7311373,
+    "Kak Bazaar Item 7": 7311374,
+    "Kak Bazaar Item 8": 7311375,
+    "Kak GS Above Impas House": 7303871,
+    "Kak GS House Under Construction": 7303872,
+    "Kak GS Near Gate Guard": 7303873,
+    "Kak GS Skulltula House": 7303874,
+    "Kak GS Tree": 7303875,
+    "Kak GS Watchtower": 7303876,
+    "Kak Granny Trade Odd Mushroom": 7303919,
+    "Kak Open Grotto Chest": 7303775,
+    "Kak Potion Shop Item 1": 7311376,
+    "Kak Potion Shop Item 2": 7311377,
+    "Kak Potion Shop Item 3": 7311378,
+    "Kak Potion Shop Item 4": 7311379,
+    "Kak Potion Shop Item 5": 7311380,
+    "Kak Potion Shop Item 6": 7311381,
+    "Kak Potion Shop Item 7": 7311382,
+    "Kak Potion Shop Item 8": 7311383,
+    "Kak Windmill Roof Chest": 7303776,
+    "LH GS Bean Patch": 7303877,
+    "LH GS Lab Crate": 7303878,
+    "LH GS Lab Wall": 7303879,
+    "LH GS Small Island": 7303880,
+    "LH GS Tree": 7303881,
+    "LH Trade Eyeball Frog": 7303924,
+    "LLR GS Back Wall": 7303882,
+    "LLR GS House Window": 7303883,
+    "LLR GS Rain Shed": 7303884,
+    "LLR GS Tree": 7303885,
+    "LW GS Above Theater": 7303886,
+    "LW GS Bean Patch Near Bridge": 7303887,
+    "LW GS Bean Patch Near Theater": 7303888,
+    "LW Trade Cojiro": 7303918,
+    "LW Trade Odd Potion": 7303920,
+    "Market Bazaar Item 1": 7311384,
+    "Market Bazaar Item 2": 7311385,
+    "Market Bazaar Item 3": 7311386,
+    "Market Bazaar Item 4": 7311387,
+    "Market Bazaar Item 5": 7311388,
+    "Market Bazaar Item 6": 7311389,
+    "Market Bazaar Item 7": 7311390,
+    "Market Bazaar Item 8": 7311391,
+    "Market Bombchu Shop Item 1": 7311392,
+    "Market Bombchu Shop Item 2": 7311393,
+    "Market Bombchu Shop Item 3": 7311394,
+    "Market Bombchu Shop Item 4": 7311395,
+    "Market Bombchu Shop Item 5": 7311396,
+    "Market Bombchu Shop Item 6": 7311397,
+    "Market Bombchu Shop Item 7": 7311398,
+    "Market Bombchu Shop Item 8": 7311399,
+    "Market GS Guard House": 7303889,
+    "Market Potion Shop Item 1": 7311400,
+    "Market Potion Shop Item 2": 7311401,
+    "Market Potion Shop Item 3": 7311402,
+    "Market Potion Shop Item 4": 7311403,
+    "Market Potion Shop Item 5": 7311404,
+    "Market Potion Shop Item 6": 7311405,
+    "Market Potion Shop Item 7": 7311406,
+    "Market Potion Shop Item 8": 7311407,
+    "OGC GS": 7303890,
+    "SFM GS": 7303891,
+    "SFM Time Block Grotto Chest": 7303777,
+    "SFM Wolfos Grotto Chest": 7303778,
+    "Shadow Temple After Wind Enemy Chest": 7303779,
+    "Shadow Temple After Wind Hidden Chest": 7303780,
+    "Shadow Temple Early Silver Rupee Chest": 7303781,
+    "Shadow Temple Falling Spikes Lower Chest": 7303782,
+    "Shadow Temple Falling Spikes Switch Chest": 7303783,
+    "Shadow Temple GS Falling Spikes Room": 7303892,
+    "Shadow Temple GS Invisible Blades Room": 7303893,
+    "Shadow Temple GS Near Ship": 7303894,
+    "Shadow Temple GS Single Giant Pot": 7303895,
+    "Shadow Temple GS Triple Giant Pot": 7303896,
+    "Shadow Temple Invisible Blades Invisible Chest": 7303784,
+    "Shadow Temple Invisible Blades Visible Chest": 7303785,
+    "Shadow Temple Invisible Floormaster Chest": 7303786,
+    "Shadow Temple Spike Walls Left Chest": 7303787,
+    "Shadow Temple Wind Hint Chest": 7303788,
+    "Spirit Temple Child Bridge Chest": 7303789,
+    "Spirit Temple Child Climb North Chest": 7303790,
+    "Spirit Temple Child Early Torches Chest": 7303791,
+    "Spirit Temple Early Adult Right Chest": 7303792,
+    "Spirit Temple First Mirror Right Chest": 7303793,
+    "Spirit Temple GS Boulder Room": 7303897,
+    "Spirit Temple GS Hall After Sun Block Room": 7303898,
+    "Spirit Temple GS Lobby": 7303899,
+    "Spirit Temple GS Metal Fence": 7303900,
+    "Spirit Temple GS Sun on Floor Room": 7303901,
+    "Spirit Temple Hallway Left Invisible Chest": 7303794,
+    "Spirit Temple Hallway Right Invisible Chest": 7303795,
+    "Spirit Temple Map Chest": 7303796,
+    "Spirit Temple Near Four Armos Chest": 7303797,
+    "Spirit Temple Statue Room Hand Chest": 7303798,
+    "Spirit Temple Sun Block Room Chest": 7303799,
+    "Spirit Temple Topmost Chest": 7303800,
+    "ToT Master Sword": 7311416,
+    "Wasteland Chest": 7303801,
+    "Wasteland GS": 7303902,
+    "Water Temple Central Pillar Chest": 7303802,
+    "Water Temple Compass Room Chest": 7303803,
+    "Water Temple GS Behind Gate": 7303903,
+    "Water Temple GS Central Pillar": 7303904,
+    "Water Temple GS Falling Platform Room": 7303905,
+    "Water Temple GS Near Boss Key Chest": 7303906,
+    "Water Temple GS River": 7303907,
+    "Water Temple Torches Chest": 7303804,
+    "ZD Chest": 7303805,
+    "ZD GS Frozen Waterfall": 7303908,
+    "ZD Shop Item 1": 7311408,
+    "ZD Shop Item 2": 7311409,
+    "ZD Shop Item 3": 7311410,
+    "ZD Shop Item 4": 7311411,
+    "ZD Shop Item 5": 7311412,
+    "ZD Shop Item 6": 7311413,
+    "ZD Shop Item 7": 7311414,
+    "ZD Shop Item 8": 7311415,
+    "ZD Trade Prescription": 7303923,
+    "ZF GS Above the Log": 7303909,
+    "ZF GS Hidden Cave": 7303910,
+    "ZF GS Tree": 7303911,
+    "ZF Scarecrow Ledge Chest": 7303806,
+    "ZR GS Above Bridge": 7303912,
+    "ZR GS Ladder": 7303913,
+    "ZR GS Near Raised Grottos": 7303914,
+    "ZR GS Tree": 7303915,
+    "ZR Open Grotto Chest": 7303807
+  },
+  "release": "v0.10.0-alpha.1"
+}

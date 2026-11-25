@@ -151,7 +151,7 @@ class DirectSettingsTests(unittest.TestCase):
             engine_settings({"bridge": "vanilla", "bridge_rewards": 0})
 
     def test_invalid_types_ranges_and_untracked_options_are_rejected(self):
-        for values in ({"shuffle_chests": "off"}, {"shuffle_smallkeys": "overworld"},
+        for values in ({"shuffle_smallkeys": "overworld"},
                        {"shuffle_mapcompass": "overworld"}, {"shuffle_ganon_bosskey": "lacs_dungeons"},
                        {"bridge": "tokens"}, {"zora_fountain": "adult"}, {"starting_hearts": 0}, {"starting_hearts": True},
                        {"starting_hearts": "6"}, {"enemy_speed": 201}, {"more_enemies": 99}, {"enemy_health": 101},
@@ -206,12 +206,14 @@ class DirectSettingsTests(unittest.TestCase):
             with self.subTest(settings=bad), self.assertRaises(ValueError):
                 validate_options(bad)
 
-    def test_ordinary_shop_shuffle_does_not_create_an_ap_pool_without_other_checks(self):
-        with self.assertRaisesRegex(ValueError, "AP shop deals"):
-            validate_options({"shuffle_chests": "off", "shuffle_shops": "shuffle"})
-        values = validate_options({"shuffle_chests": "off", "shuffle_shops": "shuffle",
-                                   "shuffle_skulltulas": "matched"})
-        self.assertEqual(values["shuffle_shops"], "shuffle")
+    def test_native_network_sources_do_not_require_the_old_chest_shop_deal_subset(self):
+        for additions in ({}, {"shuffle_shops": "shuffle"}, {"shuffle_pots": "all"},
+                          {"shuffle_grass": "all"}, {"shuffle_rewards": "supported"}):
+            with self.subTest(additions=additions):
+                values = validate_options(dict(shuffle_chests="off", **additions))
+                self.assertEqual(values["shuffle_chests"], "off")
+                for key, value in additions.items():
+                    self.assertEqual(values[key], value)
 
 
 if __name__ == "__main__":
