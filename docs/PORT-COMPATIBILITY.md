@@ -2,6 +2,30 @@
 
 The Windows x64 installer supports **Triforce** and an **experimental Hookshot 3.0.1 adapter**. Loading the RomFS mod on another host is a separate capability from connecting to Archipelago and applying received items.
 
+## Triforce 0.8.1 runtime check
+
+Verified on Windows x64 on 2026-11-25 using the unchanged native integration
+shipped in `OOT-Remake-Archipelago-0.10.1-alpha.3.exe`. The installed 0.8.1
+host and menu sources retain the supported hooks. A private copy of its SDK
+successfully rebuilt and linked both AP-enabled game binaries.
+
+The actual Triforce process then ran with real offscreen GPU rendering and a
+fresh private profile. Its native AP module connected automatically to the
+official Archipelago 0.6.8 server on loopback, using the repository's two-player
+Zelda/DS3 room fixture. A second AP test client joined as Ami; the DS3 game
+itself was not run. Disconnect and reconnect through the launcher's existing
+connection controller succeeded in the same running Triforce process.
+
+Opening cinematics were inspected from rendered frames. The exact title logo,
+in-game AP menu interaction, item/check delivery, DeathLink and a complete
+gameplay traversal were not verified in this run. No user save was loaded or
+changed, and no private progress save was created. The original Triforce
+installation, sources and saved options were preserved.
+
+No new launcher, APWorld, YAML or room is needed for 0.8.1. After updating
+Triforce, prepare the same native 0.10-line `.apootrr` again with alpha.3 to
+restore the AP-enabled executable and renderer.
+
 ## Triforce 0.8.0 in 0.10.1-alpha.3
 
 The installer supports the updated menu hooks while preserving native

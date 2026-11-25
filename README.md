@@ -10,6 +10,8 @@ The 0.10 baseline has in-game evidence for title-screen connections, offline ite
 
 Version 0.10.1-alpha.3 supports **Triforce 0.8.0's menu hooks**, preserving its resolution editing and tuning overlays. Updated host sources or tool-version metadata now invalidate an older compiled AP host. Close Zelda and Triforce Setup, then prepare the same native 0.10-line `.apootrr` again with the new app; **no new room or save is required for this compatibility fix**. Automated checks and private host-C compilation verify the update; they do not establish a complete gameplay playthrough. See the [compatibility note](docs/RELEASE-NOTES-0.10.1-alpha.3.md).
 
+The native integration shipped with alpha.3 was also verified with **Triforce 0.8.1**: a private build of the actual game connected automatically to a local two-player Archipelago room, then disconnected and reconnected through the launcher's controller without restarting. This startup check used a fresh private profile and does not establish a full gameplay playthrough. See the [0.8.1 runtime check](docs/PORT-COMPATIBILITY.md#triforce-081-runtime-check).
+
 Version 0.9.1 fixes setup with **Triforce 0.7.0**: its Achievements page and Mods transition remain intact when adding the AP menu. Setup checks the required source hooks before connecting or preparing resources. Existing player files remain compatible; this installer fix does not require a new room.
 
 AP ammunition cannot grant its missing equipment. Bombs, arrows and seeds received without their required capacity upgrade are consumed without an inventory change, popup or substitute rupee. The received-item index still advances, so the next item can arrive normally.
