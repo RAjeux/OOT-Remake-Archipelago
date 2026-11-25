@@ -1,9 +1,9 @@
-OOT Remake Archipelago · 0.10.1-alpha.2
+OOT Remake Archipelago · 0.10.1-alpha.3
 One Windows x64 application for Triforce and experimental Hookshot 3.0.1.
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
 Before you start
-Player package: OOT-Remake-Archipelago-0.10.1-alpha.2.exe.
+Player package: OOT-Remake-Archipelago-0.10.1-alpha.3.exe.
 Published packages are listed on the project's GitHub releases page.
 Python and Node.js are included. The compatible OOTRR 0.8.1 builder is
 downloaded automatically when first needed; an internet connection is
@@ -94,7 +94,15 @@ randomizer becomes an AP check, including enabled NPCs, songs, ground items,
 destructibles and all 64 purchases in an enabled shop shuffle. Old rooms
 keep their own catalogue, purchases and native-local rewards.
 
-Triforce 0.7.0 setup
+Triforce 0.8.0 setup
+Version 0.10.1-alpha.3 supports the updated menu, including resolution
+editing and tuning overlays. A host-source or tool-version update now forces
+an older AP host to be rebuilt. Close Zelda and Triforce Setup, let the
+update finish, then prepare the same native 0.10-line .apootrr file in this app.
+This compatibility fix needs no new room or save. Automated checks and private
+host-C compilation pass; this is not a complete gameplay playthrough.
+
+Earlier Triforce 0.7.0 setup
 Version 0.9.1 supports the updated Achievements page and Mods input transition.
 The required source hooks are checked before room preparation. If an older
 installer rejected these tools, retry with this application and the same

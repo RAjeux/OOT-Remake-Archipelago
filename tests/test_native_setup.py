@@ -15,6 +15,46 @@ from ootrr_triforce import native_setup
 
 
 class CompiledGameTests(unittest.TestCase):
+    def test_updated_host_source_or_tool_version_requires_rebuilding_the_retained_ap_binary(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            romfs = root / "game/romfs"
+            romfs.mkdir(parents=True)
+            native = root / "release/native"
+            native.mkdir(parents=True)
+            module = b"current DLL"
+            (native / "archipelago.dll").write_bytes(module)
+            tools = root / "tools"
+            (tools / "host").mkdir(parents=True)
+            (tools / "gpu/vk").mkdir(parents=True)
+            for path in [*(tools / "host" / name for name in native_setup.RT_FILES),
+                         *(tools / "gpu/vk" / name for name in (*MENU_FILES, "vk_menu.cpp"))]:
+                path.write_bytes(b"unchanged AP adapter")
+                os.utime(path, ns=(1_000_000_000, 1_000_000_000))
+            executable, renderer = romfs.parent / "Triforce.exe", romfs.parent / "triforce_vk.dll"
+            executable.write_bytes(BUILD_MARK + hashlib.sha256(module).digest())
+            renderer.write_bytes(MENU_BUILD_MARK)
+            for path in (executable, renderer):
+                os.utime(path, ns=(2_000_000_000, 2_000_000_000))
+            host = tools / "host/hos_main.c"
+            version = tools / "version.txt"
+            with patch.object(sys, "argv", [str(root / "release/Client-OOT-Remake.pyz")]):
+                self.assertTrue(compiled_game(romfs, tools), "Older folders without optional version metadata still work.")
+                host.write_bytes(b"updated Triforce host source with unchanged AP helpers")
+                os.utime(host, ns=(3_000_000_000, 3_000_000_000))
+                self.assertFalse(compiled_game(romfs, tools), "New host code must invalidate the older AP executable.")
+                os.utime(executable, ns=(4_000_000_000, 4_000_000_000))
+                self.assertTrue(compiled_game(romfs, tools), "A rebuilt host is valid without an unnecessary renderer rebuild.")
+                version.write_text("v0.8.0\n", encoding="utf-8")
+                os.utime(version, ns=(5_000_000_000, 5_000_000_000))
+                self.assertFalse(compiled_game(romfs, tools), "A newer tool release invalidates both retained binaries.")
+                os.utime(executable, ns=(6_000_000_000, 6_000_000_000))
+                self.assertFalse(compiled_game(romfs, tools), "The renderer must also match the newer tool release.")
+                os.utime(renderer, ns=(6_000_000_000, 6_000_000_000))
+                self.assertTrue(compiled_game(romfs, tools))
+                version.unlink()
+                self.assertTrue(compiled_game(romfs, tools), "Optional metadata removal does not invalidate a current host.")
+
     def test_current_bundle_is_required(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

@@ -263,13 +263,20 @@ def compiled_executable(romfs, tools=None):
                     if tools else [])
     if any(not helper.is_file() for helper in (*helpers,*menu_helpers)):
         return None
+    # Updating Triforce's tools can replace its host source while retaining an
+    # older AP executable. The AP helpers alone then still look up to date.
+    # Optional metadata keeps older, otherwise valid tool folders compatible.
+    host_sources = ([Path(tools)/"host/hos_main.c"] if tools and
+                    (Path(tools)/"host/hos_main.c").is_file() else [])
+    tool_version = ([Path(tools)/"version.txt"] if tools and
+                    (Path(tools)/"version.txt").is_file() else [])
     for path in (romfs.parent/"Triforce.exe",romfs.parent/"bin/Triforce.exe"):
         renderer=path.parent/"triforce_vk.dll"
         if path.is_file() and path.stat().st_size and renderer.is_file() and renderer.stat().st_size:
             with path.open("rb") as f,mmap.mmap(f.fileno(),0,access=mmap.ACCESS_READ) as binary:
                 if (binary.find(BUILD_MARK)>=0 and binary.find(expected)>=0
-                        and all(helper.stat().st_mtime_ns<=path.stat().st_mtime_ns for helper in helpers)
-                        and all(helper.stat().st_mtime_ns<=renderer.stat().st_mtime_ns for helper in menu_helpers)):
+                        and all(helper.stat().st_mtime_ns<=path.stat().st_mtime_ns for helper in (*helpers,*host_sources,*tool_version))
+                        and all(helper.stat().st_mtime_ns<=renderer.stat().st_mtime_ns for helper in (*menu_helpers,*tool_version))):
                     with renderer.open("rb") as vf,mmap.mmap(vf.fileno(),0,access=mmap.ACCESS_READ) as menu_binary:
                         if menu_binary.find(MENU_BUILD_MARK)>=0:
                             return path

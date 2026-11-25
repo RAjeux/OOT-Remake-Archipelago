@@ -2,6 +2,24 @@
 
 The Windows x64 installer supports **Triforce** and an **experimental Hookshot 3.0.1 adapter**. Loading the RomFS mod on another host is a separate capability from connecting to Archipelago and applying received items.
 
+## Triforce 0.8.0 in 0.10.1-alpha.3
+
+The installer supports the updated menu hooks while preserving native
+resolution editing and tuning overlays. Its source preflight still rejects
+unknown or ambiguous layouts. Newer host-source or tool-version files
+invalidate an older compiled AP host; current builds remain reusable.
+
+Close Zelda and Triforce Setup, finish the Triforce update, then prepare the
+same native 0.10-line `.apootrr` again with
+`OOT-Remake-Archipelago-0.10.1-alpha.3.exe`. This rebuilds the host when needed.
+The compatibility fix changes neither placements nor saves and requires no
+new room.
+
+Automated menu, installer and cache checks plus private host-C compilation
+cover this update. The earlier gameplay observations below remain separate
+evidence; they do not establish a complete manual playthrough on 0.8.0.
+See [the compatibility release note](RELEASE-NOTES-0.10.1-alpha.3.md).
+
 ## Hookshot setup in 0.9.0
 
 Choose **Set up a room → Game host → Hookshot (experimental)** in the same

@@ -46,6 +46,12 @@ playthrough.** The following distinctions apply throughout this document:
 | Native event capacity | `test_restoration_capacity.py`, opt-in `test_network_build.py` | The actual all-own MAX preparation has 31,208 events in its largest flow, below the 65,535 limit. The former all-own overflow has a reproducing test and shared-reconciliation fix. |
 | Installation and application | Packaging, frozen `--self-test`, native setup and installation service tests | Packaged resources, private setup paths and EN/FR controls are exercised. A frozen application test does not imply a game was launched. |
 
+The 0.10.1-alpha.3 compatibility update adds Triforce 0.8.0 menu-layout and
+text-input checks, private host-C compilation and a regression for retained AP
+binaries after host-source or tool-version updates. Read-only probes verify
+installation discovery and original-file preservation. These checks do not
+constitute a complete gameplay traversal on the new host version.
+
 Fixed utility rewards can intentionally remain repeatable: milk after a cow's
 one AP reward, ordinary beans after the merchant's AP reward, and the frogs'
 repeat-win rupees are examples. They are not additional randomized AP checks.

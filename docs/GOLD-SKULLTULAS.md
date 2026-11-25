@@ -34,7 +34,7 @@ a Gold Skulltula Token. Local bottle refills are excluded from these drops
 because the native pickup cannot defer them while waiting for an empty bottle.
 Bottle containers and other supported rewards remain eligible.
 
-Prepare the room with `OOT-Remake-Archipelago-0.10.1-alpha.2.exe`. The APWorld is
+Prepare the room with `OOT-Remake-Archipelago-0.10.1-alpha.3.exe`. The APWorld is
 installed through the same app. A new room and dedicated save are required for
 the expanded source selection. Existing generated rooms keep their original
 settings, AP catalogue and native-local exclusions; updating their client does

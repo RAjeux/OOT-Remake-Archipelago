@@ -1,5 +1,32 @@
 # Stability fixes and upgrade scope
 
+## 0.10.1 alpha 3: Triforce 0.8.0 setup compatibility
+
+The installer now supports Triforce 0.8.0's menu hooks, including resolution
+editing and tuning overlays. The adapter preserves the native menu pages and
+text-input paths while adding the Archipelago page. Older supported menu
+layouts retain their existing patch path; unknown or ambiguous layouts are
+still rejected before room preparation.
+
+Compiled-host detection also checks the host source and optional tool-version
+metadata. Replacing these with newer files no longer allows a retained older
+AP executable or renderer to be treated as current. A valid current build is
+still reused; older tool folders without optional version metadata remain
+compatible.
+
+Existing native 0.10 player files, placements and saves are unchanged. Close
+Zelda and Triforce Setup, finish the host update, then prepare the same
+`.apootrr` in the new application. The required host rebuild runs during setup.
+**No new room or new save is required for this compatibility fix.** The expanded
+catalogue still needs a new room when upgrading from a room that did not
+already contain those checks.
+
+Validation covers menu patching, idempotence, original text-input preservation,
+read-only installation preflight, source/version cache invalidation, and private
+compilation of the actual updated host C source. These are automated and build
+checks, not a complete manual gameplay traversal of Triforce 0.8.0. Existing
+presentation and gameplay-observation limits remain in effect.
+
 ## 0.10.1 alpha 2: settings clarity and broader interaction checks
 
 The YAML editor adds bilingual search, ordered categories, optional advanced
