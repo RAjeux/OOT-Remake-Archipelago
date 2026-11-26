@@ -141,6 +141,8 @@ class InstallationTransactionTests(unittest.TestCase):
             (self.profile / "native-checks.json", b'{"checked":[1,2,3]}'),
             (self.mods / "Costumes/romfs/untouched", b"unrelated mod"),
             (self.mods / "Archipelago/romfs/old", b"old AP mod"),
+            (self.mods / "Archipelago/romfs/Archipelago/prepared-v1.json",
+             json.dumps(dict(version=1, revision=0, token=self.data["token"])).encode()),
             (self.mods / "My Seed/romfs" / install_mod.REST, b"old randomizer"),
         ):
             put(path, raw)
@@ -187,6 +189,13 @@ class InstallationTransactionTests(unittest.TestCase):
             if path.suffix == ".sav" or path.name == "native-checks.json":
                 self.assertEqual(path.read_bytes(), raw)
 
+    def certify_resources(self):
+        proof = dict(version=1, revision=service.PREPARED_RESOURCE_REVISION, token=self.data["token"])
+        put(self.mods / "Archipelago/romfs" / service.PREPARED_RESOURCE_MARKER, json.dumps(proof).encode())
+        cfg = json.loads((self.base / "outils.json").read_bytes())
+        cfg.update(prepared_revision=service.PREPARED_RESOURCE_REVISION, prepared_token=self.data["token"])
+        put(self.base / "outils.json", json.dumps(cfg).encode())
+
     def test_success_preserves_history_uuid_and_other_mods_and_moves_old_seed(self):
         progress = []
         result = service.install(self.request, lambda percent, message: progress.append(percent))
@@ -205,6 +214,10 @@ class InstallationTransactionTests(unittest.TestCase):
         self.assertEqual(config["ports"]["hookshot"], dict(keep="other port"))
         self.assertNotIn("node", config)
         self.assertNotIn("password", config)
+        self.assertEqual(config["prepared_revision"], service.PREPARED_RESOURCE_REVISION)
+        self.assertEqual(config["prepared_token"], self.data["token"])
+        proof = json.loads((self.mods / "Archipelago/romfs" / service.PREPARED_RESOURCE_MARKER).read_bytes())
+        self.assertEqual(proof, dict(version=1, revision=service.PREPARED_RESOURCE_REVISION, token=self.data["token"]))
         self.assertEqual(progress[-1], 100)
         self.assert_saves_unchanged()
 
@@ -259,6 +272,62 @@ class InstallationTransactionTests(unittest.TestCase):
         for path, raw in self.old_files.items():
             self.assertEqual(path.read_bytes(), raw, str(path))
 
+    def test_late_metadata_failure_restores_the_previous_resource_marker_and_configuration(self):
+        original_write = service.write_json
+        def write(path, data):
+            if Path(path) == self.base / "last-profile.json":
+                raise OSError("late metadata fixture failure")
+            return original_write(path, data)
+        with patch.object(service, "write_json", side_effect=write):
+            with self.assertRaises(service.InstallError):
+                service.install(self.request)
+        for path, raw in self.old_files.items():
+            self.assertEqual(path.read_bytes(), raw, str(path))
+        self.assertFalse((self.mods / "Archipelago/romfs/new").exists())
+
+    def test_current_prepared_resources_are_accepted_and_stale_proofs_block_discovery_and_launch(self):
+        result = service.install(self.request)
+        current = service.discover(self.base)
+        self.assertTrue(current["ready"])
+        self.assertFalse(current["resources_update_required"])
+        marker = self.mods / "Archipelago/romfs" / service.PREPARED_RESOURCE_MARKER
+        good_proof = marker.read_bytes()
+        good_cfg = (self.base / "outils.json").read_bytes()
+        changes = ("missing", "old_revision", "wrong_token", "cfg_revision", "cfg_token", "bool_revision")
+        for change in changes:
+            with self.subTest(change=change):
+                marker.write_bytes(good_proof)
+                (self.base / "outils.json").write_bytes(good_cfg)
+                proof, cfg = json.loads(good_proof), json.loads(good_cfg)
+                if change == "missing":
+                    marker.unlink()
+                elif change == "old_revision":
+                    proof["revision"] = service.PREPARED_RESOURCE_REVISION - 1
+                    marker.write_text(json.dumps(proof), encoding="utf-8")
+                elif change == "wrong_token":
+                    proof["token"] = "f" * 64
+                    marker.write_text(json.dumps(proof), encoding="utf-8")
+                elif change == "cfg_revision":
+                    cfg["prepared_revision"] = service.PREPARED_RESOURCE_REVISION - 1
+                    (self.base / "outils.json").write_text(json.dumps(cfg), encoding="utf-8")
+                elif change == "cfg_token":
+                    cfg["prepared_token"] = "f" * 64
+                    (self.base / "outils.json").write_text(json.dumps(cfg), encoding="utf-8")
+                else:
+                    proof["revision"] = True
+                    marker.write_text(json.dumps(proof), encoding="utf-8")
+                discovered = service.discover(self.base)
+                self.assertFalse(discovered["ready"])
+                self.assertTrue(discovered["resources_update_required"])
+                with patch.object(app_runtime, "spawn_process") as spawn:
+                    with self.assertRaisesRegex(service.InstallError, "same player file and save"):
+                        service.launch(result)
+                    spawn.assert_not_called()
+        marker.write_bytes(good_proof)
+        (self.base / "outils.json").write_bytes(good_cfg)
+        self.assertTrue(service.discover(self.base)["ready"])
+        self.assert_saves_unchanged()
+
     def test_existing_client_lock_prevents_even_an_ap_connection(self):
         lock = self.profile / "client.lock"
         put(lock, b"")
@@ -308,6 +377,7 @@ class InstallationTransactionTests(unittest.TestCase):
 
     def test_normal_launch_does_not_enable_scripted_or_live_input(self):
         put(self.mods / "Archipelago/romfs/Archipelago/room-v1.txt", self.data["token"].encode())
+        self.certify_resources()
         result = dict(profile=str(self.profile), game=str(self.game), tools=str(self.tools), mods=str(self.mods))
         with patch.dict(os.environ, {"HOS_INPUT_LIVE": "inherited-test-path", "HOS_INPUT_SCRIPT_BACKGROUND": "1"}), \
                 patch.object(app_runtime, "spawn_process") as spawn:
@@ -320,6 +390,7 @@ class InstallationTransactionTests(unittest.TestCase):
 
     def test_bin_layout_launches_the_certified_game_instead_of_the_setup_launcher(self):
         put(self.mods / "Archipelago/romfs/Archipelago/room-v1.txt", self.data["token"].encode())
+        self.certify_resources()
         binary = self.game / "bin/Triforce.exe"
         put(binary, b"certified native game")
         self.executable.return_value = binary
@@ -474,6 +545,7 @@ class InstallationTransactionTests(unittest.TestCase):
         self.assertTrue(service.inspect_installation(dict(self.request, game=str(binary)))["valid"])
         self.executable.return_value = binary
         put(self.mods / "Archipelago/romfs/Archipelago/room-v1.txt", self.data["token"].encode())
+        self.certify_resources()
         result = dict(profile=str(self.profile), game=str(binary), tools=str(self.tools), mods=str(self.mods))
         with patch.object(app_runtime, "spawn_process") as spawn:
             service.launch(result)

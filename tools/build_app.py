@@ -23,6 +23,59 @@ NODE_ZIP_SHA256 = "e612af99f626ab415ea225af6bce5c971feb448cb5cae250bb1c3fa50c5f7
 NODE_URL = f"https://nodejs.org/dist/v{NODE_VERSION}/node-v{NODE_VERSION}-win-x64.zip"
 PACKAGES = ("ootrr_triforce", "oot_rando", "ainb", "evfl", "websockets")
 PYINSTALLER_VERSION = "6.22.3"
+PRODUCT_NAME = "OOT Remake Archipelago"
+
+
+def windows_version(version):
+    """Keep SemVer text exact and map its numeric parts to Windows WORDs."""
+    match = re.fullmatch(
+        r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
+        r"(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?"
+        r"(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?", version)
+    if match is None:
+        raise ValueError("Invalid VERSION SemVer.")
+    prerelease = match.group(4)
+    identifiers = prerelease.split(".") if prerelease else []
+    if any(part.isdigit() and len(part) > 1 and part.startswith("0") for part in identifiers):
+        raise ValueError("Invalid VERSION SemVer prerelease number.")
+    # alpha.3 and rc.12 retain their sequence number. An unnumbered prerelease
+    # uses zero; the original channel and build metadata remain in both strings.
+    sequence = int(identifiers[-1]) if identifiers and identifiers[-1].isdigit() else 0
+    fixed = (*map(int, match.group(1, 2, 3)), sequence)
+    if any(part > 0xffff for part in fixed):
+        raise ValueError("VERSION exceeds the Windows 16-bit version fields.")
+    return fixed, 0x2 if prerelease else 0
+
+
+def write_version_info(work, version, name):
+    """Create PyInstaller's Windows VersionInfo resource in the build workspace."""
+    fixed, flags = windows_version(version)
+    strings = {"FileDescription": PRODUCT_NAME, "FileVersion": version, "InternalName": name,
+               "OriginalFilename": name + ".exe", "ProductName": PRODUCT_NAME, "ProductVersion": version}
+    entries = ",\n".join(f"        StringStruct({key!r}, {value!r})" for key, value in strings.items())
+    text = ("# UTF-8 Windows version resource generated from VERSION.\n"
+            "VSVersionInfo(\n"
+            "  ffi=FixedFileInfo(\n"
+            f"    filevers={fixed!r}, prodvers={fixed!r},\n"
+            f"    mask=0x3f, flags={flags}, OS=0x40004, fileType=0x1, subtype=0x0, date=(0, 0)),\n"
+            "  kids=[\n"
+            "    StringFileInfo([StringTable('040904B0', [\n"
+            f"{entries}\n"
+            "    ])]),\n"
+            "    VarFileInfo([VarStruct('Translation', [0x0409, 1200])])\n"
+            "  ]\n"
+            ")\n")
+    target = Path(work) / "windows-version-info.txt"
+    target.write_text(text, encoding="utf-8", newline="\n")
+    return target
+
+
+def freezer_command(name, work, output, icon, version_file):
+    """The Windows resource travels with the same versioned executable name."""
+    return [sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "--onefile", "--windowed",
+            "--noupx", "--name", name, "--paths", str(ROOT / "client"), "--distpath", str(output.resolve()),
+            "--workpath", str(work / "freeze"), "--specpath", str(work), "--icon", str(icon),
+            "--version-file", str(version_file), "--exclude-module", "PIL", "--exclude-module", "texture2ddecoder"]
 
 
 def sha(path):
@@ -197,17 +250,22 @@ def main():
     if importlib.metadata.version("pyinstaller") != PYINSTALLER_VERSION:
         parser.error("Install the pinned build dependencies from requirements-app.txt.")
     version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
-    if not re.fullmatch(r"\d+\.\d+\.\d+(?:-[A-Za-z0-9.]+)?", version):
-        parser.error("Invalid VERSION.")
+    try:
+        windows_version(version)
+    except ValueError as error:
+        parser.error(str(error))
     args.work = args.work.resolve()
     if not args.work.is_relative_to((ROOT / "build").resolve()):
         parser.error("The build workspace must be inside build/.")
     args.work.mkdir(parents=True, exist_ok=True)
+    name = "OOT-Remake-Archipelago-" + version
+    version_file = write_version_info(args.work, version, name)
     node, node_license = pinned_node(args.node, args.node_license)
     files, manifest = payload(args.work, version, node, node_license)
     if args.plan:
         print(json.dumps(dict(result="PLAN", version=version, payload_files=len(files),
-                              node_sha256=sha(node), manifest=str(args.work / "app-manifest.json"))))
+                              node_sha256=sha(node), manifest=str(args.work / "app-manifest.json"),
+                              version_resource=str(version_file))))
         return
     required = ("app_window.py", "app_runtime.py", "install_service.py")
     if any(not (ROOT / "client/ootrr_triforce" / name).is_file() for name in required):
@@ -216,11 +274,7 @@ def main():
     icon = args.work / "application.ico"
     with Image.open(ROOT / "assets/icon.png") as image:
         image.save(icon, format="ICO", sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
-    name = "OOT-Remake-Archipelago-" + version
-    command = [sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "--onefile", "--windowed",
-               "--noupx", "--name", name, "--paths", str(ROOT / "client"), "--distpath", str(args.output.resolve()),
-               "--workpath", str(args.work / "freeze"), "--specpath", str(args.work), "--icon", str(icon),
-               "--exclude-module", "PIL", "--exclude-module", "texture2ddecoder"]
+    command = freezer_command(name, args.work, args.output, icon, version_file)
     for package in PACKAGES:
         command.extend(("--collect-submodules", package))
     # PyInstaller's CLI destination selects a folder, not the target filename.

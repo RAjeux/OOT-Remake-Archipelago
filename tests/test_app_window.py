@@ -1,5 +1,6 @@
 """Actual-widget coverage for the app's normal setup and launch workflow."""
 import json
+import copy
 from pathlib import Path
 import sys
 import tempfile
@@ -106,12 +107,64 @@ class FakeDialogs:
         return self.save
 
 
+class FakeUpdater:
+    def __init__(self):
+        self.release = {"current_version": "0.10.1-alpha.3", "latest_version": "0.10.1-alpha.3",
+                        "update_available": False, "can_install": True,
+                        "release_url": "https://github.com/RAjeux/OOT-Remake-Archipelago/releases",
+                        "assets": {"apworld": {"sha256": "b" * 64}}}
+        self.check_gate = self.download_gate = self.schedule_gate = None
+        self.check_started, self.download_started, self.schedule_started = (threading.Event() for _ in range(3))
+        self.check_error = self.schedule_error = None
+        self.checks, self.downloads, self.schedules, self.world_checks = [], [], [], []
+        self.changed = True
+
+    def available(self, *, can_install=True):
+        self.release.update(latest_version="0.10.1-alpha.4", update_available=True, can_install=can_install)
+
+    def check_for_updates(self):
+        self.checks.append(threading.get_ident())
+        self.check_started.set()
+        if self.check_gate:
+            self.check_gate.wait(4)
+        if self.check_error:
+            raise self.check_error
+        return copy.deepcopy(self.release)
+
+    def apworld_status(self, target, expected):
+        self.world_checks.append((target, expected, threading.get_ident()))
+        return {"target": str(Path(target).resolve()), "changed": self.changed,
+                "current_sha256": "a" * 64, "expected_sha256": expected, "exists": True}
+
+    def download_update(self, release, *, base=None, progress=None, cancel=None):
+        self.downloads.append((release, base, threading.get_ident()))
+        self.download_started.set()
+        if progress:
+            progress(30, "Downloading the launcher update…")
+        while self.download_gate and not self.download_gate.wait(.01):
+            if cancel.is_set():
+                raise InterruptedError("Setup cancelled.")
+        if cancel.is_set():
+            raise InterruptedError("Setup cancelled.")
+        return {"version": release["latest_version"], "stage": "private synthetic download " + str(len(self.downloads))}
+
+    def schedule_install(self, download, *, base=None, world_target=None):
+        self.schedules.append((download, base, world_target, threading.get_ident()))
+        self.schedule_started.set()
+        if self.schedule_gate:
+            self.schedule_gate.wait(4)
+        if self.schedule_error:
+            raise self.schedule_error
+        return {"helper_started": True}
+
+
 class AppWindowTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.base = Path(self.temp.name)
         self.service = FakeService(self.base)
         self.dialogs = FakeDialogs()
+        self.updater = FakeUpdater()
         try:
             self.root = tk.Tk()
             self.root.withdraw()
@@ -122,6 +175,9 @@ class AppWindowTests(unittest.TestCase):
 
     def tearDown(self):
         for gate in (self.service.discover_gate, self.service.inspect_gate, self.service.install_gate, self.service.preflight_gate):
+            if gate:
+                gate.set()
+        for gate in (self.updater.check_gate, self.updater.download_gate, self.updater.schedule_gate):
             if gate:
                 gate.set()
         if self.window and not self.window.closed:
@@ -147,7 +203,8 @@ class AppWindowTests(unittest.TestCase):
         self.fail("The application worker did not finish in time")
 
     def open(self, wait=True, **kwargs):
-        self.window = AppWindow(self.root, service=self.service, base=self.base, dialogs=self.dialogs, **kwargs)
+        self.window = AppWindow(self.root, service=self.service, base=self.base, dialogs=self.dialogs,
+                                updater=self.updater, **kwargs)
         if wait:
             self.pump(lambda: self.window.status_key != "finding")
         return self.window
@@ -436,11 +493,232 @@ class AppWindowTests(unittest.TestCase):
         self.assertTrue(link.bind("<Button-1>"))
         self.assertTrue(link.bind("<Return>"))
 
+    def test_background_update_check_does_not_block_play_or_open_a_dialog(self):
+        self.updater.check_gate = threading.Event()
+        self.updater.available()
+        self.service.discovery.update(ready=True, profile=str(self.base / "profile"))
+        window = self.open()
+        self.pump(self.updater.check_started.is_set)
+        self.assertFalse(window.busy)
+        window.play_button.invoke()
+        self.pump(lambda: any(call[0] == "launch" for call in self.service.calls) and not window.busy)
+        self.assertTrue(window.update_checking)
+        self.assertIsNone(window.update_window)
+        self.updater.check_gate.set()
+        self.pump(lambda: window.update_release is not None)
+        self.assertEqual(window.update_button.winfo_manager(), "grid")
+        self.assertIsNone(window.update_window)
+        self.assertTrue(all(ident != threading.get_ident() for ident in self.updater.checks))
+
+    def test_current_version_has_no_update_button_and_manual_errors_keep_play_available(self):
+        self.service.discovery.update(ready=True, profile=str(self.base / "profile"))
+        window = self.open()
+        self.pump(lambda: self.updater.checks and not window.update_checking)
+        self.assertEqual(window.update_button.winfo_manager(), "")
+        self.updater.check_error = RuntimeError("private-token-must-not-appear")
+        window.check_updates(manual=True)
+        self.pump(lambda: not window.update_checking)
+        self.assertEqual(window.update_notice.cget("text"), window._text("launcher_check_failed"))
+        self.assertEqual(str(window.play_button.cget("state")), "normal")
+        self.assertNotIn("private-token", window.update_notice.cget("text"))
+
+    def open_available_update(self, *, changed=True, can_install=True):
+        self.updater.available(can_install=can_install)
+        self.updater.changed = changed
+        window = self.open()
+        self.pump(lambda: window.update_release is not None)
+        window.update_targets = [str(self.base / "AP/custom_worlds")]
+        window.update_button.invoke()
+        self.pump(lambda: not window.update_window.world_checking)
+        return window, window.update_window
+
+    def test_changed_apworld_is_optional_and_only_selected_target_is_passed_to_installer(self):
+        window, review = self.open_available_update()
+        self.assertFalse(review.want_world.get())
+        self.assertFalse(review.world.instate(["disabled"]))
+        review.world.invoke()
+        review.primary.invoke()
+        self.pump(lambda: not window.busy)
+        self.assertTrue(review.download)
+        self.assertTrue(review.want_world.get())
+        review.primary.invoke()
+        self.pump(lambda: window.closed)
+        self.assertEqual(self.updater.schedules[0][2], str((self.base / "AP/custom_worlds").resolve()))
+        self.assertNotEqual(self.updater.schedules[0][3], threading.get_ident())
+        self.assertFalse(self.service.calls)
+
+    def test_identical_apworld_cannot_be_selected_and_is_not_passed_to_installer(self):
+        window, review = self.open_available_update(changed=False)
+        self.assertTrue(review.world.instate(["disabled"]))
+        review.want_world.set(True)  # Programmatic changes must not bypass the identity guard.
+        review.primary.invoke()
+        self.pump(lambda: not window.busy)
+        review.primary.invoke()
+        self.pump(lambda: window.closed)
+        self.assertIsNone(self.updater.schedules[0][2])
+
+    def test_source_mode_can_review_release_but_cannot_schedule_python_replacement(self):
+        window, review = self.open_available_update(can_install=False)
+        self.assertTrue(review.primary.instate(["disabled"]))
+        self.assertTrue(review.source_note.winfo_manager())
+        review.proceed()
+        self.assertFalse(self.updater.downloads)
+        self.assertFalse(self.updater.schedules)
+        self.assertFalse(window.closed)
+
+    def test_french_source_update_review_keeps_its_actions_inside_the_window(self):
+        self.service.discovery["language"] = "fr"
+        window, review = self.open_available_update(can_install=False)
+        self.root.update_idletasks()
+        bottom = review.master.winfo_rooty() + review.master.winfo_height()
+        for button in (review.primary, review.close_button, review.release_button):
+            self.assertLessEqual(button.winfo_rooty() + button.winfo_height(), bottom)
+
+    def test_closing_during_final_update_handoff_does_not_cancel_or_destroy_the_launcher(self):
+        window, review = self.open_available_update()
+        review.primary.invoke()
+        self.pump(lambda: not window.busy)
+        self.updater.schedule_gate = threading.Event()
+        review.primary.invoke()
+        self.pump(self.updater.schedule_started.is_set)
+        window.close()
+        review.close()
+        window.cancel()
+        self.assertFalse(window.closed)
+        self.assertFalse(review.closed)
+        self.assertFalse(window.cancel_event.is_set())
+        self.updater.schedule_gate.set()
+        self.pump(lambda: window.closed)
+
+    def test_failed_update_handoff_keeps_the_launcher_open_and_does_not_show_private_details(self):
+        window, review = self.open_available_update()
+        review.primary.invoke()
+        self.pump(lambda: not window.busy)
+        self.updater.schedule_error = RuntimeError("secret-in-private-helper-error")
+        review.primary.invoke()
+        self.pump(lambda: not window.busy)
+        self.assertFalse(window.closed)
+        self.assertFalse(review.closed)
+        self.assertEqual(window.status_key, "launcher_update_failed")
+        self.assertNotIn("secret", review.status.cget("text"))
+        self.assertIsNone(window.update_download)
+        self.assertIsNone(review.download)
+
+    def test_failed_helper_handoff_retries_via_a_fresh_download_while_keeping_the_world_choice(self):
+        window, review = self.open_available_update()
+        review.world.invoke()
+        selected = review.selected_world()
+        review.primary.invoke()
+        self.pump(lambda: not window.busy)
+        previous_stage = review.download["stage"]
+        self.updater.schedule_error = RuntimeError("temporary helper startup failure")
+        review.primary.invoke()
+        self.pump(lambda: not window.busy)
+        self.assertFalse(window.closed)
+        self.assertTrue(review.want_world.get())
+        self.assertEqual(review.selected_world(), selected)
+        self.assertIsNone(review.download)
+        self.updater.schedule_error = None
+        review.primary.invoke()
+        self.pump(lambda: not window.busy)
+        self.assertEqual(len(self.updater.downloads), 2)
+        self.assertEqual(len(self.updater.schedules), 1)
+        self.assertNotEqual(review.download["stage"], previous_stage)
+        review.primary.invoke()
+        self.pump(lambda: window.closed)
+        self.assertEqual(len(self.updater.schedules), 2)
+        self.assertEqual(self.updater.schedules[-1][2], selected)
+
+    def test_closing_during_download_cancels_and_waits_for_worker_before_exit(self):
+        window, review = self.open_available_update()
+        self.updater.download_gate = threading.Event()
+        review.primary.invoke()
+        self.pump(self.updater.download_started.is_set)
+        window.close()
+        self.assertFalse(window.closed)
+        self.assertTrue(window.cancel_event.is_set())
+        self.pump(lambda: window.closed)
+        self.assertFalse(self.updater.schedules)
+
+    def test_apworld_check_from_a_previous_folder_cannot_change_the_selected_target(self):
+        window, review = self.open_available_update()
+        gate, started = threading.Event(), threading.Event()
+        first, second = str(self.base / "AP-one"), str(self.base / "AP-two")
+        original = self.updater.apworld_status
+        def check(target, expected):
+            if target == first:
+                started.set()
+                gate.wait(3)
+                return dict(original(target, expected), changed=False)
+            return original(target, expected)
+        with patch.object(self.updater, "apworld_status", check):
+            window.choose_update_world(first)
+            self.pump(started.is_set)
+            window.choose_update_world(second)
+            self.pump(lambda: not review.world_checking)
+            gate.set()
+            self.pump(lambda: len(self.updater.world_checks) >= 3)
+            for _ in range(12):
+                self.root.update()
+                time.sleep(.005)
+        self.assertEqual(review.world_status["target"], str(Path(second).resolve()))
+        self.assertTrue(review.world_status["changed"])
+
+    def test_open_update_review_cannot_change_its_target_during_room_preparation(self):
+        window, review = self.open_available_update()
+        self.prepare_form(window)
+        self.service.install_gate = threading.Event()
+        window.install()
+        self.pump(self.service.install_started.is_set)
+        self.assertTrue(review.primary.instate(["disabled"]))
+        self.assertTrue(review.folder.instate(["disabled"]))
+        self.assertTrue(review.browse.instate(["disabled"]))
+        review.proceed()
+        self.assertFalse(self.updater.downloads)
+        self.service.install_gate.set()
+        self.pump(lambda: not window.busy)
+        self.assertFalse(review.primary.instate(["disabled"]))
+
+    def test_unchecked_folder_value_cannot_replace_the_previous_verified_world(self):
+        window, review = self.open_available_update()
+        review.want_world.set(True)
+        review.target.set(str(self.base / "Unverified-folder"))
+        self.assertIsNone(review.selected_world())
+
+    def test_update_completion_notice_uses_french_without_an_automatic_dialog(self):
+        self.service.discovery["language"] = "fr"
+        window = self.open(startup_notice={"world_updated": False, "error_code": "world_failed"})
+        self.pump(lambda: self.updater.checks and not window.update_checking)
+        self.assertEqual(window.update_notice.cget("text"), window._text("launcher_world_failed"))
+        self.assertNotEqual(window.update_notice.cget("text"), TEXT["launcher_world_failed"])
+        self.assertIsNone(window.update_window)
+        self.assertEqual(window.update_world_button.winfo_manager(), "grid")
+
+    def test_stale_prepared_resources_explain_repreparation_without_asking_for_a_new_save(self):
+        self.service.discovery.update(ready=False, profile=str(self.base / "profile"), resources_update_required=True)
+        self.service.discovery["language"] = "fr"
+        window = self.open()
+        self.assertEqual(window.home_room.cget("text"), window._text("resources_update_needed"))
+        self.assertEqual(str(window.play_button.cget("state")), "disabled")
+
+    def test_cancel_download_in_review_keeps_launcher_open_with_a_cancelled_result(self):
+        window, review = self.open_available_update()
+        self.updater.download_gate = threading.Event()
+        review.primary.invoke()
+        self.pump(self.updater.download_started.is_set)
+        review.close()
+        self.pump(lambda: not window.busy)
+        self.assertFalse(window.closed)
+        self.assertTrue(review.closed)
+        self.assertEqual(window.status_key, "launcher_download_cancelled")
+
 
 class YamlTests(unittest.TestCase):
     def test_every_app_message_has_a_french_translation(self):
         catalogue = json.loads((ROOT / "client/ootrr_triforce/i18n_fr.json").read_bytes())
         self.assertEqual(set(TEXT.values()) - set(catalogue), set())
+        from ootrr_triforce.update_window import TEXT as update_text
+        self.assertEqual(set(update_text.values()) - set(catalogue), set())
 
     def test_invalid_player_names_fail_without_any_file_operation(self):
         for name in ("", " ", "Archipelago", "a" * 17, "Link\nOther"):

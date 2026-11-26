@@ -50,6 +50,7 @@ TEXT = {
     "update_title": "Room update required.",
     "prepare_first": "Prepare a room to enable Play.",
     "update_needed": "This room needs an update. Choose Set up a room to prepare it.",
+    "resources_update_needed": "Prepare this room again to apply the fixes, using the same player file and save.",
     "finding": "Finding your game and prepared room…",
     "player_room": "{slot} · Room {room}",
     "setup_intro": "Choose the player file generated for you by Archipelago. Your existing saves are kept.",
@@ -95,6 +96,20 @@ TEXT = {
     "choose_tools": "Choose the selected host's build tools folder",
     "path_failed": "This location could not be opened.",
     "about_body": "Ocarina of Time Remake integration for Archipelago.\nYour own game files and a compatible Windows host are required.",
+    "check_updates": "Check for launcher updates",
+    "checking_updates": "Checking for launcher updates…",
+    "launcher_update": "Update available…",
+    "launcher_version": "Launcher {version} is available.",
+    "launcher_current": "Your launcher is up to date.",
+    "launcher_check_failed": "Updates could not be checked. Try again from Help.",
+    "launcher_downloading": "Downloading the launcher update…",
+    "launcher_installing": "Preparing the launcher restart. Please wait…",
+    "launcher_update_failed": "The launcher update could not be completed. Your current application is kept.",
+    "launcher_download_ready": "Launcher update downloaded and checked. Choose Install and restart when ready.",
+    "launcher_download_cancelled": "Launcher update download cancelled.",
+    "launcher_updated": "Launcher updated.",
+    "launcher_world_updated": "Launcher and Archipelago world updated. Restart Archipelago before generating a room.",
+    "launcher_world_failed": "Launcher updated, but its Archipelago world could not be installed. Use Install APWorld to try again.",
 }
 
 
@@ -123,14 +138,36 @@ class _Task:
     identity: object = None
 
 
+def _update_probe(kind, operation, results, identity):
+    """A slow release check never occupies the game/setup worker or owns Tk."""
+    try:
+        result = operation()
+    except Exception as error:
+        logging.getLogger(__name__).info("Application update probe %s failed (%s).", kind, type(error).__name__)
+        result = {"_failed": True}
+    results.put((_Task(kind, None, identity), result))
+
+
 class AppWindow:
     def __init__(self, master, *, service=None, base=None, dialogs=filedialog,
-                 connection_factory=None, open_path=None):
+                 connection_factory=None, open_path=None, updater=None, startup_notice=None):
         if service is None:
             from . import install_service as service
         self.master, self.service, self.base = master, service, base
         self.dialogs, self.connection_factory = dialogs, connection_factory
         self.path_opener = open_path
+        if updater is None:
+            from . import update_service as updater
+        self.updater = updater
+        self.update_checking = self.update_installing = False
+        self.update_release, self.update_download = None, None
+        self.update_targets = []
+        self.update_window = None
+        self.update_window_revision = self.update_target_revision = 0
+        self.update_notice_key, self.update_notice_values = "", {}
+        if startup_notice:
+            self.update_notice_key = ("launcher_world_failed" if startup_notice.get("error_code") else
+                                      "launcher_world_updated" if startup_notice.get("world_updated") else "launcher_updated")
         self.language = "en"
         self.current = {}
         self.target_mods = ""
@@ -177,6 +214,7 @@ class AppWindow:
         self.master.bind("<MouseWheel>", self._wheel, add="+")
         self._submit("discover", lambda: self.service.discover(base=self.base))
         self._schedule(40, self._receive)
+        self._schedule(100, self.check_updates)
         self._render()
 
     def _text(self, key, **values):
@@ -252,6 +290,17 @@ class AppWindow:
         self.yaml_button.grid(row=3, column=1, sticky="ew", padx=(7, 0))
         self.connection_button = self._button(pane, "connection", self.open_connection)
         self.connection_button.grid(row=4, column=0, columnspan=2, sticky="w", pady=(16, 0))
+        pane.rowconfigure(5, weight=0)
+        pane.rowconfigure(6, weight=1)
+        self.update_banner = ttk.Frame(pane)
+        self.update_banner.grid(row=5, column=0, columnspan=2, sticky="ew", pady=(16, 0))
+        self.update_banner.columnconfigure(0, weight=1)
+        self.update_notice = ttk.Label(self.update_banner, wraplength=460)
+        self.update_notice.grid(row=0, column=0, sticky="w")
+        self.update_button = self._button(self.update_banner, "launcher_update", self.open_update)
+        self.update_button.grid(row=0, column=1, sticky="e", padx=(12, 0))
+        self.update_world_button = self._button(self.update_banner, "install_world", self.install_world)
+        self.update_world_button.grid(row=1, column=0, sticky="w", pady=(8, 0))
 
     def _page_title(self, pane, key):
         pane.columnconfigure(0, weight=1)
@@ -477,7 +526,8 @@ class AppWindow:
                 result = task.operation()
             except Exception as error:
                 logging.getLogger(__name__).warning("Application operation %s failed (%s).", task.kind, type(error).__name__)
-                result = {"_failed": True, "_cancelled": bool(getattr(error, "cancelled", False)),
+                result = {"_failed": True, "_cancelled": bool(getattr(error, "cancelled", False))
+                          or (task.kind == "update_download" and isinstance(error, InterruptedError)),
                           "_message": getattr(error, "public_message", "")}
             self.results.put((task, result))
             del task, result
@@ -492,6 +542,28 @@ class AppWindow:
                 percent, message = result
                 self.progress.configure(value=max(0, min(100, percent)))
                 self.progress_text = str(message)
+            elif task.kind == "update_progress":
+                if self.update_window and not self.update_window.closed:
+                    self.update_window.progress_update(*result)
+            elif task.kind == "update_check":
+                self.update_checking = False
+                if result.get("_failed"):
+                    if task.identity:
+                        self.update_notice_key, self.update_notice_values = "launcher_check_failed", {}
+                else:
+                    self.update_release = result["release"] if result["release"].get("update_available") else None
+                    self.update_targets = result.get("targets", [])
+                    if self.update_release:
+                        self.update_notice_key = "launcher_version"
+                        self.update_notice_values = {"version": self.update_release["latest_version"]}
+                        if self.update_download and self.update_download.get("version") != self.update_release["latest_version"]:
+                            self.update_download = None
+                    elif task.identity:
+                        self.update_notice_key, self.update_notice_values = "launcher_current", {}
+            elif task.kind == "update_world_check":
+                if (task.identity == (self.update_window_revision, self.update_target_revision)
+                        and self.update_window and not self.update_window.closed):
+                    self.update_window.checked_target(result)
             elif task.kind == "discover":
                 if task.identity is not None and task.identity != self.host:
                     continue
@@ -545,9 +617,35 @@ class AppWindow:
                 if result.get("_failed"):
                     self.status_key = "cancelled" if result.get("_cancelled") else {
                         "install": "setup_failed", "launch": "launch_failed", "yaml": "yaml_failed",
-                        "world": "world_failed", "licenses": "path_failed"
+                        "world": "world_failed", "licenses": "path_failed",
+                        "update_download": "launcher_update_failed", "update_schedule": "launcher_update_failed"
                     }[task.kind]
                     self.progress_text = result.get("_message", "")
+                    if task.kind in {"update_download", "update_schedule"}:
+                        self.update_installing = False
+                        if task.kind == "update_schedule":
+                            self.close_requested = False
+                            # A timed-out helper can still be alive with a
+                            # cancelled plan. Retain that stage and retry in a
+                            # newly downloaded one; never reuse its plan/files.
+                            self.update_download = None
+                            if self.update_window and not self.update_window.closed:
+                                self.update_window.download = None
+                        if result.get("_cancelled"):
+                            self.status_key = "launcher_download_cancelled"
+                        if self.update_window and not self.update_window.closed:
+                            self.update_window.finished(None, failed=True, cancelled=result.get("_cancelled", False))
+                elif task.kind == "update_download":
+                    self.update_download = result
+                    self.status_key = "launcher_download_ready"
+                    if self.update_window and not self.update_window.closed:
+                        self.update_window.finished(result)
+                elif task.kind == "update_schedule":
+                    self.update_installing = False
+                    if self.update_window and not self.update_window.closed:
+                        self.update_window.busy = self.update_window.installing = False
+                    self.close()
+                    return
                 elif task.kind == "install":
                     old_profile = self.current.get("profile")
                     self.current.update(result)
@@ -589,6 +687,7 @@ class AppWindow:
             self.help_menu.delete(0, "end")
             for key, command in (("guide", self.open_guide), ("open_log", self.open_log),
                                  ("compatibility", self.open_compatibility),
+                                 ("check_updates", lambda: self.check_updates(manual=True)),
                                  ("open_data", self.open_data), ("licenses", self.open_licenses),
                                  ("about", self.about)):
                 self.help_menu.add_command(label=self._text(key), command=command)
@@ -603,7 +702,7 @@ class AppWindow:
         self.home_status.configure(text=self._text("ready" if ready else "update_title" if self.current.get("profile") else "not_prepared"))
         if self.current.get("profile"):
             detail = (self._text("player_room", slot=self.current.get("slot", ""), room=self.current.get("room", ""))
-                      if ready else self._text("update_needed"))
+                      if ready else self._text("resources_update_needed" if self.current.get("resources_update_required") else "update_needed"))
         else:
             detail = self._text("prepare_first")
         self.home_room.configure(text=detail)
@@ -615,6 +714,8 @@ class AppWindow:
                            and self.fields["game"].get().strip() and self.fields["server"].get().strip())
         self.install_button.configure(state="normal" if can_install and not self.busy else "disabled")
         self.cancel_button.configure(state="normal" if self.busy and not self.cancel_event.is_set() else "disabled")
+        if self.update_installing:
+            self.cancel_button.configure(state="disabled")
         self.manifest_label.configure(text=self._text("player_room", slot=self.manifest_info.get("slot", ""),
                                                      room=self.manifest_info.get("room", ""))
                                       if self.manifest_info else self._text(self.manifest_message))
@@ -623,6 +724,20 @@ class AppWindow:
             self.progress.grid()
         else:
             self.progress.grid_remove()
+        self.update_notice.configure(text=self._text(self.update_notice_key, **self.update_notice_values) if self.update_notice_key else "")
+        if self.update_release:
+            self.update_button.grid()
+            self.update_button.configure(state="disabled" if self.busy else "normal")
+        else:
+            self.update_button.grid_remove()
+        if self.update_notice_key == "launcher_world_failed":
+            self.update_world_button.grid()
+            self.update_world_button.configure(state="disabled" if self.busy else "normal")
+        else:
+            self.update_world_button.grid_remove()
+        self.update_banner.grid() if self.update_release or self.update_notice_key else self.update_banner.grid_remove()
+        if self.update_window and not self.update_window.closed:
+            self.update_window.render(self.language, blocked=self.busy and not self.update_window.busy)
 
     def browse_manifest(self):
         selected = self.dialogs.askopenfilename(parent=self.master, title=self._text("player_file"),
@@ -665,10 +780,90 @@ class AppWindow:
         self._start("install", lambda: self.service.install(request, progress=progress, cancel=self.cancel_event), "preparing")
 
     def cancel(self):
+        if self.update_installing:
+            return
         if self.busy:
             self.cancel_event.set()
             self.status_key, self.progress_text = "cancelling", ""
             self._render()
+
+    def check_updates(self, manual=False):
+        if self.closed or self.update_checking:
+            return
+        self.update_checking = True
+        if manual:
+            self.update_notice_key, self.update_notice_values = "checking_updates", {}
+        updater, base, results = self.updater, self.base, self.results
+        def check():
+            release = updater.check_for_updates()
+            from . import app_runtime
+            discover = getattr(app_runtime, "discover_apworld_targets", None)
+            try:
+                targets = discover(base=base) if discover else []
+            except (OSError, ValueError):
+                targets = []
+            return {"release": release, "targets": [str(target) for target in targets]}
+        threading.Thread(target=_update_probe, args=("update_check", check, results, manual),
+                         name="Archipelago update check", daemon=True).start()
+        self._render()
+
+    def open_update(self):
+        if self.busy or not self.update_release:
+            return
+        if self.update_window and not self.update_window.closed:
+            self.update_window.master.lift()
+            return
+        from .update_window import UpdateWindow
+        self.update_window_revision += 1
+        self.update_window = UpdateWindow(tk.Toplevel(self.master), self.update_release,
+            language=self.language, targets=self.update_targets, on_target=self.choose_update_world,
+            on_download=self.download_update, on_install=self.install_update, on_cancel=self.cancel)
+        if self.update_download and self.update_download.get("version") == self.update_release["latest_version"]:
+            self.update_window.finished(self.update_download)
+        if self.update_targets:
+            self.choose_update_world(self.update_targets[0])
+
+    def choose_update_world(self, target):
+        window = self.update_window
+        if self.busy or not window or window.closed:
+            return
+        if target is None:
+            target = self.dialogs.askdirectory(parent=window.master, title=self._text("world_folder"), mustexist=True)
+        if not target:
+            return
+        window.check_target(target)
+        self.update_target_revision += 1
+        identity = (self.update_window_revision, self.update_target_revision)
+        expected = window.release["assets"]["apworld"]["sha256"]
+        updater, results = self.updater, self.results
+        threading.Thread(target=_update_probe,
+            args=("update_world_check", lambda: updater.apworld_status(target, expected), results, identity),
+            name="Archipelago world update check", daemon=True).start()
+
+    def download_update(self, release):
+        if self.busy:
+            return
+        updater, base, cancel, results = self.updater, self.base, self.cancel_event, self.results
+        def progress(percent, message):
+            results.put((_Task("update_progress", None), (percent, message)))
+        operation = lambda: updater.download_update(release, base=base, progress=progress, cancel=cancel)
+        if self.update_window and not self.update_window.closed:
+            self.update_window.begin()
+        self._start("update_download", operation, "launcher_downloading")
+
+    def install_update(self, download, world_target=None):
+        if self.busy:
+            return
+        updater, base = self.updater, self.base
+        def schedule():
+            result = updater.schedule_install(download, base=base, world_target=world_target)
+            if not result.get("helper_started"):
+                raise RuntimeError("The update helper did not start.")
+            return result
+        self.update_installing = True
+        if self.update_window and not self.update_window.closed:
+            self.update_window.begin(installing=True)
+        self._start("update_schedule", schedule, "launcher_installing")
 
     def play(self):
         if not self.busy and self.current.get("ready"):
@@ -802,22 +997,26 @@ class AppWindow:
             return
         if self.busy:
             self.close_requested = True
-            self.cancel()
+            if not self.update_installing:
+                self.cancel()
             return
         self.closed = True
         self.stop.set()
+        self.worker.join(timeout=.3)
         self._set_field("password", "")
         if self.connection_window and not self.connection_window.closed:
             self.connection_window.close()
+        if self.update_window and not self.update_window.closed:
+            self.update_window.close()
         for identifier in self.after_ids:
             self.master.after_cancel(identifier)
         self.after_ids.clear()
         self.master.destroy()
 
 
-def main():
+def main(startup_notice=None):
     root = tk.Tk()
-    AppWindow(root)
+    AppWindow(root, startup_notice=startup_notice)
     root.mainloop()
 
 

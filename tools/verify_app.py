@@ -13,9 +13,11 @@ from zipfile import ZipFile, is_zipfile
 ROOT = Path(__file__).resolve().parents[1]
 MAX_ENTRY = 160 << 20
 FORBIDDEN_ROOTS = {"romfs", "exefs", "mods", "user", "saves", "screenshots", "build", "tests", "references", ".git", ".venv"}
-FORBIDDEN_NAMES = {"outils.json", "native-session.json", "last-profile.json", "connection-control.json", "contexte-codex.md"}
+FORBIDDEN_NAMES = {"outils.json", "native-session.json", "last-profile.json", "connection-control.json",
+                   "apworld-installations.json", "contexte-codex.md"}
 FORBIDDEN_SUFFIXES = {".sav", ".apsave", ".apootrr", ".archipelago", ".apmultidata", ".apmultisave"}
 REQUIRED_MODULES = {"ootrr_triforce.app_window", "ootrr_triforce.app_runtime", "ootrr_triforce.install_service",
+                    "ootrr_triforce.update_service", "ootrr_triforce.update_window",
                     "ootrr_triforce.player", "ootrr_triforce.connection_window", "ootrr_triforce.hookshot_setup",
                     "tkinter", "zstandard"}
 
@@ -103,6 +105,20 @@ def inspect_app(path, extra_markers=()):
     version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
     if manifest.get("schema") != 1 or manifest.get("version") != version or manifest.get("platform") != "windows-x64":
         raise ValueError("The application manifest does not match this source version.")
+    # Read Windows resources independently of the updater's native API reader.
+    # These identify the actual product before an updater replaces a launcher.
+    import pefile
+    with pefile.PE(str(path), fast_load=True) as executable:
+        executable.parse_data_directories(directories=[pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_RESOURCE"]])
+        versions = set()
+        for group in getattr(executable, "FileInfo", ()):
+            for info in group:
+                for table in getattr(info, "StringTable", ()):
+                    version_entries = table.entries
+                    if b"ProductName" in version_entries and b"ProductVersion" in version_entries:
+                        versions.add((version_entries[b"ProductName"].decode("utf-8"), version_entries[b"ProductVersion"].decode("utf-8")))
+        if versions != {("OOT Remake Archipelago", version)}:
+            raise ValueError("The Windows product/version resource does not match the application.")
     expected_native = sha((ROOT / "prebuilt/windows-x64/archipelago.dll").read_bytes())
     expected_wasm = sha((ROOT / "client/ootrr_triforce/engine.wasm").read_bytes())
     components = [("native/archipelago.dll", expected_native),
@@ -143,7 +159,8 @@ def inspect_app(path, extra_markers=()):
     return dict(result="PASS", version=version, artifact=path.name, bytes=path.stat().st_size,
                 sha256=sha(path.read_bytes()), console=False, onefile=True,
                 native_sha256=expected_native, wasm_sha256=expected_wasm, node_sha256=NODE_SHA256,
-                payload_hashes=True, private_paths_absent=True, absolute_python_paths_absent=True, **counts)
+                payload_hashes=True, windows_version_metadata=True, private_paths_absent=True,
+                absolute_python_paths_absent=True, **counts)
 
 
 def main():

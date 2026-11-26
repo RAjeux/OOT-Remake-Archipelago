@@ -1847,3 +1847,23 @@ for _name, _source in NETWORK_SOURCES.items():
     elif _name not in CHECK_FLAGS:
         CHECK_FLAGS[_name] = [murmur3("Archipelago.Source." + str(LOCATION_IDS[_name]))]
 del _name, _source
+
+# OOTRR's legacy item names sometimes reused a smaller physical bundle. AP's
+# advertised count must instead select the existing native bundle of that size.
+# These are free item effects, not shop purchases: keep the original item kind,
+# classification and protocol ID, while sharing the game's bundle/capacity code.
+EXACT_BUNDLE_REWARDS = {
+    "Arrows (30)": "Buy Arrows (30)",
+    "Bombs (10)": "Buy Bombs (10)",
+    "Bombs (20)": "Buy Bombs (20)",
+    "Deku Nuts (5)": "Buy Deku Nut (5)",
+    "Deku Nuts (10)": "Buy Deku Nut (10)",
+    "Deku Seeds (30)": "Buy Deku Seeds (30)",
+}
+for _name, _native in EXACT_BUNDLE_REWARDS.items():
+    _bundle = SHOP_ITEMS[_native]
+    ITEM_DATA[_name] = dict(ITEM_DATA[_name], actor=_bundle["actor"], quantity=_bundle["quantity"])
+    # Old seed files still contain their original engine actor. Accept both
+    # native identities when verifying a source before replacing its reward.
+    EXPECTED[_name] = list(dict.fromkeys([*EXPECTED[_name], _bundle["actor"]]))
+del _name, _native, _bundle

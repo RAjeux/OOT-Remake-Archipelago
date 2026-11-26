@@ -25,6 +25,24 @@ from .room_view import RoomView
 from .save_bridge import atomic, exclusive, history_cursor, write_json
 
 
+PREPARED_RESOURCE_REVISION = 1
+PREPARED_RESOURCE_MARKER = Path("Archipelago/prepared-v1.json")
+
+
+def _prepared_resource_record(token):
+    return {"version": 1, "revision": PREPARED_RESOURCE_REVISION, "token": token}
+
+
+def _prepared_resources_current(mods, token, cfg):
+    """Resource compatibility is independent of the launcher's UI version."""
+    proof = _json(Path(mods) / "Archipelago/romfs" / PREPARED_RESOURCE_MARKER)
+    return (isinstance(proof, dict) and type(proof.get("version")) is int
+            and type(proof.get("revision")) is int and proof == _prepared_resource_record(token)
+            and type(cfg.get("prepared_revision")) is int
+            and cfg["prepared_revision"] == PREPARED_RESOURCE_REVISION
+            and cfg.get("prepared_token") == token)
+
+
 class InstallError(Exception):
     """A translated public message; detailed failures stay in the private log."""
 
@@ -228,8 +246,9 @@ def discover(base=None, host=None):
     # Leave the default empty so setup obtains its verified compatible tool.
     builder = str(pinned) if pinned.is_file() else ""
     romfs = Path(port.get("romfs") or remembered.get("romfs") or game / "romfs")
+    resources_current = bool(profile and _prepared_resources_current(mods, profile.name, cfg))
     try:
-        ready = bool(profile and session.get("Token") == profile.name
+        ready = bool(profile and resources_current and session.get("Token") == profile.name
                      and (mods / "Archipelago/romfs/Archipelago/room-v1.txt").read_text().strip() == profile.name
                      and (game / "romfs").resolve() == romfs.resolve()
                      and _compiled_game(host, game / "romfs", tools))
@@ -243,6 +262,7 @@ def discover(base=None, host=None):
                 room=session.get("Room", ""), slot=session.get("Slot", ""), token=session.get("Token", ""),
                 language=detect_language(profile or base, dict(cfg, exe=str(game / _executable_name(host)), romfs=str(romfs))),
                 ready=ready, build_required=not ready,
+                resources_update_required=bool(profile and not resources_current),
                 diagnostic_log=str(base / "setup-diagnostic.log"))
 
 
@@ -579,6 +599,7 @@ def _install(request, progress, cancel, base, diagnostic):
             _emit(progress, 45, tr("Preparing item models and native rewards..."))
             source = player.prepare(assets, player.preparation_settings(runtime, data), roster, data["moved"])
             _cancelled(cancel)
+            write_json(source / "Archipelago/romfs" / PREPARED_RESOURCE_MARKER, _prepared_resource_record(data["token"]))
             if _running_game(game, tools, host):
                 raise InstallError(tr("Close Zelda and its setup application before installing."))
             _emit(progress, 74, tr("Finishing setup. Please keep this window open..."))
@@ -627,7 +648,8 @@ def _install(request, progress, cancel, base, diagnostic):
                     if not compatible:
                         raise InstallError(tr("The rebuilt game does not match the installed Archipelago module."))
                 cfg.update(host=host, game=str(game), exe=str(game / _executable_name(host)), romfs=str(romfs),
-                           ootrr=str(builder), native_tools=str(tools), manifest=str(manifest))
+                           ootrr=str(builder), native_tools=str(tools), manifest=str(manifest),
+                           prepared_revision=PREPARED_RESOURCE_REVISION, prepared_token=data["token"])
                 cfg.setdefault("ports", {}).setdefault(host, {}).update(mods=str(mods), exe=str(game / _executable_name(host)),
                                                                        game=str(game), romfs=str(romfs), native_tools=str(tools))
                 write_json(base / "outils.json", cfg)
@@ -650,6 +672,7 @@ def _install(request, progress, cancel, base, diagnostic):
                 raise
     result = dict(base=str(base), app_base=str(request["app_base"]), host=host, profile=str(profile), game=str(game), romfs=str(romfs), tools=str(tools), mods=str(mods),
                   room=data["room"], slot=data["slot"], token=data["token"], ready=compatible,
+                  resources_update_required=False,
                   build_required=not compatible, backup=str(backup), diagnostic_log=str(diagnostic),
                   setup=str(tools.parent / ("HookshotSetup.exe" if host == "hookshot" else "TriforceSetup.exe")),
                   auto_connect=automatic)
@@ -667,6 +690,9 @@ def launch(result):
     mods = Path(result.get("mods") or game / "mods").resolve()
     profile = Path(result["profile"]).resolve()
     session = _json(profile / "native-session.json", {})
+    cfg = _json(profile.parent / "outils.json", {})
+    if not isinstance(cfg, dict) or not _prepared_resources_current(mods, profile.name, cfg):
+        raise InstallError(tr("Prepare this room again to apply the fixes, using the same player file and save."))
     executable = _adapter(host).compiled_executable(game / "romfs", tools)
     if (not isinstance(session, dict) or session.get("Token") != profile.name
             or not (game / "image.bin").is_file() or (game / "romfs").resolve() != romfs

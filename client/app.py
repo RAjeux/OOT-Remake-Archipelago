@@ -25,6 +25,12 @@ def self_test(destination):
     at = app_runtime.resource_root()
     manifest = json.loads((at / "app-manifest.json").read_bytes())
     assert manifest["platform"] == "windows-x64"
+    from ootrr_triforce import update_service
+    assert update_service.current_version() == manifest["version"]
+    assert update_service.compare_versions(manifest["version"], manifest["version"]) == 0
+    if getattr(sys, "frozen", False):
+        assert update_service._file_version(Path(sys.executable)) == {
+            "ProductName": "OOT Remake Archipelago", "ProductVersion": manifest["version"]}
     for name, digest in manifest["payload"].items():
         assert hashlib.sha256((at / name).read_bytes()).hexdigest() == digest, name
     for name in ("ootrr_ap_hookshot.inc", "ootrr_ap_hookshot_menu.inc"):
@@ -70,6 +76,7 @@ def self_test(destination):
         assert hashlib.sha256(installed.read_bytes()).hexdigest() == manifest["payload"]["ootrr_remake.apworld"]
         backup, = (work / "local/backups/apworld").glob("*.apworld")
         assert backup.read_bytes() == previous
+        assert app_runtime.discover_apworld_targets(base=work / "local")[0] == worlds.resolve()
         node = work / "local/tools" / ("node-v" + manifest["node_version"]) / "node.exe"
         assert hashlib.sha256(node.read_bytes()).hexdigest() == manifest["payload"]["runtime/node/node.exe"]
         assert node.with_name("LICENSE").read_bytes() == (at / "runtime/node/LICENSE").read_bytes()
@@ -87,6 +94,7 @@ def self_test(destination):
                   version=manifest["version"], node=manifest["node_version"],
                   wasm_settings=True, zstd_round_trip=True, native_exports=True,
                   tkinter=True, translations=True, payload_hashes=True,
+                  updater=True, windows_version_metadata=bool(getattr(sys, "frozen", False)),
                   hookshot_resources=True,
                   apworld_install=True, previous_apworld_preserved=True,
                   persistent_node_engine=True,
@@ -99,17 +107,48 @@ def self_test(destination):
 
 def main():
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--self-test", type=Path, help=argparse.SUPPRESS)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--self-test", type=Path, help=argparse.SUPPRESS)
+    mode.add_argument("--apply-update", type=Path, help=argparse.SUPPRESS)
+    mode.add_argument("--complete-update", type=Path, help=argparse.SUPPRESS)
     options = parser.parse_args()
     try:
+        # A detached helper must not open Tk or initialize the old app's Node
+        # and log files while it waits for the original executable to close.
+        if options.apply_update:
+            from ootrr_triforce.update_service import helper_main
+            return helper_main(options.apply_update)
         from ootrr_triforce import app_runtime
         app_runtime.initialize()
         if options.self_test:
             return self_test(options.self_test)
+        startup_notice = None
+        if options.complete_update:
+            try:
+                from ootrr_triforce.update_service import complete_update
+                startup_notice = complete_update(options.complete_update)
+            except Exception:
+                logging.exception("Update completion could not be recorded")
+                startup_notice = dict(world_updated=False, error_code="update_completion_failed")
         from ootrr_triforce.app_window import main as open_window
-        open_window()
+        open_window(startup_notice=startup_notice)
         return 0
     except Exception as exc:
+        if options.apply_update:
+            # A helper can fail after the parent window has closed. Keep its
+            # traceback in the same persistent log exposed by Help, without
+            # initializing Tk, Node or the old extraction directory.
+            try:
+                import traceback
+                from ootrr_triforce.app_runtime import log_path
+                target = log_path()
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with target.open("a", encoding="utf-8") as output:
+                    output.write("\nLauncher update helper failed:\n")
+                    traceback.print_exception(type(exc), exc, exc.__traceback__, file=output)
+            except Exception:
+                pass
+            return 1
         logging.exception("Application startup failed")
         if options.self_test:
             options.self_test.write_text(json.dumps(dict(result="FAIL", error_type=type(exc).__name__,

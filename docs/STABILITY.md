@@ -1,5 +1,38 @@
 # Stability fixes and upgrade scope
 
+## 0.10.2 alpha 1: updates and exact consumable bundles
+
+The launcher can check the project's GitHub releases, prepare a verified update,
+replace itself through a separate helper and restart. An optional APWorld update
+is applied by the new application, with its matching Node runtime and backups.
+Older experimental releases are not chosen by their higher numeric version.
+An unsuccessful helper launch allows a new download and retry. Windows product
+metadata identifies the actual executable, including its prerelease version.
+See [the update guide](UPDATING.md).
+
+Bombs (10), Bombs (20), Arrows (30), Deku Seeds (30), Deku Nuts (5) and Deku
+Nuts (10) now use the six existing native bundles with those exact quantities.
+The game still performs the grant and capacity checks; no quantity multiplier,
+new native ABI, item ID or engine change is introduced. Missing ammunition
+equipment remains a silent acknowledgement. Older player metadata is accepted;
+normal legacy-gear rooms do not transfer these six ammunition packs.
+
+The installer records the room's prepared resource revision and checks the
+active mod before offering Play. Older prepared resources require preparation
+with the same player file and save. An installation failure restores the old
+mod marker and preferences. This resource revision is separate from the app's
+version, preserving reuse across future interface-only updates.
+
+APWorld installation now rejects malformed packages before replacing anything.
+Other active copies of the same package are backed up and restored on a failed
+replacement. Other games are preserved, and successful installation paths are
+remembered for the optional update flow.
+
+Validation includes a real two-version frozen Windows replacement/restart with
+an optional APWorld update, native consumable-resource inspection and event
+tests, plus a private Triforce 0.8.3 build and real local AP startup/reconnection.
+It does not establish a full manual playthrough of every randomized check.
+
 ## 0.10.1 alpha 3: Triforce 0.8.0 setup compatibility
 
 The installer now supports Triforce 0.8.0's menu hooks, including resolution

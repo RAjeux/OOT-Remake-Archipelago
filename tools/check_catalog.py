@@ -3,7 +3,7 @@ from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 import sys
 sys.path.insert(0,str(root/'client'))
-from ootrr_triforce.catalog import CHESTS, LEGACY_CHESTS, GEAR, LOCATION_IDS, ITEM_IDS, FILLER, ITEM_DATA, EXPECTED, SHOP_ITEMS, SHOP_CHECKS, LEGACY_SHOP_CHECKS, CHECK_FLAGS, SKULL_CHECKS, TRADE_CHECKS
+from ootrr_triforce.catalog import CHESTS, LEGACY_CHESTS, GEAR, LOCATION_IDS, ITEM_IDS, FILLER, ITEM_DATA, EXPECTED, SHOP_ITEMS, SHOP_CHECKS, LEGACY_SHOP_CHECKS, CHECK_FLAGS, SKULL_CHECKS, TRADE_CHECKS, EXACT_BUNDLE_REWARDS
 from ootrr_triforce.network_catalog import APPENDED_IDS, SOURCES
 from ootrr_triforce.shop_catalog import ADDITIONAL_SHOP_CHECKS, SHOP_FIRST_ID
 from ootrr_triforce.master_sword import ACTOR as MASTER_ACTOR, ITEM as MASTER_ITEM, LOCATION as MASTER_LOCATION, LOCATION_ID as MASTER_ID, FLAG_NAME as MASTER_FLAG
@@ -60,6 +60,11 @@ for name,actor in goods.items():
  assert row['quantity']>=1, f"Incorrect shop quantity: {name}"
 rewards.update(SHOP_ITEMS)
 rewards[MASTER_ITEM]=dict(actor=MASTER_ACTOR,mode='actor',kind='Item',quantity=1,advancement=True)
+# AP corrects six legacy physical bundles without changing engine input data or
+# protocol identities. Every replacement must be the existing exact-size good.
+for name,native in EXACT_BUNDLE_REWARDS.items():
+ assert int(re.search(r'\((\d+)\)',name).group(1))==SHOP_ITEMS[native]['quantity'], f"Incorrect AP bundle size: {name}"
+ rewards[name]=dict(rewards[name],actor=SHOP_ITEMS[native]['actor'],quantity=SHOP_ITEMS[native]['quantity'])
 assert rewards==ITEM_DATA, "Native rewards or quantities differ from OOTRR data."
 order=[*native_order,*sorted(SHOP_ITEMS),MASTER_ITEM]
 assert ITEM_IDS=={n:0x6F7100+i for i,n in enumerate(order)}, "Item IDs changed."

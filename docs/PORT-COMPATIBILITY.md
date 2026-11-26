@@ -2,6 +2,21 @@
 
 The Windows x64 installer supports **Triforce** and an **experimental Hookshot 3.0.1 adapter**. Loading the RomFS mod on another host is a separate capability from connecting to Archipelago and applying received items.
 
+## Triforce 0.8.3 runtime check
+
+Verified on Windows x64 with the 0.10.2-alpha.1 native integration source.
+The original host/menu hooks and local menu headers remain compatible;
+no additional C or menu patch was needed. The private SDK build completed,
+then the actual game connected automatically to an official local AP 0.6.8
+server in 6.34 seconds. A second test AP client joined and disconnect/reconnect
+succeeded in the same Triforce process. The title screen with New Game and
+Settings was inspected from a real rendered frame.
+
+No user save was loaded and no private progress save was created. The game,
+SDK and saved options were preserved in the original installation. The
+headless fixture was ended by its owner after a window-close timeout; this
+does not establish a native clean-quit or gameplay/inventory/DeathLink test.
+
 ## Triforce 0.8.1 runtime check
 
 Verified on Windows x64 on 2026-11-25 using the unchanged native integration

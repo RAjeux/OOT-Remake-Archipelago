@@ -43,10 +43,18 @@ jobs:
           $env:PATH = "$env:SystemRoot\System32"
           Remove-Item Env:OOTRR_NODE -ErrorAction SilentlyContinue
           $process = Start-Process -FilePath $application -ArgumentList @('--self-test', ('"{0}"' -f $result)) -Wait -PassThru -WindowStyle Hidden
-          if ($process.ExitCode -ne 0) { exit $process.ExitCode }
+          if (Test-Path -LiteralPath $result) { Get-Content -LiteralPath $result }
+          if ($process.ExitCode -ne 0) {
+            $diagnostic = Join-Path $env:LOCALAPPDATA 'OOTRR-Archipelago/diagnostics/application.log'
+            if (Test-Path -LiteralPath $diagnostic) { Get-Content -LiteralPath $diagnostic -Tail 150 }
+            exit $process.ExitCode
+          }
+          if (!(Test-Path -LiteralPath $result)) {
+            Write-Error 'The standalone smoke test did not produce its result file.'
+            exit 1
+          }
           $report = Get-Content -LiteralPath $result -Raw | ConvertFrom-Json
           if ($report.result -ne 'PASS' -or !$report.frozen -or !$report.persistent_node_engine) { exit 1 }
-          Get-Content -LiteralPath $result
   native:
     runs-on: ubuntu-latest
     steps:

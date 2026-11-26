@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
-from ootrr_triforce.catalog import CHESTS, ITEM_DATA, ITEM_IDS
+from ootrr_triforce.catalog import CHESTS, EXACT_BUNDLE_REWARDS, ITEM_DATA, ITEM_IDS
 from ootrr_triforce.native_presentations import LOCAL_CHEST_PREFIX
 from ootrr_triforce.presentation_models import chest_model_actor
 
@@ -25,8 +25,9 @@ class NativeChestPresentationTests(unittest.TestCase):
         from evfl.event import SubFlowEvent
         game = Path(os.environ["OOTRR_ROMFS"])
         staged = Path(os.environ["OOTRR_STARTER_MOD"]) if os.environ.get("OOTRR_STARTER_MOD") else game
-        locations = list(CHESTS)[:6]
-        items = ["Ocarina", "Bolero of Fire", "Fire Medallion", "Small Key (Forest Temple)", "Master Sword"]
+        items = ["Ocarina", "Bolero of Fire", "Fire Medallion", "Small Key (Forest Temple)", "Master Sword",
+                 *EXACT_BUNDLE_REWARDS]
+        locations = list(CHESTS)[:len(items) + 1]
         local = dict(zip(locations, items))
         placements = {location: ap_item.ap_item(location + " fixture reward") for location in locations}
         with patch.object(app_runtime, "_resource_override", Path(os.environ["OOTRR_CODEC_RESOURCES"])):
@@ -73,7 +74,8 @@ class NativeChestPresentationTests(unittest.TestCase):
                     # These aliases are physical guests only. No get-window,
                     # inventory recipe, progressive query or pose uses them.
                     for actual in actual_actors:
-                        self.assertNotIn(chest_model_actor(actual).encode(), result)
+                        if chest_model_actor(actual) != actual:
+                            self.assertNotIn(chest_model_actor(actual).encode(), result)
                     if item.startswith("Small Key"):
                         credit = [event.data.params.data.get("GameDataName") for event in editor.chart.events
                                   if event.name.startswith(stem) and getattr(event.data, "params", None)]

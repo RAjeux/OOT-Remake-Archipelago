@@ -1,9 +1,9 @@
-OOT Remake Archipelago · 0.10.1-alpha.3
+OOT Remake Archipelago · 0.10.2-alpha.1
 One Windows x64 application for Triforce and experimental Hookshot 3.0.1.
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
 Before you start
-Player package: OOT-Remake-Archipelago-0.10.1-alpha.3.exe.
+Player package: OOT-Remake-Archipelago-0.10.2-alpha.1.exe.
 Published packages are listed on the project's GitHub releases page.
 Python and Node.js are included. The compatible OOTRR 0.8.1 builder is
 downloaded automatically when first needed; an internet connection is
@@ -69,6 +69,19 @@ start a server or generate a multiworld. The APWorld requires Archipelago
 0.6.7 or later; generation has been tested with 0.6.8.
 
 Updates and saved data
+This version adds the integrated updater. Download it once if your old
+application does not have that feature. Later updates are checked in the
+background; choose Update available, download, then Install and restart.
+Help > Check for updates retries manually. Normal Play stays available if
+the update service is unreachable.
+
+If the installed APWorld differs, the update window offers an optional
+replacement. Select your Archipelago folder if needed and opt in. The new
+application installs its own APWorld and matching Node runtime after restart.
+Previous copies are backed up; renamed duplicate copies of the same package
+are moved out of the active custom_worlds directory. Other games are kept.
+Restart Archipelago before generating a room.
+
 Room profiles, connection settings, downloaded tools and saves are stored
 under %LOCALAPPDATA%\OOTRR-Archipelago. They remain available when the
 application executable is moved, replaced or closed.
@@ -80,6 +93,10 @@ use Set up a room in the new application with the same .apootrr file.
 Existing saves and profiles are preserved. The application rebuilds the
 game when necessary. Your normal OOTRR installation is left in place;
 the compatible builder is kept separately in the application's data folder.
+If older prepared resources are detected, prepare the same room again with
+the same .apootrr and save. No new YAML or room is needed. The 0.10.2 fix
+uses native packs for exactly 10/20 bombs, 30 arrows/seeds and 5/10 nuts;
+packs already acknowledged by the game are not compensated retroactively.
 
 Each new room needs its own player file and dedicated save. Existing rooms
 keep their original settings and placements. Generate a new room for the

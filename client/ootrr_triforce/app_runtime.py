@@ -17,7 +17,7 @@ import tempfile
 import threading
 import urllib.request
 import uuid
-from zipfile import ZipFile
+from zipfile import BadZipFile, ZipFile
 
 from .i18n import tr
 
@@ -276,9 +276,7 @@ def install_apworld(target, base=None):
         destination /= "custom_worlds"
     destination.mkdir(parents=True, exist_ok=True)
     archive = resource_root() / "ootrr_remake.apworld"
-    with ZipFile(archive) as packaged:
-        if "ootrr_remake/__init__.py" not in packaged.namelist():
-            raise ValueError(tr("The application is incomplete. Download it again."))
+    validate_apworld_archive(archive)
     node = resource_root() / "runtime/node/node.exe"
     if not node.is_file() or _sha(node) != NODE_SHA256:
         raise ValueError(tr("The application is incomplete. Download it again."))
@@ -292,14 +290,109 @@ def install_apworld(target, base=None):
         for name in ("node.exe", "LICENSE"):
             source = node if name == "node.exe" else node.parent / "LICENSE"
             atomic(runtime / name, source.read_bytes())
-        previous = None
-        if world.is_file() and world.read_bytes() != archive.read_bytes():
-            backups = base / "backups/apworld"
-            backups.mkdir(parents=True, exist_ok=True)
-            previous = backups / ("ootrr_remake-" + uuid.uuid4().hex[:12] + ".apworld")
-            shutil.copy2(world, previous)
-        atomic(world, archive.read_bytes())
+        incoming = archive.read_bytes()
+        aliases = _apworld_aliases(destination, world)
+        backups = {}
+        for previous in [world, *aliases]:
+            if previous.is_file() and (previous != world or previous.read_bytes() != incoming):
+                folder = base / "backups/apworld"
+                folder.mkdir(parents=True, exist_ok=True)
+                backup = folder / (previous.stem + "-" + uuid.uuid4().hex[:12] + ".apworld")
+                shutil.copy2(previous, backup)
+                backups[previous] = backup
+        removed = []
+        try:
+            # A renamed download can otherwise leave two packages defining the
+            # same game, so Archipelago may still load the older configuration.
+            for alias in aliases:
+                alias.unlink()
+                removed.append(alias)
+            atomic(world, incoming)
+        except BaseException:
+            for alias in removed:
+                shutil.copy2(backups[alias], alias)
+            raise
+        _remember_apworld_target(destination, base)
     return world
+
+
+def validate_apworld_archive(archive):
+    """Reject packages Archipelago cannot import before replacing an old one."""
+    try:
+        with ZipFile(archive) as packaged:
+            entries = packaged.infolist()
+            names = [entry.filename for entry in entries]
+            paths = [PurePosixPath(name) for name in names]
+            if (not names or len(names) > 8192 or "ootrr_remake/__init__.py" not in names
+                    or len({name.casefold() for name in names}) != len(names)
+                    or sum(entry.file_size for entry in entries) > 128 << 20
+                    or any("\\" in name or path.is_absolute() or ".." in path.parts
+                           or not path.parts or path.parts[0] != "ootrr_remake"
+                           or stat.S_ISLNK(entry.external_attr >> 16)
+                           for name, path, entry in zip(names, paths, entries))):
+                raise ValueError("Invalid APWorld structure.")
+    except (OSError, ValueError, KeyError, BadZipFile) as error:
+        raise ValueError(tr("The application is incomplete. Download it again.")) from error
+
+
+def _apworld_aliases(folder, canonical):
+    aliases = []
+    for path in sorted(folder.glob("*.apworld")):
+        if path == canonical or not path.is_file() or path.is_symlink():
+            continue
+        try:
+            with ZipFile(path) as package:
+                if "ootrr_remake/__init__.py" in package.namelist():
+                    aliases.append(path)
+        except (OSError, ValueError, BadZipFile):
+            continue
+    return aliases
+
+
+def _remember_apworld_target(destination, base):
+    """Remember successful installs; preference failures do not undo an install."""
+    from .save_bridge import atomic
+    path = Path(base) / "apworld-installations.json"
+    previous = _remembered_apworld_targets(base)
+    targets = [str(destination), *(str(p) for p in previous if p != destination)][:12]
+    try:
+        atomic(path, (json.dumps({"schema": 1, "targets": targets}, ensure_ascii=False) + "\n").encode("utf-8"))
+    except OSError:
+        pass
+
+
+def _remembered_apworld_targets(base):
+    path = Path(base) / "apworld-installations.json"
+    try:
+        with path.open("rb") as source:
+            raw = source.read((64 << 10) + 1)
+        data = json.loads(raw) if len(raw) <= 64 << 10 else {}
+        if data.get("schema") != 1 or not isinstance(data.get("targets"), list):
+            return []
+        return [Path(value).expanduser() for value in data["targets"][:12]
+                if isinstance(value, str) and value and "\0" not in value]
+    except (OSError, ValueError, AttributeError):
+        return []
+
+
+def discover_apworld_targets(base=None):
+    """Find installed copies without opening or modifying a user's APWorld."""
+    candidates = _remembered_apworld_targets(base or default_base())
+    for variable in ("ProgramData", "LOCALAPPDATA", "APPDATA", "ProgramFiles", "ProgramFiles(x86)"):
+        if os.environ.get(variable):
+            candidates.append(Path(os.environ[variable]) / "Archipelago/custom_worlds")
+    results, seen = [], set()
+    for candidate in candidates:
+        try:
+            path = candidate.resolve()
+            identity = os.path.normcase(str(path))
+            if (identity not in seen and path.name.casefold() == "custom_worlds"
+                    and (path / "ootrr_remake.apworld").is_file()):
+                results.append(path)
+                seen.add(identity)
+        except (OSError, ValueError):
+            continue
+    return results
 
 
 def export_licenses(base=None):

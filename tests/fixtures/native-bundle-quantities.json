@@ -1,0 +1,109 @@
+{
+  "game_version": "1.1.1",
+  "resource": "RSDB/PouchActorInfo.Product.111.rstbl.byml.zs",
+  "decoded_sha256": "ff56b92eeb7162b04a6137b8c78ecbf8b94a4eac0b6ae64f4e23cb1edf8d6a96",
+  "actors": {
+    "Item_Arrow_Normal": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "Arrow",
+      "PouchCategory": "Arrow",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None",
+      "SmallBagActor": "Work/Actor/Item_Quiver_Small.engine__actor__ActorParam.gyml"
+    },
+    "Item_Bomb": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "Bomb",
+      "PouchCategory": "Material",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None",
+      "SmallBagActor": "Work/Actor/Item_BombBag_Small.engine__actor__ActorParam.gyml"
+    },
+    "Item_BombBundle_Small": {
+      "BundleActor": "Work/Actor/Item_Bomb.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 5,
+      "PouchCategory": "Material",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_DekuNut": {
+      "BundleActorNum": 1,
+      "IsAbleToGetBagIfGet": true,
+      "MaxNumGameData": "DekuNut",
+      "PouchCategory": "Material",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None",
+      "SmallBagActor": "Work/Actor/Item_NutBag_Small.engine__actor__ActorParam.gyml"
+    },
+    "Item_DekuSeed": {
+      "MaxNumGameData": "DekuSeed",
+      "PouchCategory": "Arrow",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None",
+      "SmallBagActor": "Work/Actor/Item_BulletBag_Small.engine__actor__ActorParam.gyml"
+    },
+    "Shop_ArrowBundle_02": {
+      "BundleActor": "Work/Actor/Item_Arrow_Normal.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 30,
+      "PouchCategory": "Arrow",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_BombBundle_02": {
+      "BundleActor": "Work/Actor/Item_Bomb.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 10,
+      "PouchCategory": "Material",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_BombBundle_03": {
+      "BundleActor": "Work/Actor/Item_Bomb.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 20,
+      "PouchCategory": "Material",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_DekuNutBundle_01": {
+      "BundleActor": "Work/Actor/Item_DekuNut.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 5,
+      "PouchCategory": "Material",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_DekuNutBundle_02": {
+      "BundleActor": "Work/Actor/Item_DekuNut.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 10,
+      "PouchCategory": "Material",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_DekuSeedBundle_01": {
+      "BundleActor": "Work/Actor/Item_DekuSeed.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 30,
+      "PouchCategory": "Arrow",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "TBox_ArrowBundle_Large": {
+      "BundleActor": "Work/Actor/Item_Arrow_Normal.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 10,
+      "PouchCategory": "Arrow",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "TBox_DekuNutBundle": {
+      "BundleActor": "Work/Actor/Item_DekuNut.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 3,
+      "PouchCategory": "Material",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "TBox_DekuSeedBundle": {
+      "BundleActor": "Work/Actor/Item_DekuSeed.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 5,
+      "PouchCategory": "Arrow",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    }
+  }
+}

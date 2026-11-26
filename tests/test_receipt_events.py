@@ -196,7 +196,7 @@ class ReceiptFlowTests(unittest.TestCase):
                     self.assertEqual(grants, [ITEM_DATA[name]["actor"]] if owned.intersection(bags) else [])
         held = set()
         for name, expected in (("Bombs (20)", None), ("Bomb Bag", "Item_BombBag_Small"),
-                               ("Bombs (20)", "Item_BombBundle_Small")):
+                               ("Bombs (20)", ITEM_DATA["Bombs (20)"]["actor"])):
             trace = GraphRun(self.flow.flowchart, held).run(event_name(ITEM_IDS[name]))
             self.assert_receipt(trace)
             self.assertEqual([values["Actor"] for command, values in trace

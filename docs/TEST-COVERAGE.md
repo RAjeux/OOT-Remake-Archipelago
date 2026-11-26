@@ -1,6 +1,6 @@
 # Test coverage and remaining gameplay checks
 
-This describes the selective 0.10.1 native integration. The existing OOTRR
+This describes the selective 0.10.2 native integration. The existing OOTRR
 engine still chooses the seed; the adapter converts its enabled randomized
 rewards to AP checks. No Full-network engine is involved.
 
@@ -20,6 +20,27 @@ playthrough.** The following distinctions apply throughout this document:
   manually in its entirety.
 
 ## Coverage matrix
+
+The 0.10.2 update was exercised with two actual frozen Windows executables:
+old app, independent helper, new app, then optional APWorld replacement.
+All 22 recorded invariants passed, including real Python/bootloader process
+identities, paths with spaces, executable and APWorld backups, execution of
+the persistent Node runtime, unchanged profile/save sentinels and idempotent
+completion. Private entry-point probes drove the delivered updater/runtime
+code; the shipping GUI was tested separately with real Tk widgets. No private
+probe flags or alternate update endpoints are shipped.
+
+The real frozen test found a collision between the Windows `version` library
+name and the embedded `VERSION` file. Explicit System32 `version.dll` loading
+has a regression test. A separate widget regression reproduces failed helper
+handoff and confirms that a retry uses a fresh staging directory.
+
+Six exact-consumable mappings were checked against the game's original
+PouchActorInfo, actual receipt flows and chest preparations. Native bundle
+sizes are 10/20 bombs, 30 arrows/seeds and 5/10 nuts. Tests exercise one native
+grant, acknowledgement, missing equipment, restoration and shop flags.
+Actual in-game full-capacity behavior of these six packs was not observed;
+capacity clamping remains native to the selected bundle.
 
 | Interaction | Checks and evidence | What this establishes |
 |---|---|---|
