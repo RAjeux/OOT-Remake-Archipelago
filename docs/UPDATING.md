@@ -1,8 +1,32 @@
 # Updating the launcher and APWorld
 
-Download `OOT-Remake-Archipelago-0.10.3-alpha.1.exe` once if your older launcher
-does not have an update button. Prepared rooms, connection preferences and saves
-remain in LocalAppData when the executable is replaced.
+**[Download the current Windows launcher, 0.10.3-alpha.1](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.3-alpha.1/OOT-Remake-Archipelago-0.10.3-alpha.1.exe)**
+if your older launcher does not have an update button. The [versioned release
+page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.3-alpha.1)
+identifies the supported native release. Prepared rooms, connection preferences
+and saves remain in LocalAppData when the executable is replaced.
+
+**The discontinued 0.11/0.12 Full experiment is a different format.** Its higher
+version number does not make it the current release. Updating the launcher or
+APWorld does not convert Full player files: export a fresh YAML with the current
+editor, generate a new room with the current APWorld and keep old Full saves
+separate. The existing-room instructions
+below apply to supported **native 0.10** player files.
+
+For a first installation, follow [the player and organizer guide](INSTALLATION.md)
+or [the French quickstart](INSTALLATION.fr.md).
+
+## Choose the right kind of update
+
+| What changed? | What to do |
+| --- | --- |
+| Launcher interface, including 0.10.2 → 0.10.3 | Update the EXE. A room with current 0.10.2 resources needs no new preparation. |
+| The organizer's installed APWorld differs | Opt into its update or use **Install APWorld**, then restart Archipelago before generating. Existing rooms keep their placements. |
+| The launcher reports old prepared mod resources or host tools | Close Zelda and its builder; prepare the same supported `.apootrr` with the same room save. |
+| You want different settings or expanded sources | Generate a new room and use its new player file and dedicated save. |
+| Your player file belongs to Full 0.11/0.12 | Export a fresh YAML in the current editor and generate a new room with the current APWorld; it is not an in-place conversion. |
+
+## Update the launcher
 
 Version 0.10.3 refreshes the desktop interface. A room already prepared with
 current 0.10.2 resources remains ready to play; this UI update does not raise
@@ -10,7 +34,7 @@ the mod's prepared-resource revision. YAML values and generation rules are
 unchanged. The 0.10.2 launcher can obtain this release through its update button.
 
 The application checks GitHub in the background. **Update available** appears
-when a newer publication is found. **Help → Check for updates** retries the
+when a newer publication is found. **Help → Check for launcher updates** retries the
 check manually. A missing connection does not prevent normal preparation or play.
 An alpha build follows prereleases; a stable build follows stable releases.
 The most recently published eligible release is considered, so older abandoned

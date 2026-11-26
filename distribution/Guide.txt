@@ -1,110 +1,150 @@
 OOT Remake Archipelago · 0.10.3-alpha.1
-One Windows x64 application for Triforce and experimental Hookshot 3.0.1.
-https://github.com/RAjeux/OOT-Remake-Archipelago
+One Windows x64 launcher for Triforce and experimental Hookshot 3.0.1.
+
+DOWNLOAD THIS VERSION
+https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.3-alpha.1/OOT-Remake-Archipelago-0.10.3-alpha.1.exe
+Release notes:
+https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.3-alpha.1
+Guide rapide en français:
+https://github.com/RAjeux/OOT-Remake-Archipelago/blob/main/docs/INSTALLATION.fr.md
+
+The discontinued 0.11/0.12 Full experiment is not the current release,
+even though its version number is higher. Its player files use a different
+format and are not converted. Export a fresh YAML in the current editor,
+generate a new room with the current APWorld and keep old Full saves separate.
+Native 0.10 rooms remain supported.
 
 Before you start
-Player package: OOT-Remake-Archipelago-0.10.3-alpha.1.exe.
-Published packages are listed on the project's GitHub releases page.
-The dark sidebar provides Home, Set up a room, Create YAML, Connection,
-Install APWorld and Help. Ctrl+1/2/3 opens the three main pages. Keyboard
-focus scrolls form fields into view; the settings editor also supports Ctrl+F.
-Python and Node.js are included. The compatible OOTRR 0.8.1 builder is
-downloaded automatically when first needed; an internet connection is
-required for that download. No separate runtime or randomizer installation
-is needed.
+You need Windows x64, your own game files at version 1.1.1, and a working
+Triforce installation with its build tools. First build and launch the base
+game following the official Triforce instructions:
+https://triforceproject.com/#install
 
-You supply a working Triforce installation with its build tools and your own
-version 1.1.1 game files. Obtain your .apootrr player file and the address
-of its active Archipelago room. No Nintendo game files are included.
-Hookshot requires its completed 3.0.1 installation, original build tools and
-retained build files. Other Hookshot versions are rejected by this adapter.
+Hookshot is experimental and requires a completed 3.0.1 installation with
+its matching original tools and retained build files. Other revisions are
+rejected. Official source/setup and the pinned release are available at:
+https://github.com/ItsNotRexed/Hookshot
+https://github.com/ItsNotRexed/Hookshot/releases/tag/v3.0.1
+For a first installation, use Triforce for this integration.
+
+Keep the downloaded launcher EXE in a convenient folder. Python, Node.js,
+the AP client and APWorld are included. The compatible OOTRR 0.8.1 builder
+is downloaded when first needed. No separate randomizer installation is
+required. No Nintendo game files are included.
+
+Files and roles
+- .yaml: a player's settings BEFORE generation; send it to the organizer.
+- ootrr_remake.apworld: the generator's custom game integration. The organizer
+  installs it using this OOT Remake launcher's Install APWorld action.
+- .apootrr: generated Zelda data for ONE player slot and room. Select your
+  own file in Set up a room. It is not a YAML, ROM or APWorld.
+- The generated room ZIP and .archipelago server data are for the organizer.
+
+A player joining a generated room only needs the launcher, compatible game,
+their .apootrr and the room address/password. They do not need to install
+Archipelago or an APWorld separately.
+
+Each Zelda player: choose settings before generation
+1. Choose Create YAML, enter a unique player name, then Choose settings.
+2. Search in English, French or by YAML key. Review the explanations,
+   including inactive sub-options and their requirements. DeathLink is here.
+3. Apply the settings, Save YAML and send that file to the organizer.
+Changing a YAML later does not change an existing room.
+
+Organizer: generate and host
+1. Install official Archipelago, including its generator, from:
+   https://github.com/ArchipelagoMW/Archipelago/releases
+   This APWorld requires 0.6.7 or later; generation is tested with 0.6.8.
+2. In this OOT Remake launcher, choose Install APWorld and select your
+   Archipelago installation. Use the Windows account that will generate.
+   This also installs its generation runtime. Restart Archipelago.
+3. Collect every player's YAML and install other required custom worlds.
+   Put the YAMLs for this room in Archipelago's Players folder and generate
+   locally with Generate / ArchipelagoGenerate.exe. The public website's
+   generator does not include this custom APWorld.
+4. Host the generated output locally or upload it to Archipelago hosting.
+5. Give each Zelda player THEIR generated .apootrr, the address and any
+   room password. They can now follow Prepare and play below.
+The launcher does not generate or host rooms. The official AP guide covers
+local generation and both hosting routes:
+https://archipelago.gg/tutorial/Archipelago/setup_en
 
 Prepare and play
-1. Open the application and choose Set up a room.
-2. Select your .apootrr player file and Game host. The selected installation
-   is detected when possible; choose its game folder if it is not found.
-   The application checks the game files and tools before installation.
+Finish any host update, then close Zelda and its setup/builder application.
+1. Open this launcher and choose Set up a room.
+2. Select YOUR .apootrr and Game host. Choose the game folder if it was not
+   detected. The application checks the game files and tools before setup.
 3. Enter the room address and a password only if the room requires one.
    Choose Install and prepare.
-4. Wait for preparation and any necessary host build to finish.
-   Progress appears in the same window; no console is needed.
-5. Choose Play. The game connects from the title screen.
-   Use a save dedicated to this room.
-
-For later sessions, open the same application and choose Play. Closing it
+4. Wait for preparation and any necessary game build to finish. Progress
+   appears in the same window; no console is needed.
+5. Choose Play. The game connects from the title screen. Use a dedicated
+   new save for a new room, or that room's existing save when continuing.
+For later sessions, open the same launcher and choose Play. Closing it
 while playing leaves Zelda and its Archipelago connection running.
 
-Change the connection
-Choose Connection in the application, or open Options > Archipelago in
-Triforce. Hookshot provides F1/Insert > Gameplay > AP Server / AP Connect.
-These interfaces control the same prepared room and game connection.
-Hookshot's native editor accepts ASCII; use the app's Connection window for
-passwords with accents or other non-ASCII characters, then keep the saved password.
-With Zelda closed, Save remembers the address and password for the next
-startup. With the mod running, Connect and Disconnect apply to the live
-connection. Automatic connection is enabled by default.
-Preparing an existing room retains your automatic-connection preference.
+The sidebar contains Home, Set up a room, Create YAML, Connection,
+Install APWorld and Help. Ctrl+1/2/3 opens the three main pages. Keyboard
+focus scrolls form fields into view; the settings editor supports Ctrl+F.
 
-In the desktop connection window, Keep retains the saved password without
-showing it, Replace saves a new one, and Clear removes it. Passwords are
-protected for the current Windows account. The room and player come from
-the prepared player file; use Set up a room for a different .apootrr file.
+Change the connection
+Choose Connection in the launcher, or Options > Archipelago in Triforce.
+Hookshot provides F1/Insert > Gameplay > AP Server / AP Connect. Run one
+host at a time for the same AP slot. These interfaces control the same
+prepared room and connection. Hookshot's native editor accepts ASCII;
+use the desktop window for passwords with accents or other characters.
+With Zelda closed, Save remembers the connection for next startup. With
+the mod running, Connect and Disconnect apply live. Automatic connection
+starts enabled; preparing an existing room retains its saved preference.
+
+Keep retains a saved password without displaying it, Replace saves a new
+one, and Clear removes it. Passwords are protected for the current Windows
+account. Room and player identity come from the prepared player file.
 
 Addresses accept host:port, ws://host:port or wss://host:port.
-archipelago.gg uses TLS automatically. Local servers keep their selected
-transport; 127.0.0.1:38281 is the usual address on the hosting PC.
-
-Create a room
-The same application provides Create YAML for the room's organizer.
-1. Choose Install APWorld and select the existing Archipelago installation
-   on the computer that will generate the room. Restart Archipelago.
-2. Enter your player name and choose Choose settings. The English/French
-   editor groups the same supported settings used by the APWorld. Disabled
-   sub-options explain which parent setting they require. Apply your choices.
-3. Choose Save YAML. The file contains your chosen values and comments in
-   the app's language; YAML keys remain unchanged. Manual weighted YAMLs
-   also remain supported.
-4. Generate and host the room with Archipelago and the other players' YAML
-   files as usual, then distribute each player's generated file.
-
-Room generation and hosting remain in Archipelago. The application does not
-start a server or generate a multiworld. The APWorld requires Archipelago
-0.6.7 or later; generation has been tested with 0.6.8.
+archipelago.gg uses TLS automatically. 127.0.0.1:38281 means a server on
+YOUR OWN PC; for a remote room, use the organizer's address.
 
 Updates and saved data
-This version adds the integrated updater. Download it once if your old
-application does not have that feature. Later updates are checked in the
-background; choose Update available, download, then Install and restart.
-Help > Check for updates retries manually. Normal Play stays available if
-the update service is unreachable.
+The updater was introduced in 0.10.2. Version 0.10.3 refreshes the interface;
+a room with current 0.10.2 resources needs no new preparation for this UI
+update. Download the current launcher once if your old app lacks updates.
+Then use Help > Check for launcher updates, Update available, download,
+and Install and restart. Normal Play stays available if checking fails.
 
-If the installed APWorld differs, the update window offers an optional
-replacement. Select your Archipelago folder if needed and opt in. The new
-application installs its own APWorld and matching Node runtime after restart.
+The organizer can opt into APWorld replacement when its installed file
+differs. The new launcher installs its matching APWorld/runtime after restart.
 Previous copies are backed up; renamed duplicate copies of the same package
-are moved out of the active custom_worlds directory. Other games are kept.
-Restart Archipelago before generating a room.
+are removed from the active directory. Other games are kept. Restart
+Archipelago before generating. Updating an APWorld does not reroll a room.
 
-Room profiles, connection settings, downloaded tools and saves are stored
-under %LOCALAPPDATA%\OOTRR-Archipelago. They remain available when the
-application executable is moved, replaced or closed.
-Hookshot uses a separate hosts\hookshot folder for its profiles and saves.
-Switching hosts does not transfer a save or its received-item history.
+Profiles, connection settings, tools and saves are kept under
+%LOCALAPPDATA%\OOTRR-Archipelago, outside the EXE. Moving or replacing the
+launcher keeps them. Hookshot has a separate hosts\hookshot namespace;
+switching hosts does not transfer a save or its received-item history.
 
-Close Zelda and its builder before preparing a mod. Let any host update finish, then
-use Set up a room in the new application with the same .apootrr file.
-Existing saves and profiles are preserved. The application rebuilds the
-game when necessary. Your normal OOTRR installation is left in place;
-the compatible builder is kept separately in the application's data folder.
-If older prepared resources are detected, prepare the same room again with
-the same .apootrr and save. No new YAML or room is needed. The 0.10.2 fix
-uses native packs for exactly 10/20 bombs, 30 arrows/seeds and 5/10 nuts;
-packs already acknowledged by the game are not compensated retroactively.
+When the launcher detects older prepared resources, close Zelda and its
+builder and prepare the SAME compatible native 0.10 .apootrr with the SAME
+save. No new room or YAML is needed for this kind of resource update.
+The 0.10.2 native consumable packs grant exactly 10/20 bombs, 30 arrows/seeds
+and 5/10 nuts. Already acknowledged packs are not compensated retroactively.
 
-Each new room needs its own player file and dedicated save. Existing rooms
-keep their original settings and placements. Generate a new room for the
-corrected dungeon access rules introduced in 0.6.1 or to enable the full
-adult trade shuffle. Reconnecting does not change an old room's placements.
+A new configuration, expanded checks or full adult-trade shuffle requires
+a newly generated room and dedicated save. Existing rooms keep their
+original settings and placements. Full 0.11/0.12 files are not converted.
+
+Current compatibility and help
+Triforce 0.8.3 has real title-screen connection and reconnect evidence.
+Earlier 0.10 gameplay evidence and host checks are documented separately.
+Hookshot 3.0.1 remains experimental; Fritchii has no AP gameplay backend.
+The installer does not support Linux or other emulators. Current setup
+instructions and historical evidence are separate in:
+https://github.com/RAjeux/OOT-Remake-Archipelago/blob/main/docs/PORT-COMPATIBILITY.md
+
+If a player file is rejected, check its extension, slot, room and native
+0.10 compatibility. If Archipelago cannot find Ocarina of Time Remake,
+install the APWorld into the correct generator installation and restart AP.
+Help > Open log gives details of preparation and connection failures.
 
 Items and checks
 Your own AP rewards use native item models and effects. Another player's
@@ -113,20 +153,6 @@ is replaced. In new rooms, every supported source selected by the native
 randomizer becomes an AP check, including enabled NPCs, songs, ground items,
 destructibles and all 64 purchases in an enabled shop shuffle. Old rooms
 keep their own catalogue, purchases and native-local rewards.
-
-Triforce 0.8.0 setup
-Version 0.10.1-alpha.3 supports the updated menu, including resolution
-editing and tuning overlays. A host-source or tool-version update now forces
-an older AP host to be rebuilt. Close Zelda and Triforce Setup, let the
-update finish, then prepare the same native 0.10-line .apootrr file in this app.
-This compatibility fix needs no new room or save. Automated checks and private
-host-C compilation pass; this is not a complete gameplay playthrough.
-
-Earlier Triforce 0.7.0 setup
-Version 0.9.1 supports the updated Achievements page and Mods input transition.
-The required source hooks are checked before room preparation. If an older
-installer rejected these tools, retry with this application and the same
-.apootrr file. A new room is not required for this installer correction.
 
 Items received while Zelda is closed remain on the server. They arrive
 in order after reconnecting and loading a save. Each grant is committed

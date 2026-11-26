@@ -3,6 +3,7 @@ name: Checks
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -25,7 +26,18 @@ jobs:
           node-version: '22'
       - run: python -m pip install -r requirements-dev.txt
       - run: python -X utf8 tools/test.py
-      - run: python -X utf8 tools/verify_release.py
+      - name: Verify the development candidate against current sources
+        run: python -X utf8 tools/verify_candidate.py
+      - name: Verify the immutable release reference
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $expected = 'v' + (Get-Content VERSION -Raw).Trim()
+          if ($env:GITHUB_REF_NAME -ne $expected) {
+            Write-Error 'The release tag must match VERSION.'
+            exit 1
+          }
+          python -X utf8 tools/verify_release.py
       - run: python -m pip install -r requirements-app.txt
       - run: python tools/build_app.py --output build/ci-application --work build/application-ci
       - name: Inspect and run the standalone application
@@ -65,3 +77,38 @@ jobs:
           cache-dependency-path: native/go.sum
       - run: go test -mod=vendor -race ./...
         working-directory: native
+  bridge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.13'
+      - run: python -X utf8 tools/test_bridge.py --cc gcc --cxx g++
+      - name: Check source bootstrap paths with native Linux symlinks
+        run: |
+          python -X utf8 tests/test_dev_setup.py
+          python -X utf8 tests/test_ap_test_env.py
+  engine:
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/build/rust-ci
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '22'
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Install the validated Rust compiler and WASI target
+        run: rustup toolchain install 1.99.0 --profile minimal --target wasm32-wasip1
+      - name: Test the Rust engine source
+        run: cargo +1.99.0 test --locked --offline --profile ci -p ootrr-core -p ootrr-game -p ootrr-logic -p ootrr-cosmetics
+        working-directory: moteur/ootrr-ap
+      - name: Build a fresh WASM without replacing the packaged engine
+        run: cargo +1.99.0 build --locked --offline --release --target wasm32-wasip1 -p ootrr-core --bin ootrr_ap
+        working-directory: moteur/ootrr-ap
+      - name: Validate the freshly built engine through Node and the Python adapter
+        run: python -X utf8 tools/test_built_engine.py --engine build/rust-ci/wasm32-wasip1/release/ootrr_ap.wasm

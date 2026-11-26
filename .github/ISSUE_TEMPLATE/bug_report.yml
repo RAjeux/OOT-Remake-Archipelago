@@ -1,12 +1,33 @@
 name: Bug report
-description: Report a problem with the Triforce alpha.
+description: Report a launcher, generation or supported game-host problem.
 body:
   - type: input
     id: version
     attributes:
-      label: Release and Triforce versions
+      label: Launcher release
+      description: Use the version shown in Help > About, for example 0.10.3-alpha.1.
     validations:
       required: true
+  - type: dropdown
+    id: host
+    attributes:
+      label: Game host
+      options:
+        - Triforce
+        - Hookshot (experimental)
+        - Not applicable (generation or launcher only)
+    validations:
+      required: true
+  - type: input
+    id: host_version
+    attributes:
+      label: Host version and Windows version
+      description: Include the host version when the problem affects preparation or gameplay.
+  - type: input
+    id: archipelago
+    attributes:
+      label: Archipelago and APWorld release
+      description: For generation or player-file errors, include the Archipelago version and the release from which you installed ootrr_remake.apworld, if known.
   - type: textarea
     id: reproduce
     attributes:
@@ -18,4 +39,4 @@ body:
     id: logs
     attributes:
       label: Relevant diagnostic excerpts
-      description: Remove passwords, private addresses, and personal paths. Do not attach game files or saves.
+      description: Use Help > Open log and paste relevant excerpts. Remove passwords, private addresses and personal paths. Do not attach game files or saves. Player files and spoilers may reveal the room's placements.

@@ -1,7 +1,9 @@
 """Opt-in real AP generation, using an isolated copy of the official generator.
 
-Run with --ap-root and --dependencies pointing at a previously PRIVATE copy's
-lib/data. No installed APWorld, original game, profile or save is modified.
+First run tools/prepare_ap_test_env.py to create private --dependencies below
+build/. Use --ap-root for your Windows Archipelago 0.6.8 installation. This
+frozen-executable harness does not use AP_SOURCE. No installed APWorld,
+original game, profile or save is modified.
 The normal unit suite does not invoke this integration harness.
 """
 from collections import Counter, defaultdict, namedtuple
@@ -25,6 +27,8 @@ import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
+sys.path.insert(0, str(ROOT / "tools"))
+from prepare_ap_test_env import RUNTIME_FILES, private_destination, validate_snapshot
 
 
 def digest(path):
@@ -48,12 +52,14 @@ def read_multidata(archive):
 
 
 def stage_host(ap_root, dependencies, output, engine=None):
-    """Own the writable host; share only an earlier private immutable lib/data."""
+    """Own the writable host; share only a verified, independently copied runtime."""
+    if os.name != "nt":
+        raise ValueError("This harness runs the Windows Archipelago 0.6.8 executable; AP_SOURCE is supported only by the separate protocol tests.")
     ap_root, dependencies, output = map(lambda path: Path(path).resolve(), (ap_root, dependencies, output))
-    if output == ap_root or output.is_relative_to(ap_root):
-        raise ValueError("The validation folder must be outside the installed Archipelago.")
-    if dependencies == ap_root or dependencies.is_relative_to(ap_root):
-        raise ValueError("Dependencies must come from a separate private AP copy.")
+    output = private_destination(output, ap_root)
+    validate_snapshot(dependencies, ap_root)
+    if output == dependencies or output.is_relative_to(dependencies):
+        raise ValueError("The validation folder must be outside the private dependency snapshot.")
     if output.exists():
         raise FileExistsError("Choose a fresh validation folder: " + str(output))
     output.mkdir(parents=True)
@@ -71,8 +77,8 @@ def stage_host(ap_root, dependencies, output, engine=None):
                            creationflags=subprocess.CREATE_NO_WINDOW)
         else:
             (host / name).symlink_to(source, target_is_directory=True)
-    for name in ("ArchipelagoGenerate.exe", "python3.dll", "python313.dll", "manifest.json"):
-        shutil.copy2(ap_root / name, host / name)
+    for name in RUNTIME_FILES:
+        shutil.copy2(dependencies / name, host / name)
     (host / "custom_worlds").mkdir()
     spec = importlib.util.spec_from_file_location("validation_packaging", ROOT / "tools/build.py")
     build = importlib.util.module_from_spec(spec)
@@ -303,9 +309,9 @@ def run_case(host, case, seed, broad=False, mixed=False, overrides=None, extra_p
 def main():
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--ap-root", required=True, type=Path)
-    parser.add_argument("--dependencies", required=True, type=Path)
-    parser.add_argument("--output-root", required=True, type=Path)
+    parser.add_argument("--ap-root", required=True, type=Path, help="Your Windows Archipelago 0.6.8 installation (read-only).")
+    parser.add_argument("--dependencies", required=True, type=Path, help="Private snapshot created by tools/prepare_ap_test_env.py.")
+    parser.add_argument("--output-root", required=True, type=Path, help="Fresh result directory below build/.")
     parser.add_argument("--quick", action="store_true", help="Only the baseline single-player room.")
     parser.add_argument("--restricted", action="store_true", help="Also test song-only, end-of-dungeon and LACS restrictions together in a three-player room.")
     parser.add_argument("--engine", type=Path, help="Stage this built engine only inside the private APWorld.")
