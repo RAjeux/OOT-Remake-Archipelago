@@ -225,6 +225,59 @@ class AppWindowTests(unittest.TestCase):
         window.setup_button.invoke()
         self.assertEqual(window.page, "setup")
 
+    def test_sidebar_navigation_keeps_the_yaml_draft_and_connection_fields(self):
+        window = self.open()
+        window.player_name.set("My player")
+        window.yaml_values["death_link"] = True
+        window.fields["server"].set("archipelago.gg:12345")
+        for page in ("yaml", "home", "setup", "yaml"):
+            window.nav_buttons[page].invoke()
+            self.assertEqual(window.page, page)
+            self.assertEqual(window.nav_buttons[page].cget("style"), "App.NavActive.TButton")
+        self.assertEqual(window.player_name.get(), "My player")
+        self.assertTrue(window.yaml_values["death_link"])
+        self.assertEqual(window.fields["server"].get(), "archipelago.gg:12345")
+
+    def test_keyboard_focus_reveals_lower_form_fields_on_a_small_window(self):
+        window = self.open()
+        self.root.geometry("900x640")
+        self.root.deiconify()
+        window.show_page("setup")
+        self.root.update()
+        window.password_entry.focus_force()
+        self.root.update()
+        canvas = window.setup_canvas
+        field = window.password_entry
+        self.assertGreaterEqual(field.winfo_rooty(), canvas.winfo_rooty())
+        self.assertLessEqual(field.winfo_rooty() + field.winfo_height(), canvas.winfo_rooty() + canvas.winfo_height())
+        self.assertGreater(canvas.yview()[0], 0)
+        self.assertLessEqual(window.install_button.winfo_rooty() + window.install_button.winfo_height(),
+                             self.root.winfo_rooty() + self.root.winfo_height())
+
+    def test_small_window_wraps_the_room_description_instead_of_clipping_it(self):
+        window = self.open()
+        self.root.geometry("900x640")
+        self.root.deiconify()
+        window.show_page("setup")
+        self.root.update()
+        self.assertLessEqual(int(window.setup_intro.cget("wraplength")), window.setup_canvas.winfo_width())
+
+    def test_tab_navigation_does_not_enter_controls_on_another_page(self):
+        window = self.open()
+        self.root.deiconify()
+        for page in ("home", "setup", "yaml"):
+            window.show_page(page)
+            self.root.update()
+            hidden = [str(frame) + "." for name, frame in window.page_frames.items() if name != page]
+            target, seen = str(self.root), set()
+            for _ in range(200):
+                target = str(self.root.tk.call("tk_focusNext", target))
+                if target in seen:
+                    break
+                seen.add(target)
+                self.assertFalse(any(target.startswith(prefix) for prefix in hidden), (page, target))
+            self.assertTrue(seen)
+
     def test_discovery_preserves_text_entered_while_it_is_running(self):
         self.service.discover_gate = threading.Event()
         window = self.open(wait=False)

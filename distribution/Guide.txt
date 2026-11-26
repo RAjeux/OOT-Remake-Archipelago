@@ -1,10 +1,13 @@
-OOT Remake Archipelago · 0.10.2-alpha.1
+OOT Remake Archipelago · 0.10.3-alpha.1
 One Windows x64 application for Triforce and experimental Hookshot 3.0.1.
 https://github.com/RAjeux/OOT-Remake-Archipelago
 
 Before you start
-Player package: OOT-Remake-Archipelago-0.10.2-alpha.1.exe.
+Player package: OOT-Remake-Archipelago-0.10.3-alpha.1.exe.
 Published packages are listed on the project's GitHub releases page.
+The dark sidebar provides Home, Set up a room, Create YAML, Connection,
+Install APWorld and Help. Ctrl+1/2/3 opens the three main pages. Keyboard
+focus scrolls form fields into view; the settings editor also supports Ctrl+F.
 Python and Node.js are included. The compatible OOTRR 0.8.1 builder is
 downloaded automatically when first needed; an internet connection is
 required for that download. No separate runtime or randomizer installation

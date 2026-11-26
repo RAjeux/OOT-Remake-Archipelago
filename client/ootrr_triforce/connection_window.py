@@ -13,6 +13,7 @@ from tkinter import ttk
 
 from .connection_control import Controller, default_profile, discover_profiles, remember_profile
 from .i18n import normalize_language, tr
+from .ui_theme import COLORS, apply_theme, draw_brand, set_window_icon
 
 
 STATES = {
@@ -76,6 +77,8 @@ class ConnectionWindow:
         self.stop = threading.Event()
         self.after_ids = set()
         self.labels = []
+        self.style = apply_theme(master)
+        set_window_icon(master)
         self._build()
         self.worker = threading.Thread(target=self._work, name="Archipelago local controls", daemon=True)
         self.worker.start()
@@ -93,75 +96,147 @@ class ConnectionWindow:
         return widget
 
     def _build(self):
-        self.master.minsize(600, 520)
-        self.master.geometry("660x560")
+        screen_width, screen_height = self.master.winfo_screenwidth(), self.master.winfo_screenheight()
+        self.master.minsize(560, min(560, max(440, screen_height - 120)))
+        self.master.geometry(f"{min(800, max(600, screen_width - 100))}x{min(800, max(540, screen_height - 120))}")
         self.master.columnconfigure(0, weight=1)
         self.master.rowconfigure(0, weight=1)
-        pane = ttk.Frame(self.master, padding=20)
+        pane = ttk.Frame(self.master, padding=(28, 24, 28, 20))
         pane.grid(sticky="nsew")
-        pane.columnconfigure(1, weight=1)
-        self._label(pane, "Archipelago connection", font=("Segoe UI", 15, "bold")).grid(
-            row=0, column=0, columnspan=3, sticky="w", pady=(0, 16))
-        self._label(pane, "Profile").grid(row=1, column=0, sticky="w", padx=(0, 12))
-        self.profile_choice = ttk.Combobox(pane, state="readonly", width=38)
-        self.profile_choice.grid(row=1, column=1, sticky="ew")
+        pane.columnconfigure(0, weight=1)
+        pane.rowconfigure(1, weight=1)
+
+        header = ttk.Frame(pane)
+        header.grid(row=0, column=0, sticky="ew", pady=(0, 20))
+        header.columnconfigure(1, weight=1)
+        brand = tk.Canvas(header, width=40, height=46, background=COLORS["bg"], highlightthickness=0)
+        brand.grid(row=0, column=0, rowspan=2, padx=(0, 16), sticky="n")
+        draw_brand(brand, 2, 2, 36)
+        ttk.Label(header, text="ARCHIPELAGO", style="App.Eyebrow.TLabel").grid(row=0, column=1, sticky="w")
+        self._label(header, "Archipelago connection", style="App.Heading.TLabel").grid(
+            row=1, column=1, sticky="w", pady=(3, 0))
+
+        content = ttk.Frame(pane)
+        content.grid(row=1, column=0, sticky="nsew")
+        content.columnconfigure(0, weight=1)
+        content.rowconfigure(0, weight=1)
+        self.canvas = tk.Canvas(content, background=COLORS["bg"], highlightthickness=0, borderwidth=0)
+        self.canvas.grid(row=0, column=0, sticky="nsew")
+        scrollbar = ttk.Scrollbar(content, orient="vertical", command=self.canvas.yview)
+        scrollbar.grid(row=0, column=1, sticky="ns", padx=(10, 0))
+        self.canvas.configure(yscrollcommand=scrollbar.set)
+        body = ttk.Frame(self.canvas)
+        body.columnconfigure(0, weight=1)
+        self.body_item = self.canvas.create_window((0, 0), window=body, anchor="nw")
+        body.bind("<Configure>", lambda _event: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+        self.canvas.bind("<Configure>", self._resize_body)
+        self.canvas.bind("<MouseWheel>", self._scroll)
+
+        status_box = ttk.Frame(body, style="App.Inset.TFrame", padding=20)
+        status_box.grid(row=0, column=0, sticky="ew", pady=(0, 14))
+        status_box.columnconfigure(1, weight=1)
+        self.status_dot = tk.Canvas(status_box, width=12, height=20, background=COLORS["elevated"], highlightthickness=0)
+        self.status_dot.grid(row=0, column=0, sticky="nw", padx=(0, 10))
+        self.status_dot_item = self.status_dot.create_oval(2, 6, 10, 14, fill=COLORS["muted"], outline="")
+        self.status_label = ttk.Label(status_box, style="App.Status.TLabel", wraplength=620)
+        self.status_label.grid(row=0, column=1, sticky="w")
+        self.detail_label = ttk.Label(status_box, style="App.Inset.TLabel", foreground=COLORS["muted"], wraplength=620)
+        self.detail_label.grid(row=1, column=1, sticky="w", pady=(7, 0))
+
+        profile = ttk.Frame(body, style="App.Card.TFrame", padding=20)
+        profile.grid(row=1, column=0, sticky="ew", pady=(0, 14))
+        profile.columnconfigure(0, weight=1)
+        self._label(profile, "Profile", style="App.CardHeading.TLabel").grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 12))
+        self.profile_choice = ttk.Combobox(profile, state="readonly", width=32)
+        self.profile_choice.grid(row=1, column=0, sticky="ew")
         self.profile_choice.bind("<<ComboboxSelected>>", self._select_event)
-        self.refresh_button = ttk.Button(pane, command=self.refresh_profiles)
+        self.refresh_button = ttk.Button(profile, command=self.refresh_profiles, style="App.Quiet.TButton")
         self.labels.append((self.refresh_button, "Refresh"))
-        self.refresh_button.grid(row=1, column=2, padx=(10, 0))
+        self.refresh_button.grid(row=1, column=1, padx=(10, 0))
         self.room, self.slot = tk.StringVar(), tk.StringVar()
-        for row, (label, variable) in enumerate((("Room", self.room), ("Slot", self.slot)), 2):
-            self._label(pane, label).grid(row=row, column=0, sticky="w", pady=(10, 0))
-            ttk.Entry(pane, textvariable=variable, state="readonly").grid(
-                row=row, column=1, columnspan=2, sticky="ew", pady=(10, 0))
-        ttk.Separator(pane).grid(row=4, column=0, columnspan=3, sticky="ew", pady=16)
+        identities = ttk.Frame(profile, style="App.Card.TFrame")
+        identities.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(16, 0))
+        identities.columnconfigure((0, 1), weight=1, uniform="identity")
+        self._label(identities, "Room", style="App.CardCaption.TLabel").grid(row=0, column=0, sticky="w", pady=(0, 5))
+        self._label(identities, "Slot", style="App.CardCaption.TLabel").grid(row=0, column=1, sticky="w", padx=(14, 0), pady=(0, 5))
+        self.room_entry = ttk.Entry(identities, textvariable=self.room, state="readonly", width=20)
+        self.room_entry.grid(row=1, column=0, sticky="ew")
+        self.slot_entry = ttk.Entry(identities, textvariable=self.slot, state="readonly", width=16)
+        self.slot_entry.grid(row=1, column=1, sticky="ew", padx=(14, 0))
+
+        settings = ttk.Frame(body, style="App.Card.TFrame", padding=20)
+        settings.grid(row=2, column=0, sticky="ew", pady=(0, 6))
+        settings.columnconfigure(0, weight=1)
         self.server, self.password = tk.StringVar(), tk.StringVar()
         self.mode, self.automatic = tk.IntVar(value=0), tk.BooleanVar(value=True)
-        self._label(pane, "Server address").grid(row=5, column=0, sticky="w", padx=(0, 12))
-        self.server_entry = ttk.Entry(pane, textvariable=self.server)
-        self.server_entry.grid(row=5, column=1, columnspan=2, sticky="ew")
+        self._label(settings, "Server address", style="App.CardHeading.TLabel").grid(row=0, column=0, sticky="w", pady=(0, 10))
+        self.server_entry = ttk.Entry(settings, textvariable=self.server)
+        self.server_entry.grid(row=1, column=0, sticky="ew")
         self.server_entry.bind("<Return>", self._apply_event)
-        self._label(pane, "Room password").grid(row=6, column=0, sticky="nw", padx=(0, 12), pady=(16, 0))
-        password_box = ttk.Frame(pane)
-        password_box.grid(row=6, column=1, columnspan=2, sticky="ew", pady=(12, 0))
-        password_box.columnconfigure(0, weight=1)
-        self.password_status = ttk.Label(password_box)
-        self.password_status.grid(row=0, column=0, sticky="w", pady=(0, 5))
-        modes = ttk.Frame(password_box)
-        modes.grid(row=1, column=0, sticky="w")
+        self._label(settings, "Room password", style="App.Card.TLabel").grid(row=2, column=0, sticky="w", pady=(20, 5))
+        self.password_status = ttk.Label(settings, style="App.CardCaption.TLabel")
+        self.password_status.grid(row=3, column=0, sticky="w", pady=(0, 10))
+        modes = ttk.Frame(settings, style="App.Card.TFrame")
+        modes.grid(row=4, column=0, sticky="w")
         self.mode_buttons = []
         for index, text in enumerate(("Keep", "Replace", "Clear")):
-            button = ttk.Radiobutton(modes, variable=self.mode, value=index)
+            button = ttk.Radiobutton(modes, variable=self.mode, value=index, style="App.Card.TRadiobutton")
             self.labels.append((button, text))
-            button.grid(row=0, column=index, padx=(0, 20))
+            button.grid(row=0, column=index, padx=(0, 24))
             self.mode_buttons.append(button)
-        self.password_entry = ttk.Entry(password_box, textvariable=self.password, show="•", state="disabled")
-        self.password_entry.grid(row=2, column=0, sticky="ew", pady=(8, 0))
+        self.password_entry = ttk.Entry(settings, textvariable=self.password, show="•", state="disabled")
+        self.password_entry.grid(row=5, column=0, sticky="ew", pady=(10, 0))
         self.password_entry.bind("<Return>", self._apply_event)
-        self.auto_button = ttk.Checkbutton(pane, variable=self.automatic)
+        self.auto_button = ttk.Checkbutton(settings, variable=self.automatic, style="App.Card.TCheckbutton")
         self.labels.append((self.auto_button, "Connect automatically when the game starts"))
-        self.auto_button.grid(row=7, column=0, columnspan=3, sticky="w", pady=(16, 0))
-        status_box = ttk.Frame(pane)
-        status_box.grid(row=8, column=0, columnspan=3, sticky="nsew", pady=(18, 12))
-        status_box.columnconfigure(0, weight=1)
-        self.status_label = ttk.Label(status_box, font=("Segoe UI", 10, "bold"), wraplength=600)
-        self.status_label.grid(row=0, column=0, sticky="w")
-        self.detail_label = ttk.Label(status_box, wraplength=600)
-        self.detail_label.grid(row=1, column=0, sticky="w", pady=(6, 0))
-        pane.rowconfigure(8, weight=1)
+        self.auto_button.grid(row=6, column=0, sticky="w", pady=(18, 0))
+
         actions = ttk.Frame(pane)
-        actions.grid(row=9, column=0, columnspan=3, sticky="e")
-        self.disconnect_button = ttk.Button(actions, command=self.disconnect)
+        actions.grid(row=2, column=0, sticky="ew", pady=(20, 0))
+        actions.columnconfigure(0, weight=1)
+        self._label(actions, "You can close this window while playing.", style="App.Caption.TLabel", wraplength=480).grid(
+            row=1, column=0, columnspan=3, sticky="w", pady=(12, 0))
+        self.disconnect_button = ttk.Button(actions, command=self.disconnect, style="App.Quiet.TButton")
         self.labels.append((self.disconnect_button, "Disconnect"))
-        self.disconnect_button.grid(row=0, column=0, padx=(0, 10))
-        self.primary_button = ttk.Button(actions, command=self.apply)
-        self.primary_button.grid(row=0, column=1)
-        self._label(pane, "You can close this window while playing.").grid(
-            row=10, column=0, columnspan=3, sticky="w", pady=(14, 0))
+        self.disconnect_button.grid(row=0, column=1, padx=(0, 10))
+        self.primary_button = ttk.Button(actions, command=self.apply, style="App.Primary.TButton", width=14)
+        self.primary_button.grid(row=0, column=2)
+        self._bind_wheel(body)
         for name, variable in (("server", self.server), ("password", self.password),
                                ("mode", self.mode), ("automatic", self.automatic)):
             variable.trace_add("write", lambda *_args, name=name: self._edited(name))
         self._render()
+
+    def _resize_body(self, event):
+        self.canvas.itemconfigure(self.body_item, width=event.width)
+        for label in (self.status_label, self.detail_label):
+            label.configure(wraplength=max(240, event.width - 70))
+
+    def _bind_wheel(self, widget):
+        widget.bind("<FocusIn>", self._reveal_focus, add="+")
+        if not isinstance(widget, ttk.Combobox):
+            widget.bind("<MouseWheel>", self._scroll, add="+")
+            widget.bind("<Button-4>", self._scroll, add="+")
+            widget.bind("<Button-5>", self._scroll, add="+")
+        for child in widget.winfo_children():
+            self._bind_wheel(child)
+
+    def _reveal_focus(self, event):
+        extent = self.canvas.bbox("all")
+        height = self.canvas.winfo_height()
+        if not extent or height <= 1:
+            return
+        top = event.widget.winfo_rooty() - self.canvas.winfo_rooty()
+        bottom = top + event.widget.winfo_height()
+        offset = top - 8 if top < 8 else bottom - height + 8 if bottom > height - 8 else 0
+        if offset:
+            self.canvas.yview_moveto(max(0, self.canvas.canvasy(0) + offset) / max(extent[3], height))
+
+    def _scroll(self, event):
+        if self.canvas.bbox("all") and self.canvas.bbox("all")[3] > self.canvas.winfo_height():
+            delta = -1 if getattr(event, "num", None) == 4 else 1 if getattr(event, "num", None) == 5 else (-1 if event.delta > 0 else 1)
+            self.canvas.yview_scroll(delta * 3, "units")
+            return "break"
 
     def _edited(self, name):
         if self.updating:
@@ -371,6 +446,7 @@ class ConnectionWindow:
         for widget in (self.server_entry, self.auto_button, *self.mode_buttons):
             widget.configure(state="normal" if available else "disabled")
         self.password_entry.configure(state="normal" if available and self.mode.get() == 1 else "disabled")
+        self.password_entry.grid() if self.mode.get() == 1 else self.password_entry.grid_remove()
         self.primary_button.configure(text=self._text("Connect" if live else "Save"),
                                       state="normal" if available and not self.busy else "disabled")
         if live:
@@ -393,7 +469,13 @@ class ConnectionWindow:
         if error:
             detail = ERRORS.get(error, ERRORS["unexpected"])
         self.status_label.configure(text=self._text("Applying…" if self.busy else status))
-        self.detail_label.configure(text=self._text(detail))
+        color = (COLORS["danger"] if error else COLORS["gold"] if self.busy else
+                 COLORS["mint"] if available and self.info.get("state") == "connected" else
+                 COLORS["gold"] if available and self.info.get("state") in {"connecting", "authenticating", "synchronizing", "retrying"}
+                 else COLORS["muted"])
+        self.status_label.configure(foreground=color)
+        self.status_dot.itemconfigure(self.status_dot_item, fill=color)
+        self.detail_label.configure(text=self._text(detail), foreground=COLORS["danger"] if error else COLORS["muted"])
 
     def close(self):
         if self.closed:

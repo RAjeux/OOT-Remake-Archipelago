@@ -20,6 +20,7 @@ def self_test(destination):
     import ctypes
     import tkinter as tk
     from tkinter import ttk
+    from ootrr_triforce.ui_theme import apply_theme, COLORS
     import zstandard
 
     at = app_runtime.resource_root()
@@ -51,6 +52,9 @@ def self_test(destination):
         assert json.loads(resources.files("ootrr_triforce").joinpath(language).read_bytes())
     window = tk.Tk()
     window.withdraw()
+    apply_theme(window)
+    assert window.cget("background") == COLORS["bg"]
+    assert ttk.Style(window).lookup("App.Primary.TButton", "background") == COLORS["gold"]
     ttk.Label(window, text="Runtime verification").pack()
     window.update_idletasks()
     from ootrr_triforce.settings import OPTION_SPECS, validate_options
@@ -94,6 +98,7 @@ def self_test(destination):
                   version=manifest["version"], node=manifest["node_version"],
                   wasm_settings=True, zstd_round_trip=True, native_exports=True,
                   tkinter=True, translations=True, payload_hashes=True,
+                  desktop_theme=True,
                   updater=True, windows_version_metadata=bool(getattr(sys, "frozen", False)),
                   hookshot_resources=True,
                   apworld_install=True, previous_apworld_preserved=True,

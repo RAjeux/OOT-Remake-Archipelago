@@ -1,5 +1,16 @@
 # Stability fixes and upgrade scope
 
+## 0.10.3 alpha 1: desktop interface refresh
+
+The launcher, settings editor, connection controls and updater share a dark
+theme and clearer action hierarchy. Persistent sidebar navigation preserves
+draft values; scrollable forms keep actions accessible on small windows, and
+keyboard focus reveals fields below the fold. The settings summary is
+collapsible on compact windows. Native DLL/WASM, AP identities, generation rules
+and prepared-resource revision remain unchanged. A current 0.10.2 room can
+continue immediately after the launcher update. See the
+[desktop release notes](RELEASE-NOTES-0.10.3-alpha.1.md).
+
 ## 0.10.2 alpha 1: updates and exact consumable bundles
 
 The launcher can check the project's GitHub releases, prepare a verified update,

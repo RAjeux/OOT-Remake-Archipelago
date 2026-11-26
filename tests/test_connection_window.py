@@ -127,10 +127,7 @@ class ConnectionWindowTests(unittest.TestCase):
         self.assertEqual(window.primary_button.cget("text"), "Enregistrer")
         self.assertEqual(window.room.get(), "Room B")
         self.assertEqual(window.slot.get(), "Zelda")
-        identities = [widget for widget in window.server_entry.master.winfo_children()
-                      if isinstance(widget, tk.ttk.Entry) and not isinstance(widget, tk.ttk.Combobox)
-                      and widget != window.server_entry]
-        self.assertEqual(len(identities), 2)
+        identities = [window.room_entry, window.slot_entry]
         self.assertTrue(all(str(widget.cget("state")) == "readonly" for widget in identities))
 
     def test_keep_replace_and_clear_are_explicit_and_plaintext_is_erased(self):
@@ -139,12 +136,14 @@ class ConnectionWindowTests(unittest.TestCase):
         control = self.controls[self.profiles[0].root]
         self.assertEqual(window.mode.get(), 0)
         self.assertEqual(str(window.password_entry.cget("state")), "disabled")
+        self.assertFalse(window.password_entry.winfo_manager())
         window.server.set("ws://localhost:9999")
         window.primary_button.invoke()
         self.pump(lambda: bool(control.calls) and not window.busy)
         self.assertEqual(control.calls[-1], ("save", "ws://localhost:9999", "", 0, True))
         self.assertTrue(window.info["has_password"])
         window.mode.set(1)
+        self.assertEqual(window.password_entry.winfo_manager(), "grid")
         window.primary_button.invoke()
         self.assertEqual(len(control.calls), 1)
         self.assertEqual(window.local_error, "empty_password")
@@ -160,6 +159,7 @@ class ConnectionWindowTests(unittest.TestCase):
         self.pump(lambda: len(control.calls) == 3 and not window.busy)
         self.assertEqual(control.calls[-1][2:4], ("", 2))
         self.assertFalse(window.info["has_password"])
+        self.assertFalse(window.password_entry.winfo_manager())
 
     def test_polls_follow_game_changes_and_preserve_user_edits(self):
         window = self.open()
@@ -267,6 +267,23 @@ class ConnectionWindowTests(unittest.TestCase):
         window.close()
         self.assertEqual(window.password.get(), "")
         self.assertEqual(control.calls, [])
+
+    def test_small_window_reveals_keyboard_focused_fields_and_keeps_actions_visible(self):
+        window = self.open()
+        self.idle()
+        self.root.geometry("600x560")
+        self.root.attributes("-alpha", 0)
+        self.root.deiconify()
+        window.mode.set(1)
+        self.root.update()
+        window.password_entry.event_generate("<FocusIn>")
+        self.root.update()
+        viewport_top = window.canvas.winfo_rooty()
+        viewport_bottom = viewport_top + window.canvas.winfo_height()
+        self.assertGreaterEqual(window.password_entry.winfo_rooty(), viewport_top)
+        self.assertLessEqual(window.password_entry.winfo_rooty() + window.password_entry.winfo_height(), viewport_bottom)
+        self.assertLessEqual(window.primary_button.winfo_rooty() + window.primary_button.winfo_height(),
+                             self.root.winfo_rooty() + self.root.winfo_height())
 
     def test_refresh_replaces_controller_binding_and_preserves_address_edit(self):
         window = self.open()

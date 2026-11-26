@@ -1,6 +1,6 @@
 # Test coverage and remaining gameplay checks
 
-This describes the selective 0.10.2 native integration. The existing OOTRR
+This describes the selective 0.10 native integration and 0.10.3 desktop UI. The existing OOTRR
 engine still chooses the seed; the adapter converts its enabled randomized
 rewards to AP checks. No Full-network engine is involved.
 
@@ -20,6 +20,14 @@ playthrough.** The following distinctions apply throughout this document:
   manually in its entirety.
 
 ## Coverage matrix
+
+The 0.10.3 desktop refresh is checked with actual Tk widgets in English and
+French, including small windows, keyboard focus below the fold, preserved
+draft values, theme reuse across dialogs, readonly/disabled controls, updater
+opt-in and retry. Synthetic window captures were inspected for the home,
+setup, YAML editor, connection and update views. These UI checks do not launch
+the game or establish additional gameplay coverage. The standalone frozen
+self-test also requires the theme module and verifies its palette at runtime.
 
 The 0.10.2 update was exercised with two actual frozen Windows executables:
 old app, independent helper, new app, then optional APWorld replacement.

@@ -17,6 +17,7 @@ FORBIDDEN_NAMES = {"outils.json", "native-session.json", "last-profile.json", "c
                    "apworld-installations.json", "contexte-codex.md"}
 FORBIDDEN_SUFFIXES = {".sav", ".apsave", ".apootrr", ".archipelago", ".apmultidata", ".apmultisave"}
 REQUIRED_MODULES = {"ootrr_triforce.app_window", "ootrr_triforce.app_runtime", "ootrr_triforce.install_service",
+                    "ootrr_triforce.ui_theme",
                     "ootrr_triforce.update_service", "ootrr_triforce.update_window",
                     "ootrr_triforce.player", "ootrr_triforce.connection_window", "ootrr_triforce.hookshot_setup",
                     "tkinter", "zstandard"}

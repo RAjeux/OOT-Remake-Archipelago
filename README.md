@@ -1,6 +1,10 @@
 # Ocarina of Time Remake × Archipelago
 
-**0.10.2-alpha.1 — one Windows application for Triforce and experimental Hookshot support.** The player package is `OOT-Remake-Archipelago-0.10.2-alpha.1.exe`. It prepares the mod, configures your connection and launches the game. Python and Node.js are included; setup downloads the compatible OOTRR 0.8.1 builder when needed and rebuilds the selected compatible host.
+**0.10.3-alpha.1 — one Windows application for Triforce and experimental Hookshot support.** The player package is `OOT-Remake-Archipelago-0.10.3-alpha.1.exe`. It prepares the mod, configures your connection and launches the game. Python and Node.js are included; setup downloads the compatible OOTRR 0.8.1 builder when needed and rebuilds the selected compatible host.
+
+The redesigned desktop interface uses a shared dark theme, gold actions and a persistent sidebar. Room preparation is grouped into three steps; the YAML editor has searchable categories, readable setting cards and a responsive summary. Connection and update windows use the same design. This interface update keeps native 0.10 player files, YAMLs and saves; an already current 0.10.2 room does not need preparation again.
+
+![Launcher home screen with a synthetic demonstration room](docs/images/launcher-home.png)
 
 The launcher checks for newer GitHub releases in the background. An **Update available** button downloads and prepares a verified replacement, then **Install and restart** completes the update. An optional APWorld replacement is offered when the selected installed file differs; its previous copy is backed up. Versions without this feature need one manual download of the new launcher. See [updating the launcher and APWorld](docs/UPDATING.md).
 
@@ -22,7 +26,7 @@ AP ammunition cannot grant its missing equipment. Bombs, arrows and seeds receiv
 
 ## Play
 
-Use **`OOT-Remake-Archipelago-0.10.2-alpha.1.exe`**. Published builds are listed in the [project releases](https://github.com/RAjeux/OOT-Remake-Archipelago/releases). Keep this one file wherever you prefer; no archive extraction or separate Python, Node.js or OOTRR installation is required.
+Use **`OOT-Remake-Archipelago-0.10.3-alpha.1.exe`**. Published builds are listed in the [project releases](https://github.com/RAjeux/OOT-Remake-Archipelago/releases). Keep this one file wherever you prefer; no archive extraction or separate Python, Node.js or OOTRR installation is required.
 
 You need Windows x64, a working **Triforce installation with its build tools**, your own **version 1.1.1 game files**, and an active Archipelago room with your `.apootrr` player file. Hookshot users need the supported **3.0.1 installation, original build tools and retained build files** instead. An internet connection is needed for the first download of the compatible randomizer builder. No Nintendo game files are supplied.
 
@@ -121,12 +125,12 @@ Use Windows x64 Python with Tcl/Tk support and install the packaging dependencie
 ```powershell
 py -3 -m pip install -r requirements-app.txt
 py -3 tools/build_app.py
-py -3 tools/verify_app.py dist/OOT-Remake-Archipelago-0.10.2-alpha.1.exe
+py -3 tools/verify_app.py dist/OOT-Remake-Archipelago-0.10.3-alpha.1.exe
 ```
 
 `tools/build_app.py` creates the single windowed executable in `dist/`. It bundles the Python runtime, Tk, the pinned Node.js runtime, the APWorld, native bridge, both host adapters and notices. The compatible OOTRR builder is downloaded by the application on first use; game files and the selected host are supplied by the player. `VERSION` declares the release version. The build uses the supplied native DLL and WebAssembly engine and does not build a user's game.
 
-For advanced CLI development, `py -3 tools/build.py` assembles `dist/Archipelago-OOT-Remake-0.10.2-alpha.1.zip`, including `Client-OOT-Remake.pyz`, command wrappers, APWorld and engine sources. This is separate from the normal player download. After validating a ZIP, record its reference with `tools/verify_release.py --version <version> --record-reference`; retain older manifests unchanged.
+For advanced CLI development, `py -3 tools/build.py` assembles `dist/Archipelago-OOT-Remake-0.10.3-alpha.1.zip`, including `Client-OOT-Remake.pyz`, command wrappers, APWorld and engine sources. This is separate from the normal player download. After validating a ZIP, record its reference with `tools/verify_release.py --version <version> --record-reference`; retain older manifests unchanged.
 
 To rebuild the supplied components:
 

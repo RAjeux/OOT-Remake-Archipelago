@@ -1,8 +1,13 @@
 # Updating the launcher and APWorld
 
-Download `OOT-Remake-Archipelago-0.10.2-alpha.1.exe` once if your older launcher
+Download `OOT-Remake-Archipelago-0.10.3-alpha.1.exe` once if your older launcher
 does not have an update button. Prepared rooms, connection preferences and saves
 remain in LocalAppData when the executable is replaced.
+
+Version 0.10.3 refreshes the desktop interface. A room already prepared with
+current 0.10.2 resources remains ready to play; this UI update does not raise
+the mod's prepared-resource revision. YAML values and generation rules are
+unchanged. The 0.10.2 launcher can obtain this release through its update button.
 
 The application checks GitHub in the background. **Update available** appears
 when a newer publication is found. **Help → Check for updates** retries the

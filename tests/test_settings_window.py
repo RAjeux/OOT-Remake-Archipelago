@@ -271,11 +271,22 @@ class SettingsWindowTests(unittest.TestCase):
         editor.window.transient("")
         editor.window.deiconify()
         self.root.update()
-        for widget in (editor.summary, editor.apply_button):
+        for widget in (editor.summary_toggle, editor.apply_button):
             self.assertTrue(widget.winfo_ismapped())
             self.assertLessEqual(widget.winfo_rooty() + widget.winfo_height(),
                                  editor.window.winfo_rooty() + editor.window.winfo_height())
-        self.assertGreater(editor.canvas.winfo_height(), 60)
+        self.assertFalse(editor.summary.winfo_ismapped())
+        self.assertGreater(editor.canvas.winfo_height(), 170)
+        before = editor.selected_values()
+        editor.summary_toggle.invoke()
+        self.root.update()
+        self.assertTrue(editor.summary.winfo_ismapped())
+        self.assertEqual(editor.summary.cget("text"), "\n".join(selection_summary(editor._read_values(), "en")))
+        editor.summary_toggle.invoke()
+        self.root.update()
+        self.assertFalse(editor.summary.winfo_ismapped())
+        self.assertGreater(editor.canvas.winfo_height(), 170)
+        self.assertEqual(editor.selected_values(), before)
         before = editor.selected_values()
         editor.canvas.yview_moveto(0)
         self.root.update()
@@ -292,6 +303,62 @@ class SettingsWindowTests(unittest.TestCase):
         self.root.update()
         self.assertGreater(field.yview()[0], 0)
         self.assertEqual(editor.canvas.yview(), canvas_position)
+        self.assertEqual(editor.selected_values(), before)
+
+    def test_responsive_cards_and_summary_keep_actions_accessible_in_both_layouts(self):
+        self.root.deiconify()
+        self.root.geometry("1x1+0+0")
+        with patch("ootrr_triforce.settings_window.window_size", return_value=(1320, 880)):
+            editor = self.open(language="fr")
+        editor.window.transient("")
+        editor.window.deiconify()
+        self.root.update()
+        self.assertEqual(editor.summary_box.grid_info()["column"], 2)
+        self.assertGreater(editor.canvas.winfo_height(), 200)
+        before = editor.selected_values()
+        for width, height in ((964, 500), (780, 620), (1306, 668)):
+            with self.subTest(size=(width, height)):
+                editor.window.geometry(f"{width}x{height}")
+                self.root.update()
+                if height < 650:
+                    self.assertFalse(editor.summary.winfo_ismapped())
+                    self.assertTrue(editor.summary_toggle.winfo_ismapped())
+                    self.assertGreater(editor.canvas.winfo_height(), 170)
+                else:
+                    self.assertEqual(editor.summary_box.grid_info()["row"], 3)
+                    self.assertGreater(editor.canvas.winfo_height(), 100)
+                self.assertLessEqual(editor.apply_button.winfo_rooty() + editor.apply_button.winfo_height(),
+                                     editor.window.winfo_rooty() + editor.window.winfo_height())
+                for name in editor.visible_names:
+                    field, row = editor.fields[name], editor.rows[name][0]
+                    self.assertLessEqual(field.winfo_x() + field.winfo_width(), row.winfo_width())
+                self.assertEqual(editor.selected_values(), before)
+
+    def test_search_keyboard_and_focus_scroll_reveal_the_control_without_editing_values(self):
+        self.root.deiconify()
+        self.root.geometry("1x1+0+0")
+        with patch("ootrr_triforce.settings_window.window_size", return_value=(964, 600)):
+            editor = self.open()
+        editor.window.transient("")
+        editor.window.deiconify()
+        editor.search_var.set("skulltulas")
+        self.root.update()
+        before = editor.selected_values()
+        editor.search_entry.focus_force()
+        editor.search_entry.event_generate("<Down>")
+        self.root.update()
+        self.assertEqual(editor.window.focus_get(), editor.controls["shuffle_skulltulas"])
+        editor.search_var.set("")
+        editor.show_advanced.set(True)
+        editor.hide_inactive.set(False)
+        editor._select_group(0)
+        self.root.update()
+        editor.canvas.yview_moveto(0)
+        last = editor.visible_names[-1]
+        editor.controls[last].focus_force()
+        self.root.update()
+        self.assertGreater(editor.canvas.yview()[0], 0)
+        self.assertGreaterEqual(editor.rows[last][0].winfo_y(), editor.canvas.canvasy(0) - 1)
         self.assertEqual(editor.selected_values(), before)
 
 
