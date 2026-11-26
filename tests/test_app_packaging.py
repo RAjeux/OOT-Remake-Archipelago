@@ -44,7 +44,7 @@ class WindowsVersionInfoTests(unittest.TestCase):
                 with self.subTest(version=version):
                     name = "OOT-Remake-Archipelago-" + version
                     resource = build_app.write_version_info(work, version, name)
-                    self.assertEqual(resource.parent, work)
+                    self.assertEqual(resource.parent.resolve(), work.resolve())
                     fixed, strings = self.read_resource(resource)
                     self.assertEqual(fixed["filevers"], expected)
                     self.assertEqual(fixed["prodvers"], expected)
@@ -66,8 +66,19 @@ class WindowsVersionInfoTests(unittest.TestCase):
         self.assertEqual(build_app.windows_version("65535.65535.65535-rc.65535"), ((65535,) * 4, 2))
 
     def test_main_passes_workspaces_generated_version_resource_to_pyinstaller(self):
+        for use_path_alias in (False, True):
+            with self.subTest(equivalent_path_alias=use_path_alias):
+                self.check_main_version_resource(use_path_alias)
+
+    def check_main_version_resource(self, use_path_alias):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
+            if use_path_alias:
+                # Exercise canonicalization everywhere, even on machines whose
+                # TEMP path has no Windows short-name alias such as RUNNER~1.
+                (root / "alias").mkdir()
+                root = root / "alias" / ".."
+                self.assertNotEqual(root, root.resolve())
             version = "0.10.1-alpha.3"
             name = "OOT-Remake-Archipelago-" + version
             (root / "VERSION").write_text(version + "\n", encoding="utf-8")
@@ -85,9 +96,9 @@ class WindowsVersionInfoTests(unittest.TestCase):
                 calls.append(command)
                 self.assertEqual(command[command.index("--name") + 1], name)
                 resource = Path(command[command.index("--version-file") + 1])
-                self.assertEqual(resource, work / "windows-version-info.txt")
+                self.assertEqual(resource.resolve(), (work / "windows-version-info.txt").resolve())
                 self.assertEqual(self.read_resource(resource)[1]["ProductVersion"], version)
-                self.assertEqual(kwargs["cwd"], root)
+                self.assertEqual(Path(kwargs["cwd"]).resolve(), root.resolve())
                 output.mkdir()
                 (output / (name + ".exe")).write_bytes(b"fake freezer output")
 
