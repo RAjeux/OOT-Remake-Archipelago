@@ -312,10 +312,29 @@ class SettingsWindowTests(unittest.TestCase):
             editor = self.open(language="fr")
         editor.window.transient("")
         editor.window.deiconify()
+        # Windows runners have a smaller desktop than the wide layout. Verify
+        # that the window manager's real limit selects the usable lower layout.
+        editor.window.maxsize(1024, 700)
+        editor.window.geometry("1320x880+0+0")
         self.root.update()
+        self.assertLessEqual(editor.window.winfo_width(), 1024)
+        self.assertLessEqual(editor.window.winfo_height(), 700)
+        self.assertEqual(editor.summary_box.grid_info()["row"], 3)
+        self.assertGreater(editor.canvas.winfo_height(), 100)
+        self.assertLessEqual(editor.apply_button.winfo_rooty() + editor.apply_button.winfo_height(),
+                             editor.window.winfo_rooty() + editor.window.winfo_height())
+        before = editor.selected_values()
+        # Exercise actual wide widgets even when the desktop cannot fit them.
+        # A borderless test window can extend past the desktop without changing
+        # the user's display resolution or mocking the layout's measurements.
+        editor.window.overrideredirect(True)
+        editor.window.maxsize(1600, 1200)
+        editor.window.minsize(600, 440)
+        editor.window.geometry("1320x880+0+0")
+        self.root.update()
+        self.assertEqual((editor.window.winfo_width(), editor.window.winfo_height()), (1320, 880))
         self.assertEqual(editor.summary_box.grid_info()["column"], 2)
         self.assertGreater(editor.canvas.winfo_height(), 200)
-        before = editor.selected_values()
         for width, height in ((964, 500), (780, 620), (1306, 668)):
             with self.subTest(size=(width, height)):
                 editor.window.geometry(f"{width}x{height}")
