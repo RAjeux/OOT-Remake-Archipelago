@@ -83,13 +83,16 @@ class APWorldInstallationTests(unittest.TestCase):
         self.assertCountEqual(backups, [b"old canonical", old_raw])
 
     def test_failed_replacement_restores_renamed_world_and_keeps_original(self):
+        # Windows TEMP may use a short path alias while the installer resolves
+        # the full path. Exercise equivalent paths with different spellings.
+        self.target = self.worlds / ".." / self.worlds.name / self.target.name
         self.target.write_bytes(b"existing")
         alias = self.worlds / "older-release.apworld"
         previous = world_bytes(extra=("ootrr_remake/old.py", "old"))
         alias.write_bytes(previous)
         original_atomic = save_bridge.atomic
         def fail_only_world(path, data):
-            if Path(path) == self.target:
+            if Path(path).resolve() == self.target.resolve():
                 raise PermissionError("Synthetic locked target")
             return original_atomic(path, data)
         with patch.object(save_bridge, "atomic", side_effect=fail_only_world):
