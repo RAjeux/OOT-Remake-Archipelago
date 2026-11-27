@@ -16,6 +16,7 @@ from ootrr_triforce.settings import (AP_ONLY, FIXED_SETTINGS, OPTION_SPECS, SPEC
                                      STARTING_ITEMS, STARTING_SONGS, default_options,
                                      engine_settings, validate_options, yaml_options)
 from ootrr_triforce.catalog import GAME
+from ootrr_triforce.feature_settings import LEGACY_DIFFICULTY_DEFAULTS, feature_config
 
 
 class DirectSettingsTests(unittest.TestCase):
@@ -100,16 +101,27 @@ class DirectSettingsTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             engine_settings({"shuffle_shops": "random_deals"})
 
+    def test_yaml_random_colours_use_an_explicit_ap_key_without_changing_native_values(self):
+        self.assertEqual(SPEC_BY_ID["cosmetic_color_mode"]["choices"][2], "random")
+        for language in ("en", "fr"):
+            rendered = yaml_options(language=language, values={"cosmetic_color_mode": "random"})
+            self.assertIn('  cosmetic_color_mode: "random_colors"', rendered)
+            self.assertIn("off, custom, random_colors, shared", rendered)
+            self.assertNotIn('  cosmetic_color_mode: "random"', rendered)
+        self.assertNotIn("cosmetic_color_mode", engine_settings({"cosmetic_color_mode": "random"}))
+        with self.assertRaises(ValueError):
+            engine_settings({"cosmetic_color_mode": "random_colors"})
+
     def test_native_key_choices_are_the_implemented_subsets(self):
         self.assertEqual(set(SPEC_BY_ID["zora_fountain"]["choices"]), {"closed", "open"})
         self.assertEqual(set(SPEC_BY_ID["shuffle_smallkeys"]["choices"]),
                          {"vanilla", "dungeon", "any_dungeon", "keysanity"})
         boss = {"remove", "vanilla", "dungeon", "regional", "overworld", "any_dungeon", "keysanity"}
         self.assertEqual(set(SPEC_BY_ID["shuffle_bosskeys"]["choices"]), boss)
-        self.assertEqual(set(SPEC_BY_ID["shuffle_ganon_bosskey"]["choices"]), boss | {"lacs_dungeons"})
+        self.assertEqual(set(SPEC_BY_ID["shuffle_ganon_bosskey"]["choices"]), boss | {"lacs_dungeons", "lacs_medallions"})
         self.assertEqual(set(SPEC_BY_ID["shuffle_mapcompass"]["choices"]),
                          {"remove", "startwith", "vanilla", "dungeon", "regional", "any_dungeon", "keysanity"})
-        self.assertEqual(set(SPEC_BY_ID["bridge"]["choices"]), {"vanilla", "dungeons", "open"})
+        self.assertEqual(set(SPEC_BY_ID["bridge"]["choices"]), {"vanilla", "dungeons", "open", "medallions"})
         for name in ("shuffle_smallkeys", "shuffle_bosskeys", "shuffle_ganon_bosskey", "shuffle_mapcompass"):
             with self.subTest(option=name):
                 with self.assertRaises(ValueError):
@@ -125,7 +137,10 @@ class DirectSettingsTests(unittest.TestCase):
                  "starting_songs": ["eponas_song"], "death_link": True, "shuffle_shops": "shuffle"}
         native = engine_settings(given)
         for name, value in given.items():
-            if name not in AP_ONLY:
+            if name in LEGACY_DIFFICULTY_DEFAULTS:
+                self.assertEqual(native[name], LEGACY_DIFFICULTY_DEFAULTS[name])
+                self.assertEqual(feature_config(validate_options(given))["settings"][name], value)
+            elif name not in AP_ONLY:
                 self.assertEqual(native[name], value if not isinstance(value, list) else
                                  [item for item in SPEC_BY_ID[name]["choices"] if item in value])
         self.assertEqual(native["shuffle_shops"], "shuffle")
@@ -163,7 +178,9 @@ class DirectSettingsTests(unittest.TestCase):
             with self.subTest(values=values), self.assertRaises(ValueError):
                 engine_settings(values)
         # Public difficulty controls deliberately use the native menu's steps.
-        self.assertEqual(engine_settings({"enemy_health": 125})["enemy_health"], 125)
+        self.assertEqual(validate_options({"enemy_health": 125})["enemy_health"], 125)
+        self.assertEqual(engine_settings({"enemy_health": 125})["enemy_health"], 100)
+        self.assertEqual(feature_config(validate_options({"enemy_health": 125}))["settings"]["enemy_health"], 125)
 
     def test_forest_time_and_starting_inventory_conflicts_are_rejected(self):
         self.assertNotIn("zeldas_letter", STARTING_ITEMS)

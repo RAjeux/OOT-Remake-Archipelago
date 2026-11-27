@@ -1,0 +1,96 @@
+[
+    {
+        "region_name": "Lake Hylia",
+        "scene": "Lake Hylia",
+        "hint": "LAKE_HYLIA",
+        "events": {
+            "Bonooru": "is_child and Ocarina and has_all_notes_for_song(Scarecrow_Song)"
+        },
+        "locations": {
+            "Pierre": "is_adult and Bonooru and scarecrow_behavior != 'free'",
+            "LH Sun": "'Water Temple Clear' and can_use(Bow)",
+            # A field Poe's chest on the lake shore, reached once the lake is refilled (tester run).
+            "HF Lake Poe Chest": "is_adult and 'Water Temple Clear'",
+            "LH Freestanding PoH": "
+                is_adult and (can_use(Scarecrow) or here(can_plant_bean))",
+            "LH Underwater Item": "is_child and can_dive",
+            "LH GS Bean Patch": "can_plant_bugs and can_child_attack",
+            "LH GS Lab Wall": "
+                is_child and can_get_night_gs and
+                (Boomerang or (logic_lab_wall_gs and (Sticks or Kokiri_Sword)))",
+            "LH GS Small Island": "is_child and can_child_attack",
+            "LH GS Tree": "can_use(Longshot) and can_get_night_gs",
+            "LH Lab Gossip Stone": "True",
+            "LH Gossip Stone (Southeast)": "True",
+            "LH Gossip Stone (Southwest)": "True",
+            "Gossip Stone Fairy": "can_summon_gossip_fairy and has_bottle",
+            "Bean Plant Fairy": "is_child and can_plant_bean and can_play(Song_of_Storms) and has_bottle",
+            "Butterfly Fairy": "can_use(Sticks) and has_bottle",
+            "Bug Shrub": "is_child and can_cut_shrubs and has_bottle"
+        },
+        "exits": {
+            "Hyrule Field": "True",
+            "Zoras Domain": "is_child and can_dive",
+            "LH Owl Flight": "is_child",
+            "LH Lab": "True",
+            # The seemingly redundant `plant_beans` check is to allow supplementary searches, which can't collect events, to use this path.
+            "LH Fishing Island": "
+                is_child or can_use(Scarecrow) or
+                here(can_plant_bean) or plant_beans or 'Water Temple Clear'",
+            "Water Temple Lobby": "
+                is_adult and Hookshot and
+                (Iron_Boots or ((Longshot or logic_water_hookshot_entry) and (Progressive_Scale, 2)))",
+            "LH Grotto": "True"
+        }
+    },
+    {
+        "region_name": "LH Fishing Island",
+        "scene": "Lake Hylia",
+        "hint": "LAKE_HYLIA",
+        "exits": {
+            "Lake Hylia": "True",
+            "LH Fishing Hole": "True"
+        }
+    },
+    {
+        "region_name": "LH Owl Flight",
+        "scene": "Lake Hylia",
+        "hint": "LAKE_HYLIA",
+        "exits": {
+            "Hyrule Field": "True"
+        }
+    },
+    {
+        "region_name": "LH Lab",
+        "scene": "LH Lab",
+        "events": {
+            "Eyedrops Access": "
+                is_adult and
+                (('Eyeball Frog Access' and not adult_trade_shuffle) or (Eyeball_Frog and disable_trade_revert))"
+        },
+        "locations": {
+            "LH Trade Eyeball Frog": "'Eyedrops Access'",
+            "LH Lab Dive": "
+                (Progressive_Scale, 2) or
+                (logic_lab_diving and is_adult and Iron_Boots and Hookshot)",
+            "LH GS Lab Crate": "
+                Iron_Boots and can_use(Hookshot) and
+                (deadly_bonks != 'ohko' or Fairy or (can_use(Nayrus_Love) and not shuffle_interior_entrances))"
+        },
+        "exits": {
+            "Lake Hylia": "True"
+        }
+    },
+    {
+        "region_name": "LH Fishing Hole",
+        "scene": "LH Fishing Hole",
+        "locations": {
+            "LH Child Fishing": "is_child",
+            "LH Adult Fishing": "is_adult",
+            "LH Loach Fishing": "True"
+        },
+        "exits": {
+            "LH Fishing Island": "True"
+        }
+    }
+]

@@ -93,7 +93,7 @@ class Group(typing.NamedTuple):
 def contract_module():
     result = types.ModuleType("Options")
     result.Choice = ContractChoice
-    for name in ("Range", "Toggle", "OptionSet", "Removed"):
+    for name in ("Range", "Toggle", "OptionSet", "OptionDict", "Removed"):
         setattr(result, name, type(name, (ContractValue,), {}))
     result.PerGameCommonOptions = dataclasses.make_dataclass("PerGameCommonOptions", [])
     result.OptionGroup = Group
@@ -102,13 +102,14 @@ def contract_module():
 
 
 def world_options(ap_options):
-    from ootrr_triforce import settings_labels
+    from ootrr_triforce import feature_settings, settings_labels
     package = types.ModuleType("_ootrr_ap_options_test")
     package.__path__ = []
     spec = importlib.util.spec_from_file_location(package.__name__ + ".options", ROOT / "apworld/ootrr_remake/options.py")
     module = importlib.util.module_from_spec(spec)
     modules = {"Options": ap_options, package.__name__: package,
                package.__name__ + ".settings": settings,
+               package.__name__ + ".feature_settings": feature_settings,
                package.__name__ + ".settings_labels": settings_labels, spec.name: module}
     with patch.dict(sys.modules, modules):
         spec.loader.exec_module(module)
@@ -120,7 +121,7 @@ def primary_options(directory):
     path = directory / "Options.py"
     tree = ast.parse(path.read_text(encoding="utf-8-sig"))
     names = {"OptionError", "Visibility", "AssembleOptions", "Option", "FreeText", "NumericOption",
-             "Toggle", "Choice", "Range", "FreezeValidKeys", "VerifyKeys", "OptionSet", "Removed", "OptionGroup"}
+             "Toggle", "Choice", "Range", "FreezeValidKeys", "VerifyKeys", "OptionSet", "OptionDict", "Removed", "OptionGroup"}
     helpers = {"triangular", "random_weighted_range"}
     selected = [ast.ImportFrom(module="__future__", names=[ast.alias(name="annotations")], level=0)]
     for node in tree.body:
@@ -195,6 +196,29 @@ class APChoiceContractTests(unittest.TestCase):
                 rolled = option.from_any("random")
                 self.assertEqual(rolled.value, value)
                 self.assertEqual(choose.call_args.args[0], list(range(7)))
+
+    def test_explicit_random_colours_keep_their_native_mode_without_an_ap_roll(self):
+        option = self.world.OPTION_TYPES["cosmetic_color_mode"]
+        self.assertEqual(option.option_random_colors, 2)
+        self.assertEqual(option.name_lookup[2], "random_colors")
+        self.assertNotIn("from_any", option.__dict__)
+        self.assertNotIn("from_text", option.__dict__)
+        with patch.object(random, "choice", side_effect=AssertionError("Explicit native colour mode must not roll AP choices")):
+            rolled = option.from_any("random_colors")
+        self.assertEqual(rolled.current_key, "random_colors")
+        values = self.world.option_values(types.SimpleNamespace(cosmetic_color_mode=rolled))
+        self.assertEqual(values["cosmetic_color_mode"], "random")
+        from ootrr_triforce.feature_settings import feature_config
+        self.assertEqual(feature_config(values)["settings"]["cosmetic_color_mode"], "random")
+
+    def test_standard_ap_random_can_choose_each_colour_mode(self):
+        option = self.world.OPTION_TYPES["cosmetic_color_mode"]
+        for index, native in enumerate(("off", "custom", "random", "shared")):
+            with self.subTest(mode=native), patch.object(random, "choice", return_value=index) as choose:
+                rolled = option.from_any("random")
+                self.assertEqual(rolled.value, index)
+                self.assertEqual(choose.call_args.args[0], list(range(4)))
+                self.assertEqual(self.world.option_values(types.SimpleNamespace(cosmetic_color_mode=rolled))["cosmetic_color_mode"], native)
 
     def rolled_options(self, **values):
         return types.SimpleNamespace(**{

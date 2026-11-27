@@ -82,8 +82,29 @@ def native_shop():
     return editor.write("Synthetic DisplayShop")[0]
 
 
+def native_no_dupe_shop(raw):
+    """The reviewed Rust difficulty pass wraps the original empty-bottle YES."""
+    editor = FlowEditor(raw, "native NoDupe fixture")
+    empty = editor.chart.events[186]
+    free, refusal = empty.data.cases[0].v, empty.data.cases[1].v
+    goods = (("RedPotion", 0), ("GreenPotion", 1), ("BluePotion", 2),
+             ("BlueFire", 3), ("Fish", 4), ("BigPoe", 6), ("Poe", 7),
+             ("Bug", 8), ("Fairy", 9), ("Milk", 10), ("HalfMilk", 11))
+    next_event = free
+    for number, (actor, bottle) in reversed(list(enumerate(goods))):
+        held = editor.switch(f"OOTRRNoDupeHas186_{number}", "PouchSystemActor",
+                             "EventQueryIsExistBottleTypeInPouch", {"BottleItem": bottle}, refusal, free)
+        next_event = editor.switch(f"OOTRRNoDupeIs186_{number}", "GameDataActor",
+                                   "EventQueryIsGameDataString64",
+                                   {"GameDataName": SELECTED, "Index": -1, "Value": "Item_Bottle_" + actor},
+                                   held, next_event)
+    empty.data.cases[0] = make_index(next_event)
+    return editor.write("Native NoDupe bottle front")[0]
+
+
 class Purchase:
-    def __init__(self, raw, selected, money=100, capacity=2, *, rewards=None, owned=None, empty_bottle=True):
+    def __init__(self, raw, selected, money=100, capacity=2, *, rewards=None, owned=None, empty_bottle=True,
+                 bottle_types=()):
         self.chart = _flow(raw).flowchart
         self.entries = {entry.name: entry.main_event.v for entry in self.chart.entry_points}
         self.selected, self.money, self.capacity = selected, money, capacity
@@ -91,6 +112,7 @@ class Purchase:
         self.rewards = records() if rewards is None else rewards
         self.owned = set() if owned is None else set(owned)
         self.empty_bottle = empty_bottle
+        self.bottle_types = set(bottle_types)
 
     def run(self, entry, arguments=None):
         node = self.entries[entry]
@@ -102,8 +124,11 @@ class Purchase:
             params = {key: arguments[value] if isinstance(value, Argument) else value
                       for key, value in (data.params.data.items() if getattr(data, "params", None) else ())}
             if isinstance(data, SubFlowEvent):
-                assert data.res_flowchart_name == "", "Unexpected external preload dependency"
-                self.run(data.entry_point_name, params)
+                if (data.res_flowchart_name, data.entry_point_name) == ("Dm_SY_GetInEvent", "AP_IceTrap"):
+                    self.trace.append(("FixtureNativeIceTrap", {}))
+                else:
+                    assert data.res_flowchart_name == "", "Unexpected external preload dependency"
+                    self.run(data.entry_point_name, params)
                 node = data.nxt.v
             elif isinstance(data, SwitchEvent):
                 command = data.actor_query.v.v
@@ -121,6 +146,8 @@ class Purchase:
                     answer = 0 if value else 1
                 elif command == "EventQueryIsAnyBottleEmpty":
                     answer = 0 if self.empty_bottle else 1
+                elif command == "EventQueryIsExistBottleTypeInPouch":
+                    answer = 0 if params["BottleItem"] in self.bottle_types else 1
                 else:
                     raise AssertionError(command)
                 reference = data.cases.get(answer)
@@ -286,7 +313,10 @@ class ShopEventTests(unittest.TestCase):
                     run.run("FirstBuy")
                     metadata = ITEM_DATA[row["local_item"]]
                     pouch = [values for command, values in run.trace if command == "EventTriggerAddOrRemovePouchContent"]
-                    if metadata["mode"] == "generic" or metadata["kind"] == "TCGSmallKey" or is_cure(metadata):
+                    if metadata["mode"] == "trap":
+                        self.assertFalse(pouch)
+                        self.assertEqual(sum(command == "FixtureNativeIceTrap" for command, _ in run.trace), 1)
+                    elif metadata["mode"] == "generic" or metadata["kind"] == "TCGSmallKey" or is_cure(metadata):
                         self.assertFalse(pouch)
                     elif metadata.get("bottle_item") and metadata.get("pouch_special") == "NotPushToPouch":
                         self.assertFalse(pouch)
@@ -386,6 +416,78 @@ class ShopEventTests(unittest.TestCase):
         stream = io.BytesIO(); self.assertTrue(broken.write(stream))
         with self.assertRaises(ValueError):
             patch_shop_flow(stream.getvalue(), rewards, pouch_raw=native_flow())
+
+    def test_native_no_dupe_refusals_apply_to_own_refills_without_blocking_other_ap_purchases(self):
+        before = native_no_dupe_shop(self.before)
+        from ootrr_triforce.native_presentations import BOTTLE_ITEMS
+        for contents in ("RedPotion", "BlueFire", "HalfMilk"):
+            item = next(name for name, row in ITEM_DATA.items()
+                        if row.get("bottle_item") == contents and row.get("pouch_special") == "NotPushToPouch")
+            rewards = records()
+            rewards[0].update(local_item=item, native_actor=ITEM_DATA[item]["actor"])
+            name, row = next((name, row) for name, row in SHOP_CHECKS.items()
+                             if row["shop"] == "KF Shop" and row["slot"] == 1)
+            rewards.append(dict(row, name=name, actor="Item_AP_testBow", price=15,
+                                local_item="Bow", native_actor=ITEM_DATA["Bow"]["actor"]))
+            raw = patch_shop_flow(before, rewards, pouch_raw=native_flow())
+            native_nodes = {event.name: event for event in _flow(before).flowchart.events
+                            if event.name.startswith("OOTRRNoDupe")}
+            patched_nodes = {event.name: event for event in _flow(raw).flowchart.events
+                             if event.name.startswith("OOTRRNoDupe")}
+            self.assertEqual(set(native_nodes), set(patched_nodes))
+            for name, event in native_nodes.items():
+                self.assertEqual({key: ref.v.name for key, ref in event.data.cases.items()},
+                                 {key: ref.v.name for key, ref in patched_nodes[name].data.cases.items()})
+            for entry in ("FirstBuy", "RepeatBuy"):
+                for empty, held in ((False, ()), (True, (BOTTLE_ITEMS[contents],))):
+                    denied = Purchase(raw, rewards[0]["actor"], rewards=rewards,
+                                      empty_bottle=empty, bottle_types=held)
+                    denied.run(entry)
+                    self.assertEqual(denied.money, 100)
+                    self.assertFalse(denied.values)
+                    self.assertTrue(any(command == "EventTriggerShopItemSelect" for command, _ in denied.trace))
+                    self.assertFalse(any(command in {"EventTriggerPayItemPriceAtShop", "EventTriggerGetItemAtShop",
+                                                     "EventTriggerPushToEmptyBottle", "EventTriggerRequestAutoSave"}
+                                         for command, _ in denied.trace))
+                allowed = Purchase(raw, rewards[0]["actor"], rewards=rewards, empty_bottle=True)
+                allowed.run(entry)
+                self.assertEqual(allowed.money, 100 - rewards[0]["price"])
+                self.assertTrue(allowed.values[rewards[0]["flag_name"]])
+                self.assertEqual(sum(command == "EventTriggerPushToEmptyBottle" for command, _ in allowed.trace), 1)
+                for reward in rewards[1:]:
+                    other = Purchase(raw, reward["actor"], rewards=rewards, empty_bottle=False,
+                                     bottle_types=BOTTLE_ITEMS.values())
+                    other.run(entry)
+                    self.assertEqual(other.money, 100 - reward["price"])
+                    self.assertTrue(other.values[reward["flag_name"]])
+                    self.assertFalse(any(command in {"EventQueryIsAnyBottleEmpty", "EventQueryIsExistBottleTypeInPouch"}
+                                         for command, _ in other.trace))
+
+    def test_unrecognized_no_dupe_bottle_rewrites_are_rejected(self):
+        rewards = records()
+        item = next(name for name, row in ITEM_DATA.items()
+                    if row.get("bottle_item") == "BlueFire" and row.get("pouch_special") == "NotPushToPouch")
+        rewards[0].update(local_item=item, native_actor=ITEM_DATA[item]["actor"])
+        for wrong in ("actor", "content", "refusal", "success", "tail", "unhook", "name"):
+            flow = _flow(native_no_dupe_shop(self.before))
+            nodes = {event.name: event for event in flow.flowchart.events}
+            if wrong == "actor":
+                nodes["OOTRRNoDupeIs186_3"].data.params.data["Value"] = "UnreviewedBottle"
+            elif wrong == "content":
+                nodes["OOTRRNoDupeHas186_3"].data.params.data["BottleItem"] = 4
+            elif wrong == "refusal":
+                nodes["OOTRRNoDupeHas186_3"].data.cases[0] = make_index(nodes["Event240"])
+            elif wrong == "success":
+                nodes["OOTRRNoDupeHas186_3"].data.cases[1] = make_index(nodes["Event333"])
+            elif wrong == "tail":
+                nodes["OOTRRNoDupeIs186_10"].data.cases[1] = make_index(nodes["OOTRRNoDupeIs186_0"])
+            elif wrong == "unhook":
+                nodes["Event325"].data.cases[0] = make_index(nodes["Event240"])
+            else:
+                nodes["OOTRRNoDupeIs186_3"].name = "OOTRRNoDupeUnknown"
+            stream = io.BytesIO(); self.assertTrue(flow.write(stream))
+            with self.subTest(wrong=wrong), self.assertRaises(ValueError):
+                patch_shop_flow(stream.getvalue(), rewards, pouch_raw=native_flow())
 
     def test_real_resources_only_write_flow_and_rest_in_temporary_stage(self):
         game = Path(os.environ.get("OOTRR_ROMFS", ""))

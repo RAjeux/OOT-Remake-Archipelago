@@ -26,7 +26,7 @@ def _wasi_paths(command, paths):
     vanilla data instead. A real working copy avoids that fallback. /load
     remains the original loader namespace, including sibling size tables.
     """
-    if os.name != "nt" or command not in ("patch", "shops", "skulls", "sources", "network-flow-base", "localize") or len(paths) < 2:
+    if os.name != "nt" or command not in ("patch", "shops", "skulls", "sources", "network-flow-base", "localize", "features", "cosmetics") or len(paths) < 2:
         yield paths
         return
     mod = Path(paths[1]).resolve()
@@ -83,9 +83,19 @@ def run_engine(command, request, *paths):
         root = Path(temp)
         for file in ("engine.cjs", "engine.wasm"):
             (root / file).write_bytes(resources.files(__package__).joinpath(file).read_bytes())
-        proc = run_process([node, "--no-warnings", str(root / "engine.cjs"), str(root / "engine.wasm"),
-                               command, *map(str, paths)], input=json.dumps(request).encode(),
-                              capture_output=True, timeout=300)
+        arguments = [node, "--no-warnings", str(root / "engine.cjs"), str(root / "engine.wasm"), command, *map(str, paths)]
+        if command in ("features", "cosmetics") and len(paths) >= 2:
+            # Windows Node/WASI cannot enumerate directories. Supply only a
+            # private index of names, with the same read-only preopen bounds.
+            files = {}
+            for label, directory in zip(("game", "mod"), paths[:2]):
+                home = Path(directory)
+                files[label] = sorted(path.relative_to(home).as_posix()
+                                      for path in home.rglob("*") if path.is_file())
+            (root / "files.json").write_text(json.dumps(dict(schema=1, files=files)), encoding="utf-8")
+            arguments.append(str(root))
+        proc = run_process(arguments, input=json.dumps(request).encode(),
+                           capture_output=True, timeout=900 if command in ("features", "cosmetics") else 300)
         if proc.returncode:
             raise RuntimeError(proc.stderr.decode(errors="replace")[-3500:] or tr('The OOTRR engine failed.'))
         return proc.stdout.decode()

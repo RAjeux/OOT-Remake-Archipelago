@@ -326,14 +326,17 @@ class TradeRewardTests(unittest.TestCase):
                     metadata = ITEM_DATA[row["item"]]
                     positive = [params for action, params in run.trace
                                 if action == "EventTriggerAddOrRemovePouchContent" and params["Num"] > 0]
-                    special = (metadata["actor"] in AMMO_BAGS or metadata["mode"] == "generic" or metadata["kind"] == "TCGSmallKey" or is_cure(metadata)
+                    trap = metadata["mode"] == "trap"
+                    special = (trap or metadata["actor"] in AMMO_BAGS or metadata["mode"] == "generic" or metadata["kind"] == "TCGSmallKey" or is_cure(metadata)
                                or (metadata.get("bottle_item") and metadata.get("pouch_special") == "NotPushToPouch"))
                     from ootrr_triforce.native_presentations import STARTER_KITS
-                    kit = STARTER_KITS.get(metadata["actor"])
+                    kit = STARTER_KITS.get(metadata["actor"]) if not trap else None
                     self.assertEqual(len(positive), 0 if special else 3 if kit else 1)
                     if kit:
                         self.assertEqual([(params["Actor"], params["Num"]) for params in positive],
                                          [(kit[0][0], 1), (kit[1], kit[2]), (metadata["actor"], 1)])
+                    if trap:
+                        self.assertEqual(sum(action == "FixtureNativeIceTrap" for action, _ in run.trace), 1)
                     self.assertFalse(any(str(params.get("GameDataName", "")).startswith(CURSOR_PREFIX)
                                          for _, params in run.trace))
 

@@ -39,7 +39,8 @@ class LocalizationCatalogTests(unittest.TestCase):
         original = dict(ITEM_IDS)
         labels = item_names()
         self.assertEqual(set(labels), set(ITEM_IDS))
-        self.assertEqual(len(labels), 205)
+        self.assertEqual(len(labels), 206)
+        self.assertEqual(labels["Ice Trap"], {"en": "Ice Trap", "fr": "Piège de glace"})
         for canonical, texts in labels.items():
             with self.subTest(item=canonical):
                 self.assertEqual(texts["en"], canonical)

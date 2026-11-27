@@ -1,0 +1,67 @@
+[
+    {
+        "region_name": "Death Mountain",
+        "scene": "Death Mountain",
+        "hint": "DEATH_MOUNTAIN_TRAIL",
+        "locations": {
+            "DMT Chest": "can_blast_or_smash",
+            "DMT Freestanding PoH": "
+                is_adult and here(can_plant_bean and (plant_beans or has_explosives or Progressive_Strength_Upgrade))",
+            "DMT GS Bean Patch": "
+                can_plant_bugs and can_child_attack and
+                (has_explosives or Progressive_Strength_Upgrade or (logic_dmt_soil_gs and can_use(Boomerang)))",
+            "DMT GS Near Kak": "can_blast_or_smash",
+            "DMT GS Above Dodongos Cavern": "is_adult and (Megaton_Hammer or logic_trail_gs_lower)",
+            "Bean Plant Fairy": "
+                is_child and can_plant_bean and can_play(Song_of_Storms) and has_bottle and
+                (has_explosives or Progressive_Strength_Upgrade)"
+        },
+        "exits": {
+            "Kak Behind Gate": "True",
+            "Goron City": "True",
+            "Death Mountain Summit": "
+                here(can_blast_or_smash) or
+                (is_adult and (here(can_plant_bean and Progressive_Strength_Upgrade) or plant_beans)) or
+                (logic_dmt_climb_hovers and can_use(Hover_Boots))",
+            # The remake entrance needs a strength upgrade from a child (explosives alone do not open
+            # it); an adult gets in without one.
+            "Dodongos Cavern Beginning": "Progressive_Strength_Upgrade or is_adult",
+            "DMT Storms Grotto": "can_open_storm_grotto"
+        }
+    },
+    {
+        "region_name": "Death Mountain Summit",
+        "scene": "Death Mountain",
+        "hint": "DEATH_MOUNTAIN_TRAIL",
+        "events": {
+            "Prescription Access": "is_adult and (('Broken Sword Access' and not adult_trade_shuffle) or Broken_Sword)",
+            "Claim Check Given": "is_adult and guarantee_trade_path and 'Eyedrops Access' and not adult_trade_shuffle"
+        },
+        "locations": {
+            "DMT Biggoron": "is_adult and (Claim_Check or 'Claim Check Given')",
+            "DMT Trade Broken Sword": "'Prescription Access'",
+            "DMT Trade Eyedrops": "
+                is_adult and (guarantee_trade_path or adult_trade_shuffle) and
+                (('Eyedrops Access' and not adult_trade_shuffle) or (Eyedrops and disable_trade_revert))",
+            "DMT GS Falling Rocks Path": "is_adult and (Megaton_Hammer or logic_trail_gs_upper)",
+            "DMT Gossip Stone": "True",
+            "Gossip Stone Fairy": "can_summon_gossip_fairy and has_bottle",
+            "Bug Rock": "is_child and has_bottle"
+        },
+        "exits": {
+            "Death Mountain": "True",
+            "DMC Upper Local": "True",
+            "DMT Owl Flight": "is_child",
+            "DMT Cow Grotto": "here(can_blast_or_smash)",
+            "DMT Great Fairy Fountain": "here(can_blast_or_smash)"
+        }
+    },
+    {
+        "region_name": "DMT Owl Flight",
+        "scene": "Death Mountain",
+        "hint": "DEATH_MOUNTAIN_TRAIL",
+        "exits": {
+            "Kak Impas Rooftop": "True"
+        }
+    }
+]

@@ -1867,3 +1867,9 @@ for _name, _native in EXACT_BUNDLE_REWARDS.items():
     # native identities when verifying a source before replacing its reward.
     EXPECTED[_name] = list(dict.fromkeys([*EXPECTED[_name], _bundle["actor"]]))
 del _name, _native, _bundle
+
+# AP-only trap: the actor supplies a visual disguise, never a pouch effect.
+# Keep this append after all published item identities, including Master Sword.
+ITEM_DATA["Ice Trap"] = dict(actor="Item_Range_Bow", mode="trap", kind="Trap", quantity=1)
+ITEM_IDS["Ice Trap"] = 0x6F7100 + len(ITEM_IDS)
+EXPECTED["Ice Trap"] = ["Item_Range_Bow"]

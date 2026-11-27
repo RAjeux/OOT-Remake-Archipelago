@@ -39,6 +39,48 @@ def add_cursor(raw, token, baseline):
     return append_saved_index(raw,cursor_hash(token),baseline)
 
 
+def converted_chest_hashes(data):
+    """Only the six reviewed schema-2 frozen chests need new flat flags."""
+    if data.get("network_sources_schema") != 2:
+        return []
+    from .network_catalog import ADDITIONAL_SOURCES
+    selected = set(data.get("checks", ())) & set(data.get("additional_sources", ()))
+    return sorted({int(variant["actor"])
+                   for name in selected if name in ADDITIONAL_SOURCES
+                   and ADDITIONAL_SOURCES[name].get("native_route") == "frozen_chest"
+                   for variant in ADDITIONAL_SOURCES[name]["variants"]})
+
+
+def prepare_chest_flags(source, mod, data):
+    """Repair only converted-chest flags in an already prepared mod overlay.
+
+    This deliberately does not repeat cursor or receipt declarations. It is
+    safe to repeat and never writes the source RomFS or a player's save.
+    """
+    from .cursor_resource import register_chest_flags
+    from oot_rando.game.resource_allocations import grow_resources
+    hashes = converted_chest_hashes(data)
+    if not hashes:
+        return False
+    codec = Codec((source / "Pack/ZsDic.pack.zs").read_bytes())
+    def read(name):
+        target = mod / name
+        return (target if target.is_file() else source / name).read_bytes()
+    frame = read(GAME_DATA)
+    before = codec.decode(frame)
+    after = register_chest_flags(before, hashes)
+    if after == before:
+        return False
+    table = read(REST)
+    updated, _ = grow_resources(codec.decode(table), {GAME_DATA: max(len(after) - len(before), 0)})
+    encoded_data, encoded_table = codec.encode(after, frame), codec.encode(updated, table)
+    for name, content in ((REST, encoded_table), (GAME_DATA, encoded_data)):
+        target = mod / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        atomic(target, content)
+    return True
+
+
 def bind_romfs(source, mod, data, baseline):
     from oot_rando.game.resource_allocations import grow_resources
     codec = Codec((source / "Pack/ZsDic.pack.zs").read_bytes())
@@ -52,6 +94,10 @@ def bind_romfs(source, mod, data, baseline):
     frame=read(GAME_DATA)
     before=codec.decode(frame)
     after=add_cursor(before,data["token"],baseline)
+    chest_hashes = converted_chest_hashes(data)
+    if chest_hashes:
+        from .cursor_resource import register_chest_flags
+        after=register_chest_flags(after,chest_hashes)
     if data.get("shuffle_master_sword"):
         from .master_sword import LOCATION as MASTER_SWORD_LOCATION
         from .cursor_resource import append_saved_bool
@@ -60,7 +106,7 @@ def bind_romfs(source, mod, data, baseline):
         from .cursor_resource import append_saved_bool
         from .ap_shops import selected_shops
         selected=sorted(selected_shops(data["checks"], data))
-        if data.get("network_sources_schema")==1 and data.get("shop_check_mode")=="randomized_stock":
+        if data.get("network_sources_schema") in (1, 2) and data.get("shop_check_mode")=="randomized_stock":
             from .cursor_resource import append_saved_bools
             after=append_saved_bools(after,[SHOP_CHECKS[name]["flag"] for name in selected])
         else:
@@ -240,6 +286,12 @@ def runtime_cache_name(baseline):
     from importlib import resources
     bundle=resource_root()/"native/archipelago.dll"
     digest=hashlib.sha256(bundle.read_bytes())
+    # A new item can change the host receipt whitelist without changing the Go
+    # DLL. Hash bridge inputs explicitly so the old executable cannot be reused.
+    native = resource_root() / "native"
+    for helper in sorted(native.iterdir(), key=lambda path:path.name):
+        if helper.is_file() and helper.suffix in (".inc", ".h"):
+            digest.update(helper.name.encode("utf-8")); digest.update(helper.read_bytes())
     version=resource_root()/"VERSION"
     if getattr(sys, "frozen", False) and version.is_file():
         digest.update(version.read_bytes())

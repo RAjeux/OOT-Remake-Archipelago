@@ -13,7 +13,7 @@ sys.path.insert(0, str(ROOT / "client"))
 from ootrr_triforce.catalog import DEFAULT_SETTINGS, SHOP_CHECKS
 from ootrr_triforce.engine import run_engine
 from ootrr_triforce.settings import (FIXED_SETTINGS, OPTION_SPECS, default_options, engine_settings,
-                                     validate_options)
+                                     native_choice_key, validate_options)
 from ootrr_triforce.shop_pool import shop_checks
 
 
@@ -78,7 +78,8 @@ class NativeSettingsTests(unittest.TestCase):
         tree = ast.parse((ROOT / "apworld/ootrr_remake/options.py").read_text(encoding="utf-8"))
         functions = [node for node in tree.body if isinstance(node, ast.FunctionDef)
                      and node.name in {"option_values", "_normalize_inactive_options"}]
-        scope = dict(OPTION_SPECS=OPTION_SPECS, default_options=default_options, validate_options=validate_options)
+        scope = dict(OPTION_SPECS=OPTION_SPECS, default_options=default_options, validate_options=validate_options,
+                     native_choice_key=native_choice_key)
         exec(compile(ast.Module(body=functions, type_ignores=[]), "options.py", "exec"), scope)
         options = SimpleNamespace(shuffle_shops=SimpleNamespace(value=6, current_key="random_deals"))
         settings = engine_settings(scope["option_values"](options))

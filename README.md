@@ -2,6 +2,12 @@
 
 Play Ocarina of Time Remake in an Archipelago multiworld with a single Windows application. It prepares the mod, manages the connection and launches your compatible game host.
 
+**Development branch: 0.10.4-alpha.1.** The selective upstream integration adds
+current AP access rules, 17 physical sources and optional gameplay, cosmetic
+and difficulty controls. See [what is adapted and how it is validated](docs/UPSTREAM-INTEGRATION.md).
+The download below remains the published 0.10.3 release until a new candidate is
+published; new source/settings require a newly generated room.
+
 **[Download the Windows launcher · 0.10.3-alpha.1](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.3-alpha.1/OOT-Remake-Archipelago-0.10.3-alpha.1.exe)** · [Release page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.3-alpha.1) · [Installation en français](docs/INSTALLATION.fr.md)
 
 > **Use the native 0.10 release above.** The discontinued **0.11/0.12 Full-network experiment** has a higher number but a different player-file format. Its `.apootrr` files are not converted by this launcher. If you came from Full, export a fresh YAML with the current editor, generate a new room with the current APWorld and keep the old saves separate.

@@ -286,11 +286,14 @@ pub(super) fn source_map(d: &Data) -> Result<Sources> {
         let placement = placement_context(d, &world, &caution_plan, name, metadata);
         *metadata = metadata.clone().with("placement", placement);
     }
+    for (name, metadata) in super::additional_sources::catalog()? {
+        if sources.insert(name, metadata).is_some() { return Err("additional source collides with native catalogue".into()); }
+    }
     Ok(sources)
 }
 
 pub fn catalog() -> Result<Json> {
-    Ok(Json::obj().with("schema", 1_i64.into()).with("sources", Json::Obj(source_map(&Data::load()?)?.into_iter().collect())))
+    Ok(Json::obj().with("schema", 2_i64.into()).with("sources", Json::Obj(source_map(&Data::load()?)?.into_iter().collect())))
 }
 
 pub fn selected(seed: &SeedFile) -> Result<Json> {
@@ -357,7 +360,7 @@ mod tests {
     #[test]
     fn descriptors_cover_native_families_and_never_confuse_item_flags_with_checks() {
         let value = catalog().unwrap();
-        assert_eq!(value.get("schema").and_then(Json::as_i64), Some(1));
+        assert_eq!(value.get("schema").and_then(Json::as_i64), Some(2));
         let sources = value.get("sources").unwrap();
         for name in ["KF Midos Top Left Chest", "Kak Anju as Child", "Song from Impa", "ToT Reward from Rauru",
             "KF Links House Cow", "Market Bombchu Bowling First Prize", "Kak 100 Gold Skulltula Reward",

@@ -14,6 +14,11 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
 from ootrr_triforce.settings import AP_ONLY, BRIDGE_OPEN_ALIAS, ENGINE_EXTENSIONS, FIXED_SETTINGS, SPEC_BY_ID
+from ootrr_triforce.feature_settings import FEATURE_SPECS, LEGACY_DIFFICULTY_KEYS, QUARANTINED_REASONS
+
+# These choices are validated by the versioned feature adapter, while the
+# unmodified 0.8.1 constructor receives its compatible combined-reward alias.
+FEATURE_CHOICES = {"bridge": {"medallions"}, "shuffle_ganon_bosskey": {"lacs_medallions"}}
 
 SCHEMA = ROOT / "tests/fixtures/ootrr-settings-schema.json"
 SOURCE_SHUFFLES = frozenset({
@@ -82,7 +87,7 @@ def public_errors(schema):
             errors.append(f"Public and native value kinds differ: {key}")
         choices = {choice["id"] for choice in row.get("choices", [])}
         if public["kind"] in {"choice", "set"} and choices:
-            unknown = set(public["choices"]) - choices
+            unknown = set(public["choices"]) - choices - FEATURE_CHOICES.get(key, set())
             if unknown:
                 errors.append(f"Unknown native choices for {key}: {', '.join(sorted(unknown))}")
         if public["kind"] == "range":
@@ -110,6 +115,8 @@ def report(schema):
             row.update(ap_default=public["default"], ap_kind=public["kind"])
             if key == "bridge":
                 row["integration_choice_aliases"] = {"open": dict(BRIDGE_OPEN_ALIAS)}
+            if key in FEATURE_CHOICES:
+                row["versioned_feature_choices"] = sorted(FEATURE_CHOICES[key])
             if public.get("choices"):
                 row["ap_choices"] = list(public["choices"])
                 row["omitted_native_choices"] = sorted(set(row.get("native_choices", [])) - set(public["choices"]))
@@ -130,6 +137,10 @@ def report(schema):
             else:
                 status = "public"
                 reason = "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+                if key in LEGACY_DIFFICULTY_KEYS:
+                    status = "public_versioned_feature"
+                    reason = ("New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, "
+                              "then the current difficulty adapter applies the requested value once. Older player files retain their original build path.")
         elif native.get("unsupported"):
             status = "native_unavailable"
             reason = "OOTRR's native planner accepts only the default; the schema marks alternate values unsupported."
@@ -152,6 +163,8 @@ def report(schema):
                         for item in section.get("items", []) if "stub" in item]
     return {"basis": "OOTRR 0.8.1 native schema and the current AP settings catalogue",
             "native_setting_count": len(rows), "public_native_count": sum(row["id"] in SPEC_BY_ID for row in rows),
+            "versioned_features": [dict(spec) for spec in FEATURE_SPECS if spec["id"] not in {row["id"] for row in rows}],
+            "unavailable_features": dict(QUARANTINED_REASONS),
             "ap_only": sorted(AP_ONLY), "engine_extensions": ENGINE_EXTENSIONS,
             "status_counts": dict(sorted(counts.items())),
             "menu_placeholders": placeholders, "settings": rows, "errors": public_errors(schema)}
@@ -162,7 +175,7 @@ def markdown(result):
              "This comparison uses the **OOTRR remake 0.8.1** schema vendored by this project. It does not claim parity with every setting of the separate N64 OoT Randomizer or Ship of Harkinian. The remake's menu also contains placeholder controls which its own engine cannot apply.", "",
              f"The native schema has **{result['native_setting_count']} keys**. The current AP catalogue exposes **{result['public_native_count']} native keys**, the integration extension {', '.join('`' + key + '`' for key in result['engine_extensions'])}, and {', '.join('`' + key + '`' for key in result['ap_only'])}. Some native choice lists are deliberately restricted to implemented values.", "",
              "Archipelago rolls each Random? control independently. Before generation, unused sub-options are reset to their native defaults: for example, `scrub_price_fixed` is ignored unless enabled Scrub sales use `scrub_prices: fixed`. The same rule applies to inactive shop prices, merchant prices, goal counts and song colors. Active prices, goals and progression settings are preserved. Invalid combinations of active settings still report an error; choosing Random? for every option does not guarantee a valid combination.", "",
-             "New rooms export every supported source selected by the existing native randomizer as an AP check. Fixed and unselected rewards retain native handling. Known optional sources use conservative late requirements; unknown missing proofs are rejected. Access rules count the engine's actual logical items, not unrelated filler. Existing player files retain their generated catalogue and any older native-local rewards.", "",
+             "New rooms use the reviewed current remake access graph and export every selected supported source as an AP check. The portable constructor stays 0.8.1. Fixed native events remain in the graph, while shuffled donor rewards do not unlock their own locations. Seventeen additional reviewed physical sources have appended AP identities. Known optional sources use conservative late requirements; unknown missing proofs are rejected. Existing player files retain their generated catalogue and original build path. See [selective upstream integration](UPSTREAM-INTEGRATION.md).", "",
              "Explicit dungeon-item, song-only, end-of-dungeon and LACS choices are enforced on final AP placements, including foreign-game locations. Standard AP restrictive prefill reserves scarce categories without a general owner quota; compatible songs and dungeon rewards can cross between Zelda players. Built-in native junk-only guards remain enforced. User-defined exclusions, hint text and chest sizing still need their own final-placement adapters; Silver Rupee shuffling needs additional AP item IDs and receipt effects.", "",
              "The `adult_trade_shuffle` integration extension replaces the legacy additive trade control. It shuffles ten quest items and exports eleven trade checks, with independent inventory guards and native item delivery. It is implemented by this project's engine and client rather than the unmodified portable OOTRR 0.8.1 application. See [adult trade rewards](ADULT-TRADE-REWARDS.md). For local versus remote item ownership and the scope of the network pool, see [multiworld distribution](MULTIWORLD-DISTRIBUTION.md).", "",
              "The AP-only `shuffle_master_sword` extension adds the pedestal's sword grant to the network pool while retaining Rauru's separate reward and time travel. It defaults to false. Enabling it requires a new room and save; later AP spheres and victory conservatively require the actual sword. The native engine and settings protocol are retained. `shops_always_open` separately opens the eight item shops and Mask Shop at either time of day, retaining quest locks and minigame hours. See [Master Sword shuffle](MASTER-SWORD.md).", "",
@@ -178,6 +191,14 @@ def markdown(result):
         if row.get("integration_choice_aliases"):
             detail += " The integration's `open` choice uses `bridge: dungeons` with `bridge_rewards: 0`; the bridge opens on approach without requiring dungeon rewards."
         lines.append(f"| `{row['id']}` | `{row['status']}` | {detail} |")
+    lines += ["", "## Versioned additions", "",
+              "These controls belong to the AP feature adapter, not the portable 0.8.1 settings string. English and French help is available in the YAML editor. The existing difficulty controls above also use this adapter in new rooms, with neutral inputs to the constructor so scaling is applied only once.", "",
+              "| YAML key | Default | Effect |", "| --- | --- | --- |"]
+    for spec in result["versioned_features"]:
+        default = json.dumps(spec["default"], ensure_ascii=False)
+        lines.append(f"| `{spec['id']}` | `{default}` | {spec['description']} |")
+    lines += ["", "Unavailable additions are deliberately omitted from the editor:", ""]
+    lines.extend(f"- `{key}`: {reason}" for key, reason in result["unavailable_features"].items())
     lines += ["", "## Native menu placeholders", "",
               "These controls appear as unavailable placeholders in OOTRR itself; listing them in a YAML would not add their engine implementation.", ""]
     lines.extend(f"- {row['label']} ({row['page']} / {row['section']})." for row in result["menu_placeholders"])

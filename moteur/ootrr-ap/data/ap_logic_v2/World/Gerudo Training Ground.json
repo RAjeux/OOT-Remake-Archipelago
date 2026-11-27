@@ -1,0 +1,193 @@
+# Checked against the remake actors (Banc/GerudoTrainingGround) and the Trophy Tom walkthrough
+# (docs/dungeon-logic/gerudo-training-ground.md). Eye switches take the Hookshot as well as arrows
+# in the remake. The Like Like room is entered from the Wolfos room (silver block, then an
+# invisible eye switch), not from the eye statue ledge. The Beamos falls to the Hammer.
+[
+    {
+        "region_name": "Gerudo Training Ground Lobby",
+        "dungeon": "Gerudo Training Ground",
+        "locations": {
+            # The remake left chest is invisible (Obj_TBox_GlassTruth); its N64 name is unpaired.
+            "Gerudo Training Ground Lobby Left Chest": "logic_lens_gtg or can_use(Lens_of_Truth)",
+            # Falls when the eye switch above the far door is hit (Hookshot in the video).
+            "Gerudo Training Ground Lobby Right Chest": "
+                can_use(Bow) or can_use(Slingshot) or can_use(Hookshot)",
+            "Gerudo Training Ground Stalfos Chest": "is_adult or Kokiri_Sword",
+            # The chest appears once the Dinolfos and the Beamos fall; the Hammer breaks the Beamos.
+            "Gerudo Training Ground Beamos Chest": "can_blast_or_smash and (is_adult or Kokiri_Sword)",
+            "Gerudo Training Ground Hidden Ceiling Chest": "
+                (Small_Key_Gerudo_Training_Ground, 3) and (logic_lens_gtg or can_use(Lens_of_Truth))",
+            "Gerudo Training Ground Maze Path First Chest": "(Small_Key_Gerudo_Training_Ground, 4)",
+            "Gerudo Training Ground Maze Path Second Chest": "(Small_Key_Gerudo_Training_Ground, 6)",
+            "Gerudo Training Ground Maze Path Third Chest": "(Small_Key_Gerudo_Training_Ground, 7)",
+            "Gerudo Training Ground Maze Path Final Chest": "(Small_Key_Gerudo_Training_Ground, 9)",
+            # In the Beamos room, shoot the Gerudo symbol above the door to the lava room.
+            "Wall Fairy": "has_bottle and can_use(Bow)",
+            "Gerudo Training Ground Beamos Wonderitem": "can_use(Bow)"
+        },
+        "exits": {
+            "Gerudo Fortress": "True",
+            "Gerudo Training Ground Lava Room Front": "
+                here(can_blast_or_smash and (is_adult or Kokiri_Sword))",
+            "Gerudo Training Ground Central Maze Right": "(Small_Key_Gerudo_Training_Ground, 9)",
+            "Gerudo Training Ground Boulder Room": "is_adult or Kokiri_Sword",
+            "Farores Wind Warp": "can_use(Farores_Wind)"
+        }
+    },
+    {
+        "region_name": "Gerudo Training Ground Lava Room Front",
+        "dungeon": "Gerudo Training Ground",
+        "locations": {
+            "Gerudo Training Ground Lava Room Silver Rupee Front Left": "True",
+            "Gerudo Training Ground Lava Room Silver Rupee Front Right": "True",
+            "Gerudo Training Ground Lava Room Silver Rupee Flame Circle": "
+                is_child or can_play(Song_of_Time) or Hover_Boots"
+        },
+        "exits": {
+            "Gerudo Training Ground Central Maze Right": "is_child or can_play(Song_of_Time)",
+            "Gerudo Training Ground Lava Room Back": "can_use(Hover_Boots)",
+            "Gerudo Training Ground Hammer Room": "can_use(Longshot)",
+            "Gerudo Training Ground Water Room": "(Silver_Rupee_Gerudo_Training_Ground_Lava, 5)"
+        }
+    },
+    {
+        "region_name": "Gerudo Training Ground Lava Room Back",
+        "dungeon": "Gerudo Training Ground",
+        "locations": {
+            "Gerudo Training Ground Lava Room Silver Rupee Center Right": "True"
+        },
+        "exits": {
+            "Gerudo Training Ground Central Maze Right": "can_play(Song_of_Time)",
+            "Gerudo Training Ground Lava Room Front": "can_use(Hover_Boots) or can_use(Hookshot)",
+            "Gerudo Training Ground Hammer Room": "can_use(Hookshot)"
+        }
+    },
+    {
+        "region_name": "Gerudo Training Ground Water Room",
+        "dungeon": "Gerudo Training Ground",
+        "locations": {
+            "Gerudo Training Ground Underwater Silver Rupee Chest": "
+                (Silver_Rupee_Gerudo_Training_Ground_Water, 5)",
+            "Gerudo Training Ground Underwater Silver Rupee Top": "
+                can_play(Song_of_Time) and
+                (can_use(Iron_Boots) or (logic_gtg_underwater_highest and (Progressive_Scale, 2))) and
+                (logic_fewer_tunic_requirements or can_use(Zora_Tunic))"
+        },
+        "exits": {
+            "Gerudo Training Ground Underwater": "
+                can_play(Song_of_Time) and can_use(Iron_Boots) and
+                (logic_fewer_tunic_requirements or can_use(Zora_Tunic))"
+        }
+    },
+    {
+        "region_name": "Gerudo Training Ground Underwater",
+        "dungeon": "Gerudo Training Ground",
+        "locations": {
+            "Gerudo Training Ground Underwater Silver Rupee Bottom Center": "True",
+            "Gerudo Training Ground Underwater Silver Rupee Bottom Back Left": "True",
+            "Gerudo Training Ground Underwater Silver Rupee Middle": "True",
+            "Gerudo Training Ground Underwater Silver Rupee Bottom Front Right": "True"
+        }
+    },
+    {
+        "region_name": "Gerudo Training Ground Central Maze Right",
+        "dungeon": "Gerudo Training Ground",
+        "locations": {
+            "Gerudo Training Ground Maze Right Central Chest": "True",
+            "Gerudo Training Ground Maze Right Side Chest": "True",
+            "Gerudo Training Ground Freestanding Key": "True"
+        },
+        "exits": {
+            "Gerudo Training Ground Lava Room Front": "True",
+            "Gerudo Training Ground Lava Room Back": "True"
+        }
+    },
+    {
+        "region_name": "Gerudo Training Ground Boulder Room",
+        "dungeon": "Gerudo Training Ground",
+        "locations": {
+            "Gerudo Training Ground Boulder Room Silver Rupee Bottom Right": "True",
+            "Gerudo Training Ground Boulder Room Silver Rupee Bottom Left": "True",
+            "Gerudo Training Ground Boulder Room Silver Rupee Ledge": "True",
+            "Gerudo Training Ground Boulder Room Silver Rupee Top Left": "True",
+            "Gerudo Training Ground Boulder Room Silver Rupee Ceiling": "
+                can_use(Hookshot) or logic_gtg_without_hookshot"
+        },
+        "exits": {
+            "Gerudo Training Ground Heavy Block Room": "
+                (Silver_Rupee_Gerudo_Training_Ground_Slopes, 5) and
+                (can_use(Hookshot) or logic_gtg_flame_wall)"
+        }
+    },
+    {
+        "region_name": "Gerudo Training Ground Heavy Block Room",
+        "dungeon": "Gerudo Training Ground",
+        "locations": {
+            "Gerudo Training Ground Before Heavy Block Chest": "True"
+        },
+        "exits": {
+            # A Hookshot target pulls Link through a fake wall to the hallway above. The Lens is
+            # not needed in game, but logic always asks for it unless the trick is on.
+            "Gerudo Training Ground Eye Statue Upper": "
+                (logic_lens_gtg or can_use(Lens_of_Truth)) and
+                (can_use(Hookshot) or (logic_gtg_fake_wall and can_use(Hover_Boots)))",
+            # The silver block, then the invisible eye switch over the shutter (Bow or Hookshot).
+            "Gerudo Training Ground Like Like Room": "
+                is_adult and Silver_Gauntlets and (logic_lens_gtg or can_use(Lens_of_Truth)) and
+                (can_use(Bow) or can_use(Hookshot))"
+        }
+    },
+    {
+        "region_name": "Gerudo Training Ground Eye Statue Upper",
+        "dungeon": "Gerudo Training Ground",
+        "locations": {
+            "Gerudo Training Ground Near Scarecrow Chest": "Bow",
+            "Gerudo Training Ground Eye Statue Wonderitem": "can_use(Hover_Boots) or logic_gtg_eye_statue_wonderitem"
+        },
+        "exits": {
+            "Gerudo Training Ground Eye Statue Lower": "True"
+        }
+    },
+    {
+        "region_name": "Gerudo Training Ground Like Like Room",
+        "dungeon": "Gerudo Training Ground",
+        "locations": {
+            # Falls when the eye switch is hit (Longshot in the video).
+            "Gerudo Training Ground Heavy Block First Chest": "
+                can_use(Bow) or can_use(Slingshot) or can_use(Hookshot)",
+            "Gerudo Training Ground Heavy Block Second Chest": "True",
+            # Invisible chest (Obj_TBox_GlassTruth).
+            "Gerudo Training Ground Heavy Block Third Chest": "logic_lens_gtg or can_use(Lens_of_Truth)",
+            "Gerudo Training Ground Heavy Block Fourth Chest": "True",
+            # Behind a cracked wall.
+            "Gerudo Training Ground Heavy Block Fifth Chest": "can_blast_or_smash"
+        }
+    },
+    {
+        "region_name": "Gerudo Training Ground Eye Statue Lower",
+        "dungeon": "Gerudo Training Ground",
+        "locations": {
+            "Gerudo Training Ground Eye Statue Chest": "Bow"
+        },
+        "exits": {
+            "Gerudo Training Ground Hammer Room": "True"
+        }
+    },
+    {
+        "region_name": "Gerudo Training Ground Hammer Room",
+        "dungeon": "Gerudo Training Ground",
+        "locations": {
+            # The remake chest appears among Hammer pillars; its N64 name is unpaired.
+            "Gerudo Training Ground Hammer Room Clear Chest": "Megaton_Hammer",
+            "Gerudo Training Ground Hammer Room Switch Chest": "Megaton_Hammer",
+            "Gerudo Training Ground Lava Room Silver Rupee Hookshot Target": "Hookshot",
+            "Gerudo Training Ground Hammer Room Wonderitem": "can_use(Bow)"
+        },
+        "exits": {
+            "Gerudo Training Ground Lava Room Back": "True",
+            # The eye switch behind the Hammer pillars opens the door to the statue room.
+            "Gerudo Training Ground Eye Statue Lower": "
+                Megaton_Hammer and (can_use(Bow) or can_use(Hookshot))"
+        }
+    }
+]

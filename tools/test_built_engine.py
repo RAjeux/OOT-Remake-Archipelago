@@ -41,7 +41,7 @@ def main():
         # globally: the trusted settings and source catalogue stay unchanged.
         with patch.object(engine, "resources", SimpleNamespace(files=lambda _package: resources)), \
                 patch.dict(os.environ, {"OOTRR_NODE": str(node)}):
-            suite = unittest.defaultTestLoader.loadTestsFromNames(("test_settings_engine", "test_network_catalog"))
+            suite = unittest.defaultTestLoader.loadTestsFromNames(("test_settings_engine", "test_network_catalog", "test_access_logic_engine"))
             result = unittest.TextTestRunner(verbosity=2).run(suite)
     assert hashlib.sha256(packaged.read_bytes()).hexdigest() == before, "The packaged engine must remain untouched."
     print("Built engine SHA-256:", hashlib.sha256(selected.read_bytes()).hexdigest())

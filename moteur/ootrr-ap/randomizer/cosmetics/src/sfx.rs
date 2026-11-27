@@ -85,21 +85,21 @@ pub fn eligible(name: &str, head: &[u8], bytes: u64) -> Option<Cand> {
 
 pub fn scan(dir: &P) -> Res<Vec<Cand>> {
     let mut out: Vec<Cand> = Vec::new();
-    for e in fs::read_dir(dir)? {
-        let e = e?;
-        let file: String = e.file_name().to_string_lossy().to_string();
+    for file in crate::romfs::list_files(dir, "")? {
+        if file.contains('/') { continue; }
         let Some(stem) = file.strip_suffix(".bwav") else {
             continue;
         };
         if !stem.starts_with("SE_") {
             continue;
         }
-        let bytes: u64 = e.metadata()?.len();
+        let path = dir.join(&file);
+        let bytes: u64 = fs::metadata(&path)?.len();
         if bytes > MAX_BYTES {
             continue;
         }
         let mut head: Vec<u8> = vec![0; 0x50];
-        let mut f: fs::File = fs::File::open(e.path())?;
+        let mut f: fs::File = fs::File::open(path)?;
         if f.read_exact(&mut head).is_err() {
             continue;
         }
@@ -330,7 +330,8 @@ pub fn apply(mod_root: &P, romfs: &P, m: Sfx, seed: &str) -> Res<Vec<String>> {
     let src: PB = romfs.join(STREAM);
     let mut cands: Vec<Cand> = scan(&src)?;
     let want: BM<u32, &Cand> = cands.iter().map(|c| (rsizetable::hash(&c.name), c)).collect();
-    let streamed: BS<String> = fs::read_dir(&src)?.filter_map(|e| e.ok()?.file_name().to_string_lossy().strip_suffix(".bwav").map(|s| s.to_string())).collect();
+    let streamed: BS<String> = crate::romfs::list_files(&src, "")?.into_iter()
+        .filter(|name| !name.contains('/')).filter_map(|name| name.strip_suffix(".bwav").map(str::to_string)).collect();
     let mut bank: Bank = Bank::default();
     let mut sh: Shorts = Shorts::default();
     let banks: Vec<String> = rf.list(RES)?.into_iter().filter(|r| r.ends_with(".bars.zs")).collect();

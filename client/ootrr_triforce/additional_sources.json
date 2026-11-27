@@ -1,0 +1,399 @@
+{
+  "schema": 2,
+  "revision": "4fa6e5a6da839b4766bcedafb718c241a25bdd77",
+  "sources": {
+    "Fire Temple Big Lava Room Lower Open Door Chest": {
+      "name": "Fire Temple Big Lava Room Lower Open Door Chest",
+      "kind": "chest",
+      "native_kind": "chest",
+      "area": "Fire Temple",
+      "variants": [
+        {
+          "file": "Banc/FireTemple/FireTemple_Static.bcett.byml.zs",
+          "actor": "5634724236470386190",
+          "via": "drop",
+          "expected_actor": "Item_Dungeon_SmallKey"
+        }
+      ],
+      "flow_edits": [],
+      "collection": "chest_reward",
+      "placement": {
+        "dungeon": "Fire Temple",
+        "region_group": "fire",
+        "junk_only": false
+      },
+      "native_route": "additional_native_source"
+    },
+    "Fire Temple Boulder Maze Lower Chest": {
+      "name": "Fire Temple Boulder Maze Lower Chest",
+      "kind": "chest",
+      "native_kind": "chest",
+      "area": "Fire Temple",
+      "variants": [
+        {
+          "file": "Banc/FireTemple/FireTemple_Static.bcett.byml.zs",
+          "actor": "12567412825200613393",
+          "via": "drop",
+          "expected_actor": "Item_Dungeon_SmallKey"
+        }
+      ],
+      "flow_edits": [],
+      "collection": "chest_reward",
+      "placement": {
+        "dungeon": "Fire Temple",
+        "region_group": "fire",
+        "junk_only": false
+      },
+      "native_route": "additional_native_source"
+    },
+    "Fire Temple Boulder Maze Side Room Chest": {
+      "name": "Fire Temple Boulder Maze Side Room Chest",
+      "kind": "chest",
+      "native_kind": "chest",
+      "area": "Fire Temple",
+      "variants": [
+        {
+          "file": "Banc/FireTemple/FireTemple_Dynamic.bcett.byml.zs",
+          "actor": "3688520809244472975",
+          "via": "drop",
+          "expected_actor": "Item_Dungeon_Map"
+        }
+      ],
+      "flow_edits": [],
+      "collection": "chest_reward",
+      "placement": {
+        "dungeon": "Fire Temple",
+        "region_group": "fire",
+        "junk_only": false
+      },
+      "native_route": "additional_native_source"
+    },
+    "Fire Temple Compass Chest": {
+      "name": "Fire Temple Compass Chest",
+      "kind": "chest",
+      "native_kind": "chest",
+      "area": "Fire Temple",
+      "variants": [
+        {
+          "file": "Banc/FireTemple/FireTemple_Static.bcett.byml.zs",
+          "actor": "12945617941305968586",
+          "via": "drop",
+          "expected_actor": "Item_Dungeon_SmallKey"
+        }
+      ],
+      "flow_edits": [],
+      "collection": "chest_reward",
+      "placement": {
+        "dungeon": "Fire Temple",
+        "region_group": "fire",
+        "junk_only": false
+      },
+      "native_route": "additional_native_source"
+    },
+    "Fire Temple Near Boss Chest": {
+      "name": "Fire Temple Near Boss Chest",
+      "kind": "chest",
+      "native_kind": "chest",
+      "area": "Fire Temple",
+      "variants": [
+        {
+          "file": "Banc/FireTemple/FireTemple_Static.bcett.byml.zs",
+          "actor": "3949488292768750868",
+          "via": "drop",
+          "expected_actor": "Item_Dungeon_SmallKey"
+        }
+      ],
+      "flow_edits": [],
+      "collection": "chest_reward",
+      "placement": {
+        "dungeon": "Fire Temple",
+        "region_group": "fire",
+        "junk_only": false
+      },
+      "native_route": "additional_native_source"
+    },
+    "Forest Temple Falling Ceiling Room Chest": {
+      "name": "Forest Temple Falling Ceiling Room Chest",
+      "kind": "chest",
+      "native_kind": "chest",
+      "area": "Forest Temple",
+      "variants": [
+        {
+          "file": "Banc/ForestTemple/ForestTemple_Dynamic.bcett.byml.zs",
+          "actor": "15117164073907033527",
+          "via": "drop",
+          "expected_actor": "Item_BombBundle_Small"
+        }
+      ],
+      "flow_edits": [],
+      "collection": "chest_reward",
+      "placement": {
+        "dungeon": "Forest Temple",
+        "region_group": "forest",
+        "junk_only": false
+      },
+      "native_route": "additional_native_source"
+    },
+    "Ganons Castle Light Trial First Right Chest": {
+      "name": "Ganons Castle Light Trial First Right Chest",
+      "kind": "chest",
+      "native_kind": "chest",
+      "area": "Ganon's Castle",
+      "variants": [
+        {
+          "file": "Banc/InsideGanonCastle/InsideGanonCastle_Static.bcett.byml.zs",
+          "actor": "5732331492537302993",
+          "via": "drop",
+          "expected_actor": "Obj_TBox_A_04"
+        }
+      ],
+      "flow_edits": [],
+      "collection": "chest_reward",
+      "placement": {
+        "dungeon": "Ganons Castle",
+        "region_group": "castle",
+        "junk_only": false
+      },
+      "native_route": "frozen_chest"
+    },
+    "Ganons Castle Light Trial Second Left Chest": {
+      "name": "Ganons Castle Light Trial Second Left Chest",
+      "kind": "chest",
+      "native_kind": "chest",
+      "area": "Ganon's Castle",
+      "variants": [
+        {
+          "file": "Banc/InsideGanonCastle/InsideGanonCastle_Static.bcett.byml.zs",
+          "actor": "17726220643880970879",
+          "via": "drop",
+          "expected_actor": "Obj_TBox_A_04"
+        }
+      ],
+      "flow_edits": [],
+      "collection": "chest_reward",
+      "placement": {
+        "dungeon": "Ganons Castle",
+        "region_group": "castle",
+        "junk_only": false
+      },
+      "native_route": "frozen_chest"
+    },
+    "Ganons Castle Light Trial Third Right Chest": {
+      "name": "Ganons Castle Light Trial Third Right Chest",
+      "kind": "chest",
+      "native_kind": "chest",
+      "area": "Ganon's Castle",
+      "variants": [
+        {
+          "file": "Banc/InsideGanonCastle/InsideGanonCastle_Static.bcett.byml.zs",
+          "actor": "11406545451127340703",
+          "via": "drop",
+          "expected_actor": "Obj_TBox_A_04"
+        }
+      ],
+      "flow_edits": [],
+      "collection": "chest_reward",
+      "placement": {
+        "dungeon": "Ganons Castle",
+        "region_group": "castle",
+        "junk_only": false
+      },
+      "native_route": "frozen_chest"
+    },
+    "Ganons Castle Water Trial Left Chest": {
+      "name": "Ganons Castle Water Trial Left Chest",
+      "kind": "chest",
+      "native_kind": "chest",
+      "area": "Ganon's Castle",
+      "variants": [
+        {
+          "file": "Banc/InsideGanonCastle/InsideGanonCastle_Static.bcett.byml.zs",
+          "actor": "3253191540272036329",
+          "via": "drop",
+          "expected_actor": "Obj_TBox_A_04"
+        }
+      ],
+      "flow_edits": [],
+      "collection": "chest_reward",
+      "placement": {
+        "dungeon": "Ganons Castle",
+        "region_group": "castle",
+        "junk_only": false
+      },
+      "native_route": "frozen_chest"
+    },
+    "Gerudo Training Ground Hammer Room Clear Chest": {
+      "name": "Gerudo Training Ground Hammer Room Clear Chest",
+      "kind": "chest",
+      "native_kind": "chest",
+      "area": "Gerudo Training Ground",
+      "variants": [
+        {
+          "file": "Banc/GerudoTrainingGround/GerudoTrainingGround_Static.bcett.byml.zs",
+          "actor": "4961588221597286817",
+          "via": "drop",
+          "expected_actor": "TBox_ArrowBundle_Medium"
+        }
+      ],
+      "flow_edits": [],
+      "collection": "chest_reward",
+      "placement": {
+        "dungeon": "Gerudo Training Ground",
+        "region_group": "gerudo",
+        "junk_only": false
+      },
+      "native_route": "additional_native_source"
+    },
+    "Gerudo Training Ground Heavy Block Fourth Chest": {
+      "name": "Gerudo Training Ground Heavy Block Fourth Chest",
+      "kind": "chest",
+      "native_kind": "chest",
+      "area": "Gerudo Training Ground",
+      "variants": [
+        {
+          "file": "Banc/GerudoTrainingGround/GerudoTrainingGround_Static.bcett.byml.zs",
+          "actor": "7881496104962067240",
+          "via": "drop",
+          "expected_actor": "Obj_TBox_A_04"
+        }
+      ],
+      "flow_edits": [],
+      "collection": "chest_reward",
+      "placement": {
+        "dungeon": "Gerudo Training Ground",
+        "region_group": "gerudo",
+        "junk_only": false
+      },
+      "native_route": "frozen_chest"
+    },
+    "Gerudo Training Ground Lobby Left Chest": {
+      "name": "Gerudo Training Ground Lobby Left Chest",
+      "kind": "chest",
+      "native_kind": "chest",
+      "area": "Gerudo Training Ground",
+      "variants": [
+        {
+          "file": "Banc/GerudoTrainingGround/GerudoTrainingGround_Dynamic.bcett.byml.zs",
+          "actor": "11182647876438515984",
+          "via": "drop",
+          "expected_actor": "Tbox_MagicJar_Large"
+        }
+      ],
+      "flow_edits": [],
+      "collection": "chest_reward",
+      "placement": {
+        "dungeon": "Gerudo Training Ground",
+        "region_group": "gerudo",
+        "junk_only": false
+      },
+      "native_route": "additional_native_source"
+    },
+    "LH Underwater Item": {
+      "name": "LH Underwater Item",
+      "kind": "pickup",
+      "native_kind": "freestanding",
+      "area": "Lake Hylia",
+      "variants": [
+        {
+          "file": "Banc/HyruleField/HyruleField_Child_Static.bcett.byml.zs",
+          "actor": "474136620438465634",
+          "via": "actor",
+          "expected_actor": "Obj_Bottle_Letter"
+        }
+      ],
+      "flow_edits": [],
+      "collection": "pickup",
+      "placement": {
+        "dungeon": null,
+        "region_group": "lake",
+        "junk_only": false
+      },
+      "native_route": "additional_native_source"
+    },
+    "Spirit Temple First Mirror Left Chest": {
+      "name": "Spirit Temple First Mirror Left Chest",
+      "kind": "chest",
+      "native_kind": "chest",
+      "area": "Spirit Temple",
+      "variants": [
+        {
+          "file": "Banc/SpiritTemple/SpiritTemple_Static.bcett.byml.zs",
+          "actor": "876108895472176682",
+          "via": "drop",
+          "expected_actor": "Obj_TBox_A_04"
+        }
+      ],
+      "flow_edits": [],
+      "collection": "chest_reward",
+      "placement": {
+        "dungeon": "Spirit Temple",
+        "region_group": "spirit",
+        "junk_only": false
+      },
+      "native_route": "frozen_chest"
+    },
+    "Water Temple Central Bow Target Chest": {
+      "name": "Water Temple Central Bow Target Chest",
+      "kind": "chest",
+      "native_kind": "chest",
+      "area": "Water Temple",
+      "variants": [
+        {
+          "file": "Banc/WaterTemple/WaterTemple_Static.bcett.byml.zs",
+          "actor": "3693930347660122883",
+          "via": "drop",
+          "expected_actor": "Item_Dungeon_SmallKey"
+        }
+      ],
+      "flow_edits": [],
+      "collection": "chest_reward",
+      "placement": {
+        "dungeon": "Water Temple",
+        "region_group": "water",
+        "junk_only": false
+      },
+      "native_route": "additional_native_source"
+    },
+    "Water Temple Dragon Chest": {
+      "name": "Water Temple Dragon Chest",
+      "kind": "chest",
+      "native_kind": "chest",
+      "area": "Water Temple",
+      "variants": [
+        {
+          "file": "Banc/WaterTemple/WaterTemple_Static.bcett.byml.zs",
+          "actor": "2503861086004941173",
+          "via": "drop",
+          "expected_actor": "Item_Dungeon_SmallKey"
+        }
+      ],
+      "flow_edits": [],
+      "collection": "chest_reward",
+      "placement": {
+        "dungeon": "Water Temple",
+        "region_group": "water",
+        "junk_only": false
+      },
+      "native_route": "additional_native_source"
+    }
+  },
+  "rewards": {
+    "Fire Temple Big Lava Room Lower Open Door Chest": "Small Key (Fire Temple)",
+    "Fire Temple Boulder Maze Lower Chest": "Small Key (Fire Temple)",
+    "Fire Temple Boulder Maze Side Room Chest": "Compass (Fire Temple)",
+    "Fire Temple Compass Chest": "Small Key (Fire Temple)",
+    "Fire Temple Near Boss Chest": "Small Key (Fire Temple)",
+    "Forest Temple Falling Ceiling Room Chest": "Bombs (5)",
+    "Ganons Castle Light Trial First Right Chest": "Rupees (5)",
+    "Ganons Castle Light Trial Second Left Chest": "Rupees (5)",
+    "Ganons Castle Light Trial Third Right Chest": "Rupees (5)",
+    "Ganons Castle Water Trial Left Chest": "Rupees (5)",
+    "Gerudo Training Ground Hammer Room Clear Chest": "Arrows (10)",
+    "Gerudo Training Ground Heavy Block Fourth Chest": "Rupees (5)",
+    "Gerudo Training Ground Lobby Left Chest": "Rupees (5)",
+    "LH Underwater Item": "Rutos Letter",
+    "Spirit Temple First Mirror Left Chest": "Rupees (5)",
+    "Water Temple Central Bow Target Chest": "Small Key (Water Temple)",
+    "Water Temple Dragon Chest": "Small Key (Water Temple)"
+  }
+}

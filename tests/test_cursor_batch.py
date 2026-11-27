@@ -12,7 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
 from oot_rando.formats import byml_codec as byml
 from ootrr_triforce.cursor_resource import (append_saved_bool, append_saved_bools, append_saved_index,
-                                            append_transient_index, append_transient_string64)
+                                            append_transient_index, append_transient_string64,
+                                            register_chest_flags)
 
 
 def fixture(endian="<", ordered=True):
@@ -130,6 +131,172 @@ class BatchBoolTests(unittest.TestCase):
             result = append_saved_bools(raw, [100, 101], True)
             rows = byml.load(result)["root"]["Data"]["Bool"]
             self.assertTrue(all(row["DefaultValue"] is True for row in rows if row["Hash"] in (100, 101)))
+
+
+class ConvertedChestFlagTests(unittest.TestCase):
+    def fixture(self, endian="<"):
+        from ootrr_triforce.network_catalog import ADDITIONAL_SOURCES, murmur3
+        actors = sorted({int(variant["actor"]) for source in ADDITIONAL_SOURCES.values()
+                         if source.get("native_route") == "frozen_chest" for variant in source["variants"]})
+        self.assertEqual(len(actors), 6)
+        doc = byml.load(fixture(endian))
+        data = doc["root"]["Data"]
+        template = data["Bool"][0]
+        data["Bool"].extend(dict(template, Hash=byml.U32(100 + index), ResetTypeValue=24)
+                            for index in range(len(actors)))
+        data["Struct"] = [
+            {"Hash": byml.U32(murmur3("IsTreasureBoxOpen")), "DefaultValue": [
+                {"Hash": byml.U32(murmur3(str(actor))), "Value": byml.U32(100 + index)}
+                for index, actor in enumerate(actors)]},
+            {"Hash": byml.U32(murmur3("Untouched.Native.Struct")), "DefaultValue": [
+                {"Hash": byml.U32(7), "Value": byml.U32(100)}]},
+        ]
+        # The BYML writer interns equal arrays/maps. This native struct must
+        # keep the original spare targets even when its bytes alias the chest
+        # members array and all six member dictionaries.
+        data["Struct"].append({"Hash": byml.U32(murmur3("Shared.Native.Struct")),
+                               "DefaultValue": data["Struct"][0]["DefaultValue"]})
+        return doc, actors
+
+    def members(self, doc):
+        from ootrr_triforce.network_catalog import murmur3
+        return next(row["DefaultValue"] for row in doc["root"]["Data"]["Struct"]
+                    if row["Hash"] == murmur3("IsTreasureBoxOpen"))
+
+    def test_six_chests_have_the_same_qualified_bool_and_struct_key_in_both_byte_orders(self):
+        from ootrr_triforce.network_catalog import murmur3
+        for endian in ("<", ">"):
+            doc, actors = self.fixture(endian)
+            before = byml.load(byml.dump(doc))
+            result = register_chest_flags(byml.dump(doc), actors)
+            after = byml.load(result)
+            rows = {int(row["Hash"]): row for row in after["root"]["Data"]["Bool"]}
+            members = {int(row["Hash"]): row["Value"] for row in self.members(after)}
+            for actor in actors:
+                qualified = murmur3("IsTreasureBoxOpen." + str(actor))
+                self.assertEqual(members[murmur3(str(actor))], qualified)
+                self.assertEqual(rows[qualified], {"Hash": qualified, "DefaultValue": False,
+                                                   "SaveFileIndex": 0, "ResetTypeValue": 8})
+            self.assertEqual(after["root"]["MetaData"]["SaveDataSize"], [148, 56])
+            self.assertEqual(after["root"]["MetaData"]["SaveDataOffsetPos"], [148, 56])
+            self.assertEqual(after["root"]["MetaData"]["AllDataSaveSize"], 178)
+            for row in before["root"]["Data"]["Bool"]:
+                self.assertEqual(rows[row["Hash"]], row, "Spare/native Bool definitions are never reused or changed.")
+
+    def test_only_the_member_array_pointer_changes_and_shared_native_nodes_remain_intact(self):
+        from ootrr_triforce.network_catalog import murmur3
+        for endian in ("<", ">"):
+            doc, actors = self.fixture(endian)
+            raw = byml.dump(doc)
+            plain_append = append_saved_bools(raw, [murmur3("IsTreasureBoxOpen." + str(actor)) for actor in actors])
+            actual = register_chest_flags(raw, actors)
+            differences = [index for index in range(len(plain_append)) if actual[index] != plain_append[index]]
+            self.assertTrue(differences)
+            self.assertLessEqual(len(differences), 4)
+            # All appended definitions, native row positions and save-array
+            # offsets are exactly those of the existing surgical Bool helper.
+            self.assertEqual(actual[len(raw):len(plain_append)], plain_append[len(raw):])
+            old, new = layout(raw), layout(actual)
+            for key, (at, length) in old["rows"].items():
+                self.assertEqual(new["rows"][key], (at, length))
+                self.assertEqual(actual[at:at + length], raw[at:at + length])
+            expected = byml.load(plain_append)
+            for row, actor in zip(self.members(expected), actors):
+                row["Value"] = byml.U32(murmur3("IsTreasureBoxOpen." + str(actor)))
+            self.assertEqual(byml.load(actual), expected)
+
+    def test_idempotence_empty_selection_and_an_existing_qualified_bool(self):
+        from ootrr_triforce.network_catalog import murmur3
+        doc, actors = self.fixture()
+        raw = byml.dump(doc)
+        self.assertIs(register_chest_flags(raw, []), raw)
+        qualified = murmur3("IsTreasureBoxOpen." + str(actors[0]))
+        partial = append_saved_bools(raw, [qualified])
+        complete = register_chest_flags(partial, actors)
+        self.assertIs(register_chest_flags(complete, actors), complete)
+        self.assertEqual(len(byml.load(complete)["root"]["Data"]["Bool"]),
+                         len(doc["root"]["Data"]["Bool"]) + len(actors))
+
+    def test_missing_ambiguous_and_unregistered_or_wrong_type_targets_are_rejected(self):
+        for mode in ("missing", "duplicate", "unregistered", "int", "true"):
+            with self.subTest(mode=mode):
+                doc, actors = self.fixture()
+                members = self.members(doc)
+                if mode == "missing": members.pop(0)
+                elif mode == "duplicate": members.append(dict(members[0]))
+                elif mode == "unregistered": members[0]["Value"] = byml.U32(123456)
+                elif mode == "int": members[0]["Value"] = byml.U32(20)
+                elif mode == "true": next(row for row in doc["root"]["Data"]["Bool"] if row["Hash"] == 100)["DefaultValue"] = True
+                with self.assertRaises(ValueError):
+                    register_chest_flags(byml.dump(doc), actors)
+
+    def test_qualified_hash_collisions_invalid_persistence_and_bad_actor_inputs_are_rejected(self):
+        from ootrr_triforce.network_catalog import murmur3
+        for mode in ("int", "duplicate_bool", "reset", "save", "true"):
+            with self.subTest(mode=mode):
+                doc, actors = self.fixture()
+                qualified = murmur3("IsTreasureBoxOpen." + str(actors[0]))
+                row = dict(doc["root"]["Data"]["Bool"][0], Hash=byml.U32(qualified))
+                if mode == "int":
+                    doc["root"]["Data"]["Int"].append(dict(row, DefaultValue=0))
+                else:
+                    if mode == "reset": row["ResetTypeValue"] = 24
+                    elif mode == "save": row["SaveFileIndex"] = -1
+                    elif mode == "true": row["DefaultValue"] = True
+                    doc["root"]["Data"]["Bool"].append(row)
+                    if mode == "duplicate_bool": doc["root"]["Data"]["Bool"].append(dict(row))
+                with self.assertRaises(ValueError):
+                    register_chest_flags(byml.dump(doc), actors)
+        raw = byml.dump(self.fixture()[0])
+        for actors in ([True], [0], [-1], [2**64], ["100"], [100, 100]):
+            with self.subTest(actors=actors), self.assertRaises(ValueError):
+                register_chest_flags(raw, actors)
+
+    def test_room_binding_uses_only_selected_schema_two_frozen_chests_and_grows_allocations(self):
+        import tempfile
+        import zlib
+        from oot_rando.game.resource_allocations import allocation
+        from ootrr_triforce import cursor_resource, native_setup
+        from ootrr_triforce.network_catalog import ADDITIONAL_SOURCES
+        doc, actors = self.fixture()
+        frozen = next(name for name, row in ADDITIONAL_SOURCES.items() if row.get("native_route") == "frozen_chest")
+        expected = sorted(int(row["actor"]) for row in ADDITIONAL_SOURCES[frozen]["variants"])
+        data = {"token": "ba" * 32, "checks": [frozen], "additional_sources": [frozen],
+                "network_sources_schema": 2, "network_sources": {frozen: ADDITIONAL_SOURCES[frozen]}}
+        self.assertEqual(native_setup.converted_chest_hashes(data), expected)
+        for change in ({"checks": []}, {"additional_sources": []}, {"network_sources_schema": 1},
+                       {"network_sources_schema": None}):
+            self.assertEqual(native_setup.converted_chest_hashes(data | change), [])
+        class IdentityCodec:
+            def __init__(self, _): pass
+            def decode(self, raw): return raw
+            def encode(self, raw, _): return raw
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder); source, mod = root / "source", root / "mod"
+            for name, content in (("Pack/ZsDic.pack.zs", b"unused dictionary"),
+                                  (native_setup.GAME_DATA, byml.dump(doc))):
+                target = source / name; target.parent.mkdir(parents=True, exist_ok=True); target.write_bytes(content)
+            key = zlib.crc32(native_setup.GAME_DATA.removesuffix(".zs").encode())
+            rest = b"RESTBL" + struct.pack("<6I", 1, 160, 1, 0, key, 65536)
+            target = mod / native_setup.REST; target.parent.mkdir(parents=True, exist_ok=True); target.write_bytes(rest)
+            with patch.object(native_setup, "Codec", IdentityCodec), patch.object(cursor_resource, "register_chest_flags", wraps=register_chest_flags) as repair:
+                native_setup.bind_romfs(source, mod, data, 0)
+            repair.assert_called_once()
+            self.assertEqual(repair.call_args.args[1], expected)
+            self.assertGreater(allocation(target.read_bytes(), native_setup.GAME_DATA), 65536)
+            self.assertEqual((mod / native_setup.MARKER).read_text().strip(), data["token"])
+            all_names = [name for name, row in ADDITIONAL_SOURCES.items() if row.get("native_route") == "frozen_chest"]
+            all_data = data | {"checks": all_names, "additional_sources": all_names}
+            original = (source / native_setup.GAME_DATA).read_bytes()
+            with patch.object(native_setup, "Codec", IdentityCodec):
+                self.assertTrue(native_setup.prepare_chest_flags(source, mod, all_data))
+                repaired = (mod / native_setup.GAME_DATA).read_bytes()
+                repaired_rest = target.read_bytes()
+                self.assertFalse(native_setup.prepare_chest_flags(source, mod, all_data))
+                self.assertEqual((mod / native_setup.GAME_DATA).read_bytes(), repaired)
+                self.assertEqual(target.read_bytes(), repaired_rest)
+                self.assertFalse(native_setup.prepare_chest_flags(source, mod, {"token": "old room"}))
+            self.assertEqual((source / native_setup.GAME_DATA).read_bytes(), original)
 
 
 @unittest.skipUnless(os.environ.get("OOTRR_ROMFS"), "requires private native GameData")

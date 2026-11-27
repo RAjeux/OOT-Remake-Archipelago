@@ -22,10 +22,16 @@ from ootrr_triforce.catalog import (AP_SKULL_CHECKS, CHESTS, DEFAULT_SETTINGS, F
 from ootrr_triforce.trade_catalog import TRADE_ITEMS
 from ootrr_triforce.shop_pool import SHOP_CHECK_MODE, shop_checks
 from ootrr_triforce.network_catalog import (SCHEMA as NETWORK_SCHEMA, SHOP_MODE as NETWORK_SHOP_MODE,
-                                            SOURCES as NETWORK_SOURCES, validate_sources)
+                                            SOURCES as NETWORK_SOURCES, validate_sources,
+                                            ADDITIONAL_REWARDS)
 from ootrr_triforce.network_placement import (allowed as allowed_placement, placement_priority,
                                              prefill_scoped_items)
-from ootrr_triforce.settings import OPTION_SPECS, default_options, engine_settings, validate_options
+from ootrr_triforce.access_logic import AccessLogic, key_caps
+from ootrr_triforce.feature_settings import feature_config
+from ootrr_triforce.item_plando import apply_item_plando
+from ootrr_triforce.pool_adjustments import prepare as prepare_pool
+from ootrr_triforce.room_identity import token as room_token
+from ootrr_triforce.settings import OPTION_SPECS, default_options, engine_settings, native_choice_key, validate_options
 from ootrr_triforce.master_sword import (SETTING as MASTER_SWORD_SETTING, ITEM as MASTER_SWORD_ITEM,
                                         LOCATION as MASTER_SWORD_LOCATION, proof_wave as master_sword_wave,
                                         token_material as master_sword_token)
@@ -72,7 +78,7 @@ class State:
 tree = ast.parse((ROOT / "apworld/ootrr_remake/__init__.py").read_text(encoding="utf-8"))
 world = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "RemakeWorld")
 namespace = dict(globals(), RemakeItem=Item, RemakeLocation=Location,
-                 ItemClassification=SimpleNamespace(progression=1, progression_skip_balancing=9, filler=0))
+                 ItemClassification=SimpleNamespace(progression=1, progression_skip_balancing=9, filler=0, trap=4))
 option_tree = ast.parse((ROOT / "apworld/ootrr_remake/options.py").read_text(encoding="utf-8"))
 option_values = [node for node in option_tree.body if isinstance(node, ast.FunctionDef)
                  and node.name in {"option_values", "_normalize_inactive_options"}]
@@ -104,6 +110,8 @@ class AllChestRewardTests(unittest.TestCase):
         for name, row in seed.get("shops", {}).items():
             rows[name] = dict(deepcopy(NETWORK_SOURCES[name]), generated_item=row["item"],
                               price=row["price"], deal=row.get("deal", False))
+        for name in generated.get("additional_sources", ()):
+            rows[name] = dict(deepcopy(NETWORK_SOURCES[name]), generated_item=ADDITIONAL_REWARDS[name])
         generated["network_sources"] = rows
         generated.setdefault("progression_items", [name for name, row in ITEM_DATA.items()
                                                    if row.get("advancement", False)])
@@ -114,7 +122,7 @@ class AllChestRewardTests(unittest.TestCase):
         namespace["run_engine"] = run_engine
         w = World()
         w.game, w.player, w.player_name = GAME, 1, "Zelda"
-        w.random = SimpleNamespace(getrandbits=lambda bits: 17)
+        w.random = SimpleNamespace(getrandbits=lambda bits: 17, sample=lambda values, count: list(values)[:count])
         values = default_options()
         values.update(death_link=True, shuffle_shops="deals_1" if shops else "off")
         values.update(option_changes or {})
@@ -134,6 +142,118 @@ class AllChestRewardTests(unittest.TestCase):
         rewards = [*sorted(TRADE_ITEMS), "Rupees (50)"]
         generated["seed_file"]["placements"].update(zip(names, rewards))
         generated["waves"][0].extend(names)
+
+    @staticmethod
+    def add_access_graph(generated):
+        names = list(generated["seed_file"]["placements"])
+        key = "Small Key (Forest Temple)"
+        rules = [True, True, ["or", [["h", 0, 1], ["h", 1, 1]]], ["h", 0, 2]]
+        graph = dict(schema=1, world=dict(
+            items=[dict(name=key, adv=True, event=False), dict(name="Bow", adv=True, event=False)],
+            regions=[dict(name="Root", time=3, locs=list(range(4)), exits=[])], exits=[],
+            locs=[dict(name=n, region=0, event=None, rule=r) for n, r in zip(names, rules)],
+            root=0, real=list(range(4)), start=[], goal=["h", 0, 2]),
+            sources={n: [i] for i, n in enumerate(names)}, fixed=[], master_sword=None)
+        generated["access_logic"] = graph
+
+    def test_actual_graph_replaces_donor_sphere_gates_and_keeps_counted_victory(self):
+        w, names, _ = self.make_world(self.add_access_graph)
+        w.create_regions()
+        spots = {spot.name: spot for region in w.multiworld.regions for spot in region.locations}
+        key = "Small Key (Forest Temple)"
+        self.assertTrue(spots[names[2]].access_rule(State(**{key: 1})))
+        self.assertTrue(spots[names[2]].access_rule(State(Bow=1)))
+        self.assertFalse(spots[names[3]].access_rule(State(**{key: 1})))
+        self.assertFalse(w.multiworld.completion_condition[1](State(**{key: 1})))
+        self.assertTrue(w.multiworld.completion_condition[1](State(**{key: 2})))
+        self.assertTrue(spots[names[0]].item_rule(SimpleNamespace(name="Other game's progression", player=2)))
+
+    def test_new_graph_manifest_keeps_rules_and_versioned_features(self):
+        w, _, _ = self.make_world(self.add_access_graph)
+        with tempfile.TemporaryDirectory() as folder:
+            w.generate_output(folder)
+            data = json.loads((Path(folder) / "AP_synthetic_P1_Zelda.apootrr").read_text(encoding="utf-8"))
+        self.assertEqual(data["access_logic"]["schema"], 1)
+        self.assertEqual(data["features"], dict(schema=1, settings={}))
+        self.assertEqual(data["moved"], w.moved)
+
+    def test_access_graph_cannot_silently_omit_a_room_check(self):
+        def broken(generated):
+            self.add_access_graph(generated)
+            generated["access_logic"]["sources"].pop(next(iter(generated["access_logic"]["sources"])))
+        with self.assertRaisesRegex(ValueError, "does not match"):
+            self.make_world(broken)
+
+    def test_starting_bunny_hood_replaces_one_pool_copy_without_changing_native_provenance(self):
+        def hood(generated):
+            name = next(iter(generated["seed_file"]["placements"]))
+            generated["seed_file"]["placements"][name] = "Bunny Hood"
+        w, names, _ = self.make_world(hood, option_changes={"starting_bunny_hood": True})
+        w.create_items()
+        self.assertEqual(w.moved[names[0]], "Bunny Hood")
+        self.assertEqual(w.seed_file["placements"][names[0]], "Bunny Hood")
+        self.assertEqual(w.pool_rewards[names[0]], FILLER)
+        self.assertEqual(sum(item.name == "Bunny Hood" for item in w.multiworld.itempool), 0)
+        self.assertEqual(len(w.multiworld.itempool), len(w.waves))
+
+    def test_optional_key_tracker_persists_owned_totals_before_remote_placement(self):
+        w, _, _ = self.make_world(self.add_access_graph, option_changes={"dungeon_key_tracker": True})
+        self.assertEqual(w.fill_slot_data()["key_caps"], [2, 0, 0, 0, 0, 0, 0, 0])
+        with tempfile.TemporaryDirectory() as folder:
+            w.generate_output(folder)
+            data = json.loads((Path(folder) / "AP_synthetic_P1_Zelda.apootrr").read_text(encoding="utf-8"))
+        self.assertEqual(data["key_caps"], [2, 0, 0, 0, 0, 0, 0, 0])
+        self.assertTrue(data["features"]["settings"]["dungeon_key_tracker"])
+
+    def test_ice_traps_replace_exact_filler_copies_and_keep_progression_and_native_seed(self):
+        def ordinary(generated):
+            generated["progression_items"] = ["Small Key (Forest Temple)"]
+        w, _, rewards = self.make_world(ordinary, option_changes={"shuffle_ice_traps": True, "ice_trap_count": 2})
+        w.create_items()
+        actual = Counter(item.name for item in w.multiworld.itempool)
+        self.assertEqual(actual["Ice Trap"], 2)
+        self.assertEqual(actual["Small Key (Forest Temple)"], 2)
+        self.assertEqual(len(w.multiworld.itempool), len(rewards))
+        self.assertEqual(Counter(w.moved.values()), Counter(rewards))
+        self.assertEqual(w.seed_file["placements"], w.moved)
+        self.assertTrue(all(item.classification == 4 for item in w.multiworld.itempool if item.name == "Ice Trap"))
+
+    def test_ice_traps_stop_instead_of_removing_progression_when_filler_is_insufficient(self):
+        def ordinary(generated):
+            generated["progression_items"] = ["Small Key (Forest Temple)"]
+        with self.assertRaisesRegex(ValueError, "only 2 are available"):
+            self.make_world(ordinary, option_changes={"shuffle_ice_traps": True, "ice_trap_count": 3})
+        def logical_hearts(generated):
+            generated["progression_items"] = ["Small Key (Forest Temple)", "Piece of Heart"]
+        with self.assertRaisesRegex(ValueError, "only 1 are available"):
+            self.make_world(logical_hearts, option_changes={"shuffle_ice_traps": True, "ice_trap_count": 2})
+
+    def test_additional_physical_check_requires_and_preserves_its_exact_graph_rule(self):
+        extra = next(iter(ADDITIONAL_REWARDS))
+        def addition(generated):
+            self.add_access_graph(generated)
+            generated["additional_sources"] = [extra]
+            graph = generated["access_logic"]
+            graph["world"]["locs"].append(dict(name=extra, region=0, rule=True, event=None))
+            graph["world"]["regions"][0]["locs"].append(4)
+            graph["world"]["real"].append(4)
+            graph["sources"][extra] = [4]
+        w, _, _ = self.make_world(addition)
+        w.create_regions()
+        self.assertEqual(w.moved[extra], ADDITIONAL_REWARDS[extra])
+        self.assertNotIn(extra, w.seed_file["placements"])
+        self.assertIn(extra, w.access_logic.sweep({}).reach)
+        self.assertEqual(w.fill_slot_data()["additional_sources"], [extra])
+        self.assertEqual(w.fill_slot_data()["network_sources_schema"], 2)
+        with tempfile.TemporaryDirectory() as folder:
+            w.generate_output(folder)
+            data = json.loads((Path(folder) / "AP_synthetic_P1_Zelda.apootrr").read_text(encoding="utf-8"))
+        self.assertEqual(data["additional_sources"], [extra])
+        self.assertEqual(data["network_sources_schema"], 2)
+        def no_graph(generated):
+            generated["additional_sources"] = [extra]
+        with self.assertRaisesRegex(ValueError, "require the exact access graph"):
+            self.make_world(no_graph)
 
     def test_adult_trades_conserve_ten_tokens_and_export_all_eleven_checks(self):
         w, names, rewards = self.make_world(
@@ -238,6 +358,9 @@ class AllChestRewardTests(unittest.TestCase):
         w.create_items()
         w.create_regions()
         self.assertEqual(len(w.multiworld.itempool), sum(len(region.locations) for region in w.multiworld.regions))
+        self.assertIsNotNone(w.access_logic)
+        spots = {location.name: location for region in w.multiworld.regions for location in region.locations}
+        complete = Counter(w.pool_rewards.values())
         required_names = {ITEM_DATA[name]["actor"]: name for name in TRADE_ITEMS}
         for check, row in TRADE_CHECKS.items():
             if row["required_actor"] is None:
@@ -246,11 +369,11 @@ class AllChestRewardTests(unittest.TestCase):
             with self.subTest(hand_in=check, required_item=required):
                 source, = [name for name, item in w.moved.items() if item == required]
                 self.assertLess(w.waves[source], w.waves[check])
-                earlier = Counter(item for name, item in w.moved.items() if w.waves[name] < w.waves[check])
-                rule = w.rules_at[w.waves[check]]
-                self.assertTrue(rule(State(**earlier)))
-                earlier[required] = 0
-                self.assertFalse(rule(State(**earlier)), "A remote hand-in token must stay in the AP access rule")
+                rule = spots[check].access_rule
+                self.assertTrue(rule(State(**complete)))
+                missing = complete.copy()
+                missing[required] = 0
+                self.assertFalse(rule(State(**missing)), "A remote hand-in token must stay in the AP access rule")
 
     @unittest.skipUnless(os.environ.get("OOTRR_NODE") or shutil.which("node"),
                          "Node.js needed for the native shop-to-AP integration")
@@ -269,7 +392,9 @@ class AllChestRewardTests(unittest.TestCase):
         self.assertTrue(ordinary <= set(w.waves))
         w.create_items()
         w.create_regions()
-        expected = Counter(w.seed_file["placements"][name] for name in w.waves if name not in SHOP_CHECKS)
+        expected = Counter(w.seed_file["placements"][name] for name in w.waves
+                           if name not in SHOP_CHECKS and name not in w.additional_sources)
+        expected.update(w.network_sources[name]["generated_item"] for name in w.additional_sources)
         expected.update(native[name]["item"] for name in native)
         self.assertEqual(Counter(item.name for item in w.multiworld.itempool), expected)
         locations = [location for region in w.multiworld.regions for location in region.locations]

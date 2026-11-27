@@ -2,10 +2,11 @@
 import copy
 import re
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import colorchooser, messagebox, ttk
 import unicodedata
 
 from .settings import OPTION_SPECS, default_options, validate_options
+from .feature_settings import COLOR_PARTS, validate_mapping
 from .settings_labels import (GROUP_ORDER, active_reason, choice_description, choice_label,
                               description, group_label, is_advanced, is_french,
                               normalize_inactive, selection_summary, setting_label, validation_message)
@@ -52,6 +53,7 @@ class SettingsWindow:
         self.window.bind("<Control-f>", self._focus_search)
         self.window.bind("<Control-Return>", lambda _event: self.apply())
         self.variables, self.controls, self.reasons = {}, {}, {}
+        self.mapping_values = {}
         self.rows, self.group_ids = {}, []
         self.titles = {}
         self.fields = {}
@@ -209,6 +211,10 @@ class SettingsWindow:
             var = tk.StringVar(self.window)
             control = ttk.Spinbox(row, textvariable=var, from_=spec["min"], to=spec["max"],
                                  increment=spec["step"], width=9)
+        elif kind == "dict":
+            var = None
+            control = ttk.Button(row, text=self._text("Configure…", "Configurer…"),
+                                 command=lambda name=name: self._edit_mapping(name))
         else:
             var = None
             field = ttk.Frame(row, style="App.Card.TFrame")
@@ -439,7 +445,11 @@ class SettingsWindow:
 
     def _set_value(self, spec, value):
         name = spec["id"]
-        if spec["kind"] == "set":
+        if spec["kind"] == "dict":
+            self.mapping_values[name] = copy.deepcopy(value)
+            self.controls[name].configure(text=self._text(
+                f"Configure… ({len(value)})", f"Configurer… ({len(value)})"))
+        elif spec["kind"] == "set":
             control = self.controls[name]
             previous = control.cget("state")
             control.configure(state="normal")
@@ -467,7 +477,9 @@ class SettingsWindow:
         self._last_invalid = None
         for spec in OPTION_SPECS:
             name, kind = spec["id"], spec["kind"]
-            if kind == "set":
+            if kind == "dict":
+                value = copy.deepcopy(self.mapping_values[name])
+            elif kind == "set":
                 value = [spec["choices"][index] for index in self.controls[name].curselection()]
             elif kind == "choice":
                 labels = [choice_label(name, item, self.language) for item in spec["choices"]]
@@ -484,6 +496,12 @@ class SettingsWindow:
                 value = self.variables[name].get()
             values[name] = value
         return values
+
+    def _edit_mapping(self, name):
+        def accept(value):
+            self._set_value(next(spec for spec in OPTION_SPECS if spec["id"] == name), value)
+            self.update_dependencies()
+        return MappingEditor(self.window, name, self.mapping_values[name], self.language, accept)
 
     def update_dependencies(self):
         if self._updating:
@@ -552,3 +570,158 @@ class SettingsWindow:
         if not self.closed:
             self.closed = True
             self.window.destroy()
+
+
+class MappingEditor:
+    """A small, typed table editor for colour picks or local planned items."""
+
+    def __init__(self, master, name, values, language, on_apply):
+        self.master, self.name, self.language, self.on_apply = master, name, language, on_apply
+        self.values = copy.deepcopy(values)
+        self.french = is_french(language)
+        self.colors = name == "cosmetic_colors"
+        self.window = tk.Toplevel(master)
+        apply_theme(self.window)
+        self.window.title(setting_label(name, language))
+        self.window.geometry(f"{min(1020, self.window.winfo_screenwidth() - 70)}x{min(630, self.window.winfo_screenheight() - 100)}")
+        self.window.minsize(650, 410)
+        self.window.transient(master)
+        self.window.protocol("WM_DELETE_WINDOW", self.close)
+        self.window.bind("<Escape>", lambda _event: self.close())
+        body = ttk.Frame(self.window, padding=20)
+        body.pack(fill="both", expand=True)
+        body.columnconfigure(0, weight=1)
+        body.rowconfigure(2, weight=1)
+        ttk.Label(body, text=setting_label(name, language), style="App.Heading.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Label(body, text=description(name, language), style="App.Muted.TLabel",
+                  wraplength=850).grid(row=1, column=0, sticky="ew", pady=(8, 16))
+        table = ttk.Frame(body)
+        table.grid(row=2, column=0, sticky="nsew")
+        table.columnconfigure(0, weight=1)
+        table.rowconfigure(0, weight=1)
+        self.tree = ttk.Treeview(table, columns=("target", "value"), show="headings", selectmode="extended")
+        self.tree.heading("target", text=self._text("Part" if self.colors else "Location", "Élément" if self.colors else "Check"))
+        self.tree.heading("value", text=self._text("Colour" if self.colors else "Your item", "Couleur" if self.colors else "Ton objet"))
+        self.tree.column("target", width=420, minwidth=180)
+        self.tree.column("value", width=250, minwidth=140)
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        scroll = ttk.Scrollbar(table, command=self.tree.yview)
+        self.tree.configure(yscrollcommand=scroll.set)
+        scroll.grid(row=0, column=1, sticky="ns")
+        self.tree.bind("<<TreeviewSelect>>", self._selected)
+        editor = ttk.Frame(body)
+        editor.grid(row=3, column=0, sticky="ew", pady=(16, 8))
+        editor.columnconfigure(0, weight=3)
+        editor.columnconfigure(1, weight=2)
+        ttk.Label(editor, text=self._text("Part" if self.colors else "Location (type to filter)",
+                                         "Élément" if self.colors else "Check (saisir pour filtrer)")).grid(row=0, column=0, sticky="w")
+        ttk.Label(editor, text=self._text("Colour" if self.colors else "Item (type to filter)",
+                                         "Couleur" if self.colors else "Objet (saisir pour filtrer)")).grid(row=0, column=1, sticky="w")
+        self.key_var, self.value_var = tk.StringVar(self.window), tk.StringVar(self.window)
+        if self.colors:
+            self.key_labels = {labels[int(self.french)]: key for key, labels in COLOR_PARTS.items()}
+            keys = tuple(self.key_labels)
+            selected_values = (self._text("Original", "D'origine"), self._text("Random", "Aléatoire"))
+        else:
+            from .catalog import ITEM_IDS, LOCATION_IDS
+            self.key_labels = {key: key for key in sorted(LOCATION_IDS)}
+            keys, selected_values = tuple(self.key_labels), tuple(sorted(ITEM_IDS))
+        self.key_box = ttk.Combobox(editor, textvariable=self.key_var, values=keys,
+                                   state="readonly" if self.colors else "normal", width=42)
+        self.key_box.grid(row=1, column=0, sticky="ew", padx=(0, 10), pady=5)
+        self.value_box = ttk.Combobox(editor, textvariable=self.value_var, values=selected_values, width=30)
+        self.value_box.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=5)
+        if not self.colors:
+            self._filter_choices(self.key_box, keys)
+            self._filter_choices(self.value_box, selected_values)
+        else:
+            self.value_var.set(selected_values[0])
+            ttk.Button(editor, text=self._text("Pick colour…", "Choisir la couleur…"),
+                       command=self._pick_color).grid(row=1, column=2, padx=(0, 10))
+        ttk.Button(editor, text=self._text("Add / update", "Ajouter / modifier"),
+                   command=self.add).grid(row=1, column=3)
+        self.status = ttk.Label(body, style="App.Caption.TLabel")
+        self.status.grid(row=4, column=0, sticky="w")
+        footer = ttk.Frame(body)
+        footer.grid(row=5, column=0, sticky="ew", pady=(16, 0))
+        footer.columnconfigure(1, weight=1)
+        ttk.Button(footer, text=self._text("Remove selected", "Retirer la sélection"),
+                   command=self.remove).grid(row=0, column=0)
+        ttk.Button(footer, text=self._text("Cancel", "Annuler"), command=self.close,
+                   style="App.Quiet.TButton").grid(row=0, column=2, padx=(0, 10))
+        ttk.Button(footer, text=self._text("Apply", "Appliquer"), command=self.apply,
+                   style="App.Primary.TButton").grid(row=0, column=3)
+        self._refresh()
+        self.window.grab_set()
+
+    def _text(self, english, french):
+        return french if self.french else english
+
+    def _filter_choices(self, box, choices):
+        def changed(_event):
+            query = search_text(box.get())
+            box.configure(values=[value for value in choices if query in search_text(value)])
+        box.bind("<KeyRelease>", changed)
+
+    def _show_value(self, value):
+        if self.colors and value in {"original", "random"}:
+            return self._text("Original", "D'origine") if value == "original" else self._text("Random", "Aléatoire")
+        return value
+
+    def _refresh(self):
+        self.tree.delete(*self.tree.get_children())
+        for key, value in self.values.items():
+            label = COLOR_PARTS[key][int(self.french)] if self.colors else key
+            self.tree.insert("", "end", iid=key, values=(label, self._show_value(value)))
+        self.status.configure(text=self._text(
+            f"{len(self.values)} configured entries. Select a row to edit it.",
+            f"{len(self.values)} choix configurés. Sélectionne une ligne pour la modifier."))
+
+    def _selected(self, _event=None):
+        selected = self.tree.selection()
+        if len(selected) != 1:
+            return
+        key = selected[0]
+        self.key_var.set(COLOR_PARTS[key][int(self.french)] if self.colors else key)
+        self.value_var.set(self._show_value(self.values[key]))
+
+    def _pick_color(self):
+        previous = self.value_var.get()
+        initial = previous if re.fullmatch(r"#[0-9a-fA-F]{6}", previous) else "#4DA45D"
+        _rgb, picked = colorchooser.askcolor(initialcolor=initial, parent=self.window,
+                                             title=self._text("Choose a colour", "Choisir une couleur"))
+        if picked:
+            self.value_var.set(picked.upper())
+
+    def add(self):
+        key = self.key_labels.get(self.key_var.get(), self.key_var.get())
+        value = self.value_var.get()
+        if self.colors:
+            if value == self._text("Original", "D'origine"):
+                value = "original"
+            elif value == self._text("Random", "Aléatoire"):
+                value = "random"
+        try:
+            updated = dict(self.values)
+            updated[key] = value
+            self.values = validate_mapping(self.name, updated)
+        except ValueError:
+            self.status.configure(text=self._text(
+                "Choose a listed location and item." if not self.colors else "Choose a listed part and Original, Random or a #RRGGBB colour.",
+                "Choisis un check et un objet proposés." if not self.colors else "Choisis un élément proposé et D'origine, Aléatoire ou une couleur #RRGGBB."))
+            return
+        self._refresh()
+
+    def remove(self):
+        for key in self.tree.selection():
+            self.values.pop(key, None)
+        self._refresh()
+
+    def apply(self):
+        self.on_apply(validate_mapping(self.name, self.values))
+        self.close()
+
+    def close(self):
+        self.window.destroy()
+        if self.master.winfo_exists():
+            self.master.grab_set()

@@ -4,6 +4,11 @@ released under the MIT License. That text is kept in LICENSE-MIT and still appli
 
 The notices below belong to third party work that OOTRR builds on. They stay in force and are compatible with the GPL.
 
+This integration retains the OOTRR 0.8.1 constructor and selectively adapts rules, QOL, difficulty,
+tracker, trap, cosmetics and resource fixes from revision 4fa6e5a6da839b4766bcedafb718c241a25bdd77,
+reviewed 27 November 2026. Archipelago adaptations are this integration's work. See the root
+REFERENCES.md and docs/UPSTREAM-INTEGRATION.md for the compatibility boundaries.
+
 Thanks to OruizGl for pull request #3 (Open Areas Settings). Its findings and ideas are the base of the adult Master Sword pedestal that works before the Forest Sage,
 the child sword fix and Sheik's new spot in every seed, Navi's lesson flags for an open or closed Deku forest, the D-pad shortcut fix for items given at the start and the Hyrule Field first visit flag fix for the clock.
 

@@ -7,6 +7,9 @@ import copy
 from importlib import resources
 import json
 import textwrap
+from .feature_settings import (FEATURE_KEYS, FEATURE_SPECS, LEGACY_DIFFICULTY_KEYS,
+                               LEGACY_DIFFICULTY_DEFAULTS, QUARANTINED_DEFAULTS,
+                               unavailable_setting, validate_mapping)
 
 
 def _spec(name, kind, default, description, group, **extra):
@@ -63,8 +66,8 @@ _BASE_SPECS = (
             "Keep small keys at their original rewards, restrict them to their own or any dungeon in your world, or mix them across Archipelago. Moving them to other dungeons or games requires shuffled dungeon chests.", "Dungeon items"),
     _choice("shuffle_bosskeys", "dungeon", BOSS_KEYS,
             "Choose where your boss keys can appear. Dungeon, region and overworld restrictions keep them in your own Zelda world; Anywhere allows other games. Remove opens the corresponding locks from the start. Moving keys outside their dungeon requires shuffled dungeon chests.", "Dungeon items"),
-    _choice("shuffle_ganon_bosskey", "dungeon", (*BOSS_KEYS, "lacs_dungeons"),
-            "Choose where to find your Ganon Boss Key, remove its lock, or receive it from Zelda in the Light Arrows scene. The scene option counts your Stones and Medallions using lacs_rewards and puts the Light Arrows into the AP pool; it requires NPC rewards and dungeon chests.", "Dungeon items"),
+    _choice("shuffle_ganon_bosskey", "dungeon", (*BOSS_KEYS, "lacs_dungeons", "lacs_medallions"),
+            "Choose where to find your Ganon Boss Key, remove its lock, or receive it from Zelda in the Light Arrows scene. That scene can count Stones and Medallions together or Medallions only, using the matching count below. It puts the Light Arrows into the AP pool and requires NPC rewards and dungeon chests.", "Dungeon items"),
     _choice("shuffle_mapcompass", "dungeon", MAP_COMPASS,
             "Choose where maps and compasses can appear. Dungeon and region restrictions stay in your own Zelda world; Anywhere allows other games. Remove and Start with both grant their map effects from the start.",
             "Dungeon items"),
@@ -85,8 +88,8 @@ _BASE_SPECS = (
             "With the open or song condition, Zelda's escape waits for the two dungeons or three stones, or is skipped with the Ocarina available in the moat from the start."),
     _toggle("door_of_time_song", True,
             "With Original game or Three Spiritual Stones, require playing the Song of Time at the altar. If disabled, the door opens when the chosen requirement is met. Ignored with Open or Song of Time only.", "World"),
-    _choice("bridge", "vanilla", ("vanilla", "dungeons", "open"),
-            "Make Ganon's bridge appear after the native Light Arrows scene, after a chosen combined Stone/Medallion count, or with no requirement when approached. The count only applies to Count Stones and Medallions; Open uses zero. This is separate from the Door of Time and Ganon Boss Key.", "Goal"),
+    _choice("bridge", "vanilla", ("vanilla", "dungeons", "open", "medallions"),
+            "Make Ganon's bridge appear after the native Light Arrows scene, after a chosen combined Stone/Medallion count, after a Medallion-only count, or with no requirement when approached. Use the count matching the selected condition. This is separate from the Door of Time and Ganon Boss Key.", "Goal"),
     _range("bridge_rewards", 9, 0, 9,
            "Total Stones and Medallions you must hold for Count Stones and Medallions: any mix of the three Stones and six Medallions counts. Nine requires all nine; zero requires none. Unused with the original bridge condition.", "Goal"),
     _toggle("skip_ganon_trials", False, "Reach Ganon's Tower without completing the trials.", "Goal"),
@@ -120,30 +123,6 @@ _BASE_SPECS = (
     _toggle("plant_beans", False, "Magic beans are already planted; their adult platforms are available.", "World"),
     _toggle("gerudo_bridge_open", False, "The Gerudo Valley bridge is repaired from the start.", "World"),
     _toggle("deku_bridge_safe", False, "The bridge in the Deku Tree slingshot room does not collapse.", "Quality of life"),
-    _range("enemy_health", 100, 50, 500, "Enemy and boss health as a percentage (100 = normal). Experimental.", step=25),
-    _range("enemy_damage", 100, 50, 500, "Enemy attack damage as a percentage; traps and falls are unchanged. Experimental.", step=25),
-    _range("enemy_speed", 100, 75, 200, "Enemy speed as a percentage; some animations keep their original pace. Experimental.", step=5),
-    _range("more_enemies", 100, 100, 1000, "Enemy density as a percentage (100 = normal), with native limits per area. Experimental.", step=50),
-)
-_DIFFICULTY = (
-    ("enemy_regen", "Living enemies recover health after ten seconds without taking a hit."),
-    ("enemy_backup", "Some enemies call for reinforcements during a prolonged fight."),
-    ("no_heart_drops", "Random drops no longer give recovery hearts."),
-    ("no_gossip_fairies", "Gossip stones no longer spawn fairies."),
-    ("no_ammo_drops", "Remove ordinary ammunition drops, including Deku sticks and nuts, seeds, arrows, bombs and Bombchus. Shuffled AP rewards and shop purchases are separate."),
-    ("lose_heart_on_death", "After Game Over, lose one heart container if you have more than three. A starting health value below three is not raised."),
-    ("no_bottles_in_combat", "Prevent bottle use while combat music is playing."),
-    ("no_z_targeting", "Disable enemy targeting; interactions remain available."),
-    ("no_dupe_items", "Native captures and refills reject contents already held in another bottle."),
-    ("enemies_respawn_sooner", "Ordinary enemies return after leaving their room or area."),
-    ("boss_minibosses", "Add a miniboss to compatible native boss arenas."),
-    ("boss_minions", "Add lesser enemies to compatible boss arenas."),
-    ("bean_pitch", "The Bean Seller occasionally mentions difficulty mods."),
-    ("zora_ambush", "Add a Skulltula ambush to the Zora's Domain caves."),
-    ("enemy_gates", "Add combat barriers on ten overworld paths, including the Deku Tree, Sacred Forest Meadow, Death Mountain Trail, Zora's River and adult Gerudo routes. Defeat their nearby guards to pass. Requires a closed forest and original dungeon entrances."),
-    ("cucco_revenge", "One hit on a Cucco triggers the Cucco attack."),
-    ("enemy_spawn_combo", "Hold both stick buttons and press D-pad Down to spawn a random practice enemy; Up repeats the last kind. Only enemies loaded by the current area can appear, with at most twelve kept at once."),
-    ("fairy_helps_enemies", "A fairy released from a bottle also heals awake enemies and bosses."),
 )
 _PICKUP_NOTE = (" Enabled sources become AP checks only after collecting the drop. "
                 "An uncollected source can be tried again after reloading the area; collected sources stay completed.")
@@ -218,10 +197,10 @@ _ADDITIONAL_SPECS = (
     _toggle("song_harp_colors", True,
             "Color native song pickup harps to match their song. Only applies to shuffle_songs: anywhere. Experimental.", "Quality of life"),
 )
-OPTION_SPECS = _BASE_SPECS + _ADDITIONAL_SPECS + tuple(_toggle(name, False, description + " Experimental.", "Difficulty")
-                                  for name, description in _DIFFICULTY)
+OPTION_SPECS = _BASE_SPECS + _ADDITIONAL_SPECS + FEATURE_SPECS
 SPEC_BY_ID = {spec["id"]: spec for spec in OPTION_SPECS}
-AP_ONLY = frozenset({"death_link", "shuffle_master_sword", "shops_always_open"})
+AP_ONLY = (frozenset({"death_link", "shuffle_master_sword", "shops_always_open"})
+           | (FEATURE_KEYS - LEGACY_DIFFICULTY_KEYS))
 # Additions implemented by this integration's engine, not portable OOTRR 0.8.1.
 ENGINE_EXTENSIONS = {"adult_trade_shuffle": {"kind": "toggle", "default": False}}
 # The portable engine rejects its own schema's open value. Its existing native
@@ -244,6 +223,10 @@ FIXED_SETTINGS = {
     "shuffle_treasure_reward": False, "shuffle_entrances": "off", "bombchus_in_logic": False,
     "gossip_hints": False, "misc_hints": [], "chests_match_contents": False,
 }
+# Current new rooms apply difficulty once in the versioned feature pass. Keep
+# the old builder's difficulty inputs explicitly inert, rather than scaling
+# enemies there and scaling the same resources again afterward.
+FIXED_SETTINGS.update(LEGACY_DIFFICULTY_DEFAULTS)
 # Public source selectors use the same native randomization pass. The AP
 # catalogue and delivery layer bind the selected checks after that pass.
 for _specification in _ADDITIONAL_SPECS:
@@ -256,8 +239,31 @@ def default_options():
     return {spec["id"]: copy.deepcopy(spec["default"]) for spec in OPTION_SPECS}
 
 
+_AP_CHOICE_KEYS = {
+    ("shuffle_shops", "random"): "random_deals",
+    ("cosmetic_color_mode", "random"): "random_colors",
+}
+
+
+def ap_choice_key(name, value):
+    """Name an explicit native mode without taking AP's reserved random key."""
+    return _AP_CHOICE_KEYS.get((name, value), value)
+
+
+def native_choice_key(name, value):
+    """Convert an AP Choice result after Archipelago has rolled its value."""
+    return next((native for (setting, native), public in _AP_CHOICE_KEYS.items()
+                 if setting == name and public == value), value)
+
+
 def validate_options(values):
     """Validate public values and combinations before calling the native engine."""
+    values = dict(values)
+    for name, default in QUARANTINED_DEFAULTS.items():
+        if name in values:
+            if type(values[name]) is not type(default) or values[name] != default:
+                raise unavailable_setting(name)
+            values.pop(name)
     unknown = set(values).difference(SPEC_BY_ID)
     if unknown:
         raise ValueError("Unsupported Archipelago setting: " + ", ".join(sorted(unknown)))
@@ -281,6 +287,8 @@ def validate_options(values):
             if not isinstance(value, (list, tuple, set, frozenset)) or any(item not in spec["choices"] for item in value):
                 raise ValueError(name + " contains an unsupported starting item.")
             value = [item for item in spec["choices"] if item in value]
+        elif kind == "dict":
+            value = validate_mapping(name, value)
         result[name] = value
     if result["open_kakariko"] == "open":
         if result["open_forest"] != "open":
@@ -332,11 +340,21 @@ def validate_options(values):
         raise ValueError("shuffle_kokiri_sword requires shuffle_chests: all or overworld.")
     if result["enemy_gates"] and result["shuffle_entrances"]!="off":
         raise ValueError("enemy_gates requires shuffle_entrances: off.")
-    if result["shuffle_ganon_bosskey"]=="lacs_dungeons":
+    if result["shuffle_ganon_bosskey"] in {"lacs_dungeons", "lacs_medallions"}:
         if result["shuffle_rewards"]!="supported" or result["shuffle_chests"] not in {"all", "dungeons"}:
             raise ValueError("lacs_dungeons requires shuffle_rewards: supported and dungeon or all chests.")
-    elif result["lacs_rewards"]!=9:
+    if result["shuffle_ganon_bosskey"] != "lacs_dungeons" and result["lacs_rewards"]!=9:
         raise ValueError("lacs_rewards is only used with shuffle_ganon_bosskey: lacs_dungeons.")
+    if result["bridge"] != "medallions" and result["bridge_medallions"] != 6:
+        raise ValueError("bridge_medallions is only used with bridge: medallions.")
+    if result["shuffle_ganon_bosskey"] != "lacs_medallions" and result["lacs_medallions"] != 6:
+        raise ValueError("lacs_medallions is only used with shuffle_ganon_bosskey: lacs_medallions.")
+    if result["skulls_by_day"] and result["night_skulls_suns_song"]:
+        raise ValueError("night_skulls_suns_song is only used when skulls_by_day is false.")
+    if result["cosmetic_colors"] and result["cosmetic_color_mode"] != "custom":
+        raise ValueError("cosmetic_colors is only used with cosmetic_color_mode: custom.")
+    if not result["shuffle_ice_traps"] and result["ice_trap_count"] != 6:
+        raise ValueError("ice_trap_count is only used with shuffle_ice_traps: true.")
     if result["shuffle_merchants"]!="off":
         if result["shuffle_rewards"]!="supported":
             raise ValueError("shuffle_merchants requires shuffle_rewards: supported.")
@@ -362,9 +380,16 @@ def engine_settings(values):
     """A typed OOTRR JSON object; a settings string is never needed from players."""
     options = validate_options(values)
     result = copy.deepcopy(FIXED_SETTINGS)
-    result.update({name: value for name, value in options.items() if name not in AP_ONLY})
+    result.update({name: value for name, value in options.items()
+                   if name not in AP_ONLY and name not in LEGACY_DIFFICULTY_KEYS})
     if options["bridge"] == "open":
         result.update(BRIDGE_OPEN_ALIAS)
+    elif options["bridge"] == "medallions":
+        result.update(bridge="dungeons", bridge_rewards=options["bridge_medallions"])
+    if options["shuffle_ganon_bosskey"] == "lacs_medallions":
+        # The legacy builder's combined-reward range starts at one. The
+        # versioned feature pass applies the selected zero-medallion gate.
+        result.update(shuffle_ganon_bosskey="lacs_dungeons", lacs_rewards=max(1, options["lacs_medallions"]))
     return result
 
 
@@ -375,7 +400,7 @@ def yaml_options(indent="  ", language="en", values=None):
     descriptions = json.loads(resources.files(__package__).joinpath("settings_fr.json").read_text(encoding="utf-8")) if french else {}
     groups = {"Shuffle": "Mélange", "Dungeon items": "Objets de donjon", "World": "Monde", "Goal": "Objectif",
               "Starting inventory": "Inventaire initial", "Quality of life": "Confort", "Difficulty": "Difficulté",
-              "Economy": "Économie"} if french else {}
+              "Economy": "Économie", "Cosmetics": "Apparence et sons", "Planned placements": "Placements choisis"} if french else {}
     heading = "Objectif fixe : vaincre Ganon. Réglages compatibles AP uniquement." if french else "Fixed goal: defeat Ganon. AP-compatible settings only."
     lines = [indent + "# " + heading]
     previous = None
@@ -387,15 +412,14 @@ def yaml_options(indent="  ", language="en", values=None):
             previous = spec["group"]
         lines += [indent + "# " + line for line in textwrap.wrap(descriptions.get(spec["id"], spec["description"]), width=94)]
         if spec["kind"] in ("choice", "set"):
-            choices = ["random_deals" if spec["id"] == "shuffle_shops" and value == "random" else value
-                       for value in spec["choices"]]
+            choices = [ap_choice_key(spec["id"], value) for value in spec["choices"]]
             lines += [indent + "# " + line for line in textwrap.wrap(("Valeurs : " if french else "Values: ") + ", ".join(choices), width=94)]
         elif spec["kind"] == "range":
             step = ((f", pas de {spec['step']}" if french else f", step {spec['step']}") if spec["step"] > 1 else "")
             limits = f"Entier : {spec['min']} à {spec['max']}" if french else f"Integer: {spec['min']} to {spec['max']}"
             lines.append(indent + f"# {limits}{step}.")
         value = selected[spec["id"]]
-        if spec["id"] == "shuffle_shops" and value == "random":
-            value = "random_deals"
+        if spec["kind"] == "choice":
+            value = ap_choice_key(spec["id"], value)
         lines.append(indent + spec["id"] + ": " + json.dumps(value, ensure_ascii=False))
     return "\n".join(lines) + "\n"

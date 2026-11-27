@@ -122,6 +122,7 @@ class ReceiptRegistrationTests(unittest.TestCase):
         build = receipt_events.build_presented_receipts
 
         def selected(pouch, presenter, token, **kwargs):
+            kwargs.pop("names", None)
             return build(pouch, presenter, token, names, **kwargs)
 
         with patch.object(receipt_events, "Codec", IdentityCodec), \

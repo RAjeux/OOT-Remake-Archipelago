@@ -1,0 +1,245 @@
+[
+    {
+        "region_name": "Market Guard House",
+        "scene": "Market Guard House",
+        "events": {
+            "Sell Big Poe": "is_adult and Bottle_with_Big_Poe"
+        },
+        "locations": {
+            "Market 5 Big Poes": "
+                is_adult and (Big_Poe or (Bottle_with_Big_Poe, big_poe_count))",
+            "Market 5 Big Poes Hint": "is_adult",
+            "Market Guard House Child Crate 1": "is_child and can_break_crate",
+            "Market Guard House Child Crate 2": "is_child and can_break_crate",
+            "Market Guard House Child Crate 3": "is_child and can_break_crate",
+            "Market Guard House Child Crate 4": "is_child and can_break_crate",
+            "Market Guard House Child Pot 1": "is_child",
+            "Market Guard House Child Pot 2": "is_child",
+            "Market Guard House Child Pot 3": "is_child",
+            "Market Guard House Child Pot 4": "is_child",
+            "Market Guard House Child Pot 5": "is_child",
+            "Market Guard House Child Pot 6": "is_child",
+            "Market Guard House Child Pot 7": "is_child",
+            "Market Guard House Child Pot 8": "is_child",
+            "Market Guard House Child Pot 9": "is_child",
+            "Market Guard House Child Pot 10": "is_child",
+            "Market Guard House Child Pot 11": "is_child",
+            "Market Guard House Child Pot 12": "is_child",
+            "Market Guard House Child Pot 13": "is_child",
+            "Market Guard House Child Pot 14": "is_child",
+            "Market Guard House Child Pot 15": "is_child",
+            "Market Guard House Child Pot 16": "is_child",
+            "Market Guard House Child Pot 17": "is_child",
+            "Market Guard House Child Pot 18": "is_child",
+            "Market Guard House Child Pot 19": "is_child",
+            "Market Guard House Child Pot 20": "is_child",
+            "Market Guard House Child Pot 21": "is_child",
+            "Market Guard House Child Pot 22": "is_child",
+            "Market Guard House Child Pot 23": "is_child",
+            "Market Guard House Child Pot 24": "is_child",
+            "Market Guard House Child Pot 25": "is_child",
+            "Market Guard House Child Pot 26": "is_child",
+            "Market Guard House Child Pot 27": "is_child",
+            "Market Guard House Child Pot 28": "is_child",
+            "Market Guard House Child Pot 29": "is_child",
+            "Market Guard House Child Pot 30": "is_child",
+            "Market Guard House Child Pot 31": "is_child",
+            "Market Guard House Child Pot 32": "is_child",
+            "Market Guard House Child Pot 33": "is_child",
+            "Market Guard House Child Pot 34": "is_child",
+            "Market Guard House Child Pot 35": "is_child",
+            "Market Guard House Child Pot 36": "is_child",
+            "Market Guard House Child Pot 37": "is_child",
+            "Market Guard House Child Pot 38": "is_child",
+            "Market Guard House Child Pot 39": "is_child",
+            "Market Guard House Child Pot 40": "is_child",
+            "Market Guard House Child Pot 41": "is_child",
+            "Market Guard House Child Pot 42": "is_child",
+            "Market Guard House Child Pot 43": "is_child",
+            "Market Guard House Child Pot 44": "is_child",
+            "Market Guard House Adult Pot 1": "is_adult",
+            "Market Guard House Adult Pot 2": "is_adult",
+            "Market Guard House Adult Pot 3": "is_adult",
+            "Market Guard House Adult Pot 4": "is_adult",
+            "Market Guard House Adult Pot 5": "is_adult",
+            "Market Guard House Adult Pot 6": "is_adult",
+            "Market Guard House Adult Pot 7": "is_adult",
+            "Market Guard House Adult Pot 8": "is_adult",
+            "Market Guard House Adult Pot 9": "is_adult",
+            "Market Guard House Adult Pot 10": "is_adult",
+            "Market Guard House Adult Pot 11": "is_adult",
+            "Market GS Guard House": "is_child and can_break_crate"
+        },
+        "exits": {
+            "Market Entrance": "True"
+        }
+    },
+    {
+        "region_name": "Market Bazaar",
+        "scene": "Market Bazaar",
+        "locations": {
+            "Market Bazaar Item 1": "True",
+            "Market Bazaar Item 2": "True",
+            "Market Bazaar Item 3": "True",
+            "Market Bazaar Item 4": "True",
+            "Market Bazaar Item 5": "True",
+            "Market Bazaar Item 6": "True",
+            "Market Bazaar Item 7": "True",
+            "Market Bazaar Item 8": "True"
+        },
+        "exits": {
+            "Market": "True"
+        }
+    },
+    {
+        "region_name": "Market Mask Shop",
+        "scene": "Market Mask Shop",
+        "exits": {
+            "Market": "True",
+            "Market Mask Shop Storefront": "(open_kakariko == 'open' or Zeldas_Letter) and 'Kakariko Village Gate Open'"
+        }
+    },
+    {
+        "region_name": "Market Mask Shop Storefront",
+        "scene": "Market Mask Shop",
+        "events": {
+            "Mask of Truth Access": "
+                complete_mask_quest or
+                (at('Kakariko Village', is_child and Keaton_Mask) and
+                    at('Lost Woods', is_child and can_play(Sarias_Song) and Skull_Mask) and
+                    at('Graveyard', is_child and at_day and Spooky_Mask) and
+                    at('Hyrule Field', is_child and story_stones and Bunny_Hood))"
+        },
+        "locations": {
+            # Gerudo Mask
+            "Market Mask Shop Item 1": "'Mask of Truth Access'",
+            # Zora Mask
+            "Market Mask Shop Item 2": "'Mask of Truth Access'",
+            # Mask of Truth
+            "Market Mask Shop Item 3": "'Mask of Truth Access'",
+            # Goron Mask
+            "Market Mask Shop Item 4": "'Mask of Truth Access'",
+            # Skull Mask
+            "Market Mask Shop Item 5": "complete_mask_quest or at('Kakariko Village', is_child and Keaton_Mask)",
+            # Keaton Mask
+            "Market Mask Shop Item 6": "True",
+            # Bunny Hood
+            "Market Mask Shop Item 7": "complete_mask_quest or at('Graveyard', is_child and at_day and Spooky_Mask)",
+            # Spooky Mask
+            "Market Mask Shop Item 8": "
+                complete_mask_quest or at('Lost Woods', is_child and can_play(Sarias_Song) and Skull_Mask)"
+        }
+    },
+    {
+        "region_name": "Market Shooting Gallery",
+        "scene": "Market Shooting Gallery",
+        "locations": {
+            "Market Shooting Gallery Reward": "is_child"
+        },
+        "exits": {
+            "Market": "True"
+        }
+    },
+    {
+        "region_name": "Market Bombchu Bowling",
+        "scene": "Market Bombchu Bowling",
+        "locations": {
+            "Market Bombchu Bowling First Prize": "True",
+            "Market Bombchu Bowling Second Prize": "True",
+            "Market Bombchu Bowling Bombchus": "found_bombchus",
+            "Market Bombchu Bowling Bomb": "Bombs"
+        },
+        "exits": {
+            "Market": "True"
+        }
+    },
+    {
+        "region_name": "Market Potion Shop",
+        "scene": "Market Potion Shop",
+        "locations": {
+            "Market Potion Shop Item 1": "has_bottle and is_child",
+            "Market Potion Shop Item 2": "has_bottle and is_child",
+            "Market Potion Shop Item 3": "has_bottle and is_child",
+            "Market Potion Shop Item 4": "has_bottle and is_child",
+            "Market Potion Shop Item 5": "has_bottle and is_child",
+            "Market Potion Shop Item 6": "has_bottle and is_child",
+            "Market Potion Shop Item 7": "has_bottle and is_child",
+            "Market Potion Shop Item 8": "has_bottle and is_child"
+        },
+        "exits": {
+            "Market": "True"
+        }
+    },
+    {
+        "region_name": "Market Treasure Chest Game",
+        "scene": "Market Treasure Chest Game",
+        "locations": {
+            "Market Treasure Chest Game Salesman": "True",
+            "Market Treasure Chest Game Room 1 Bottom": "
+                (Small_Key_Treasure_Chest_Game, 1) and (shuffle_tcgkeys != 'vanilla' or can_use(Lens_of_Truth))",
+            "Market Treasure Chest Game Room 1 Top": "
+                (Small_Key_Treasure_Chest_Game, 1) and (shuffle_tcgkeys != 'vanilla' or can_use(Lens_of_Truth))",
+            "Market Treasure Chest Game Room 2 Bottom": "
+                (Small_Key_Treasure_Chest_Game, 2) and (shuffle_tcgkeys != 'vanilla' or can_use(Lens_of_Truth))",
+            "Market Treasure Chest Game Room 2 Top": "
+                (Small_Key_Treasure_Chest_Game, 2) and (shuffle_tcgkeys != 'vanilla' or can_use(Lens_of_Truth))",
+            "Market Treasure Chest Game Room 3 Bottom": "
+                (Small_Key_Treasure_Chest_Game, 3) and (shuffle_tcgkeys != 'vanilla' or can_use(Lens_of_Truth))",
+            "Market Treasure Chest Game Room 3 Top": "
+                (Small_Key_Treasure_Chest_Game, 3) and (shuffle_tcgkeys != 'vanilla' or can_use(Lens_of_Truth))",
+            "Market Treasure Chest Game Room 4 Bottom": "
+                (Small_Key_Treasure_Chest_Game, 4) and (shuffle_tcgkeys != 'vanilla' or can_use(Lens_of_Truth))",
+            "Market Treasure Chest Game Room 4 Top": "
+                (Small_Key_Treasure_Chest_Game, 4) and (shuffle_tcgkeys != 'vanilla' or can_use(Lens_of_Truth))",
+            "Market Treasure Chest Game Room 5 Bottom": "
+                (Small_Key_Treasure_Chest_Game, 5) and (shuffle_tcgkeys != 'vanilla' or can_use(Lens_of_Truth))",
+            "Market Treasure Chest Game Room 5 Top": "
+                (Small_Key_Treasure_Chest_Game, 5) and (shuffle_tcgkeys != 'vanilla' or can_use(Lens_of_Truth))",
+            "Market Treasure Chest Game Reward": "(Small_Key_Treasure_Chest_Game, 6)"
+        },
+        "exits": {
+            "Market": "True"
+        }
+    },
+    {
+        "region_name": "Market Bombchu Shop",
+        "scene": "Market Bombchu Shop",
+        "locations": {
+            "Market Bombchu Shop Item 1": "True",
+            "Market Bombchu Shop Item 2": "True",
+            "Market Bombchu Shop Item 3": "True",
+            "Market Bombchu Shop Item 4": "True",
+            "Market Bombchu Shop Item 5": "True",
+            "Market Bombchu Shop Item 6": "True",
+            "Market Bombchu Shop Item 7": "True",
+            "Market Bombchu Shop Item 8": "True"
+        },
+        "exits": {
+            "Market Back Alley": "True"
+        }
+    },
+    {
+        "region_name": "Market Dog Lady House",
+        "scene": "Market Dog Lady House",
+        "locations": {
+            "Market Lost Dog": "is_child and at_night and 'Kakariko Village Gate Open'",
+            "Market Dog Lady House Crate": "
+                (deadly_bonks != 'ohko' or Fairy or (can_use(Nayrus_Love) and shuffle_overworld_entrances == 'off'))"
+        },
+        "exits": {
+            "Market Back Alley": "True"
+        }
+    },
+    {
+        "region_name": "Market Man in Green House",
+        "scene": "Market Man in Green House",
+        "locations": {
+            "Market Man in Green House Pot 1": "True",
+            "Market Man in Green House Pot 2": "True",
+            "Market Man in Green House Pot 3": "True"
+        },
+        "exits": {
+            "Market Back Alley": "True"
+        }
+    }
+]

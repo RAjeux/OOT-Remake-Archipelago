@@ -100,13 +100,15 @@ class PlacementTests(unittest.TestCase):
                                     source_game="Dark Souls III"))
 
     def test_lacs_reserves_only_its_owners_key_and_its_native_scene(self):
-        kwargs = dict(item="Boss Key (Ganons Castle)", option="shuffle_ganon_bosskey", mode="lacs_dungeons",
-                      source={"kind": "flow", "native_kind": "cutscene_gift"},
-                      source_options={"shuffle_ganon_bosskey": "lacs_dungeons"}, source_name="ToT Light Arrows Cutscene")
-        self.assertTrue(self.permits(**kwargs))
-        self.assertFalse(self.permits(**dict(kwargs, source_player=2)))
-        self.assertFalse(self.permits(**dict(kwargs, source_name="Other scene")))
-        self.assertFalse(self.permits(**dict(kwargs, item="Bow")))
+        for mode in ("lacs_dungeons", "lacs_medallions"):
+            with self.subTest(mode=mode):
+                kwargs = dict(item="Boss Key (Ganons Castle)", option="shuffle_ganon_bosskey", mode=mode,
+                              source={"kind": "flow", "native_kind": "cutscene_gift"},
+                              source_options={"shuffle_ganon_bosskey": mode}, source_name="ToT Light Arrows Cutscene")
+                self.assertTrue(self.permits(**kwargs))
+                self.assertFalse(self.permits(**dict(kwargs, source_player=2)))
+                self.assertFalse(self.permits(**dict(kwargs, source_name="Other scene")))
+                self.assertFalse(self.permits(**dict(kwargs, item="Bow")))
 
     def test_flow_location_context_must_be_exported_not_guessed_from_its_name(self):
         self.assertEqual(source_context({"kind": "flow"}), (None, None, False))

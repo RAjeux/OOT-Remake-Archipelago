@@ -86,7 +86,10 @@ def self_test(destination):
         assert node.with_name("LICENSE").read_bytes() == (at / "runtime/node/LICENSE").read_bytes()
         with ZipFile(installed) as world:
             assert {name.split("/")[0] for name in world.namelist()} == {"ootrr_remake"}
-            assert json.loads(world.read("ootrr_remake/network_sources.json")) == native_catalog
+            legacy = json.loads(world.read("ootrr_remake/network_sources.json"))
+            additions = json.loads(world.read("ootrr_remake/additional_sources.json"))
+            assert legacy["schema"] == 1 and additions["schema"] == SCHEMA
+            assert {"schema": SCHEMA, "sources": dict(legacy["sources"], **additions["sources"])} == native_catalog
             for name in ("engine.cjs", "engine.wasm"):
                 (work / name).write_bytes(world.read("ootrr_remake/" + name))
         run = app_runtime.run_process([str(node), "--no-warnings", str(work / "engine.cjs"),

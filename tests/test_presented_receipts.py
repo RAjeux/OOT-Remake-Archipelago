@@ -65,6 +65,10 @@ def native_presenter():
     entry = EntryPoint("GetInEvent_Animation")
     entry.main_event = make_index(snap)
     editor.chart.entry_points.append(entry)
+    trap = editor.action("NativeIceTrap", "Player_Event", "FixtureNativeIceTrap", None)
+    entry = EntryPoint("AP_IceTrap")
+    entry.main_event = make_index(trap)
+    editor.chart.entry_points.append(entry)
     return editor.write("authored native presenter")[0]
 
 
@@ -222,6 +226,13 @@ class PresentedReceiptTests(unittest.TestCase):
                if command == "EventTriggerAddOrSubGameDataInt" and params["GameDataName"] == CURSOR]
         self.assertEqual(len(ack), 1)
         self.assertEqual(trace[ack[0]][1]["Value"], 1)
+        if ITEM_DATA[name].get("mode") == "trap":
+            self.assertEqual(commands["FixtureNativeIceTrap"], 1)
+            self.assertEqual(commands["FixtureNativeModel"], 0)
+            self.assertEqual(commands["EventTriggerAddOrRemovePouchContent"], 0)
+            self.assertEqual(trace[0][0], "FixtureNativeIceTrap")
+            self.assertEqual(trace[-1][0], "EventTriggerRequestAutoSave")
+            return trace
         self.assertEqual(commands["FixtureNativeModel"], 1)
         self.assertEqual(commands["FixtureNativeSound"], 1)
         self.assertEqual(commands["FixtureItemWindow"], 1)
@@ -450,7 +461,7 @@ class GroundStyleReceiptTests(unittest.TestCase):
 
     def test_route_counts_and_facing_are_major_only_for_the_entire_catalogue(self):
         self.assertEqual(Counter(receipt_style(row, self.native_info) for row in ITEM_DATA.values()),
-                         {"pickup": 44, "medium": 17, "large": 144})
+                         {"pickup": 44, "medium": 17, "large": 144, "trap": 1})
         for name, metadata in ITEM_DATA.items():
             with self.subTest(item=name):
                 run, _ = self.execute(name)

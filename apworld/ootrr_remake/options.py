@@ -1,11 +1,12 @@
 """Typed Archipelago options backed by the shared public settings catalogue."""
 from dataclasses import make_dataclass
 
-from Options import (Choice, OptionGroup, OptionSet, PerGameCommonOptions, Range, Removed, Toggle,
+from Options import (Choice, OptionDict, OptionGroup, OptionSet, PerGameCommonOptions, Range, Removed, Toggle,
                      random_weighted_range)
 
-from .settings import OPTION_SPECS, default_options, validate_options
+from .settings import OPTION_SPECS, ap_choice_key, default_options, native_choice_key, validate_options
 from .settings_labels import GROUP_ORDER, setting_label
+from .feature_settings import QUARANTINED_DEFAULTS, unavailable_setting
 
 
 class SteppedRange(Range):
@@ -44,9 +45,9 @@ def _option_type(spec):
     kind = spec["kind"]
     if kind == "choice":
         base = Choice
-        # AP reserves "random" for choosing a complete option value. Keep the
-        # native per-shop draw at its historical index behind an explicit key.
-        attrs.update({"option_" + ("random_deals" if spec["id"] == "shuffle_shops" and value == "random" else value): index
+        # AP reserves "random" for rolling the whole option. Explicit native
+        # random modes retain their numeric IDs behind distinct public keys.
+        attrs.update({"option_" + ap_choice_key(spec["id"], value): index
                       for index, value in enumerate(spec["choices"])})
         attrs["default"] = spec["choices"].index(spec["default"])
     elif kind == "range":
@@ -55,6 +56,9 @@ def _option_type(spec):
     elif kind == "set":
         base = OptionSet
         attrs.update(default=frozenset(spec["default"]), valid_keys=frozenset(spec["choices"]))
+    elif kind == "dict":
+        base = OptionDict
+        attrs["default"] = dict(spec["default"])
     else:
         base = Toggle
         attrs["default"] = int(spec["default"])
@@ -101,10 +105,27 @@ class TradeBonusRemoved(Removed):
         super().__init__("")
 
 
+def _unavailable_type(name):
+    class Unavailable(Removed):
+        def __init__(self, value):
+            disabled = (value is None or value is False or value == 0 or
+                        isinstance(value, str) and value.strip().casefold() in {"", "false", "off", "0", "none", "null"})
+            if not disabled:
+                raise unavailable_setting(name)
+            super().__init__("")
+    Unavailable.__name__ = "Unavailable" + "".join(word.title() for word in name.split("_"))
+    Unavailable.__qualname__ = Unavailable.__name__
+    return Unavailable
+
+
+UNAVAILABLE_TYPES = {name: _unavailable_type(name) for name in QUARANTINED_DEFAULTS}
+globals().update({option.__name__: option for option in UNAVAILABLE_TYPES.values()})
+
+
 RemakeOptions = make_dataclass(
     "RemakeOptions", [(name, option) for name, option in OPTION_TYPES.items()]
     + [("ootrr_settings", OOTRRSettingsRemoved), ("kokiri_shop_checks", KokiriShopChecksRemoved),
-       ("shuffle_trade_checks", TradeBonusRemoved)], bases=(PerGameCommonOptions,),
+       ("shuffle_trade_checks", TradeBonusRemoved)] + list(UNAVAILABLE_TYPES.items()), bases=(PerGameCommonOptions,),
     namespace={"__module__": __name__})
 
 OPTION_GROUPS = [OptionGroup(group, [OPTION_TYPES[spec["id"]] for spec in OPTION_SPECS if spec["group"] == group],
@@ -128,6 +149,16 @@ def _normalize_inactive_options(values):
 
     if values["bridge"] != "dungeons":
         reset("bridge_rewards")
+    if values["bridge"] != "medallions":
+        reset("bridge_medallions")
+    if values["shuffle_ganon_bosskey"] != "lacs_medallions":
+        reset("lacs_medallions")
+    if values["skulls_by_day"]:
+        reset("night_skulls_suns_song")
+    if values["cosmetic_color_mode"] != "custom":
+        reset("cosmetic_colors")
+    if not values["shuffle_ice_traps"]:
+        reset("ice_trap_count")
     if values["skip_ganon_trials"]:
         reset("trials")
     if values["door_of_time_condition"] in {"open", "song"}:
@@ -160,9 +191,7 @@ def option_values(options):
             continue
         value = option.value
         if spec["kind"] == "choice":
-            value = option.current_key
-            if name == "shuffle_shops" and value == "random_deals":
-                value = "random"
+            value = native_choice_key(name, option.current_key)
         elif spec["kind"] == "toggle":
             value = bool(value)
         values[name] = value

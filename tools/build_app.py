@@ -192,10 +192,14 @@ def licenses(work, node_license):
     return result
 
 
-def source_notice(work, version):
+def source_notice(work, version, source_ref=None):
+    if source_ref is not None and re.fullmatch(r"[0-9a-f]{40}", source_ref) is None:
+        raise ValueError("The corresponding-source revision must be a complete Git commit SHA.")
+    source = source_ref or "v" + version
+    archive = source_ref or "refs/tags/v" + version
     text = ("OOT Remake Archipelago - corresponding source and third-party notices\n\n"
-            f"Application and adapted engine: https://github.com/RAjeux/OOT-Remake-Archipelago/tree/v{version}\n"
-            f"Source archive: https://github.com/RAjeux/OOT-Remake-Archipelago/archive/refs/tags/v{version}.zip\n"
+            f"Application and adapted engine: https://github.com/RAjeux/OOT-Remake-Archipelago/tree/{source}\n"
+            f"Source archive: https://github.com/RAjeux/OOT-Remake-Archipelago/archive/{archive}.zip\n"
             f"Node.js {NODE_VERSION}: https://nodejs.org/dist/v{NODE_VERSION}/node-v{NODE_VERSION}.tar.xz\n"
             f"Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}: https://www.python.org/downloads/source/\n"
             f"PyInstaller {PYINSTALLER_VERSION}: https://github.com/pyinstaller/pyinstaller/tree/v{PYINSTALLER_VERSION}\n"
@@ -207,7 +211,7 @@ def source_notice(work, version):
     return target
 
 
-def payload(work, version, node, node_license):
+def payload(work, version, node, node_license, source_ref=None):
     # Assemble the APWorld directly. Do not overwrite any historical ZIP/reference.
     from build import WORLD_FILES, archive, tree
     world = work / "ootrr_remake.apworld"
@@ -218,7 +222,7 @@ def payload(work, version, node, node_license):
              "runtime/libzstd.dll": ROOT / "distribution/runtime/libzstd.dll",
              "runtime/LICENSE.txt": ROOT / "distribution/runtime/LICENSE.txt",
              "runtime/node/node.exe": node, "runtime/node/LICENSE": node_license,
-             "SOURCES.txt": source_notice(work, version), "assets/icon.png": ROOT / "assets/icon.png"}
+             "SOURCES.txt": source_notice(work, version, source_ref), "assets/icon.png": ROOT / "assets/icon.png"}
     files.update({"native/" + name: ROOT / "native" / name for name in HOST_FILES})
     files.update({name: ROOT / name for name in ("VERSION", "LICENSE", "NOTICE")})
     for path in (ROOT / "client/ootrr_triforce").iterdir():
@@ -244,6 +248,7 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT / "dist")
     parser.add_argument("--work", type=Path, default=ROOT / "build/application")
     parser.add_argument("--plan", action="store_true", help="Prepare/verify resources without freezing the application.")
+    parser.add_argument("--source-ref", help="Exact Git commit SHA for a development candidate's corresponding-source links.")
     args = parser.parse_args()
     if sys.platform != "win32" or sysconfig.get_platform() != "win-amd64":
         parser.error("Build the standalone Windows x64 app using Windows x64 Python.")
@@ -261,7 +266,7 @@ def main():
     name = "OOT-Remake-Archipelago-" + version
     version_file = write_version_info(args.work, version, name)
     node, node_license = pinned_node(args.node, args.node_license)
-    files, manifest = payload(args.work, version, node, node_license)
+    files, manifest = payload(args.work, version, node, node_license, args.source_ref)
     if args.plan:
         print(json.dumps(dict(result="PLAN", version=version, payload_files=len(files),
                               node_sha256=sha(node), manifest=str(args.work / "app-manifest.json"),

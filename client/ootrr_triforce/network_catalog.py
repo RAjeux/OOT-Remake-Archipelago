@@ -8,14 +8,21 @@ import copy
 import json
 from importlib import resources
 
-SCHEMA = 1
+SCHEMA = 2
 SHOP_MODE = "randomized_stock"
 _document = json.loads(resources.files(__package__).joinpath("network_sources.json").read_text(encoding="utf-8"))
-if _document.get("schema") != SCHEMA or not isinstance(_document.get("sources"), dict):
+if _document.get("schema") != 1 or not isinstance(_document.get("sources"), dict):
     raise ValueError("Unsupported native source catalogue.")
-SOURCES = _document["sources"]
+LEGACY_SOURCES = _document["sources"]
+_additional = json.loads(resources.files(__package__).joinpath("additional_sources.json").read_text(encoding="utf-8"))
+if (_additional.get("schema") != SCHEMA or not isinstance(_additional.get("sources"), dict)
+        or set(_additional["sources"]) & LEGACY_SOURCES.keys()):
+    raise ValueError("Unsupported additional native source catalogue.")
+ADDITIONAL_SOURCES = _additional["sources"]
+ADDITIONAL_REWARDS = _additional["rewards"]
+SOURCES = dict(LEGACY_SOURCES, **ADDITIONAL_SOURCES)
 _identities = json.loads(resources.files(__package__).joinpath("network_ids.json").read_text(encoding="utf-8"))
-if _identities.get("schema") != SCHEMA or not isinstance(_identities.get("locations"), dict):
+if _identities.get("schema") != 1 or not isinstance(_identities.get("locations"), dict):
     raise ValueError("Unsupported native source identity registry.")
 APPENDED_IDS = _identities["locations"]
 
@@ -57,8 +64,10 @@ def enabled(data):
         if "network_sources" in data:
             raise ValueError("Native source metadata has no schema.")
         return False
-    if type(value) is not int or value != SCHEMA:
+    if type(value) is not int or value not in (1, SCHEMA):
         raise ValueError("Unsupported native source schema.")
+    if value == 1 and data.get("additional_sources"):
+        raise ValueError("Additional native sources require schema 2.")
     return True
 
 
@@ -95,6 +104,21 @@ def check_flags(name, *, network=False):
     return [murmur3(flag) for flag in flag_names(name, network=network)]
 
 
+def _additional_reward(name, data):
+    reward = ADDITIONAL_REWARDS[name]
+    if not reward.startswith(("Map (", "Compass (")):
+        return reward
+    world = data.get("access_logic", {}).get("world", {})
+    items = world.get("items", [])
+    for entry in world.get("start", []):
+        if (isinstance(entry, list) and len(entry) == 2
+                and type(entry[0]) is int and 0 <= entry[0] < len(items)
+                and type(entry[1]) is int and entry[1] > 0
+                and items[entry[0]].get("name") == reward):
+            return "Rupee (1)"
+    return reward
+
+
 def validate_sources(data):
     """Validate descriptors against packaged native data and exact seed rewards."""
     if not enabled(data):
@@ -105,6 +129,14 @@ def validate_sources(data):
     seed = data["seed_file"]
     placements, shops = seed["placements"], seed.get("shops", {})
     expected = set(placements) | set(shops)
+    if set(placements) & ADDITIONAL_SOURCES.keys():
+        raise ValueError("Additional AP checks must not rewrite the compatible builder's native seed.")
+    additions = data.get("additional_sources", [])
+    if (not isinstance(additions, list) or any(not isinstance(name, str) for name in additions)
+            or len(set(additions)) != len(additions) or not set(additions) <= ADDITIONAL_SOURCES.keys()
+            or set(additions) & expected):
+        raise ValueError("Invalid additional native source selection.")
+    expected.update(additions)
     if set(rows) != expected:
         raise ValueError("Network sources do not match all randomized native rewards.")
     for name, row in rows.items():
@@ -121,6 +153,8 @@ def validate_sources(data):
                     or actual.pop("deal", None) != shop.get("deal", False)):
                 raise ValueError("Native shop descriptor differs from its seed: " + name)
             expected_reward = shop["item"]
+        elif name in additions:
+            expected_reward = _additional_reward(name, data)
         else:
             expected_reward = placements[name]
         if actual != native or reward != expected_reward:

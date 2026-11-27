@@ -23,6 +23,11 @@ CAPACITY_QUERY = "EventQueryCanAddToPorchByGameData"
 GRANTS = ((156, "Event281"), (461, "Event543"))
 CAPACITY = ((6, "Event77"), (170, "Event303"))
 BOTTLE_CAPACITY = (186, "Event325")
+# Reviewed native feature_difficulty/dupes.rs DisplayShop ABI. These are its
+# eleven ordinary refill actors, not AP presentation actors or new bottles.
+NO_DUPE_GOODS = (("RedPotion", 0), ("GreenPotion", 1), ("BluePotion", 2),
+                 ("BlueFire", 3), ("Fish", 4), ("BigPoe", 6), ("Poe", 7),
+                 ("Bug", 8), ("Fairy", 9), ("Milk", 10), ("HalfMilk", 11))
 SHOP_FLAGS = {record["flag_name"] for record in SHOP_CHECKS.values()}
 SHOP_BY_FLAG = {record["flag_name"]: record for record in SHOP_CHECKS.values()}
 
@@ -84,6 +89,48 @@ def _retarget(event, previous, following):
     return changed
 
 
+def _no_dupe_bottle_front(first, refusal, *, marked=False):
+    """Recognize the complete authored native wrapper before reusing its rule."""
+    from evfl.event import SwitchEvent
+
+    def fail():
+        raise ValueError(tr('Unknown shop capacity condition: ') + BOTTLE_CAPACITY[1])
+
+    if first.name == "Event240":
+        if marked:
+            fail()
+        return False
+    success = None
+    node = first
+    for number, (actor, bottle) in enumerate(NO_DUPE_GOODS):
+        if (node is None or node.name != f"OOTRRNoDupeIs186_{number}"
+                or not isinstance(node.data, SwitchEvent)
+                or str(node.data.actor.v.identifier) != "GameDataActor"
+                or _command(node, "query") != "EventQueryIsGameDataString64"
+                or node.data.params is None
+                or node.data.params.data != {"GameDataName": SELECTED, "Index": -1,
+                                             "Value": "Item_Bottle_" + actor}
+                or set(node.data.cases) != {0, 1}):
+            fail()
+        held = node.data.cases[0].v
+        if (held is None or held.name != f"OOTRRNoDupeHas186_{number}"
+                or not isinstance(held.data, SwitchEvent)
+                or str(held.data.actor.v.identifier) != "PouchSystemActor"
+                or _command(held, "query") != "EventQueryIsExistBottleTypeInPouch"
+                or held.data.params is None or held.data.params.data != {"BottleItem": bottle}
+                or set(held.data.cases) != {0, 1}
+                or held.data.cases[0].v is not refusal):
+            fail()
+        free = held.data.cases[1].v
+        if free is None or free.name != "Event240" or (success is not None and free is not success):
+            fail()
+        success = free
+        node = node.data.cases[1].v
+    if node is not success:
+        fail()
+    return True
+
+
 def patch_shop_flow(raw, records, *, pouch_raw=None):
     """Return the edited flow; refuse unknown grant/capacity layouts before editing."""
     from evfl.entry_point import EntryPoint
@@ -109,6 +156,7 @@ def patch_shop_flow(raw, records, *, pouch_raw=None):
         return bool(metadata.get("bottle_item") and metadata.get("pouch_special") == "NotPushToPouch")
 
     bottle_refusal = None
+    no_dupe_bottles = False
     if any(bottle_refill(record) for record in records):
         index, name = BOTTLE_CAPACITY
         event = chart.events[index] if index < len(chart.events) else None
@@ -122,12 +170,14 @@ def patch_shop_flow(raw, records, *, pouch_raw=None):
         # The authored refusal reselects the shelf and runs NotAvailableTalk.
         # Reusing it avoids paying or closing the AP check when no bottle fits.
         bottle_refusal = event.data.cases[1].v
-        if (event.data.cases[0].v.name != "Event240" or bottle_refusal.name != "Event333"
+        if (bottle_refusal.name != "Event333"
                 or not isinstance(bottle_refusal.data, ActionEvent)
                 or str(bottle_refusal.data.actor.v.identifier) != "Npc_EventStarter"
                 or _command(bottle_refusal, "action") != "EventTriggerShopItemSelect"
                 or bottle_refusal.data.params is not None):
             raise ValueError(tr('Unknown shop capacity condition: ') + name)
+        no_dupe_bottles = _no_dupe_bottle_front(event.data.cases[0].v, bottle_refusal,
+                                              marked=any(node.name.startswith("OOTRRNoDupe") for node in chart.events))
     grant_entry = None
     if local_records:
         if pouch_raw is None:
@@ -217,8 +267,14 @@ def patch_shop_flow(raw, records, *, pouch_raw=None):
         for number, record in reversed(list(enumerate(records, 1))):
             available = success
             if bottle_refill(record):
+                if no_dupe_bottles:
+                    from .native_presentations import BOTTLE_ITEMS
+                    bottle = ITEM_DATA[record["local_item"]]["bottle_item"]
+                    available = editor.switch(PREFIX + f"NoDuplicate_{gate.name}_{number}", "PouchSystemActor",
+                                              "EventQueryIsExistBottleTypeInPouch", {"BottleItem": BOTTLE_ITEMS[bottle]},
+                                              bottle_refusal, success)
                 available = editor.switch(PREFIX + f"Bottle_{gate.name}_{number}", "PouchSystemActor",
-                                          "EventQueryIsAnyBottleEmpty", None, success, bottle_refusal)
+                                          "EventQueryIsAnyBottleEmpty", None, available, bottle_refusal)
             root = selected(PREFIX + f"Capacity_{gate.name}_{number}", record["actor"], available, root)
         replaced = sum(_retarget(event, gate, root) for event in original_events)
         for point in original_entries:

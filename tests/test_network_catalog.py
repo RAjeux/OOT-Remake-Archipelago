@@ -116,7 +116,7 @@ class NetworkCatalogueTests(unittest.TestCase):
 
     def test_packaged_catalogue_matches_the_actual_wasm_export(self):
         actual = json.loads(run_engine("catalog", {}))
-        self.assertEqual(actual, dict(schema=1, sources=SOURCES))
+        self.assertEqual(actual, dict(schema=2, sources=SOURCES))
 
 
 if __name__ == "__main__":

@@ -59,12 +59,24 @@ def export_yaml():
 
 def read_manifest(path):
     data = json.loads(Path(path).read_text(encoding="utf-8"))
+    from .feature_settings import read_features
+    read_features(data.get("features"))
+    if data.get("network_sources_schema") == 2 and "access_logic" not in data:
+        raise ValueError(tr("The room is missing its versioned access rules."))
+    if "access_logic" in data:
+        from .access_logic import validate
+        validate(data["access_logic"])
+        if "features" not in data:
+            raise ValueError(tr("The room is missing its versioned feature settings."))
+        from .pool_adjustments import from_manifest
+        from_manifest(data)
     if data.get("game", LEGACY_GAME) not in (GAME, LEGACY_GAME):
         raise ValueError(tr('This file belongs to another Archipelago game.'))
     seed = data["seed_file"]
-    from .master_sword import token_material
-    token = hashlib.sha256(token_material(data['room'], data['player'], seed['checksum'],
-                                          data.get("shuffle_master_sword", False) is True).encode()).hexdigest()
+    from .room_identity import token as room_token
+    token = room_token(data['room'], data['player'], seed['checksum'],
+                       data.get("shuffle_master_sword", False) is True,
+                       features=data.get("features"), access_logic=data.get("access_logic"))
     if (data["protocol"] != PROTOCOL or data["token"] != token
             or seed["generator"] != "ootrr-core 0.8.1" or seed["format"] != "ootrr-seed"):
         raise ValueError(tr('Incompatible player file or version.'))
@@ -163,6 +175,10 @@ def choose(label, suffix=None, folder=False):
 def patch_request(data):
     files = {}
     for name, gear in data["moved"].items():
+        if name in data.get("additional_sources", []):
+            # These physical checks are normalized by the versioned post-build
+            # pass; the portable builder never knew their location identities.
+            continue
         if name not in CHESTS:
             continue
         for ref in CHESTS[name]:
@@ -175,6 +191,12 @@ def patch_request(data):
 def preparation_settings(settings, data):
     """Bind text localization to the player's canonical seed, never UI defaults."""
     result = dict(settings)
+    from .feature_settings import read_features
+    features = read_features(data.get("features"))
+    if features is not None:
+        result["features"] = features
+    else:
+        result.pop("features", None)
     from .network_catalog import enabled, validate_sources
     if enabled(data):
         result["network_sources_schema"] = data["network_sources_schema"]
@@ -244,6 +266,9 @@ def build(root, settings, data):
         prepare_quest_fixes(romfs, mod)
         from .fortress_fixes import prepare_fortress_fixes
         prepare_fortress_fixes(romfs, mod)
+        from .feature_setup import prepare_features, prepare_cosmetics
+        prepare_features(romfs, mod, data)
+        native_setup.prepare_chest_flags(romfs, mod, data)
         from .shop_hours import prepare_shop_hours
         prepare_shop_hours(romfs, mod, bool(data.get("shops_always_open", False)))
         if data.get("adult_trade_shuffle"):
@@ -252,6 +277,7 @@ def build(root, settings, data):
         if data.get("reward_mode") in ("all_chest_rewards", "all_locations"):
             from .receipt_events import prepare_receipts
             prepare_receipts(romfs,mod,data)
+        prepare_cosmetics(romfs, mod, data)
         if settings.get("native"):
             native_setup.bind_romfs(romfs,mod,data,settings["baseline"])
             shutil.copy2(resource_root()/"native/archipelago.dll",mod.parent/"archipelago.dll")

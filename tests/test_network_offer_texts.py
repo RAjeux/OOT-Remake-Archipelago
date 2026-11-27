@@ -43,7 +43,12 @@ class OfferParameterTests(unittest.TestCase):
         self.assertIs(offer_parameters(record(kind="shop"), parameters), parameters)
         self.assertIs(offer_parameters({"name": "Unrelated reward"}, parameters), parameters)
         self.assertEqual(prepare_offer_texts("missing", "missing", {}, {}), {})
-        self.assertEqual(prepare_offer_texts("missing", "missing", {}, {"network_sources_schema": 2}), {})
+        self.assertEqual(prepare_offer_texts("missing", "missing", {}, {"network_sources_schema": 3}), {})
+        for schema in (1, 2):
+            settings = {"network_sources_schema": schema, "network_sources": {}}
+            self.assertEqual(prepare_offer_texts("missing", "missing", {}, settings), {})
+            with self.assertRaisesRegex(ValueError, "Missing native source metadata"):
+                prepare_offer_texts("missing", "missing", {}, {"network_sources_schema": schema})
 
     def test_scrub_without_native_offer_argument_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "no offer message"):

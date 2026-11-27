@@ -5,6 +5,20 @@ pub mod bunny;
 pub mod navi_return;
 pub mod poe;
 pub mod skip;
+pub mod dampe_dig;
+pub mod dampe_race;
+pub mod fishing;
+pub mod gear_cycle;
+pub mod low_health;
+pub mod night_skulls;
+pub mod owl;
+pub mod scarecrow;
+pub mod skull_day;
+pub mod skull_kid_session;
+pub mod tower_escape;
+pub mod trap_chests;
+pub mod area_intros;
+pub mod first_pickup_extras;
 
 use std::fs;
 use std::path::Path as P;
@@ -39,13 +53,16 @@ pub struct Opts {
     pub bunny: bunny::Mode,
     pub big_chests: bool,
     pub blocks: bool,
+    pub owls: bool,
+    pub gear_cycle: bool,
+    pub low_health: bool,
 }
 
 pub type Have<'a> = &'a dyn Fn(&str) -> Option<Vec<u8>>;
 
 impl Opts {
     pub fn any(&self) -> bool {
-        self.skip != Skip::Off || self.anju || self.poe || self.navi != navi_return::Mode::Off || self.bunny != bunny::Mode::Off || self.big_chests || self.blocks
+        self.skip != Skip::Off || self.anju || self.poe || self.navi != navi_return::Mode::Off || self.bunny != bunny::Mode::Off || self.big_chests || self.blocks || self.owls || self.gear_cycle || self.low_health
     }
 
     pub fn logic(&self) -> Vec<(&'static str, &'static str)> {
@@ -88,6 +105,9 @@ impl Opts {
         if self.blocks {
             out.push(blocks::NOTE.to_string());
         }
+        if self.owls { out.push(owl::NOTE.to_string()); }
+        if self.gear_cycle { out.push(gear_cycle::NOTE.to_string()); }
+        if self.low_health { out.push(low_health::NOTE.to_string()); }
         out
     }
 }
@@ -142,7 +162,7 @@ pub fn read(s: &Settings, bad: &mut Vec<String>) -> Opts {
             bunny::Mode::Off
         }
     };
-    Opts { skip, anju, poe, navi, bunny, big_chests, blocks }
+    Opts { skip, anju, poe, navi, bunny, big_chests, blocks, ..Opts::default() }
 }
 
 pub fn files() -> Vec<String> {
@@ -198,7 +218,37 @@ pub fn stage(rf: &mut Romfs, o: &Opts, have: Have) -> Res<Vec<Out>> {
     if o.blocks {
         outs.extend(blocks::stage(rf, have)?);
     }
+    if o.owls {
+        owl::stage(rf, have, &mut outs)?;
+    }
+    if o.gear_cycle {
+        outs.extend(gear_cycle::stage(rf, have)?);
+        for (file, _) in bunny::PACKS {
+            stack(rf, &mut outs, have, file, gear_cycle::patch_boots_hop)?;
+        }
+    }
+    if o.low_health {
+        outs.extend(low_health::stage(rf, have)?);
+        for file in low_health::PACKS {
+            stack(rf, &mut outs, have, file, low_health::pulse_pack)?;
+        }
+    }
     Ok(outs)
+}
+
+fn stack(rf: &mut Romfs, outs: &mut Vec<Out>, have: Have, path: &str,
+         f: impl FnOnce(&[u8]) -> Res<Vec<u8>>) -> Res<()> {
+    match outs.iter().position(|o| o.path == path) {
+        Some(i) => {
+            let dictionary = dict_id(&outs[i].z);
+            let raw = rf.zs.decompress(&outs[i].z)?;
+            let changed = f(&raw)?;
+            outs[i].new = changed.len();
+            outs[i].z = zs::compress_raw(&changed, dictionary)?;
+        }
+        None => outs.push(edit_zs(rf, have, path, f)?),
+    }
+    Ok(())
 }
 
 pub fn build(romfs: &P, load: &P, name: &str, o: &Opts) -> Res<String> {
@@ -252,7 +302,7 @@ mod tests {
         let mut bad: Vec<String> = Vec::new();
         let o: Opts = read(&s, &mut bad);
         assert!(bad.is_empty());
-        assert_eq!(o, Opts { skip: Skip::Story, anju: true, poe: true, navi: navi_return::Mode::Off, bunny: bunny::Mode::Off, big_chests: false, blocks: false });
+        assert_eq!(o, Opts { skip: Skip::Story, anju: true, poe: true, navi: navi_return::Mode::Off, ..Default::default() });
         s.set(BUNNY, Value::s("jump")).unwrap();
         assert_eq!(read(&s, &mut bad).bunny, bunny::Mode::Jump);
         assert_eq!(read(&s, &mut bad).notes().len(), 4);

@@ -20,6 +20,8 @@ pub mod held_chests;
 pub mod junk_spots;
 pub mod key_spots;
 pub mod logic;
+pub mod modern;
+pub mod modern_world_files;
 pub mod map_passes;
 pub mod minigame_logic;
 pub mod pick;

@@ -60,13 +60,14 @@ for name,actor in goods.items():
  assert row['quantity']>=1, f"Incorrect shop quantity: {name}"
 rewards.update(SHOP_ITEMS)
 rewards[MASTER_ITEM]=dict(actor=MASTER_ACTOR,mode='actor',kind='Item',quantity=1,advancement=True)
+rewards['Ice Trap']=dict(actor='Item_Range_Bow',mode='trap',kind='Trap',quantity=1)
 # AP corrects six legacy physical bundles without changing engine input data or
 # protocol identities. Every replacement must be the existing exact-size good.
 for name,native in EXACT_BUNDLE_REWARDS.items():
  assert int(re.search(r'\((\d+)\)',name).group(1))==SHOP_ITEMS[native]['quantity'], f"Incorrect AP bundle size: {name}"
  rewards[name]=dict(rewards[name],actor=SHOP_ITEMS[native]['actor'],quantity=SHOP_ITEMS[native]['quantity'])
 assert rewards==ITEM_DATA, "Native rewards or quantities differ from OOTRR data."
-order=[*native_order,*sorted(SHOP_ITEMS),MASTER_ITEM]
+order=[*native_order,*sorted(SHOP_ITEMS),MASTER_ITEM,'Ice Trap']
 assert ITEM_IDS=={n:0x6F7100+i for i,n in enumerate(order)}, "Item IDs changed."
 for name,item in rewards.items():
  expected={item['actor'],*item.get('tiers',()),*item.get('world',())}

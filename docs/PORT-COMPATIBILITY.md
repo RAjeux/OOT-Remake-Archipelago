@@ -123,6 +123,14 @@ The gameplay test used a new private save and a copied local room with a second 
 
 The first remote check granted five rupees and saved received index 1. An incoming DeathLink then changed Link's life from 12 to 0 without an outgoing echo. A second five-rupee item was sent while no Hookshot game process was running. After restarting and loading the same private save, the game reached ten rupees and saved received index 2, with exactly one new receipt event. The first item and the previous DeathLink were not replayed.
 
+### Longshot internal prototype
+
+The separate [Longshot source prototype](LONGSHOT-PROTOTYPE.md) has actual
+Windows title-screen AP connection, reconnection and isolated incoming-DeathLink
+evidence at one pinned source revision. It remains internal: there is no
+Longshot launcher option or claim of complete receipt, rollback or gameplay
+compatibility.
+
 ### Fritchii scope
 
 Fritchii's NUP loader handles the standalone update container directly; conversion to NSP or XCI was not required. The portable test profile used this layout:

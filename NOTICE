@@ -12,6 +12,12 @@ notices, including the MIT-licensed OoT Randomizer logic and other upstream
 contributions, are preserved in moteur/ootrr-ap/NOTICE and
 client/ootrr_triforce/NOTICE. Earlier OOTRR MIT notices are retained upstream.
 
+Selected rules, QOL, difficulty, tracker, trap, cosmetics and resource fixes
+also derive from OOTRR revision 4fa6e5a6da839b4766bcedafb718c241a25bdd77,
+reviewed 27 November 2026, under GPL-3.0-or-later with its retained notices.
+Archipelago adaptations are this integration's work. See REFERENCES.md and
+docs/UPSTREAM-INTEGRATION.md; the portable constructor remains OOTRR 0.8.1.
+
 Python resource tools derived from Mozencaz/OotrR retain their MIT notice in
 client/credits/OotrR-MIT.txt. Python, Go and native dependencies retain their
 own license files in client/credits/, client/websockets/, native/vendor/,
