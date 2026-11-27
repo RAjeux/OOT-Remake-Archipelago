@@ -4,7 +4,7 @@
 
 ## Le bon téléchargement
 
-**[Télécharger le launcher Windows 0.10.3-alpha.1](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.3-alpha.1/OOT-Remake-Archipelago-0.10.3-alpha.1.exe)** · [Page de cette release](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.3-alpha.1)
+**[Télécharger le launcher Windows 0.10.4-alpha.1](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.1/OOT-Remake-Archipelago-0.10.4-alpha.1.exe)** · [Page de cette release](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.1)
 
 Un seul EXE suffit : le client AP, Python, Node.js et l'APWorld sont inclus. Le builder OOTRR compatible est téléchargé au premier besoin.
 
@@ -61,6 +61,8 @@ Pour les sessions suivantes, ouvre le même launcher et clique sur **Jouer**. Tu
 
 Les données sont conservées dans `%LOCALAPPDATA%\OOTRR-Archipelago`, indépendamment de l'EXE. Hookshot possède un espace séparé : changer de port ne transfère pas la sauvegarde.
 
-La version 0.10.3 change l'interface. Une salle déjà préparée avec les ressources actuelles de 0.10.2 ne demande pas de nouvelle préparation. Si le launcher indique qu'une préparation est nécessaire, ferme Zelda et prépare **le même `.apootrr` compatible**, avec la même sauvegarde. Une nouvelle configuration exige une nouvelle génération.
+Tu peux continuer une salle native 0.10 avec son `.apootrr` et sa sauvegarde après avoir mis le launcher à jour. Si une préparation est demandée, ferme Zelda et prépare **le même fichier joueur compatible** : ses réglages, checks et placements restent identiques.
+
+Pour les nouveaux réglages et checks de 0.10.4, l'organisateur doit installer l'APWorld correspondant, redémarrer Archipelago et générer une nouvelle salle. Utilise alors son nouveau `.apootrr` et une sauvegarde dédiée. Mettre le launcher ou l'APWorld à jour ne transforme pas une salle existante. Hookshot reste expérimental ; Longshot n'est pas proposé comme port pris en charge.
 
 **Aide → Ouvrir le journal** (*Help → Open log*) donne les détails d'une erreur. Pour un signalement, précise les versions du launcher et du port ainsi que l'étape qui échoue. Vérifie les noms de participants dans les logs avant de les publier ; ne joins pas de fichiers du jeu ou de sauvegarde. Le projet reste en alpha et ses limites de validation sont documentées.

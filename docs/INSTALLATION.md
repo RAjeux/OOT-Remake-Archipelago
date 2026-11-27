@@ -4,9 +4,9 @@
 
 ## Download the current launcher
 
-**[Download OOT-Remake-Archipelago-0.10.3-alpha.1.exe](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.3-alpha.1/OOT-Remake-Archipelago-0.10.3-alpha.1.exe)**
+**[Download OOT-Remake-Archipelago-0.10.4-alpha.1.exe](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.1/OOT-Remake-Archipelago-0.10.4-alpha.1.exe)**
 
-The [versioned release page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.3-alpha.1) contains the release notes and other assets. A player needs only the EXE; its AP client, Python, Node.js and APWorld are included. The compatible OOTRR 0.8.1 builder is downloaded when preparation first needs it.
+The [versioned release page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.1) contains the release notes and other assets. A player needs only the EXE; its AP client, Python, Node.js and APWorld are included. The compatible OOTRR 0.8.1 builder is downloaded when preparation first needs it.
 
 **Do not choose the discontinued 0.11/0.12 Full-network experiment because its version number is higher.** Its generated player files use a different format and are not converted. Export a fresh YAML with the current editor, generate a new room with the current APWorld and keep the Full saves separate. Native 0.10 rooms follow the [update guide](UPDATING.md).
 
@@ -24,7 +24,7 @@ A player joining a generated room does **not** need an Archipelago installation.
 
 | File | Meaning | Where it goes |
 | --- | --- | --- |
-| `OOT-Remake-Archipelago-0.10.3-alpha.1.exe` | This project's desktop application. | Keep it in a convenient folder and open it to set up or play. |
+| `OOT-Remake-Archipelago-0.10.4-alpha.1.exe` | This project's desktop application. | Keep it in a convenient folder and open it to set up or play. |
 | `Player-name.yaml` | A player's options before generation. | Send it to the organizer. It is not the file selected in **Set up a room**. |
 | `ootrr_remake.apworld` | Archipelago's custom game integration. | The organizer uses this launcher's **Install APWorld** action; no separate download is needed. |
 | `AP_…_P…_name.apootrr` | The generated Zelda player file for one slot and room. | That player selects it in **Set up a room**. Keep it to prepare that room again later. |
@@ -84,7 +84,7 @@ The address can be `host:port`, `ws://host:port` or `wss://host:port`; `archipel
 
 Profiles, connection settings, tools and saves are kept in `%LOCALAPPDATA%\OOTRR-Archipelago`. Hookshot uses a separate `hosts\hookshot` namespace. Moving or updating the EXE keeps these files; switching hosts does not transfer a save or item history.
 
-The [update guide](UPDATING.md) distinguishes updating the launcher, installing the organizer's APWorld and preparing older room resources. An already current 0.10.2 room needs no preparation for the 0.10.3 interface update.
+Existing native 0.10 rooms keep their player file, save, settings and placements. If preparation is requested, close Zelda and prepare the same compatible `.apootrr` again. To use the new 0.10.4 options and sources, the organizer installs the matching APWorld and generates a new room; each player uses its new player file and a dedicated save. See the [update guide](UPDATING.md).
 
 ## If a step fails
 

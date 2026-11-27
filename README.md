@@ -2,13 +2,13 @@
 
 Play Ocarina of Time Remake in an Archipelago multiworld with a single Windows application. It prepares the mod, manages the connection and launches your compatible game host.
 
-**Development branch: 0.10.4-alpha.1.** The selective upstream integration adds
+**Current release: 0.10.4-alpha.1.** The selective upstream integration adds
 current AP access rules, 17 physical sources and optional gameplay, cosmetic
 and difficulty controls. See [what is adapted and how it is validated](docs/UPSTREAM-INTEGRATION.md).
-The download below remains the published 0.10.3 release until a new candidate is
-published; new source/settings require a newly generated room.
+Existing native 0.10 rooms remain supported. New sources and options require
+the matching APWorld and a newly generated room with its own save.
 
-**[Download the Windows launcher · 0.10.3-alpha.1](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.3-alpha.1/OOT-Remake-Archipelago-0.10.3-alpha.1.exe)** · [Release page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.3-alpha.1) · [Installation en français](docs/INSTALLATION.fr.md)
+**[Download the Windows launcher · 0.10.4-alpha.1](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.1/OOT-Remake-Archipelago-0.10.4-alpha.1.exe)** · [Release page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.1) · [Installation en français](docs/INSTALLATION.fr.md)
 
 > **Use the native 0.10 release above.** The discontinued **0.11/0.12 Full-network experiment** has a higher number but a different player-file format. Its `.apootrr` files are not converted by this launcher. If you came from Full, export a fresh YAML with the current editor, generate a new room with the current APWorld and keep the old saves separate.
 
@@ -47,7 +47,7 @@ The launcher does not generate or host the multiworld. See the [organizer instru
 
 | File | Purpose | Who uses it? |
 | --- | --- | --- |
-| `OOT-Remake-Archipelago-0.10.3-alpha.1.exe` | The desktop launcher; includes the APWorld and runtimes. | Zelda players and the organizer. |
+| `OOT-Remake-Archipelago-0.10.4-alpha.1.exe` | The desktop launcher; includes the APWorld and runtimes. | Zelda players and the organizer. |
 | `Player-name.yaml` | A player's settings **before generation**. | Player sends it to the organizer. |
 | `ootrr_remake.apworld` | The custom game integration loaded by Archipelago's generator. | Organizer installs it with this launcher's **Install APWorld** action. |
 | `AP_123456_P1_Link.apootrr` | Generated data for **one Zelda slot in one room**; filename shown as an example. | That Zelda player selects it in **Set up a room**. |
@@ -58,18 +58,20 @@ Changing a YAML after generation does not change the existing room. A new room n
 
 | Host | Current scope |
 | --- | --- |
-| **Triforce, Windows x64** | Main installation route. Triforce **0.8.3** has a real title-screen connection and reconnect check; earlier native 0.10 gameplay evidence is documented separately. Setup checks the host's tools and source hooks. |
+| **Triforce, Windows x64** | Main installation route. Triforce **0.8.3** has title-screen connection/reconnect coverage and a private current-room Bow/rupee receipt check. Setup checks the host's tools and source hooks. |
 | **Hookshot 3.0.1, Windows x64** | Experimental adapter requiring its matching original tools and retained build files. Other revisions are rejected. |
 | **Fritchii 5.8.4** | RomFS overlay loading was tested; **there is no emulator AP gameplay backend**. |
 | Other hosts or Linux | Not supported by this installer. |
 
-This remains an **alpha**. The expanded catalogue has automated generation and resource coverage, but has not been manually completed in the game. Item presentation and some camera movements still need improvement. [Port compatibility](docs/PORT-COMPATIBILITY.md) separates current prerequisites from historical runtime and gameplay evidence; [test coverage](docs/TESTING.md) explains the validation limits.
+This remains an **alpha**. The expanded catalogue has automated generation and resource coverage, but has not been manually completed in the game. New difficulty settings remain experimental. Longshot is an internal prototype, not a supported launcher host. [Release validation](docs/UPSTREAM-VALIDATION.md) and [port compatibility](docs/PORT-COMPATIBILITY.md) distinguish observed gameplay from automated checks.
 
 ## Updates and saved games
 
 Use **Help → Check for launcher updates**, then **Update available → Install and restart** when a replacement has downloaded. The optional APWorld update is for the computer generating rooms. See [updating the launcher and APWorld](docs/UPDATING.md).
 
-**0.10.3 is an interface update:** a room already prepared with current 0.10.2 resources stays playable without new preparation. When the launcher reports older mod resources, close Zelda and its setup application, then prepare the **same native 0.10 `.apootrr`** again with the **same save**. Existing native 0.10 player files and YAMLs remain supported. Full 0.11/0.12 files are a separate discontinued format, as noted above.
+**Continue an existing native 0.10 room:** update the launcher and keep its `.apootrr` and save. If the launcher requests preparation, close Zelda and its builder, then prepare the **same player file** again. Its generated catalogue, settings and placements remain unchanged. Existing native 0.10 YAMLs remain supported.
+
+**Use the 0.10.4 additions:** the organizer installs the matching APWorld, restarts Archipelago and generates a new room. Use its new `.apootrr` and a dedicated save. Updating the launcher or APWorld does not add checks or options to an existing room. Full 0.11/0.12 files remain a separate discontinued format.
 
 Profiles, connection preferences, downloaded tools and saves live in `%LOCALAPPDATA%\OOTRR-Archipelago`, outside the EXE. Hookshot uses a separate `hosts\hookshot` namespace. Moving or replacing the launcher keeps this data; switching hosts does not transfer a save or item history. Changing settings or enabling new sources requires a newly generated room.
 
@@ -78,7 +80,7 @@ Profiles, connection preferences, downloaded tools and saves live in `%LOCALAPPD
 
 A chest containing an item for Zelda shows and grants the native item assigned by Archipelago. A chest containing another player's item shows an AP medal and sends the item to that player. The chest's previous local reward is not granted a second time.
 
-Enabled network sources include supported chests, ordinary shop purchases and special deals, Skulltulas, NPCs, songs, dungeon rewards, adult trades, cows, merchants, Scrubs, minigames, boss hearts, ground pickups and destructibles. Only sources actually selected by the native randomizer enter the room. A maximum-coverage configuration has 1,211 such checks; the Master Sword adds one. The default configuration has 169.
+Enabled network sources include supported chests, ordinary shop purchases and special deals, Skulltulas, NPCs, songs, dungeon rewards, adult trades, cows, merchants, Scrubs, minigames, boss hearts, ground pickups and destructibles. Only selected supported sources enter the room. Newly generated 0.10.4 rooms have **185 checks by default**, with tested broad coverage reaching **1,229 including the optional Master Sword**. The count depends on the selected options; older rooms retain their original catalogue.
 
 Items from other worlds are delivered in order while a save is active, using the game's effects. Items sent while Zelda is closed remain on the server and are recovered after reconnection. Each grant and its received-item index are committed together; save before quitting normally.
 
@@ -110,7 +112,7 @@ The app, settings labels, YAML comments and mod follow the known game language: 
 
 Restart the game after changing its language. Both translations are installed together, so changing language does not require generating a new seed.
 
-The development schema exposes **94 native OOTRR settings and 36 integration controls**: 130 controls, with one engine and no duplicate generation mode. The published 0.10.3 editor has 97 controls. Disabled dependent controls show their requirements. Uncollected shuffled containers can be retried after reloading the area; breaking them alone never sends their check.
+The shared schema exposes **94 native OOTRR settings and 36 integration controls**: 130 controls, with one engine and no duplicate generation mode. Disabled dependent controls show their requirements. Uncollected shuffled containers can be retried after reloading the area; breaking them alone never sends their check.
 
 **Ground pickups and heart pieces** uses the native `shuffle_freestanding_items` setting. `off` and `pieces` are aliases that both shuffle supported heart pieces; `all` adds ordinary rupees and recovery hearts, while `dungeons` and `overworld` limit those extra pickups by area. Other heart pieces may come from separately controlled chests or NPCs.
 

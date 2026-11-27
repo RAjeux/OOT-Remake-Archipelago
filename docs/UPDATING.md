@@ -1,8 +1,8 @@
 # Updating the launcher and APWorld
 
-**[Download the current Windows launcher, 0.10.3-alpha.1](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.3-alpha.1/OOT-Remake-Archipelago-0.10.3-alpha.1.exe)**
+**[Download the current Windows launcher, 0.10.4-alpha.1](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.1/OOT-Remake-Archipelago-0.10.4-alpha.1.exe)**
 if your older launcher does not have an update button. The [versioned release
-page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.3-alpha.1)
+page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.1)
 identifies the supported native release. Prepared rooms, connection preferences
 and saves remain in LocalAppData when the executable is replaced.
 
@@ -20,7 +20,7 @@ or [the French quickstart](INSTALLATION.fr.md).
 
 | What changed? | What to do |
 | --- | --- |
-| Launcher interface, including 0.10.2 → 0.10.3 | Update the EXE. A room with current 0.10.2 resources needs no new preparation. |
+| Launcher application | Update the EXE; continue the same supported room and save, preparing again only when requested. |
 | The organizer's installed APWorld differs | Opt into its update or use **Install APWorld**, then restart Archipelago before generating. Existing rooms keep their placements. |
 | The launcher reports old prepared mod resources or host tools | Close Zelda and its builder; prepare the same supported `.apootrr` with the same room save. |
 | You want different settings or expanded sources | Generate a new room and use its new player file and dedicated save. |
@@ -28,10 +28,17 @@ or [the French quickstart](INSTALLATION.fr.md).
 
 ## Update the launcher
 
-Version 0.10.3 refreshes the desktop interface. A room already prepared with
-current 0.10.2 resources remains ready to play; this UI update does not raise
-the mod's prepared-resource revision. YAML values and generation rules are
-unchanged. The 0.10.2 launcher can obtain this release through its update button.
+Version 0.10.4 adds reviewed source, access-logic and optional gameplay changes
+for newly generated rooms. Existing native 0.10 player files, YAMLs and saves
+remain supported. A launcher update does not reroll an existing room or add new
+checks to it. Keep its original `.apootrr` and save; prepare it again only when
+the application requests updated resources. Launchers with the updater can
+obtain this release through their update button.
+
+To use the new catalogue or options, install the matching APWorld on the
+generation PC, restart Archipelago and generate a new room. Its player files
+and saves stay separate from earlier rooms. See the
+[0.10.4 release notes](RELEASE-NOTES-0.10.4-alpha.1.md) for additions and limits.
 
 The application checks GitHub in the background. **Update available** appears
 when a newer publication is found. **Help → Check for launcher updates** retries the
