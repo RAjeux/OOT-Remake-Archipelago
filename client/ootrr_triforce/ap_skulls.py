@@ -8,11 +8,15 @@ import json
 from pathlib import Path
 import re
 
+from oot_rando.patching.event_info import analysis_scope
+
 from .catalog import AP_SKULL_CHECKS, ITEM_DATA, ITEM_IDS, SKULL_CHECKS
 from .i18n import tr
 from .mod_codec import Codec
 
 FLOW_PATH = "Event/EventFlow/GetPouchContent.bfevfl.zs"
+SETTINGS = "RSDB/EventSetting.Product.111.rstbl.byml.zs"
+ANALYZED = "RSDB/GameAnalyzedEventInfo.Product.111.rstbl.byml.zs"
 REST = "System/Resource/ResourceSizeTable.Product.111.Nin_Ounce_NVN2.rsizetable.zs"
 PREFIX = "OOTRR_APSkull_"
 SCRATCH = "Archipelago.SelectedPickup"
@@ -391,30 +395,57 @@ def prepare_skulls(romfs, mod, roster, settings=None):
     return prepare_pickup_callbacks(romfs, mod, records)
 
 
+@analysis_scope()
 def prepare_pickup_callbacks(romfs, mod, records):
     """Install one dispatcher shared by all room-bound native get callbacks."""
+    from oot_rando.formats import byml_codec
     from oot_rando.game.resource_allocations import grow_resources
+    from oot_rando.patching import event_info
     romfs, mod = Path(romfs), Path(mod)
     records = _records(records)
     if not records:
         return {}
     codec = Codec((romfs / "Pack/ZsDic.pack.zs").read_bytes())
 
+    frames, raws = {}, {}
     def source(path):
-        staged = mod / path
-        return (staged if staged.is_file() else romfs / path).read_bytes()
+        if path not in frames:
+            staged = mod / path
+            frames[path] = (staged if staged.is_file() else romfs / path).read_bytes()
+        return frames[path]
+
+    def raw(path):
+        if path not in raws:
+            raws[path] = codec.decode(source(path))
+        return raws[path]
 
     frame, table_frame = source(FLOW_PATH), source(REST)
-    before = codec.decode(frame)
+    before = raw(FLOW_PATH)
     after, effects = patch_skull_flow(before, records, return_entries=True)
     changed = {FLOW_PATH: (after, frame, len(before))}
     for name in PICKUP_FLOWS:
         path = "Event/EventFlow/" + name + ".bfevfl.zs"
         old_frame = source(path)
-        old = codec.decode(old_frame)
+        old = raw(path)
         ground = [row for row in records if row.get("metadata", {}).get("kind", "skull") != "flow"]
         if ground:
             changed[path] = (patch_pickup_presentation(old, ground, effects, name), old_frame, len(old))
+
+    # The dispatcher is reachable from ordinary native grants too, including
+    # foreign chest wrappers. Loading only the newly registered AP events is
+    # insufficient: every existing caller must preload its new concrete
+    # subflows (notably Dm_SY_GetInEvent/AP_IceTrap). Merge the new edges into
+    # native metadata without reanalyzing its unresolved message dispatches.
+    flows = {event_info.flow_name(path): content for path, (content, _, _) in changed.items()}
+    original = lambda name: raw(event_info.flow_path(name))
+    current = lambda name: flows[name] if name in flows else original(name)
+    settings = byml_codec.load(raw(SETTINGS))["root"]
+    info, preloads = event_info.add_subflow_dependencies(raw(ANALYZED), settings,
+        event_info.new_subflows(flows, original), current)
+    info, children = event_info.add_child_events(info, settings,
+        event_info.new_transitions(flows, original), current)
+    if info != raw(ANALYZED):
+        changed[ANALYZED] = (info, source(ANALYZED), len(raw(ANALYZED)))
     table, allocations = grow_resources(codec.decode(table_frame),
                                          {path: max(0, len(raw) - size) for path, (raw, _, size) in changed.items()})
     encoded = {path: codec.encode(raw, old) for path, (raw, old, _) in changed.items()}
@@ -423,4 +454,5 @@ def prepare_pickup_callbacks(romfs, mod, records):
         target = mod / path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(content)
-    return {"purchases": 0, "pickups": len(records), "allocations": allocations, "effects": effects}
+    return {"purchases": 0, "pickups": len(records), "allocations": allocations, "effects": effects,
+            "preloads": len(preloads), "child_events": len(children)}

@@ -1,6 +1,6 @@
 # Port compatibility
 
-Use the [current 0.10.4-alpha.4 launcher](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.4) and the [installation guide](INSTALLATION.md). This page separates current setup requirements from the historical tests supporting them.
+Use the [current 0.10.4-alpha.5 launcher](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.5) and the [installation guide](INSTALLATION.md). This page separates current setup requirements from the historical tests supporting them.
 
 ## Current support
 

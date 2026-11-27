@@ -4,7 +4,7 @@
 
 ## Le bon téléchargement
 
-**[Télécharger le launcher Windows 0.10.4-alpha.4](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.4/OOT-Remake-Archipelago-0.10.4-alpha.4.exe)** · [Page de cette release](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.4)
+**[Télécharger le launcher Windows 0.10.4-alpha.5](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.5/OOT-Remake-Archipelago-0.10.4-alpha.5.exe)** · [Page de cette release](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.5)
 
 Un seul EXE suffit : le client AP, Python, Node.js et l'APWorld sont inclus. Le builder OOTRR compatible est téléchargé au premier besoin.
 
@@ -61,7 +61,7 @@ Pour les sessions suivantes, ouvre le même launcher et clique sur **Jouer**. Tu
 
 Les données sont conservées dans `%LOCALAPPDATA%\OOTRR-Archipelago`, indépendamment de l'EXE. Hookshot possède un espace séparé : changer de port ne transfère pas la sauvegarde.
 
-Après une mise à jour réussie, le launcher porte le nom de la version téléchargée dans le même dossier. L'ancien EXE est conservé dans les données privées de mise à jour, sans rester à côté du nouveau. Un raccourci que tu avais créé vers l'ancien nom peut devoir être modifié. La version 0.10.4-alpha.4 corrige l'écran noir et l'absence de commandes au début d'une nouvelle partie avec le suivi des clés. Ferme Zelda et prépare le même fichier joueur si le launcher le demande ; ta seed et ta sauvegarde restent compatibles.
+Après une mise à jour réussie, le launcher porte le nom de la version téléchargée dans le même dossier. L'ancien EXE est conservé dans les données privées de mise à jour, sans rester à côté du nouveau. Un raccourci que tu avais créé vers l'ancien nom peut devoir être modifié. La version 0.10.4-alpha.5 corrige les coffres qui refusent de s'ouvrir et les modèles invisibles de certaines récompenses locales. Elle conserve aussi les correctifs précédents de démarrage et de début de partie. Ferme Zelda et prépare le même fichier joueur si le launcher le demande ; ta seed et ta sauvegarde restent compatibles.
 
 Tu peux continuer une salle native 0.10 avec son `.apootrr` et sa sauvegarde après avoir mis le launcher à jour. Si une préparation est demandée, ferme Zelda et prépare **le même fichier joueur compatible** : ses réglages, checks et placements restent identiques.
 

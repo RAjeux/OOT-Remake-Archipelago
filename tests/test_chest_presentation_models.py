@@ -25,8 +25,10 @@ class NativeChestPresentationTests(unittest.TestCase):
         from evfl.event import SubFlowEvent
         game = Path(os.environ["OOTRR_ROMFS"])
         staged = Path(os.environ["OOTRR_STARTER_MOD"]) if os.environ.get("OOTRR_STARTER_MOD") else game
-        items = ["Ocarina", "Bolero of Fire", "Fire Medallion", "Small Key (Forest Temple)", "Master Sword",
-                 *EXACT_BUNDLE_REWARDS]
+        items = list(dict.fromkeys([
+            "Ocarina", "Bolero of Fire", "Fire Medallion", "Small Key (Forest Temple)", "Master Sword",
+            *EXACT_BUNDLE_REWARDS, "Buy Deku Stick (1)", "Buy Bottle Bug", "Bombs (5)", "Piece of Heart",
+        ]))
         locations = list(CHESTS)[:len(items) + 1]
         local = dict(zip(locations, items))
         placements = {location: ap_item.ap_item(location + " fixture reward") for location in locations}

@@ -234,7 +234,9 @@ def add_subflow_dependencies(info_raw, event_settings_root, added, current):
 
     ``added``: ``new_subflows``'s result; ``current(name)``: the flow as written in the
     seed (changed or vanilla), or None. A row is completed when the entry it plays
-    makes a new call, or when it lists a changed flowchart that makes one (any entry).
+    makes a new call, or when it lists another changed flowchart that makes one
+    (any entry). The owner's own chart uses its exact entry, so unrelated entries
+    such as quiet receipt acknowledgements keep their original contract.
     """
     from oot_rando.formats import byml_codec
     if not added:
@@ -258,7 +260,8 @@ def add_subflow_dependencies(info_raw, event_settings_root, added, current):
         listed = list(row.get('SubFlowList') or [])
         wanted = set(by_entry.get(own, ()))
         for flow in set(listed) & by_flow.keys():
-            wanted |= by_flow[flow]
+            if not own or flow != own[0]:
+                wanted |= by_flow[flow]
         missing = sorted(wanted - set(listed) - ({own[0]} if own else set()))
         if not missing:
             continue
@@ -345,9 +348,11 @@ def add_child_events(info_raw, event_settings_root, added, current):
     for index, row in enumerate(document['root']):
         row_id = row.get('__RowId')
         listed = list(row.get('ChildEventList') or [])
-        wanted = set(by_entry.get(owners.get(row_id), ()))
+        own = owners.get(row_id)
+        wanted = set(by_entry.get(own, ()))
         for flow in set(row.get('SubFlowList') or []) & by_flow.keys():
-            wanted |= by_flow[flow]
+            if not own or flow != own[0]:
+                wanted |= by_flow[flow]
         missing = sorted(wanted - set(listed) - {row_id})
         if not missing:
             continue

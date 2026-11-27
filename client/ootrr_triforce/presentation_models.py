@@ -14,6 +14,14 @@ TEMPLATE = "Item_Medal_Forest"
 REST = "System/Resource/ResourceSizeTable.Product.111.Nin_Ounce_NVN2.rsizetable.zs"
 TABLES = {name: "RSDB/" + name + ".Product.111.rstbl.byml.zs"
           for name in ("ActorInfo", "GameActorInfo", "PouchActorInfo")}
+# These native actors are world pickups or have specialized animation graphs,
+# rather than the generic chest guest. Shop actors additionally lack a pouch
+# event performer. Only their chest model is replaced; their reward stays real.
+WORLD_CHEST_MODELS = frozenset({
+    "Item_Bomb", "Item_DekuStick", "Item_ScrubBusinessSeed", "Item_Sword_Giant",
+    "Obj_Armor_Goron", "Obj_Armor_Zora", "Obj_Fairy", "Obj_Heart",
+    "Obj_Heart_Container", "Obj_Heart_Piece",
+})
 
 
 def _separate_model(actor):
@@ -42,12 +50,13 @@ def chest_model_actor(actual_actor):
     if actual_actor == "Item_Dungeon_SmallKey":
         # This exact native key already supplies its working key-specific AS.
         return "Obj_MiniGame_SmallKey"
-    if model_actor(actual_actor) != actual_actor:
+    if (model_actor(actual_actor) != actual_actor or actual_actor.startswith("Shop_")
+            or actual_actor in WORLD_CHEST_MODELS):
         return "Item_AP_Chest_" + hashlib.sha256(actual_actor.encode()).hexdigest()[:12]
     return actual_actor
 
 
-def _model(pack, actor, byml_codec):
+def _model_path(pack, actor, byml_codec):
     path = "Actor/" + actor + ".engine__actor__ActorParam.bgyml"
     visited = set()
     while path not in visited:
@@ -55,12 +64,16 @@ def _model(pack, actor, byml_codec):
         root = byml_codec.load(pack[path])["root"]
         ref = root.get("Components", {}).get("ModelInfoRef")
         if ref:
-            return byml_codec.load(pack[_path(ref)])
+            return _path(ref)
         parent = root.get("$parent")
         if not parent:
             break
         path = _path(parent)
     raise ValueError("Native presentation model not found: " + actor)
+
+
+def _model(pack, actor, byml_codec):
+    return byml_codec.load(pack[_model_path(pack, actor, byml_codec)])
 
 
 def _path(ref):
@@ -90,11 +103,91 @@ def _visual_root(pack, path, byml_codec):
     return document
 
 
+def validate_chest_models(read):
+    """Check the native guest contract and rendered assets for every AP item.
+
+    ``read`` supplies uncompressed effective resources, including the pending
+    stage. A valid BYML file alone does not prove that the actor can participate
+    in a chest event or that its selected model actually exists.
+    """
+    from oot_rando.formats import byml_codec
+    from oot_rando.formats.inspect_resources import sarc
+    from .catalog import ITEM_DATA
+
+    tables = {name: {row["__RowId"]: row for row in byml_codec.load(read(path))["root"]}
+              for name, path in TABLES.items()}
+    actors = {actor for item in ITEM_DATA.values() for actor in item.get("tiers", [item["actor"]])}
+    packs, assets, graphs = {}, set(), {}
+    proxies = 0
+    for actual in sorted(actors):
+        guest = chest_model_actor(actual)
+        if guest not in packs:
+            packs[guest] = sarc(read("Pack/Actor/" + guest + ".pack.zs"))
+        pack = packs[guest]
+        components = _visual_root(pack, "Actor/" + guest + ".engine__actor__ActorParam.bgyml",
+                                  byml_codec)["root"]["Components"]
+        if any(guest not in rows for rows in tables.values()):
+            raise ValueError("Native chest guest is missing a registry row: " + guest)
+        info = tables["ActorInfo"][guest]
+        identity = "?ActorSystem/ActorName/" + info["ActorName"] + ".engine__actor__ActorName.bgyml"
+        if components.get("ActorNameRef") != identity:
+            raise ValueError("Native chest guest identity differs from ActorInfo: " + guest)
+        performer = components.get("EventPerformerRef")
+        if not performer or not components.get("PouchContentRef"):
+            raise ValueError("Native chest guest has no pouch event performer: " + guest)
+        event = _visual_root(pack, _path(performer), byml_codec)["root"]
+        expected = ("Work/AI/Root/Event/PouchContent_EnableWarp.event.root.ain"
+                    if guest == "Obj_MiniGame_SmallKey" else "Work/AI/Root/Event/PouchContent.event.root.ain")
+        if event.get("EventUniqueAin") != expected or not event.get("UseEventUniqueAin"):
+            raise ValueError("Native chest guest uses an incompatible event performer: " + guest)
+        if _path(components["PouchContentRef"]) not in pack:
+            raise ValueError("Native chest guest pouch component is missing: " + guest)
+        if guest.startswith("Item_AP_Chest_"):
+            proxies += 1
+            if components.get("AIInfoRef") or components.get("PhysicsRef") != "?Component/Physics/Dummy.engine__component__PhysicsParam.bgyml":
+                raise ValueError("Chest model retained world or shop behavior: " + guest)
+            template = tables["PouchActorInfo"][TEMPLATE]
+            if tables["PouchActorInfo"][guest] != dict(template, __RowId=guest):
+                raise ValueError("Chest model changed the native visual guest pouch contract: " + guest)
+        model = _model(pack, guest, byml_codec)["root"]
+        project, mesh = model.get("ModelProjectName"), model.get("FmdbName")
+        if not project or not mesh or (info.get("ModelProjectName"), info.get("FmdbName")) != (project, mesh):
+            raise ValueError("Native chest model disagrees with its render registry: " + guest)
+        model_path = "Model/" + project + "." + mesh + ".bfres.zs"
+        if model_path not in assets:
+            raw = read(model_path)
+            if not raw.startswith(b"FRES") or mesh.encode() + b"\0" not in raw:
+                raise ValueError("Native chest model mesh is missing: " + guest)
+            assets.add(model_path)
+        animation = components.get("AnimationRef")
+        if not animation:
+            raise ValueError("Native chest guest has no item animation resources: " + guest)
+        settings = components.get("ASInfoRef")
+        if not settings or _path(settings) not in pack:
+            raise ValueError("Native chest guest has no item animation settings: " + guest)
+        resources = byml_codec.load(pack[_path(animation)])["root"].get("AnimationResources", [])
+        if not any(row.get("ModelProjectName") == "Item_Common_Animation" for row in resources):
+            raise ValueError("Native chest guest cannot play the common get animation: " + guest)
+        for row in resources:
+            path = "Model/" + row["ModelProjectName"] + ".anim.bfres.zs"
+            if path not in assets:
+                if not read(path).startswith(b"FRES"):
+                    raise ValueError("Native chest animation resource is invalid: " + guest)
+                assets.add(path)
+        graph = components.get("ASRef", "").removeprefix("?") + ".zs"
+        if graph not in graphs:
+            graphs[graph] = read(graph)
+        if b"Rotate_GetDemo" not in graphs[graph]:
+            raise ValueError("Native chest guest cannot display the held item: " + guest)
+    return {"actors": len(actors), "guests": len(packs), "proxies": proxies}
+
+
 def prepare_presentation_models(romfs, mod):
     """Stage isolated visual actors using the native Common/GetDemo components."""
     from oot_rando.formats import byml_codec
     from oot_rando.formats.inspect_resources import sarc
-    from oot_rando.game.resource_allocations import add_resources, allocation, grow_resources
+    from oot_rando.game.resource_allocations import (add_resources, allocation, grow_resources,
+                                                    reserve_packed_resources)
     from oot_rando.patching.ap_item import SPIN_TEMPLATE, spin_parts
     from .catalog import ITEM_DATA
     from .mod_codec import Codec
@@ -109,6 +202,13 @@ def prepare_presentation_models(romfs, mod):
     def read(relative):
         return codec.decode(frame(relative))
 
+    native_packs = {}
+
+    def native_pack(actor):
+        if actor not in native_packs:
+            native_packs[actor] = sarc(codec.decode((romfs / ("Pack/Actor/" + actor + ".pack.zs")).read_bytes()))
+        return native_packs[actor]
+
     all_actors = {actor for item in ITEM_DATA.values() for actor in item.get("tiers", [item["actor"]])}
     actors = sorted(actor for actor in all_actors if _separate_model(actor))
     chest_actors = sorted(actor for actor in all_actors
@@ -121,6 +221,13 @@ def prepare_presentation_models(romfs, mod):
     template = sarc(codec.decode(template_frame))
     actor_file = "Actor/" + TEMPLATE + ".engine__actor__ActorParam.bgyml"
     model_file = "Component/ModelInfo/" + TEMPLATE + ".engine__component__ModelInfo.bgyml"
+    native_template = native_pack(TEMPLATE)
+    native_spin = native_pack(SPIN_TEMPLATE)
+    animation_peer = _path(_visual_root(native_spin, "Actor/" + SPIN_TEMPLATE + ".engine__actor__ActorParam.bgyml",
+                                        byml_codec)["root"]["Components"]["AnimationRef"])
+    packed_resources = [{"path": path, "data": data, "peer": animation_peer,
+                         "peer_data": native_spin[animation_peer]}
+                        for path, data in spin_files.items() if path.startswith("Component/AnimationParam/")]
     changed, outputs = {}, {}
     donors = {}
     chest_aliases = set()
@@ -144,9 +251,18 @@ def prepare_presentation_models(romfs, mod):
         components["ModelInfoRef"] = "?Component/ModelInfo/" + alias + ".engine__component__ModelInfo.bgyml"
         components.update(spin_components)
         files.update(spin_files)
-        files["Actor/" + alias + ".engine__actor__ActorParam.bgyml"] = byml_codec.dump(param)
-        files["Component/ModelInfo/" + alias + ".engine__component__ModelInfo.bgyml"] = byml_codec.dump(
-            _model(pack, donor, byml_codec))
+        alias_actor = "Actor/" + alias + ".engine__actor__ActorParam.bgyml"
+        alias_model = "Component/ModelInfo/" + alias + ".engine__component__ModelInfo.bgyml"
+        files[alias_actor] = byml_codec.dump(param)
+        files[alias_model] = byml_codec.dump(_model(pack, donor, byml_codec))
+        native_donor = native_pack(donor)
+        model_peer = _model_path(native_donor, donor, byml_codec)
+        packed_resources.extend((
+            {"path": alias_actor, "data": files[alias_actor], "peer": actor_file,
+             "peer_data": native_template[actor_file]},
+            {"path": alias_model, "data": files[alias_model], "peer": model_peer,
+             "peer_data": native_donor[model_peer]},
+        ))
         path = "Pack/Actor/" + alias + ".pack.zs"
         raw = byml_codec.build_sarc(files)
         if (mod / path).is_file():
@@ -191,8 +307,14 @@ def prepare_presentation_models(romfs, mod):
             rows.sort(key=lambda row: row["__RowId"])
             changed[path] = (byml_codec.dump(document), frame(path), len(original))
 
-    if not outputs and not changed:
-        return {"models": len(actors), "chest_models": len(chest_actors), "written": 0}
+    def effective_read(path):
+        if path in outputs:
+            return outputs[path][0]
+        if path in changed:
+            return changed[path][0]
+        return read(path)
+
+    validate_chest_models(effective_read)
     rest_frame = frame(REST)
     rest = codec.decode(rest_frame)
     rest, _ = grow_resources(rest, {path: max(0, len(raw) - before)
@@ -200,6 +322,10 @@ def prepare_presentation_models(romfs, mod):
     rest, _ = add_resources(rest, {path: max((len(raw) + 8191) & ~4095,
                                             allocation(rest, template_path) or 0)
                                    for path, (raw, _) in outputs.items()})
+    native_rest = codec.decode((romfs / REST).read_bytes())
+    rest, reserved = reserve_packed_resources(rest, native_rest, packed_resources)
+    if not outputs and not changed and not reserved:
+        return {"models": len(actors), "chest_models": len(chest_actors), "written": 0}
     encoded = {path: codec.encode(raw, origin) for path, (raw, origin) in outputs.items()}
     encoded.update({path: codec.encode(raw, origin) for path, (raw, origin, _) in changed.items()})
     encoded[REST] = codec.encode(rest, rest_frame)

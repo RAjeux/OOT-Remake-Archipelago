@@ -1,5 +1,39 @@
 # Stability fixes and upgrade scope
 
+## 0.10.4 alpha 5: chest preloads and visible local rewards
+
+The shared pickup dispatcher now propagates newly introduced concrete subflow
+and child-event dependencies to existing native callers. This repairs foreign
+chests whose Open prompt previously returned without completing the get event.
+The repair retains native message dispatch metadata and all reward identities.
+
+Chest display proxies now cover shop actors and incompatible world pickups,
+including Deku Sticks. Their models use a native pouch guest performer; actual
+grants, progressive tiers and quantities still use the original reward actors.
+Preparation validates registry identities, pouch performers, selected meshes
+and animation resources for all 167 supported actors (166 distinct guests).
+Inner resources retain immutable native peer allocation allowances.
+
+The portable suite passes 699 tests, with 63 environment-dependent skips.
+Additional tests using private native 1.1.1 resources pass the model, chest-route
+and bundle-quantity checks. A Triforce 0.8.3 gameplay comparison reproduced the
+foreign-chest refusal and restored both Mido foreign rewards by changing only
+the missing preload metadata. The isolated AP server received each check once.
+A remote Bow sent while crawling remained queued until the normal tunnel exit,
+then played its native receipt and restored player control.
+
+Dependency propagation uses the exact entry for a changed event's own chart,
+preserving silent adult trade replay acknowledgements. Final resources must
+still pass their strict graph validation before their capability is sealed.
+A fresh private preparation of the reported 460-check room completed the real
+chest, 64 shop-shelf, 200 callback, restoration and localization stages, then
+sealed all ten quiet replay receipts. Existing quiet entries remained unchanged.
+
+These checks cover the reported paths and representative rewards; they do not
+constitute a complete playthrough of every location or setting. Existing rooms
+and saves remain compatible; prepare the same player file when requested. See
+the [patch notes](RELEASE-NOTES-0.10.4-alpha.5.md).
+
 ## 0.10.4 alpha 4: new-game opening handover
 
 The optional dungeon-key tracker now updates its quests locally inside the
