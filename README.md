@@ -110,7 +110,7 @@ The app, settings labels, YAML comments and mod follow the known game language: 
 
 Restart the game after changing its language. Both translations are installed together, so changing language does not require generating a new seed.
 
-The shared schema exposes **93 native OOTRR settings, adult trades, the Master Sword, DeathLink and shop hours**: 97 controls, with one engine and no duplicate generation mode. Disabled dependent controls show their requirements. Uncollected shuffled containers can be retried after reloading the area; breaking them alone never sends their check.
+The development schema exposes **94 native OOTRR settings and 36 integration controls**: 130 controls, with one engine and no duplicate generation mode. The published 0.10.3 editor has 97 controls. Disabled dependent controls show their requirements. Uncollected shuffled containers can be retried after reloading the area; breaking them alone never sends their check.
 
 **Ground pickups and heart pieces** uses the native `shuffle_freestanding_items` setting. `off` and `pieces` are aliases that both shuffle supported heart pieces; `all` adds ordinary rupees and recovery hearts, while `dungeons` and `overworld` limit those extra pickups by area. Other heart pieces may come from separately controlled chests or NPCs.
 
@@ -118,7 +118,7 @@ The default closed forest keeps Mido's sword-and-shield requirement. **Deku Tree
 
 Independently randomized sub-options are ignored while their parent setting is inactive. For example, a random fixed price does not affect a sale using Cheap prices. Active settings still follow their documented dependencies; Random? on every field can produce an invalid combination.
 
-The [complete comparison of all 118 native settings](docs/SETTINGS-COMPATIBILITY.md) explains the 25 omitted native controls, including the replaced additive trade setting, unavailable native features, Silver Rupee delivery, AP-aware hints, chest sizes and location exclusions. Do not add omitted YAML keys expecting them to enable those features.
+The [complete comparison of all 118 native settings](docs/SETTINGS-COMPATIBILITY.md) explains the 24 omitted native controls, including the replaced additive trade setting, unavailable native features, Silver Rupee delivery, AP-aware hints, chest sizes and location exclusions. Do not add omitted YAML keys expecting them to enable those features.
 
 The [OoTR comparison](docs/OOTR-SETTINGS-COMPARISON.md) distinguishes the N64 randomizer's settings from those available in the remake. `bridge: open` provides the existing zero-reward bridge condition directly in the YAML.
 
