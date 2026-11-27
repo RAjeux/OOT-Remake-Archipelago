@@ -1,5 +1,14 @@
 # Stability fixes and upgrade scope
 
+## 0.10.4 alpha 4: new-game opening handover
+
+The optional dungeon-key tracker now updates its quests locally inside the
+opening, preserving the original fade-in and handover to player control.
+An undeclared cross-file event call previously stalled this sequence while
+forest audio and Archipelago receipts could continue behind a black screen.
+Prepare the same player file again when requested. Room settings, placements
+and saves remain compatible. See the [patch notes](RELEASE-NOTES-0.10.4-alpha.4.md).
+
 ## 0.10.4 alpha 3: dungeon-key tracker startup
 
 The expanded quest menu now reserves memory for the native parser's additional

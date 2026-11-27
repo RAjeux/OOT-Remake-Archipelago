@@ -493,14 +493,9 @@ fn ask_step(q: &str, s: &str) -> Cont {
     }
 }
 
-pub fn add_update(b: &mut Bf) -> Res<u16> {
-    let f: &mut Flow = b.flows.iter_mut().find(|f| f.name == BOOT_FLOW).ok_or(Error::Format("key log: DefaultBootEvent has no flow"))?;
-    if f.entries.iter().any(|e| e.name == UPDATE) {
-        return Err(Error::Format("key log: DefaultBootEvent already has the update"));
-    }
-    let pad: u16 = f.entries.first().map(|e| e.pad).unwrap_or(0);
+fn append_update(f: &mut Flow, then: u16) -> Res<u16> {
     let (a, x): (u16, u16) = crate::start_state::slot(f, "ChallengeSystemActor", "EventExecuteProgressChallengeStep")?;
-    let mut next: u16 = NONE;
+    let mut next: u16 = then;
     for q in ids().iter().rev() {
         next = push(f, Kind::Action { next, actor: a, act: x, params: Some(ask_step(q, STEP)) })?;
     }
@@ -508,7 +503,16 @@ pub fn add_update(b: &mut Bf) -> Res<u16> {
     next = push(f, Kind::Action { next, actor: data, act: set, params: Some(Cont { items: vec![
         ("GameDataName".to_string(), Val::Str(MENU_OPEN.to_string())),
         ("Index".to_string(), Val::Int(-1)), ("Value".to_string(), Val::Bool(1))] }) })?;
-    let main: u16 = next;
+    Ok(next)
+}
+
+pub fn add_update(b: &mut Bf) -> Res<u16> {
+    let f: &mut Flow = b.flows.iter_mut().find(|f| f.name == BOOT_FLOW).ok_or(Error::Format("key log: DefaultBootEvent has no flow"))?;
+    if f.entries.iter().any(|e| e.name == UPDATE) {
+        return Err(Error::Format("key log: DefaultBootEvent already has the update"));
+    }
+    let pad: u16 = f.entries.first().map(|e| e.pad).unwrap_or(0);
+    let main = append_update(f, NONE)?;
     f.entries.push(Entry { name: UPDATE.to_string(), subs: Vec::new(), vars: Vec::new(), main, pad });
     let boot: usize = f.entries.iter().position(|e| e.name == BOOT_FLOW).ok_or(Error::Format("key log: DefaultBootEvent has no boot entry"))?;
     let old: u16 = f.entries[boot].main;
@@ -538,14 +542,12 @@ pub fn hook_opening(b: &mut Bf) -> Res<()> {
     let Kind::Action { next: old, .. } = f.events[at].kind else {
         return Err(Error::Format("key log: the opening hook point is not an action"));
     };
-    let call: u16 = push(f, Kind::Sub { next: old, params: None, flow: BOOT_FLOW.to_string(), entry: UPDATE.to_string() })?;
+    // Opening_LoadingKokiriForest does not preload DefaultBootEvent. Calling
+    // into that file here leaves the opening waiting forever before its native
+    // fade-in and player cleanup. Keep these actions local to the opening flow.
+    let update = append_update(f, old)?;
     if let Kind::Action { next, .. } = &mut f.events[at].kind {
-        *next = call;
-    }
-    for e in f.entries.iter_mut() {
-        if !e.subs.contains(&call) {
-            e.subs.push(call);
-        }
+        *next = update;
     }
     Ok(())
 }
@@ -559,6 +561,101 @@ pub fn stage_flows(rf: &mut Romfs, late: &mut Vec<Out>, work: &std::path::Path) 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn external_calls(f: &Flow) -> Vec<(String, String)> {
+        f.events.iter().filter_map(|e| match &e.kind {
+            Kind::Sub { flow, entry, .. } | Kind::SubSwitch { flow, entry, .. } if !flow.is_empty() =>
+                Some((flow.clone(), entry.clone())),
+            _ => None,
+        }).collect()
+    }
+
+    fn action_next(e: &Event) -> u16 {
+        match e.kind { Kind::Action { next, .. } => next, _ => panic!("not a local action") }
+    }
+
+    fn check_opening_update(mut b: Bf) {
+        let before = &b.flows[0];
+        let anchor = crate::start_state::anchor(before).unwrap();
+        let native_next = action_next(&before.events[anchor]);
+        let native_events = before.events.clone();
+        let mut ops = crate::story_skip::deku();
+        ops.flags.push((MENU_OPEN.to_string(), true));
+        crate::start_state::patch(&mut b.flows[0], &ops).unwrap();
+        let original_calls = external_calls(&b.flows[0]);
+        let original_entries = b.flows[0].entries.clone();
+        hook_opening(&mut b).unwrap();
+        let f = &b.flows[0];
+        assert_eq!(external_calls(f), original_calls, "the opening must not need another unloaded flow file");
+        assert_eq!(f.entries, original_entries, "inline actions add no subflow references");
+        for (i, e) in native_events.iter().enumerate().filter(|(i, _)| *i != anchor) {
+            assert_eq!(&f.events[i], e, "native opening cleanup must remain intact");
+        }
+        let mut at = action_next(&f.events[anchor]);
+        let mut seen = std::collections::BTreeSet::new();
+        let mut tracked = Vec::new();
+        let mut opened = 0;
+        while at != native_next {
+            assert!(at != NONE && seen.insert(at), "the opening must return to its native continuation without a loop");
+            let event = &f.events[usize::from(at)];
+            assert!(event.name.starts_with(crate::start_state::PREFIX) || event.name.starts_with(PREFIX));
+            if event.name.starts_with(PREFIX) {
+                let Kind::Action { actor, act, params: Some(p), .. } = &event.kind else { panic!("tracker opening action is not inline") };
+                let actor = &f.actors[usize::from(*actor)];
+                if p.get("GameDataName") == Some(&Val::Str(MENU_OPEN.to_string())) {
+                    assert_eq!(actor.name, "GameDataActor");
+                    assert_eq!(actor.actions[usize::from(*act)], "EventTriggerSetGameDataBool");
+                    opened += 1;
+                } else {
+                    assert_eq!(actor.name, "ChallengeSystemActor");
+                    assert_eq!(actor.actions[usize::from(*act)], "EventExecuteProgressChallengeStep");
+                    assert_eq!(p.get("StepName"), Some(&Val::Str(STEP.to_string())));
+                    let Some(Val::Str(name)) = p.get("ChallengeName") else { panic!("missing tracker challenge") };
+                    tracked.push(name.clone());
+                }
+            }
+            at = action_next(event);
+        }
+        assert_eq!(opened, 1);
+        assert_eq!(tracked, ids(), "every tracker row updates before the game's fade-in and control cleanup");
+        assert_eq!(Bf::parse(&b.write().unwrap()).unwrap(), b);
+    }
+
+    #[test]
+    fn opening_tracker_updates_inline_and_preserves_native_cleanup_and_subflows() {
+        let actor = |name: &str, actions: &[&str]| crate::bfevfl::Actor {
+            name: name.to_string(), sub: String::new(), arg: String::new(),
+            actions: actions.iter().map(|s| (*s).to_string()).collect(), queries: Vec::new(),
+            params: Some(Cont { items: vec![("EventMemberCreateMethod".to_string(), Val::Int(0))] }), ep: NONE, cut: 1,
+        };
+        let f = Flow {
+            name: crate::start_state::FLOW.to_string(),
+            actors: vec![actor("EventSystemActor", &["EventWait"]), actor("ChallengeSystemActor", &["EventExecuteProgressChallengeStep"])],
+            events: vec![
+                Event { name: "Anchor".to_string(), kind: Kind::Action { next: 1, actor: 1, act: 0,
+                    params: Some(ask_step(crate::start_state::ANCHOR_CHALLENGE, crate::start_state::ANCHOR_STEP)) } },
+                Event { name: "Event31".to_string(), kind: Kind::Action { next: 2, actor: 0, act: 0, params: None } },
+                Event { name: "NativeCleanup".to_string(), kind: Kind::Sub { next: NONE, params: None,
+                    flow: "Common".to_string(), entry: "Cleanup".to_string() } },
+            ],
+            entries: vec![Entry { name: "Opening_LoadingKokiriForest".to_string(), subs: vec![2], vars: Vec::new(), main: 0, pad: 0 }],
+        };
+        check_opening_update(Bf { ver: [0, 4, 0, 0], bom: 0xFEFF, shift: 3, pad: 0,
+            name: crate::start_state::FLOW.to_string(), flows: vec![f], tls: Vec::new() });
+    }
+
+    #[test]
+    fn real_opening_with_our_story_state_needs_no_new_external_flow() {
+        let Some(mut rf) = real() else { return };
+        let raw = rf.read_zs(&format!("Event/EventFlow/{}.bfevfl.zs", crate::start_state::FLOW)).unwrap();
+        check_opening_update(Bf::parse(&raw).unwrap());
+        let raw = rf.read_zs(&format!("Event/EventFlow/{BOOT_FLOW}.bfevfl.zs")).unwrap();
+        let mut boot = Bf::parse(&raw).unwrap();
+        let original_calls = external_calls(&boot.flows[0]);
+        add_update(&mut boot).unwrap();
+        assert_eq!(external_calls(&boot.flows[0]), original_calls, "the boot hook only calls its local update entry");
+        assert_eq!(Bf::parse(&boot.write().unwrap()).unwrap(), boot);
+    }
 
     #[test]
     fn expanded_menu_reserves_native_objects_instead_of_only_byml_bytes() {

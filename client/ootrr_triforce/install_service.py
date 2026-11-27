@@ -25,9 +25,9 @@ from .room_view import RoomView
 from .save_bridge import atomic, exclusive, history_cursor, write_json
 
 
-# Expanded quest panels need the parser allocation budget introduced in alpha 3.
-# An older proof must not let the launcher reuse the crashing prepared mod.
-PREPARED_RESOURCE_REVISION = 2
+# Expanded quest panels and the opening's local tracker actions need the
+# current resources. Do not reuse a prepared mod that can crash or stall.
+PREPARED_RESOURCE_REVISION = 3
 PREPARED_RESOURCE_MARKER = Path("Archipelago/prepared-v1.json")
 
 
