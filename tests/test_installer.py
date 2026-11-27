@@ -39,7 +39,9 @@ async def check(tmp):
     root=profile/d['token'];root.mkdir(parents=True)
     assets=tmp/'cache';shared=tmp/'Games/Triforce/mods';romfs=tmp/'source/romfs'
     write(romfs/'Pack/ZsDic.pack.zs',b'dict')
-    def fake_ootrr(args,check):write(Path(args[4])/'Archipelago/romfs/test',b'base')
+    def fake_ootrr(args,check,**kwargs):
+        write(Path(args[4])/'Archipelago/romfs/test',b'base')
+        return subprocess.CompletedProcess(args,0,'','')
     def fixture_cursor(raw,mod,data,baseline):write(mod/n.MARKER,(data['token']+'\n').encode())
     cfg={'native':True,'baseline':0,'assets':assets,'install_only':True,'mods_dir':str(shared),'host':'nx2navi','romfs':str(romfs),'ootrr':'fixture'}
     with patch.object(player.subprocess,'run',fake_ootrr),patch.object(player,'write_title'),patch.object(player,'run_engine',return_value=''),patch.object(n,'bind_romfs',fixture_cursor),patch('ootrr_triforce.builder.validate_builder') as builder,patch('ootrr_triforce.story_fixes.prepare_story_fixes') as story_fixes,patch('ootrr_triforce.quest_fixes.prepare_quest_fixes') as quest_fixes,patch('ootrr_triforce.fortress_fixes.prepare_fortress_fixes') as fortress_fixes:

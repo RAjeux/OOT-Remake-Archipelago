@@ -283,6 +283,10 @@ fn shops(j: &Json) -> Result<()> {
 mod ap_skulls;
 #[path = "ootrr_ap/network_sources.rs"]
 mod network_sources;
+#[path = "ootrr_ap/portable_seed.rs"]
+mod portable_seed;
+#[path = "ootrr_ap/portable_geometry.rs"]
+mod portable_geometry;
 #[path = "ootrr_ap/network_pickups.rs"]
 mod network_pickups;
 #[path = "ootrr_ap/network_flow_base.rs"]
@@ -336,6 +340,8 @@ fn run() -> Result<()> {
         Some("sources") => network_pickups::run(&j),
         Some("network-flow-base") => network_flow_base::run(&j),
         Some("base-seed") => base_seed(&j),
+        Some("portable-seed") => portable_seed::run(&j),
+        Some("portable-geometry") => portable_geometry::run(&j),
         Some("settings") => inspect_settings(&j),
         Some("localize") => localize(&j),
         Some("patch") => patch(&j),
@@ -343,7 +349,7 @@ fn run() -> Result<()> {
         Some("skulls") => ap_skulls::run(&j),
         Some("features") => upstream_features(&j),
         Some("cosmetics") => ap_cosmetics::run(&j),
-        _ => Err("expected generate, catalog, sources, network-flow-base, base-seed, settings, localize, patch, shops or skulls".into()),
+        _ => Err("expected generate, catalog, sources, network-flow-base, base-seed, portable-seed, portable-geometry, settings, localize, patch, shops or skulls".into()),
     }
 }
 fn main() {

@@ -172,7 +172,8 @@ def choose(label, suffix=None, folder=False):
     return Path(result).resolve()
 
 
-def patch_request(data):
+def patch_request(data, *, construction=None):
+    """Clear AP chests using the item the portable constructor actually wrote."""
     files = {}
     for name, gear in data["moved"].items():
         if name in data.get("additional_sources", []):
@@ -182,7 +183,8 @@ def patch_request(data):
         if name not in CHESTS:
             continue
         for ref in CHESTS[name]:
-            request = {"actor": ref["actor"], "drop": "TBox_Rupee_Green", "expected": EXPECTED[gear]}
+            built_item = construction["placements"][name] if construction is not None else gear
+            request = {"actor": ref["actor"], "drop": "TBox_Rupee_Green", "expected": EXPECTED[built_item]}
             for filename in ref["files"]:
                 files.setdefault(filename, []).append(request)
     return {"files": files}
@@ -229,6 +231,51 @@ def preparation_settings(settings, data):
     return result
 
 
+def construction_seed(data, project_sources=()):
+    """Derive disposable builder input while keeping the bound AP room intact."""
+    from .network_catalog import enabled, validate_sources
+    if project_sources:
+        if not (enabled(data) and data.get("local_items") and data.get("reward_mode") == "all_locations"):
+            raise ValueError("Constructor substitutions require validated local Archipelago sources.")
+        sources = validate_sources(data)
+        result = json.loads(run_engine("portable-seed", {"seed_file": data["seed_file"],
+                                                        "ap_sources": sorted(sources),
+                                                        "project_sources": sorted(project_sources)}))
+        return result["seed_file"], result["swaps"]
+    seed = (json.loads(run_engine("base-seed", {"seed_file": data["seed_file"]}))
+            if data.get("adult_trade_shuffle") else data["seed_file"])
+    return seed, []
+
+
+def constructor_tier_sources(data, error):
+    """Authorize retries only for the pinned builder's precise AP pickup refusal."""
+    from .network_catalog import enabled, validate_sources
+    if not (enabled(data) and data.get("local_items") and data.get("reward_mode") == "all_locations"):
+        return {}
+    prefix = "this seed places key items at pickup spots out of upgrade tier order, generate it again with this build:"
+    message = error.stderr or ""
+    if isinstance(message, bytes):
+        message = message.decode("utf-8", errors="replace")
+    if prefix not in message:
+        return {}
+    sources = validate_sources(data)
+    result = {}
+    for line in message.split(prefix, 1)[1].strip().splitlines():
+        match = re.fullmatch(r"\s*(.+?) hands out ([A-Za-z0-9_]+) \([^()]+ tier [0-9]+\) "
+                             r"but the player can reach it holding [0-9]+ other copies(?: or fewer)?\s*", line)
+        if not match:
+            return {}
+        name = match.group(1)
+        if (sources.get(name, {}).get("kind") not in {"pickup", "container", "skull"}
+                or name not in data["seed_file"]["placements"]):
+            return {}
+        actor = match.group(2)
+        if name in result and result[name] != actor:
+            return {}
+        result[name] = actor
+    return result
+
+
 def build(root, settings, data):
     root.mkdir(parents=True,exist_ok=True)
     dest = root / "mods"
@@ -241,24 +288,54 @@ def build(root, settings, data):
     with tempfile.TemporaryDirectory(dir=root, prefix="build-") as tmp:
         scratch = Path(tmp)
         native = scratch / "room.ootrr"
-        base_seed = (json.loads(run_engine("base-seed", {"seed_file": data["seed_file"]}))
-                     if data.get("adult_trade_shuffle") else data["seed_file"])
-        native.write_text(json.dumps(base_seed), encoding="utf-8")
-        stage = scratch / "mods"
+        base_seed, construction_swaps = construction_seed(data)
         romfs = Path(settings["romfs"])
         if not (romfs / "Pack" / "ZsDic.pack.zs").is_file():
             raise ValueError(tr('Select the romfs folder containing Pack and Model.'))
-        for name, original in settings.get("other_tables", {}).items():
-            table = stage / name / "romfs" / install_mod.REST
-            table.parent.mkdir(parents=True,exist_ok=True)
-            shutil.copy2(original,table)
-        run_process([settings["ootrr"], "build", str(native), str(romfs), str(stage),
-                        "Archipelago", "--host", settings.get("host","nx2navi"), "--no-title-logo"], check=True)
+        requested, portable_tiers = [], {}
+        # Successful legacy/native construction is unchanged. A retry never
+        # reuses partially written files and must cover a new validated AP
+        # pickup, so the number of attempts is bounded by the room's sources.
+        for attempt in range(len(data.get("network_sources", {})) + 1):
+            native.write_text(json.dumps(base_seed), encoding="utf-8")
+            stage = scratch / ("attempt-" + str(attempt)) / "mods"
+            for name, original in settings.get("other_tables", {}).items():
+                table = stage / name / "romfs" / install_mod.REST
+                table.parent.mkdir(parents=True,exist_ok=True)
+                shutil.copy2(original,table)
+            try:
+                process = run_process([settings["ootrr"], "build", str(native), str(romfs), str(stage),
+                              "Archipelago", "--host", settings.get("host","nx2navi"), "--no-title-logo"],
+                              check=True, capture_output=True, text=True, encoding="utf-8", errors="replace")
+                for output in (process.stdout, process.stderr):
+                    if output:
+                        print(output, end="", flush=True)
+                break
+            except subprocess.CalledProcessError as error:
+                for output in (error.stdout, error.stderr):
+                    if output:
+                        print(output, end="", flush=True)
+                refused = constructor_tier_sources(data, error)
+                new = sorted(set(refused) - set(requested))
+                if not new:
+                    raise
+                requested.extend(new)
+                portable_tiers.update(refused)
+                print("Retrying native construction for validated AP pickup tiers: " + ", ".join(new), flush=True)
+                base_seed, construction_swaps = construction_seed(data, requested)
+        else:
+            raise ValueError("Native construction exceeded its bounded Archipelago source retries.")
         mod = stage / "Archipelago" / "romfs"
+        if construction_swaps:
+            from .network_catalog import validate_sources
+            print(run_engine("portable-geometry", {"seed_file": data["seed_file"],
+                             "ap_sources": sorted(validate_sources(data)),
+                             "project_sources": sorted(requested),
+                             "portable_tiers": portable_tiers}, romfs, mod).strip(), flush=True)
         if data.get("network_sources_schema"):
             print(run_engine("network-flow-base", {"seed_file": data["seed_file"],
                              "adult_trade_shuffle": bool(data.get("adult_trade_shuffle"))}, romfs, mod).strip(), flush=True)
-        print(run_engine("patch", patch_request(data), romfs, mod).strip(), flush=True)
+        print(run_engine("patch", patch_request(data, construction=base_seed), romfs, mod).strip(), flush=True)
         write_title(romfs, mod)
         from .story_fixes import prepare_story_fixes
         prepare_story_fixes(romfs, mod)
@@ -284,6 +361,11 @@ def build(root, settings, data):
         # Only the generated mod leaves the build directory. Sibling table inputs are temporary.
         completed = scratch / "completed"
         completed.mkdir()
+        if construction_swaps:
+            write_json(stage / "Archipelago" / ".ootrr-ap-construction.json",
+                       dict(schema=1, canonical_checksum=data["seed_file"]["checksum"],
+                            constructor_checksum=base_seed["checksum"], swaps=construction_swaps,
+                            portable_tiers=portable_tiers))
         (stage/"Archipelago").rename(completed/"Archipelago")
         completed.rename(dest)
 

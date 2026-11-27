@@ -26,7 +26,7 @@ def _wasi_paths(command, paths):
     vanilla data instead. A real working copy avoids that fallback. /load
     remains the original loader namespace, including sibling size tables.
     """
-    if os.name != "nt" or command not in ("patch", "shops", "skulls", "sources", "network-flow-base", "localize", "features", "cosmetics") or len(paths) < 2:
+    if os.name != "nt" or command not in ("patch", "shops", "skulls", "sources", "network-flow-base", "portable-geometry", "localize", "features", "cosmetics") or len(paths) < 2:
         yield paths
         return
     mod = Path(paths[1]).resolve()
@@ -84,7 +84,7 @@ def run_engine(command, request, *paths):
         for file in ("engine.cjs", "engine.wasm"):
             (root / file).write_bytes(resources.files(__package__).joinpath(file).read_bytes())
         arguments = [node, "--no-warnings", str(root / "engine.cjs"), str(root / "engine.wasm"), command, *map(str, paths)]
-        if command in ("features", "cosmetics") and len(paths) >= 2:
+        if command in ("features", "cosmetics", "portable-geometry") and len(paths) >= 2:
             # Windows Node/WASI cannot enumerate directories. Supply only a
             # private index of names, with the same read-only preopen bounds.
             files = {}
@@ -95,7 +95,7 @@ def run_engine(command, request, *paths):
             (root / "files.json").write_text(json.dumps(dict(schema=1, files=files)), encoding="utf-8")
             arguments.append(str(root))
         proc = run_process(arguments, input=json.dumps(request).encode(),
-                           capture_output=True, timeout=900 if command in ("features", "cosmetics") else 300)
+                           capture_output=True, timeout=900 if command in ("features", "cosmetics", "portable-geometry") else 300)
         if proc.returncode:
             raise RuntimeError(proc.stderr.decode(errors="replace")[-3500:] or tr('The OOTRR engine failed.'))
         return proc.stdout.decode()

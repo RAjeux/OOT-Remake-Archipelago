@@ -147,9 +147,9 @@ class NativeFileIndexTests(unittest.TestCase):
                 return SimpleNamespace(returncode=0, stdout=b"prepared", stderr=b"")
 
             with patch.object(engine, "bundled_node", return_value="node"), patch.object(engine, "run_process", side_effect=run):
-                for command in ("features", "cosmetics"):
+                for command in ("features", "cosmetics", "portable-geometry"):
                     self.assertEqual(engine.run_engine(command, {}, game, mod), "prepared")
-            self.assertEqual(len(calls), 2)
+            self.assertEqual(len(calls), 3)
             self.assertTrue(all(not metadata.exists() for metadata in calls), "Indexes must be removed after preparation.")
             self.assertEqual((game / "Pack/Original.pack.zs").read_bytes(), b"original")
             self.assertEqual((mod / "Banc/Changed.byml.zs").read_bytes(), b"overlay")

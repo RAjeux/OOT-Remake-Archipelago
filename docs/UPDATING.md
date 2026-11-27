@@ -1,8 +1,8 @@
 # Updating the launcher and APWorld
 
-**[Download the current Windows launcher, 0.10.4-alpha.5](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.5/OOT-Remake-Archipelago-0.10.4-alpha.5.exe)**
+**[Download the current Windows launcher, 0.10.4-alpha.6](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.6/OOT-Remake-Archipelago-0.10.4-alpha.6.exe)**
 if your older launcher does not have an update button. The [versioned release
-page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.5)
+page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.6)
 identifies the supported native release. Prepared rooms, connection preferences
 and saves remain in LocalAppData when the executable is replaced.
 
@@ -28,10 +28,11 @@ or [the French quickstart](INSTALLATION.fr.md).
 
 ## Update the launcher
 
-Version 0.10.4-alpha.5 fixes chests that refused to open and invisible models
-for some local chest rewards. Close Zelda and prepare the same player file
-again when requested. No new room, save or APWorld installation is needed.
-This version also retains the earlier startup, opening and updater fixes.
+Version 0.10.4-alpha.6 fixes preparation failures caused by the portable
+constructor's local upgrade-tier restrictions on physical Archipelago checks.
+Retry the same player file; no new room or YAML is needed. Correctly prepared
+rooms remain compatible. The earlier chest, startup, opening and updater fixes
+are included.
 
 Version 0.10.4 adds reviewed source, access-logic and optional gameplay changes
 for newly generated rooms. Existing native 0.10 player files, YAMLs and saves
@@ -57,7 +58,7 @@ restart**. The downloaded files and the Windows product/version information
 are verified before replacement. The launcher closes only after its separate
 update helper is ready. After a successful update, the new executable has the
 release's canonical versioned filename in the same folder, for example
-`OOT-Remake-Archipelago-0.10.4-alpha.5.exe`. The previous executable is retained
+`OOT-Remake-Archipelago-0.10.4-alpha.6.exe`. The previous executable is retained
 for rollback in private update data under `%LOCALAPPDATA%\OOTRR-Archipelago`,
 rather than alongside the launcher. Failures before a successful handoff retain
 or restore the previous version. Helper failures are written to the application

@@ -1,5 +1,41 @@
 # Stability fixes and upgrade scope
 
+## 0.10.4 alpha 6: portable construction of progressive AP pickups
+
+A valid room could fail before installation because the pinned OOTRR 0.8.1
+constructor rejected a fixed pickup's progressive tier. Its historical local
+reachability proof can differ from the embedded AP engine's proof, especially
+after deriving a base without the independent adult trade exchanges.
+
+Preparation first tries the original native input. Only that constructor's
+precise tier-order refusal, naming a validated physical AP source, authorizes a
+bounded retry. Disposable input swaps the rejected progressive reward with a
+safe filler in a supported AP chest, preserving native item counts and every
+uncovered location. The original AP seed, checksum, access graph, roster and
+settings are retained. Native validation remains enabled for every attempt;
+unrelated failures propagate. Failed partial attempts are never reused or
+published.
+
+The exact native tier actor reported by the constructor is validated before
+restoring pickup height. Canonical chest and keep-away models are restored when
+content-based chest sizing is enabled. The AP postpasses then apply the actual
+room rewards. Separate construction provenance records the temporary changes.
+Previously successful construction keeps its original path. Native bridge,
+AP identities and generation semantics are unchanged; no reroll is required.
+
+Validation reproduced the exact failure with the pinned constructor, then
+completed the same 460-check room through the normal preparation pipeline.
+Audits checked 218 chest variants, 122 physical sources (148 variants), all
+64 shop shelves, 460 restoration entries and ten strict sealed trade receipts.
+All 167 supported model actors passed validation. Concrete traversal of 626 AP
+event roots found no missing known dependencies; existing dynamic native
+message dispatches remain explicitly unresolved. A separate real constructor
+run with content-based chest sizing enabled verified donor chest/keep-away
+models, exact pickup height, unchanged rewards/events and byte idempotence.
+The portable suite passes 706 tests with 63 environment skips; 44 native engine
+binary tests and the connected installer regression also pass. These are
+preparation and graph/resource checks, not a full gameplay traversal.
+
 ## 0.10.4 alpha 5: chest preloads and visible local rewards
 
 The shared pickup dispatcher now propagates newly introduced concrete subflow
