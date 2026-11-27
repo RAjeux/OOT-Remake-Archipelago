@@ -72,7 +72,8 @@ def prefill_scoped_items(multiworld, fill_restrictive, sweep_from_pool):
         multiworld.random.shuffle(selected)
         multiworld.random.shuffle(locations)
         for world in multiworld.worlds.values():
-            if world.game not in ZELDA_GAMES or not hasattr(world, "waves"):
+            if (world.game not in ZELDA_GAMES or not hasattr(world, "waves")
+                    or getattr(world, "access_logic", None) is not None):
                 continue
             indexes = [index for index, location in enumerate(locations) if location.player == world.player]
             ordered = sorted((locations[index] for index in indexes),
@@ -150,7 +151,7 @@ def allowed(item_name, item_player, item_game, item_settings, source_name, sourc
     if sacred_spot and source_options.get("shuffle_dungeon_rewards") == "dungeons" and not sacred:
         return False
     if (zelda_source and source_name == LACS_SOURCE
-            and source_options.get("shuffle_ganon_bosskey") == "lacs_dungeons"):
+            and source_options.get("shuffle_ganon_bosskey") in {"lacs_dungeons", "lacs_medallions"}):
         return zelda_item and item_player == source_player and item_name == GANON_KEY
     if not zelda_item:
         return True
@@ -169,7 +170,7 @@ def allowed(item_name, item_player, item_game, item_settings, source_name, sourc
         # Such rewards should have been removed by the native generator. Do
         # not silently put a removed requirement back into the AP pool.
         return False
-    if mode == "lacs_dungeons":
+    if mode in {"lacs_dungeons", "lacs_medallions"}:
         return zelda_source and source_player == item_player and source_name == LACS_SOURCE
     if not zelda_source or source_player != item_player:
         return False

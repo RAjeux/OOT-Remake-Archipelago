@@ -2,11 +2,11 @@
 
 This comparison uses the **OOTRR remake 0.8.1** schema vendored by this project. It does not claim parity with every setting of the separate N64 OoT Randomizer or Ship of Harkinian. The remake's menu also contains placeholder controls which its own engine cannot apply.
 
-The native schema has **118 keys**. The current AP catalogue exposes **93 native keys**, the integration extension `adult_trade_shuffle`, and `death_link`, `shops_always_open`, `shuffle_master_sword`. Some native choice lists are deliberately restricted to implemented values.
+The native schema has **118 keys**. The current AP catalogue exposes **94 native keys**, the integration extension `adult_trade_shuffle`, and `bridge_medallions`, `cosmetic_color_mode`, `cosmetic_colors`, `damage_taken`, `dampe_first_dig`, `dampe_one_race`, `death_link`, `disable_low_health_warnings`, `dpad_gear_cycle`, `dungeon_key_tracker`, `enemy_randomizer`, `faster_ocarina_minigame`, `fireball_storms`, `fishing_any_fish`, `free_scarecrow`, `harder_talon_cuccos`, `ice_trap_count`, `item_plando`, `lacs_medallions`, `mega_like_likes`, `night_skulls_suns_song`, `nocturne_trigger`, `owl_warps`, `prelude_trigger`, `random_fuses`, `shops_always_open`, `shorter_timers`, `shuffle_ice_traps`, `shuffle_master_sword`, `shuffle_music`, `shuffle_sfx`, `skip_area_intros`, `skip_tower_escape`, `skulls_by_day`, `starting_bunny_hood`, `unbreakable_bowling_grass`. Some native choice lists are deliberately restricted to implemented values.
 
 Archipelago rolls each Random? control independently. Before generation, unused sub-options are reset to their native defaults: for example, `scrub_price_fixed` is ignored unless enabled Scrub sales use `scrub_prices: fixed`. The same rule applies to inactive shop prices, merchant prices, goal counts and song colors. Active prices, goals and progression settings are preserved. Invalid combinations of active settings still report an error; choosing Random? for every option does not guarantee a valid combination.
 
-New rooms export every supported source selected by the existing native randomizer as an AP check. Fixed and unselected rewards retain native handling. Known optional sources use conservative late requirements; unknown missing proofs are rejected. Access rules count the engine's actual logical items, not unrelated filler. Existing player files retain their generated catalogue and any older native-local rewards.
+New rooms use the reviewed current remake access graph and export every selected supported source as an AP check. The portable constructor stays 0.8.1. Fixed native events remain in the graph, while shuffled donor rewards do not unlock their own locations. Seventeen additional reviewed physical sources have appended AP identities. Known optional sources use conservative late requirements; unknown missing proofs are rejected. Existing player files retain their generated catalogue and original build path. See [selective upstream integration](UPSTREAM-INTEGRATION.md).
 
 Explicit dungeon-item, song-only, end-of-dungeon and LACS choices are enforced on final AP placements, including foreign-game locations. Standard AP restrictive prefill reserves scarce categories without a general owner quota; compatible songs and dungeon rewards can cross between Zelda players. Built-in native junk-only guards remain enforced. User-defined exclusions, hint text and chest sizing still need their own final-placement adapters; Silver Rupee shuffling needs additional AP item IDs and receipt effects.
 
@@ -41,9 +41,9 @@ The machine-readable companion is [settings-compatibility.json](settings-compati
 | `ganon_bosskey_rewards` | `native_unavailable` | OOTRR's native planner accepts only the default; the schema marks alternate values unsupported. |
 | `ganon_bosskey_tokens` | `native_unavailable` | OOTRR's native planner accepts only the default; the schema marks alternate values unsupported. |
 | `ganon_bosskey_hearts` | `native_unavailable` | OOTRR's native planner accepts only the default; the schema marks alternate values unsupported. |
-| `bridge` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. Omitted native choices: `hearts`, `medallions`, `random`, `stones`, `tokens`. The native bridge code implements Vanilla and the combined dungeon-reward threshold. AP's open choice maps to that threshold at zero rewards; the remaining schema goal variants are not implemented. The integration's `open` choice uses `bridge: dungeons` with `bridge_rewards: 0`; the bridge opens on approach without requiring dungeon rewards. |
+| `bridge` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. Omitted native choices: `hearts`, `random`, `stones`, `tokens`. The native bridge code implements Vanilla and the combined dungeon-reward threshold. AP's open choice maps to that threshold at zero rewards; the remaining schema goal variants are not implemented. The integration's `open` choice uses `bridge: dungeons` with `bridge_rewards: 0`; the bridge opens on approach without requiring dungeon rewards. |
 | `bridge_stones` | `native_unavailable` | OOTRR's native planner accepts only the default; the schema marks alternate values unsupported. |
-| `bridge_medallions` | `native_unavailable` | OOTRR's native planner accepts only the default; the schema marks alternate values unsupported. |
+| `bridge_medallions` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
 | `bridge_rewards` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
 | `bridge_tokens` | `native_unavailable` | OOTRR's native planner accepts only the default; the schema marks alternate values unsupported. |
 | `bridge_hearts` | `native_unavailable` | OOTRR's native planner accepts only the default; the schema marks alternate values unsupported. |
@@ -109,33 +109,78 @@ The machine-readable companion is [settings-compatibility.json](settings-compati
 | `fairy_prices` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
 | `fairy_price_fixed` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
 | `door_of_time_condition` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `enemy_health` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `enemy_damage` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `enemy_speed` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `no_heart_drops` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `no_gossip_fairies` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `no_ammo_drops` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `lose_heart_on_death` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `no_bottles_in_combat` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `enemy_regen` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `more_enemies` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `boss_minibosses` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `boss_minions` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `no_dupe_items` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `enemies_respawn_sooner` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `no_z_targeting` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `fairy_helps_enemies` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `enemy_backup` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `zora_ambush` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `bean_pitch` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `enemy_gates` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `cucco_revenge` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
-| `enemy_spawn_combo` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
+| `enemy_health` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `enemy_damage` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `enemy_speed` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `no_heart_drops` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `no_gossip_fairies` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `no_ammo_drops` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `lose_heart_on_death` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `no_bottles_in_combat` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `enemy_regen` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `more_enemies` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `boss_minibosses` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `boss_minions` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `no_dupe_items` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `enemies_respawn_sooner` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `no_z_targeting` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `fairy_helps_enemies` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `enemy_backup` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `zora_ambush` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `bean_pitch` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `enemy_gates` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `cucco_revenge` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
+| `enemy_spawn_combo` | `public_versioned_feature` | New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path. |
 | `door_of_time_escape` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
 | `door_of_time_song` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
 | `shuffle_kokiri_sword` | `public_network` | Every supported source selected by the native engine becomes an AP check in new rooms; fixed or unselected rewards remain native. Existing player files retain their generated catalogue. |
 | `skip_first_pickup_text` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
 | `faster_blocks` | `public` | The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation. |
+
+## Versioned additions
+
+These controls belong to the AP feature adapter, not the portable 0.8.1 settings string. English and French help is available in the YAML editor. The existing difficulty controls above also use this adapter in new rooms, with neutral inputs to the constructor so scaling is applied only once.
+
+| YAML key | Default | Effect |
+| --- | --- | --- |
+| `nocturne_trigger` | `"vanilla"` | Choose what unlocks Sheik's Nocturne in adult Kakariko: clearing Forest, Fire and Water Temples, or holding their three Medallions. Receiving the Medallions through Archipelago counts in Classic mode. |
+| `prelude_trigger` | `"vanilla"` | Choose what unlocks Sheik's Prelude in the Temple of Time: clearing Forest Temple, or holding the Forest Medallion. Receiving it through Archipelago counts in Classic mode. |
+| `lacs_medallions` | `6` | Number of Medallions needed when Zelda awards Ganon's Boss Key in the Light Arrows scene using Medallions only. Spiritual Stones do not count. |
+| `skulls_by_day` | `false` | Gold Skulltulas that normally appear only at night also appear during the day. Their access logic no longer requires night. |
+| `night_skulls_suns_song` | `false` | Require the Sun's Song in logic for outdoor night-only Gold Skulltulas, instead of assuming you can wait for night. Unused when Skulltulas also appear by day. |
+| `free_scarecrow` | `false` | Allow adult Link to summon Pierre without first teaching the Scarecrow's Song as a child. An ocarina and the equipment needed at the spot are still required. |
+| `skip_tower_escape` | `false` | After defeating Ganondorf, go to the final Ganon battle without the timed tower escape. The final battle is still required. |
+| `skip_area_intros` | `false` | Skip first-visit camera tours that only introduce an area or dungeon entrance, while preserving arrivals that advance a quest. The corresponding area maps are marked visited. |
+| `dungeon_key_tracker` | `false` | Show dungeon small-key and boss-key information in the native dungeon-map interface. |
+| `dpad_gear_cycle` | `false` | Hold D-pad Up to cycle owned masks and the Lens of Truth; hold Down to cycle Iron and Hover Boots. Tapping keeps the normal equip or unequip action. |
+| `fishing_any_fish` | `false` | The pond owner awards each age's fishing prize for any fish handed in, regardless of size, species or lure. You still need to catch and hand in a fish. |
+| `faster_ocarina_minigame` | `false` | Shorten the Skull Kids' memory game while preserving its reward and completion check. |
+| `dampe_one_race` | `false` | Put Dampe's race Heart Piece at the finish of the first race, so a second race is unnecessary. The first race's Hookshot chest stays separate. |
+| `dampe_first_dig` | `false` | Guarantee Dampe's Heart Piece on the first dig at a correct big-prize soil, without a second fee. Ordinary soil still gives its normal result. |
+| `disable_low_health_warnings` | `false` | Silence the low-health warning sound and warning number effect. Damage and heart recovery keep their normal behavior. |
+| `owl_warps` | `false` | Keep the Death Mountain and Lake Hylia owl rides available, and add a child-only ride from Kakariko to Kokiri Forest. |
+| `starting_bunny_hood` | `false` | Start with the Bunny Hood owned. Its movement effect is selected separately under Bunny Hood movement. |
+| `shuffle_ice_traps` | `false` | Replace a chosen number of ordinary filler pool items with Ice Traps. A trap freezes Link through the native cold effect and grants no inventory item. It can belong to any player's Zelda slot. |
+| `ice_trap_count` | `6` | Number of filler copies replaced by Ice Traps when their shuffle is enabled. Progression and restricted dungeon rewards are never removed; generation stops if too few eligible filler copies exist. |
+| `cosmetic_color_mode` | `"off"` | Keep original colours, use the individual picks below, randomize each part, or give all parts shades of one random hue. Colours affect appearance only. |
+| `cosmetic_colors` | `{}` | Choose an original colour, random colour or exact RGB colour for each supported part. Used only in Custom colour mode; unlisted parts keep their original colours. |
+| `shuffle_music` | `"off"` | Keep the game's music, shuffle within native music categories, or mix compatible music across categories. Cutscene audio keeps its dedicated behavior. |
+| `shuffle_sfx` | `"off"` | Keep sound effects, shuffle similar effects together, or mix compatible effects across categories. This changes sound, not the reward being received. |
+| `item_plando` | `{}` | Place chosen items for your Zelda player at chosen enabled checks in your own world. These placements consume real pool copies and must obey access and placement rules. Invalid or impossible plans stop generation instead of adding bonus items. |
+| `damage_taken` | `"normal"` | Multiply damage received from enemies, traps and falls, or make a hit fatal. Enemy attack damage is a separate multiplier; selecting both multiplies their effects on enemy hits. |
+| `unbreakable_bowling_grass` | `false` | Keep the Bombchu Bowling lane obstacles unbreakable, so Bombchus must be steered around them. Experimental. |
+| `harder_talon_cuccos` | `false` | Talon's Super Cucco game has fifteen decoys instead of ten, faster-moving Cuccos and twenty seconds instead of thirty. Experimental. |
+| `fireball_storms` | `false` | Add falling fire rocks to supported stretches of Hyrule Field and the child Hyrule Castle garden. Experimental. |
+| `mega_like_likes` | `false` | Add three tougher Like Likes in the Deku Tree meadow, with three times the health and a longer grip. They can steal any shield, including the Mirror Shield; defeating one returns a missing shield. Experimental. |
+| `random_fuses` | `false` | Give each bomb a fuse of 1-4 seconds, each Bombchu 3.5-5.25 seconds and each lit Deku Stick 10-24 seconds. Bomb flowers and enemy explosives are unchanged. Experimental. |
+| `enemy_randomizer` | `false` | Replace supported ordinary enemy spawns, in child and adult areas, with types that can be defeated using a sword. This adds no equipment requirement. AP check actors, Gold Skulltulas, bosses and merchants stay unchanged. Experimental. |
+| `shorter_timers` | `"off"` | Keep supported challenge timers, shorten them to three quarters, or halve them. This affects timed challenges, not Archipelago connection or delivery timers. |
+
+Unavailable additions are deliberately omitted from the editor:
+
+- `volvagia_roams`: The roaming boss has an incomplete death sequence; it is disabled until a tested fix exists.
+- `enemy_sizes`: The game ignores placement-only size edits; this option is disabled until a tested fix exists.
+- `enemy_sizes_health`: Size-based health depends on the unavailable enemy-size feature.
 
 ## Native menu placeholders
 

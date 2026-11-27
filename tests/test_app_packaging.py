@@ -188,5 +188,20 @@ class TkLicenseTests(unittest.TestCase):
                         build_app._tk_license_text(self.interpreter(folder), language)
 
 
+class CorrespondingSourceTests(unittest.TestCase):
+    def test_a_candidate_can_link_to_its_exact_commit_before_a_release_tag_exists(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary)
+            revision = "1234567890abcdef" * 2 + "12345678"
+            text = build_app.source_notice(folder, "0.10.4-alpha.1", revision).read_text(encoding="utf-8")
+            self.assertIn("/tree/" + revision, text)
+            self.assertIn("/archive/" + revision + ".zip", text)
+            self.assertNotIn("/refs/tags/", text)
+            default = build_app.source_notice(folder, "1.2.3").read_text(encoding="utf-8")
+            self.assertIn("/archive/refs/tags/v1.2.3.zip", default)
+            with self.assertRaises(ValueError):
+                build_app.source_notice(folder, "1.2.3", "HEAD")
+
+
 if __name__ == "__main__":
     unittest.main()

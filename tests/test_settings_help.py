@@ -10,7 +10,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
 from ootrr_triforce.app_window import yaml_content
-from ootrr_triforce.settings import OPTION_SPECS, SPEC_BY_ID, default_options, engine_settings
+from ootrr_triforce.settings import OPTION_SPECS, SPEC_BY_ID, ap_choice_key, default_options, engine_settings
 from ootrr_triforce.settings_labels import (
     CHOICE_HELP, ESSENTIAL_SETTINGS, GROUP_ORDER, LABELS, TOGGLE_OFF_HELP,
     active_reason, choice_description, choice_label, description, is_advanced,
@@ -29,6 +29,7 @@ class SettingsHelpTests(unittest.TestCase):
             values = (spec["choices"] if spec["kind"] == "choice" else
                       (False, True) if spec["kind"] == "toggle" else
                       (spec["min"], spec["default"], spec["max"]) if spec["kind"] == "range" else
+                      ({}, {"kokiri": "#ABCDEF"}) if spec["kind"] == "dict" else
                       ([], [spec["choices"][0]], list(spec["choices"])))
             for value in values:
                 with self.subTest(name=name, value=value):
@@ -119,8 +120,8 @@ class SettingsHelpTests(unittest.TestCase):
         option_source = ast.parse((ROOT / "apworld/ootrr_remake/options.py").read_text(encoding="utf-8"))
         factory = next(node for node in option_source.body if isinstance(node, ast.FunctionDef) and node.name == "_option_type")
         base = type("APBase", (), {})
-        namespace = {name: base for name in ("Choice", "Range", "SteppedRange", "OptionSet", "Toggle")}
-        namespace.update(__name__="settings_help_test", setting_label=setting_label)
+        namespace = {name: base for name in ("Choice", "Range", "SteppedRange", "OptionSet", "OptionDict", "Toggle")}
+        namespace.update(__name__="settings_help_test", setting_label=setting_label, ap_choice_key=ap_choice_key)
         exec(compile(ast.Module(body=[factory], type_ignores=[]), "actual_ap_option_factory", "exec"), namespace)
         before = deepcopy(OPTION_SPECS)
         for spec in OPTION_SPECS:
@@ -129,7 +130,7 @@ class SettingsHelpTests(unittest.TestCase):
             self.assertEqual(option.display_name, setting_label(spec["id"], "en"))
             if spec["kind"] == "choice":
                 for index, value in enumerate(spec["choices"]):
-                    public = "random_deals" if spec["id"] == "shuffle_shops" and value == "random" else value
+                    public = ap_choice_key(spec["id"], value)
                     self.assertEqual(getattr(option, "option_" + public), index)
         values = default_options()
         values.update(shuffle_shops="random", death_link=True, shuffle_skulltulas="matched")

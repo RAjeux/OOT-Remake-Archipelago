@@ -1,6 +1,11 @@
 # Test coverage and remaining gameplay checks
 
-This describes the selective 0.10 native integration and 0.10.3 desktop UI. The existing OOTRR
+For the current **0.10.4-alpha.1** generation, resource and native receipt results,
+see [release validation](UPSTREAM-VALIDATION.md). The records below retain the
+historical 0.10 integration and 0.10.3 desktop UI evidence; their earlier fixture
+counts do not describe the expanded 0.10.4 catalogue.
+
+The existing OOTRR
 engine still chooses the seed; the adapter converts its enabled randomized
 rewards to AP checks. No Full-network engine is involved.
 

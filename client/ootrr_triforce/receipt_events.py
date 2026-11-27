@@ -258,7 +258,10 @@ def build_receipt_flow(raw, token, names=None):
         metadata = ITEM_DATA[name]
         item_id = ITEM_IDS[name]
         stem = event_name(item_id)
-        if metadata["kind"] == "TCGSmallKey":
+        if metadata.get("mode") == "trap":
+            root = editor.subflow(stem + "_Trap", "Dm_SY_GetInEvent", "AP_IceTrap", None)
+            link(root, finish(stem))
+        elif metadata["kind"] == "TCGSmallKey":
             root = finish(stem)
             root = boolean(stem + "_Once", "UI_MiniGameGetSmallKeyOnce", root)
             root = integer(stem + "_Key", "MiniGame_SmallKeyNum", root)
@@ -337,6 +340,17 @@ def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, nat
     for name in names:
         metadata, item_id = ITEM_DATA[name], ITEM_IDS[name]
         stem = event_name(item_id)
+        if metadata.get("mode") == "trap":
+            save = pouch.action(stem + "_Save", "GameSystemActor", "EventTriggerRequestAutoSave", None)
+            commit = pouch.action(stem + "_Acknowledge", "GameDataActor", "EventTriggerAddOrSubGameDataInt",
+                                  {"GameDataName": CURSOR_PREFIX + token, "Index": -1, "Value": 1})
+            link(commit, save)
+            trap = append_recipe(pouch, metadata, stem, "", commit)
+            entry = EntryPoint(stem)
+            entry.main_event = make_index(trap)
+            pouch.chart.entry_points.append(entry)
+            entries[item_id] = stem
+            continue
         core_name = stem + "_Pouch"
         style = receipt_style(metadata, native_info)
         recipe = append_recipe(pouch, metadata, core_name, "OOTRR_APVisualGrant", ack,
@@ -409,6 +423,12 @@ def prepare_receipts(romfs, mod, data):
         return codec.decode(source(relative))
 
     native_presentations = bool(data.get("local_items"))
+    # Historical rooms have no trap resource entry. Do not add a new external
+    # dependency to them merely because the current client knows another ID.
+    # Every new feature room installs the native trap receipt, even when its
+    # random pool has none: server commands and item links can still send one.
+    trap_enabled = data.get("features") is not None
+    names = [name for name, metadata in ITEM_DATA.items() if metadata.get("mode") != "trap" or trap_enabled]
     if native_presentations:
         from .presentation_models import prepare_presentation_models
         prepare_presentation_models(romfs, mod)
@@ -416,11 +436,11 @@ def prepare_receipts(romfs, mod, data):
         native_info = {row["__RowId"]: row for row in byml_codec.load(
             read("RSDB/PouchActorInfo.Product.111.rstbl.byml.zs"))["root"]}
         changed_flow, changed_presenter, entries = build_presented_receipts(
-            read(FLOW_PATH), read(PRESENTER_PATH), data["token"], native_info=native_info,
+            read(FLOW_PATH), read(PRESENTER_PATH), data["token"], names=names, native_info=native_info,
             ground_raw=read("Event/EventFlow/Dm_SY_Get.bfevfl.zs"))
         modified = {FLOW_PATH: changed_flow, PRESENTER_PATH: changed_presenter}
     else:
-        changed_flow, entries = build_receipt_flow(read(FLOW_PATH), data["token"])
+        changed_flow, entries = build_receipt_flow(read(FLOW_PATH), data["token"], names=names)
         modified = {FLOW_PATH: changed_flow}
     settings = byml_codec.load(read(chest_flags.EVENT_SETTINGS))
     template = next(row for row in settings["root"] if row["__RowId"] == "Dm_SY_Get")

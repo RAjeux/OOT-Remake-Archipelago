@@ -128,6 +128,13 @@ class CompiledGameTests(unittest.TestCase):
                 self.assertFalse(updated.exists(), "The updated DLL must not reuse the old mod.")
                 self.assertEqual(previous.read_bytes(), b"legacy DLL")
                 self.assertEqual((first / "archipelago.dll").read_bytes(), b"current DLL")
+                whitelist = native / "ootrr_ap_items.inc"
+                whitelist.write_bytes(b"old receipt whitelist")
+                old_bridge = runtime_cache_name(0)
+                whitelist.write_bytes(b"new receipt whitelist")
+                self.assertNotEqual(runtime_cache_name(0), old_bridge,
+                                    "A new native receipt must rebuild the host even when the DLL is unchanged.")
+                whitelist.unlink()
                 from importlib import resources
                 original_resources = resources.files
                 changed_sources = root / "changed-sources"

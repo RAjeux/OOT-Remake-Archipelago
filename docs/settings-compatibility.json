@@ -1,11 +1,348 @@
 {
   "basis": "OOTRR 0.8.1 native schema and the current AP settings catalogue",
   "native_setting_count": 118,
-  "public_native_count": 93,
+  "public_native_count": 94,
+  "versioned_features": [
+    {
+      "id": "nocturne_trigger",
+      "kind": "choice",
+      "default": "vanilla",
+      "choices": [
+        "vanilla",
+        "classic"
+      ],
+      "description": "Choose what unlocks Sheik's Nocturne in adult Kakariko: clearing Forest, Fire and Water Temples, or holding their three Medallions. Receiving the Medallions through Archipelago counts in Classic mode.",
+      "group": "World",
+      "label": "Nocturne requirement"
+    },
+    {
+      "id": "prelude_trigger",
+      "kind": "choice",
+      "default": "vanilla",
+      "choices": [
+        "vanilla",
+        "classic"
+      ],
+      "description": "Choose what unlocks Sheik's Prelude in the Temple of Time: clearing Forest Temple, or holding the Forest Medallion. Receiving it through Archipelago counts in Classic mode.",
+      "group": "World",
+      "label": "Prelude requirement"
+    },
+    {
+      "id": "lacs_medallions",
+      "kind": "range",
+      "default": 6,
+      "min": 0,
+      "max": 6,
+      "step": 1,
+      "description": "Number of Medallions needed when Zelda awards Ganon's Boss Key in the Light Arrows scene using Medallions only. Spiritual Stones do not count.",
+      "group": "Goal",
+      "label": "Lacs Medallions"
+    },
+    {
+      "id": "skulls_by_day",
+      "kind": "toggle",
+      "default": false,
+      "description": "Gold Skulltulas that normally appear only at night also appear during the day. Their access logic no longer requires night.",
+      "group": "World",
+      "label": "Skulls By Day"
+    },
+    {
+      "id": "night_skulls_suns_song",
+      "kind": "toggle",
+      "default": false,
+      "description": "Require the Sun's Song in logic for outdoor night-only Gold Skulltulas, instead of assuming you can wait for night. Unused when Skulltulas also appear by day.",
+      "group": "World",
+      "label": "Night Skulls Suns Song"
+    },
+    {
+      "id": "free_scarecrow",
+      "kind": "toggle",
+      "default": false,
+      "description": "Allow adult Link to summon Pierre without first teaching the Scarecrow's Song as a child. An ocarina and the equipment needed at the spot are still required.",
+      "group": "World",
+      "label": "Free Scarecrow"
+    },
+    {
+      "id": "skip_tower_escape",
+      "kind": "toggle",
+      "default": false,
+      "description": "After defeating Ganondorf, go to the final Ganon battle without the timed tower escape. The final battle is still required.",
+      "group": "Quality of life",
+      "label": "Skip Tower Escape"
+    },
+    {
+      "id": "skip_area_intros",
+      "kind": "toggle",
+      "default": false,
+      "description": "Skip first-visit camera tours that only introduce an area or dungeon entrance, while preserving arrivals that advance a quest. The corresponding area maps are marked visited.",
+      "group": "Quality of life",
+      "label": "Skip Area Intros"
+    },
+    {
+      "id": "dungeon_key_tracker",
+      "kind": "toggle",
+      "default": false,
+      "description": "Show dungeon small-key and boss-key information in the native dungeon-map interface.",
+      "group": "Quality of life",
+      "label": "Dungeon Key Tracker"
+    },
+    {
+      "id": "dpad_gear_cycle",
+      "kind": "toggle",
+      "default": false,
+      "description": "Hold D-pad Up to cycle owned masks and the Lens of Truth; hold Down to cycle Iron and Hover Boots. Tapping keeps the normal equip or unequip action.",
+      "group": "Quality of life",
+      "label": "Dpad Gear Cycle"
+    },
+    {
+      "id": "fishing_any_fish",
+      "kind": "toggle",
+      "default": false,
+      "description": "The pond owner awards each age's fishing prize for any fish handed in, regardless of size, species or lure. You still need to catch and hand in a fish.",
+      "group": "Quality of life",
+      "label": "Fishing Any Fish"
+    },
+    {
+      "id": "faster_ocarina_minigame",
+      "kind": "toggle",
+      "default": false,
+      "description": "Shorten the Skull Kids' memory game while preserving its reward and completion check.",
+      "group": "Quality of life",
+      "label": "Faster Ocarina Minigame"
+    },
+    {
+      "id": "dampe_one_race",
+      "kind": "toggle",
+      "default": false,
+      "description": "Put Dampe's race Heart Piece at the finish of the first race, so a second race is unnecessary. The first race's Hookshot chest stays separate.",
+      "group": "Quality of life",
+      "label": "Dampe One Race"
+    },
+    {
+      "id": "dampe_first_dig",
+      "kind": "toggle",
+      "default": false,
+      "description": "Guarantee Dampe's Heart Piece on the first dig at a correct big-prize soil, without a second fee. Ordinary soil still gives its normal result.",
+      "group": "Quality of life",
+      "label": "Dampe First Dig"
+    },
+    {
+      "id": "disable_low_health_warnings",
+      "kind": "toggle",
+      "default": false,
+      "description": "Silence the low-health warning sound and warning number effect. Damage and heart recovery keep their normal behavior.",
+      "group": "Quality of life",
+      "label": "Disable Low Health Warnings"
+    },
+    {
+      "id": "owl_warps",
+      "kind": "toggle",
+      "default": false,
+      "description": "Keep the Death Mountain and Lake Hylia owl rides available, and add a child-only ride from Kakariko to Kokiri Forest.",
+      "group": "Quality of life",
+      "label": "Owl Warps"
+    },
+    {
+      "id": "starting_bunny_hood",
+      "kind": "toggle",
+      "default": false,
+      "description": "Start with the Bunny Hood owned. Its movement effect is selected separately under Bunny Hood movement.",
+      "group": "Starting inventory",
+      "label": "Starting Bunny Hood"
+    },
+    {
+      "id": "shuffle_ice_traps",
+      "kind": "toggle",
+      "default": false,
+      "description": "Replace a chosen number of ordinary filler pool items with Ice Traps. A trap freezes Link through the native cold effect and grants no inventory item. It can belong to any player's Zelda slot.",
+      "group": "Shuffle",
+      "label": "Shuffle Ice Traps"
+    },
+    {
+      "id": "ice_trap_count",
+      "kind": "range",
+      "default": 6,
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "description": "Number of filler copies replaced by Ice Traps when their shuffle is enabled. Progression and restricted dungeon rewards are never removed; generation stops if too few eligible filler copies exist.",
+      "group": "Shuffle",
+      "label": "Ice Trap count"
+    },
+    {
+      "id": "cosmetic_color_mode",
+      "kind": "choice",
+      "default": "off",
+      "choices": [
+        "off",
+        "custom",
+        "random",
+        "shared"
+      ],
+      "description": "Keep original colours, use the individual picks below, randomize each part, or give all parts shades of one random hue. Colours affect appearance only.",
+      "group": "Cosmetics",
+      "label": "Colour mode"
+    },
+    {
+      "id": "cosmetic_colors",
+      "kind": "dict",
+      "default": {},
+      "description": "Choose an original colour, random colour or exact RGB colour for each supported part. Used only in Custom colour mode; unlisted parts keep their original colours.",
+      "group": "Cosmetics",
+      "label": "Individual colours"
+    },
+    {
+      "id": "shuffle_music",
+      "kind": "choice",
+      "default": "off",
+      "choices": [
+        "off",
+        "grouped",
+        "anywhere"
+      ],
+      "description": "Keep the game's music, shuffle within native music categories, or mix compatible music across categories. Cutscene audio keeps its dedicated behavior.",
+      "group": "Cosmetics",
+      "label": "Music shuffle"
+    },
+    {
+      "id": "shuffle_sfx",
+      "kind": "choice",
+      "default": "off",
+      "choices": [
+        "off",
+        "grouped",
+        "anywhere"
+      ],
+      "description": "Keep sound effects, shuffle similar effects together, or mix compatible effects across categories. This changes sound, not the reward being received.",
+      "group": "Cosmetics",
+      "label": "Sound-effect shuffle"
+    },
+    {
+      "id": "item_plando",
+      "kind": "dict",
+      "default": {},
+      "description": "Place chosen items for your Zelda player at chosen enabled checks in your own world. These placements consume real pool copies and must obey access and placement rules. Invalid or impossible plans stop generation instead of adding bonus items.",
+      "group": "Planned placements",
+      "label": "Planned local placements"
+    },
+    {
+      "id": "damage_taken",
+      "kind": "choice",
+      "default": "normal",
+      "choices": [
+        "normal",
+        "double",
+        "quadruple",
+        "one_hit"
+      ],
+      "description": "Multiply damage received from enemies, traps and falls, or make a hit fatal. Enemy attack damage is a separate multiplier; selecting both multiplies their effects on enemy hits.",
+      "group": "Difficulty",
+      "label": "Global damage taken"
+    },
+    {
+      "id": "unbreakable_bowling_grass",
+      "kind": "toggle",
+      "default": false,
+      "description": "Keep the Bombchu Bowling lane obstacles unbreakable, so Bombchus must be steered around them. Experimental.",
+      "group": "Difficulty",
+      "label": "Unbreakable Bowling Grass"
+    },
+    {
+      "id": "harder_talon_cuccos",
+      "kind": "toggle",
+      "default": false,
+      "description": "Talon's Super Cucco game has fifteen decoys instead of ten, faster-moving Cuccos and twenty seconds instead of thirty. Experimental.",
+      "group": "Difficulty",
+      "label": "Harder Talon Cuccos"
+    },
+    {
+      "id": "fireball_storms",
+      "kind": "toggle",
+      "default": false,
+      "description": "Add falling fire rocks to supported stretches of Hyrule Field and the child Hyrule Castle garden. Experimental.",
+      "group": "Difficulty",
+      "label": "Fireball Storms"
+    },
+    {
+      "id": "mega_like_likes",
+      "kind": "toggle",
+      "default": false,
+      "description": "Add three tougher Like Likes in the Deku Tree meadow, with three times the health and a longer grip. They can steal any shield, including the Mirror Shield; defeating one returns a missing shield. Experimental.",
+      "group": "Difficulty",
+      "label": "Mega Like Likes"
+    },
+    {
+      "id": "random_fuses",
+      "kind": "toggle",
+      "default": false,
+      "description": "Give each bomb a fuse of 1-4 seconds, each Bombchu 3.5-5.25 seconds and each lit Deku Stick 10-24 seconds. Bomb flowers and enemy explosives are unchanged. Experimental.",
+      "group": "Difficulty",
+      "label": "Random Fuses"
+    },
+    {
+      "id": "enemy_randomizer",
+      "kind": "toggle",
+      "default": false,
+      "description": "Replace supported ordinary enemy spawns, in child and adult areas, with types that can be defeated using a sword. This adds no equipment requirement. AP check actors, Gold Skulltulas, bosses and merchants stay unchanged. Experimental.",
+      "group": "Difficulty",
+      "label": "Enemy Randomizer"
+    },
+    {
+      "id": "shorter_timers",
+      "kind": "choice",
+      "default": "off",
+      "choices": [
+        "off",
+        "three_quarters",
+        "half"
+      ],
+      "description": "Keep supported challenge timers, shorten them to three quarters, or halve them. This affects timed challenges, not Archipelago connection or delivery timers.",
+      "group": "Difficulty",
+      "label": "Shorter challenge timers"
+    }
+  ],
+  "unavailable_features": {
+    "volvagia_roams": "The roaming boss has an incomplete death sequence; it is disabled until a tested fix exists.",
+    "enemy_sizes": "The game ignores placement-only size edits; this option is disabled until a tested fix exists.",
+    "enemy_sizes_health": "Size-based health depends on the unavailable enemy-size feature."
+  },
   "ap_only": [
+    "bridge_medallions",
+    "cosmetic_color_mode",
+    "cosmetic_colors",
+    "damage_taken",
+    "dampe_first_dig",
+    "dampe_one_race",
     "death_link",
+    "disable_low_health_warnings",
+    "dpad_gear_cycle",
+    "dungeon_key_tracker",
+    "enemy_randomizer",
+    "faster_ocarina_minigame",
+    "fireball_storms",
+    "fishing_any_fish",
+    "free_scarecrow",
+    "harder_talon_cuccos",
+    "ice_trap_count",
+    "item_plando",
+    "lacs_medallions",
+    "mega_like_likes",
+    "night_skulls_suns_song",
+    "nocturne_trigger",
+    "owl_warps",
+    "prelude_trigger",
+    "random_fuses",
     "shops_always_open",
-    "shuffle_master_sword"
+    "shorter_timers",
+    "shuffle_ice_traps",
+    "shuffle_master_sword",
+    "shuffle_music",
+    "shuffle_sfx",
+    "skip_area_intros",
+    "skip_tower_escape",
+    "skulls_by_day",
+    "starting_bunny_hood",
+    "unbreakable_bowling_grass"
   ],
   "engine_extensions": {
     "adult_trade_shuffle": {
@@ -21,10 +358,11 @@
     "legacy_additive_replaced": 1,
     "legacy_alias": 1,
     "native_rejected": 2,
-    "native_unavailable": 14,
+    "native_unavailable": 13,
     "placement_adapter_missing": 1,
-    "public": 69,
-    "public_network": 24
+    "public": 48,
+    "public_network": 24,
+    "public_versioned_feature": 22
   },
   "menu_placeholders": [
     {
@@ -479,6 +817,9 @@
       ],
       "ap_default": "dungeon",
       "ap_kind": "choice",
+      "versioned_feature_choices": [
+        "lacs_medallions"
+      ],
       "ap_choices": [
         "remove",
         "vanilla",
@@ -487,7 +828,8 @@
         "overworld",
         "any_dungeon",
         "keysanity",
-        "lacs_dungeons"
+        "lacs_dungeons",
+        "lacs_medallions"
       ],
       "omitted_native_choices": [
         "dungeons",
@@ -604,14 +946,17 @@
           "bridge_rewards": 0
         }
       },
+      "versioned_feature_choices": [
+        "medallions"
+      ],
       "ap_choices": [
         "vanilla",
         "dungeons",
-        "open"
+        "open",
+        "medallions"
       ],
       "omitted_native_choices": [
         "hearts",
-        "medallions",
         "random",
         "stones",
         "tokens"
@@ -649,8 +994,13 @@
       ],
       "native_min": 0,
       "native_max": 6,
-      "status": "native_unavailable",
-      "reason": "OOTRR's native planner accepts only the default; the schema marks alternate values unsupported."
+      "ap_default": 6,
+      "ap_kind": "range",
+      "ap_min": 0,
+      "ap_max": 6,
+      "ap_step": 1,
+      "status": "public",
+      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
     },
     {
       "id": "bridge_rewards",
@@ -1912,8 +2262,9 @@
       "ap_min": 50,
       "ap_max": 500,
       "ap_step": 25,
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": 100
     },
     {
       "id": "enemy_damage",
@@ -1929,8 +2280,9 @@
       "ap_min": 50,
       "ap_max": 500,
       "ap_step": 25,
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": 100
     },
     {
       "id": "enemy_speed",
@@ -1946,8 +2298,9 @@
       "ap_min": 75,
       "ap_max": 200,
       "ap_step": 5,
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": 100
     },
     {
       "id": "no_heart_drops",
@@ -1957,8 +2310,9 @@
       "native_dependencies": [],
       "ap_default": false,
       "ap_kind": "toggle",
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": false
     },
     {
       "id": "no_gossip_fairies",
@@ -1968,8 +2322,9 @@
       "native_dependencies": [],
       "ap_default": false,
       "ap_kind": "toggle",
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": false
     },
     {
       "id": "no_ammo_drops",
@@ -1979,8 +2334,9 @@
       "native_dependencies": [],
       "ap_default": false,
       "ap_kind": "toggle",
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": false
     },
     {
       "id": "lose_heart_on_death",
@@ -1990,8 +2346,9 @@
       "native_dependencies": [],
       "ap_default": false,
       "ap_kind": "toggle",
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": false
     },
     {
       "id": "no_bottles_in_combat",
@@ -2001,8 +2358,9 @@
       "native_dependencies": [],
       "ap_default": false,
       "ap_kind": "toggle",
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": false
     },
     {
       "id": "enemy_regen",
@@ -2012,8 +2370,9 @@
       "native_dependencies": [],
       "ap_default": false,
       "ap_kind": "toggle",
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": false
     },
     {
       "id": "more_enemies",
@@ -2029,8 +2388,9 @@
       "ap_min": 100,
       "ap_max": 1000,
       "ap_step": 50,
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": 100
     },
     {
       "id": "boss_minibosses",
@@ -2040,8 +2400,9 @@
       "native_dependencies": [],
       "ap_default": false,
       "ap_kind": "toggle",
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": false
     },
     {
       "id": "boss_minions",
@@ -2051,8 +2412,9 @@
       "native_dependencies": [],
       "ap_default": false,
       "ap_kind": "toggle",
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": false
     },
     {
       "id": "no_dupe_items",
@@ -2062,8 +2424,9 @@
       "native_dependencies": [],
       "ap_default": false,
       "ap_kind": "toggle",
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": false
     },
     {
       "id": "enemies_respawn_sooner",
@@ -2073,8 +2436,9 @@
       "native_dependencies": [],
       "ap_default": false,
       "ap_kind": "toggle",
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": false
     },
     {
       "id": "no_z_targeting",
@@ -2084,8 +2448,9 @@
       "native_dependencies": [],
       "ap_default": false,
       "ap_kind": "toggle",
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": false
     },
     {
       "id": "fairy_helps_enemies",
@@ -2095,8 +2460,9 @@
       "native_dependencies": [],
       "ap_default": false,
       "ap_kind": "toggle",
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": false
     },
     {
       "id": "enemy_backup",
@@ -2106,8 +2472,9 @@
       "native_dependencies": [],
       "ap_default": false,
       "ap_kind": "toggle",
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": false
     },
     {
       "id": "zora_ambush",
@@ -2117,8 +2484,9 @@
       "native_dependencies": [],
       "ap_default": false,
       "ap_kind": "toggle",
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": false
     },
     {
       "id": "bean_pitch",
@@ -2128,8 +2496,9 @@
       "native_dependencies": [],
       "ap_default": false,
       "ap_kind": "toggle",
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": false
     },
     {
       "id": "enemy_gates",
@@ -2139,8 +2508,9 @@
       "native_dependencies": [],
       "ap_default": false,
       "ap_kind": "toggle",
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": false
     },
     {
       "id": "cucco_revenge",
@@ -2150,8 +2520,9 @@
       "native_dependencies": [],
       "ap_default": false,
       "ap_kind": "toggle",
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": false
     },
     {
       "id": "enemy_spawn_combo",
@@ -2161,8 +2532,9 @@
       "native_dependencies": [],
       "ap_default": false,
       "ap_kind": "toggle",
-      "status": "public",
-      "reason": "The AP catalogue forwards this supported native control. Dependent options remain subject to catalogue validation."
+      "status": "public_versioned_feature",
+      "reason": "New rooms record this choice in versioned feature settings. The 0.8.1 constructor receives its neutral default, then the current difficulty adapter applies the requested value once. Older player files retain their original build path.",
+      "ap_fixed_value": false
     },
     {
       "id": "door_of_time_escape",

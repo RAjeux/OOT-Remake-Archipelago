@@ -356,7 +356,7 @@ def prepare(root, settings, roster, moved):
                 prepare_restoration(romfs, mod, roster, settings=settings)
         if seed_settings is not None:
             localize_mod(romfs, mod, seed_settings)
-        if roster and settings.get("network_sources_schema") == 1:
+        if roster and settings.get("network_sources_schema") in (1, 2):
             from .network_offer_texts import prepare_offer_texts
             prepare_offer_texts(romfs, mod, roster, settings)
         if settings.get("adult_trade_shuffle"):

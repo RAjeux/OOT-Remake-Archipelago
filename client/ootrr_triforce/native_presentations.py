@@ -71,6 +71,8 @@ def is_cure(metadata):
 
 def receipt_style(metadata, native_info):
     """Use the game's item metadata to choose ordinary, short or major get."""
+    if metadata.get("mode") == "trap":
+        return "trap"
     if native_info is None:
         return "large"
     actor = metadata["actor"]
@@ -112,6 +114,10 @@ def append_recipe(editor, metadata, stem, grant_entry, commit, *, pickup=False):
         link(node, after)
         return node
 
+    if metadata.get("mode") == "trap":
+        node = editor.subflow(stem + "_Trap", "Dm_SY_GetInEvent", "AP_IceTrap", None)
+        link(node, commit)
+        return node
     if metadata["kind"] == "TCGSmallKey":
         return integer("_Key", "MiniGame_SmallKeyNum",
                        boolean("_Once", "UI_MiniGameGetSmallKeyOnce", commit))

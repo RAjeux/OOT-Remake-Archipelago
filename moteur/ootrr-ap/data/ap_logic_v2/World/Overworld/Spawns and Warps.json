@@ -1,0 +1,153 @@
+[
+    {
+        "region_name": "Root",
+        "hint": "ROOT",
+        "events": {
+            "Kakariko Village Gate Open": "open_kakariko == 'open' or (open_kakariko == 'zelda' and Zeldas_Letter)",
+            "Showed Mido Sword & Shield": "open_forest == 'fast' and Kokiri_Sword and Deku_Shield"
+        },
+        "locations": {
+            "Gift from Sages": "can_receive_ganon_bosskey"
+        },
+        "exits": {
+            "Root Exits": "is_starting_age or Time_Travel",
+            "HC Garden Skippable Locations": "skip_child_zelda",
+            "Beyond Door of Time Skippable Locations": "skip_reward_from_rauru != 'not_free'",
+            "Deliver Rutos Letter Region": "Rutos_Letter and zora_fountain == 'fast'",
+            # Hack to make ALR work if hideout entrances are unshuffled
+            "GF Above Jail Child Locations": "shuffle_gerudo_fortress_heart_piece == 'remove' or not shuffle_hideout_entrances"
+        }
+    },
+    {
+        "region_name": "Root Exits",
+        "exits": {
+            "Child Spawn": "is_child",
+            "Adult Spawn": "is_adult",
+            "Prelude of Light Warp": "can_play(Prelude_of_Light) and can_leave_forest",
+            "Minuet of Forest Warp": "can_play(Minuet_of_Forest)",
+            "Bolero of Fire Warp": "can_play(Bolero_of_Fire) and can_leave_forest",
+            "Serenade of Water Warp": "can_play(Serenade_of_Water) and can_leave_forest",
+            "Nocturne of Shadow Warp": "can_play(Nocturne_of_Shadow) and can_leave_forest",
+            "Requiem of Spirit Warp": "can_play(Requiem_of_Spirit) and can_leave_forest"
+        }
+    },
+    {
+        "region_name": "Child Spawn",
+        "exits": {
+            "KF Links House": "True"
+        }
+    },
+    {
+        "region_name": "Adult Spawn",
+        "exits": {
+            "Temple of Time": "True"
+        }
+    },
+    {
+        "region_name": "Prelude of Light Warp",
+        "exits": {
+            "Temple of Time": "True"
+        }
+    },
+    {
+        "region_name": "Minuet of Forest Warp",
+        "exits": {
+            "Sacred Forest Meadow": "True"
+        }
+    },
+    {
+        "region_name": "Bolero of Fire Warp",
+        "exits": {
+            "DMC Central Local": "True"
+        }
+    },
+    {
+        "region_name": "Serenade of Water Warp",
+        "exits": {
+            "Lake Hylia": "True"
+        }
+    },
+    {
+        "region_name": "Nocturne of Shadow Warp",
+        "exits": {
+            "Graveyard Warp Pad Region": "True"
+        }
+    },
+    {
+        "region_name": "Requiem of Spirit Warp",
+        "exits": {
+            "Desert Colossus": "True"
+        }
+    },
+    {
+        "region_name": "Farores Wind Warp",
+        "exits": {
+            "Bottom of the Well": "
+                (is_child and at('Bottom of the Well', is_child)) or
+                (is_adult and at('Bottom of the Well', is_adult))",
+            "Deku Tree Lobby": "
+                (is_child and at('Deku Tree Lobby', is_child)) or
+                (is_adult and at('Deku Tree Lobby', is_adult))",
+            "Deku Tree Before Boss": "
+                (is_child and at('Deku Tree Before Boss', is_child)) or
+                (is_adult and at('Deku Tree Before Boss', is_adult))",
+            "Dodongos Cavern Beginning": "
+                (is_child and at('Dodongos Cavern Beginning', is_child)) or
+                (is_adult and at('Dodongos Cavern Beginning', is_adult))",
+            "Dodongos Cavern Mouth": "
+                (is_child and at('Dodongos Cavern Mouth', is_child)) or
+                (is_adult and at('Dodongos Cavern Mouth', is_adult))",
+            "Fire Temple Lower": "
+                (is_child and at('Fire Temple Lower', is_child)) or
+                (is_adult and at('Fire Temple Lower', is_adult))",
+            "Fire Temple Before Boss": "
+                (is_child and at('Fire Temple Before Boss', is_child)) or
+                (is_adult and at('Fire Temple Before Boss', is_adult))",
+            "Forest Temple Lobby": "
+                (is_child and at('Forest Temple Lobby', is_child)) or
+                (is_adult and at('Forest Temple Lobby', is_adult))",
+            "Forest Temple Before Boss": "
+                (is_child and at('Forest Temple Before Boss', is_child)) or
+                (is_adult and at('Forest Temple Before Boss', is_adult))",
+            "Ganons Castle Lobby": "
+                (is_child and at('Ganons Castle Lobby', is_child)) or
+                (is_adult and at('Ganons Castle Lobby', is_adult))",
+            "Ganons Castle Main": "
+                (is_child and at('Ganons Castle Main', is_child)) or
+                (is_adult and at('Ganons Castle Main', is_adult))",
+            "Ganons Castle Tower": "
+                (is_child and at('Ganons Castle Tower', is_child)) or
+                (is_adult and at('Ganons Castle Tower', is_adult))",
+            "Gerudo Training Ground Lobby": "
+                (is_child and at('Gerudo Training Ground Lobby', is_child)) or
+                (is_adult and at('Gerudo Training Ground Lobby', is_adult))",
+            "Ice Cavern Beginning": "
+                (is_child and at('Ice Cavern Beginning', is_child)) or
+                (is_adult and at('Ice Cavern Beginning', is_adult))",
+            "Jabu Jabus Belly Beginning": "
+                (is_child and at('Jabu Jabus Belly Beginning', is_child)) or
+                (is_adult and at('Jabu Jabus Belly Beginning', is_adult))",
+            "Jabu Jabus Belly Before Boss": "
+                (is_child and at('Jabu Jabus Belly Before Boss', is_child)) or
+                (is_adult and at('Jabu Jabus Belly Before Boss', is_adult))",
+            "Shadow Temple Entryway": "
+                (is_child and at('Shadow Temple Entryway', is_child)) or
+                (is_adult and at('Shadow Temple Entryway', is_adult))",
+            "Shadow Temple Before Boss": "
+                (is_child and at('Shadow Temple Before Boss', is_child)) or
+                (is_adult and at('Shadow Temple Before Boss', is_adult))",
+            "Spirit Temple Lobby": "
+                (is_child and at('Spirit Temple Lobby', is_child)) or
+                (is_adult and at('Spirit Temple Lobby', is_adult))",
+            "Spirit Temple Before Boss": "
+                (is_child and at('Spirit Temple Before Boss', is_child)) or
+                (is_adult and at('Spirit Temple Before Boss', is_adult))",
+            "Water Temple Lobby": "
+                (is_child and at('Water Temple Lobby', is_child)) or
+                (is_adult and at('Water Temple Lobby', is_adult))",
+            "Water Temple Before Boss": "
+                (is_child and at('Water Temple Before Boss', is_child)) or
+                (is_adult and at('Water Temple Before Boss', is_adult))"
+        }
+    }
+]

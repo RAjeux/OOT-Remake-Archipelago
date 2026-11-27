@@ -1,5 +1,19 @@
 # Stability fixes and upgrade scope
 
+## 0.10.4 alpha 1: selective upstream additions
+
+Reviewed access rules, 17 additional physical sources and optional gameplay,
+cosmetic and difficulty settings extend newly generated rooms. The compatible
+constructor remains OOTRR 0.8.1; the project's native AP client, menu, branding
+and receipt/recovery system remain in place. Existing native 0.10 rooms retain
+their player files, saves and generated catalogue. New options and checks need
+the matching APWorld and a newly generated room with a dedicated save.
+
+This remains an alpha; new difficulty settings are experimental and Longshot
+is not a supported launcher host. See the
+[release notes](RELEASE-NOTES-0.10.4-alpha.1.md) and
+[scoped validation results](UPSTREAM-VALIDATION.md). Historical records follow.
+
 ## 0.10.3 alpha 1: desktop interface refresh
 
 The launcher, settings editor, connection controls and updater share a dark

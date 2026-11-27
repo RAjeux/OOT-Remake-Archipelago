@@ -31,10 +31,16 @@ fn generate(j: &Json) -> Result<()> {
     let settings = read_settings(j)?;
     let g = slice::generate_with(&settings, field(j, "seed")?, &GenOpts::default())?;
     let waves = g.spheres.iter().map(|row| Json::strs(row.iter().map(|(loc, _)| loc.as_str()))).collect();
-    let sources = network_sources::selected(&g.seed_file)?;
+    let extra = additional_sources::selected(&settings)?;
+    let sources = additional_sources::merge(network_sources::selected(&g.seed_file)?, &extra, &settings)?;
     let optional = network_sources::optional_sources(&g.seed_file, &g.spheres)?;
+    let features = j.get("features").cloned().unwrap_or_else(Json::obj);
+    let (world, placement) = ootrr_core::slice::modern::rebuild(&g.seed_file, &features)?;
+    let access = access_logic::from_world(&world, &placement, &sources)?;
     let mut output = Json::obj().with("seed_file", g.seed_file.to_json()).with("waves", Json::Arr(waves))
-        .with("network_sources_schema", 1_i64.into()).with("network_sources", sources)
+        .with("access_logic", access)
+        .with("network_sources_schema", 2_i64.into()).with("network_sources", sources)
+        .with("additional_sources", Json::strs(extra.iter().map(String::as_str)))
         .with("optional_sources", optional)
         .with("progression_items", Json::strs(g.progression_items.iter().map(String::as_str)));
     if let Some(wave) = g.master_sword_wave {
@@ -281,6 +287,44 @@ mod network_sources;
 mod network_pickups;
 #[path = "ootrr_ap/network_flow_base.rs"]
 mod network_flow_base;
+#[path = "ootrr_ap/access_logic.rs"]
+mod access_logic;
+#[path = "ootrr_ap/cosmetics.rs"]
+mod ap_cosmetics;
+#[path = "ootrr_ap/additional_sources.rs"]
+mod additional_sources;
+
+fn upstream_features(j: &Json) -> Result<()> {
+    let mut features = j.get("features").ok_or("missing features")?.clone()
+        .with("seed", field(j, "seed")?.into()).with("native_settings", read_settings(j)?.to_json());
+    if let Some(context) = j.get("protected_sources") {
+        features = features.with("protected_sources", context.clone());
+    }
+    // Reject missing mutation context before either native stage writes files.
+    // An explicit empty object is valid for a room with no physical AP checks.
+    ootrr_core::upstream_additions::Options::read(&features)?;
+    let difficulty = ootrr_core::feature_difficulty::read_features(&features)?;
+    ootrr_core::feature_difficulty::protected::read(&features, difficulty.randomizer || difficulty.encounters)?;
+    let caps = match j.get("key_caps") {
+        None => None,
+        Some(value) => {
+            let values = value.as_arr().ok_or("dungeon key totals must be an array")?;
+            if values.len() != 8 { return Err("expected eight dungeon key totals".into()); }
+            Some(values.iter().map(|v| v.as_i64().filter(|n| (0..=i32::MAX as i64).contains(n))
+                .map(|n| n as u32).ok_or("invalid dungeon key total")).collect::<std::result::Result<Vec<_>, _>>()?)
+        }
+    };
+    let names = match j.get("additional_sources") {
+        None => Vec::new(),
+        Some(value) => value.as_arr().ok_or("invalid additional native source selection")?.iter()
+            .map(|name| name.as_str().map(str::to_owned).ok_or("invalid additional native source name"))
+            .collect::<std::result::Result<Vec<_>, _>>()?,
+    };
+    additional_sources::prepare(Path::new("/game"), Path::new("/mod"), &names, &read_settings(j)?)?;
+    let count = ootrr_core::upstream_additions::prepare(Path::new("/game"), Path::new("/mod"), &features, caps.as_deref())?;
+    println!("Prepared {count} resources for versioned AP features.");
+    Ok(())
+}
 
 fn run() -> Result<()> {
     let mut input = String::new();
@@ -297,6 +341,8 @@ fn run() -> Result<()> {
         Some("patch") => patch(&j),
         Some("shops") => shops(&j),
         Some("skulls") => ap_skulls::run(&j),
+        Some("features") => upstream_features(&j),
+        Some("cosmetics") => ap_cosmetics::run(&j),
         _ => Err("expected generate, catalog, sources, network-flow-base, base-seed, settings, localize, patch, shops or skulls".into()),
     }
 }
@@ -308,6 +354,15 @@ fn main() {
 mod tests {
     use super::*;
     use ootrr_core::{difficulty::bean, msbt::{self, Msbt, Sec}, qol::navi_return::{self, Mode}, sarc};
+
+    #[test]
+    fn physical_actor_changes_require_explicit_ap_protection_before_reading_resources() {
+        let request = Json::obj().with("settings", Json::obj()).with("seed", "AP-guard".into())
+            .with("features", Json::obj().with("schema", 1_i64.into()).with("settings",
+                Json::obj().with("enemy_randomizer", true.into())));
+        let error = upstream_features(&request).unwrap_err().to_string();
+        assert!(error.contains("missing AP source protection context"), "{error}");
+    }
 
     fn book(pairs: &[(&str, &str)]) -> Vec<u8> {
         let mut m = Msbt { be: false, unk_a: [0, 0], enc: 0, ver: 3, unk_b: [0, 0], pad: [0; 10],

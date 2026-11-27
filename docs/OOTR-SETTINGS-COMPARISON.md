@@ -8,9 +8,10 @@ desktop, file and cosmetic controls; 162 are shared seed settings. They should
 not be compared directly with the remake's 118 native setting keys.
 
 The [native compatibility table](SETTINGS-COMPATIBILITY.md) accounts for all 118
-keys: 93 are exposed, and each omitted key has a specific implementation or
-compatibility reason. Adult trades, the Master Sword, DeathLink and shop hours
-are additional integration controls. Some concepts have different names or narrower scopes:
+keys: 94 are exposed, and each omitted key has a specific implementation or
+compatibility reason. The 36 integration controls include adult trades, the
+Master Sword, DeathLink, shop hours and the [selective upstream additions](UPSTREAM-INTEGRATION.md).
+Some concepts have different names or narrower scopes:
 
 | Concept | Integration control or scope |
 | --- | --- |

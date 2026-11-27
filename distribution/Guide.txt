@@ -1,12 +1,12 @@
-OOT Remake Archipelago · 0.10.3-alpha.1
+OOT Remake Archipelago · 0.10.4-alpha.1
 One Windows x64 launcher for Triforce and experimental Hookshot 3.0.1.
 
 DOWNLOAD THIS VERSION
-https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.3-alpha.1/OOT-Remake-Archipelago-0.10.3-alpha.1.exe
+https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.1/OOT-Remake-Archipelago-0.10.4-alpha.1.exe
 Release notes:
-https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.3-alpha.1
+https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.1
 Guide rapide en français:
-https://github.com/RAjeux/OOT-Remake-Archipelago/blob/main/docs/INSTALLATION.fr.md
+https://github.com/RAjeux/OOT-Remake-Archipelago/blob/v0.10.4-alpha.1/docs/INSTALLATION.fr.md
 
 The discontinued 0.11/0.12 Full experiment is not the current release,
 even though its version number is higher. Its player files use a different
@@ -106,9 +106,10 @@ archipelago.gg uses TLS automatically. 127.0.0.1:38281 means a server on
 YOUR OWN PC; for a remote room, use the organizer's address.
 
 Updates and saved data
-The updater was introduced in 0.10.2. Version 0.10.3 refreshes the interface;
-a room with current 0.10.2 resources needs no new preparation for this UI
-update. Download the current launcher once if your old app lacks updates.
+Version 0.10.4 adds reviewed sources, access rules and optional gameplay
+settings for new rooms. Existing native 0.10 rooms, player files, YAMLs and
+saves remain supported. Download the current launcher once if your old app
+lacks updates.
 Then use Help > Check for launcher updates, Update available, download,
 and Install and restart. Normal Play stays available if checking fails.
 
@@ -134,12 +135,14 @@ a newly generated room and dedicated save. Existing rooms keep their
 original settings and placements. Full 0.11/0.12 files are not converted.
 
 Current compatibility and help
-Triforce 0.8.3 has real title-screen connection and reconnect evidence.
-Earlier 0.10 gameplay evidence and host checks are documented separately.
+Triforce 0.8.3 has real title-screen connection and reconnect evidence, plus
+a private current-room Bow/quiver and five-rupee receipt check. Earlier 0.10
+gameplay evidence and host checks are documented separately.
 Hookshot 3.0.1 remains experimental; Fritchii has no AP gameplay backend.
+Longshot is an internal prototype, not a supported launcher host.
 The installer does not support Linux or other emulators. Current setup
 instructions and historical evidence are separate in:
-https://github.com/RAjeux/OOT-Remake-Archipelago/blob/main/docs/PORT-COMPATIBILITY.md
+https://github.com/RAjeux/OOT-Remake-Archipelago/blob/v0.10.4-alpha.1/docs/PORT-COMPATIBILITY.md
 
 If a player file is rejected, check its extension, slot, room and native
 0.10 compatibility. If Archipelago cannot find Ocarina of Time Remake,
@@ -166,8 +169,13 @@ rewards follow the selected save. Older rooms retain any native-local rewards
 which were outside their own generated AP catalogue.
 
 Supported settings
-The single schema exposes 93 native OOTRR settings, adult trades, the Master
-Sword, DeathLink and shop hours: 97 controls. In particular:
+The shared schema exposes 94 native OOTRR settings and 36 integration
+controls: 130 controls in total. New options require a newly generated room.
+In particular:
+- Optional 0.10.4 controls add medallion goals, Skulltula timing, key tracking,
+  travel/minigame shortcuts, native Ice Traps, colours, music/SFX and personal
+  item plando. New difficulty settings are experimental; known broken enemy
+  size and roaming Volvagia controls are unavailable.
 - Every enabled shuffle_shops mode turns all 64 purchases in eight shops
   into AP checks. shuffle mixes native stock; deals_1 through deals_4 and
   random_deals change the native pool and special-deal price layout before
@@ -217,11 +225,11 @@ for example, a random Fixed Price has no effect when the price mode is Cheap.
 Active settings still follow their documented dependencies, so selecting
 Random? everywhere does not guarantee a valid combination.
 
-Every source actually selected by the existing native randomizer becomes
-an AP check in new rooms, including enabled songs, NPCs, cows, ground
-items and destructibles. Fixed/unselected rewards stay native. A maximum
-configuration has 1,211 checks, or 1,212 with the Master Sword; the default
-configuration has 169. Old player files keep their original catalogue.
+Every selected supported source becomes an AP check in new rooms, including
+enabled songs, NPCs, cows, ground items and destructibles. Fixed/unselected
+rewards stay native. New 0.10.4 rooms have 185 checks by default; tested broad
+coverage reaches 1,229 including the optional Master Sword. Selected options
+determine the count. Old player files keep their original catalogue.
 Generate a new room and use a dedicated new save for the expanded checks.
 
 Breaking a shuffled container does not complete its check. An uncollected

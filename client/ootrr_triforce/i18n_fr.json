@@ -547,5 +547,7 @@
   "Automatic application replacement requires the standalone Windows executable.": "Le remplacement automatique de l’application nécessite l’exécutable Windows autonome.",
   "Downloading the application update…": "Téléchargement de la mise à jour de l’application…",
   "The application update is ready.": "La mise à jour de l’application est prête.",
-  "The application was updated, but the APWorld could not be replaced.": "L’application a été mise à jour, mais l’APWorld n’a pas pu être remplacé."
+  "The application was updated, but the APWorld could not be replaced.": "L’application a été mise à jour, mais l’APWorld n’a pas pu être remplacé.",
+  "The room is missing its versioned access rules.": "Il manque les règles d’accès versionnées de cette salle.",
+  "The room is missing its versioned feature settings.": "Il manque les paramètres versionnés de cette salle."
 }

@@ -5,6 +5,7 @@ import json
 import re
 
 from .settings import OPTION_SPECS, SPEC_BY_ID
+from .feature_settings import QUARANTINED_DEFAULTS
 
 
 LABELS = {
@@ -107,16 +108,56 @@ LABELS = {
     "fairy_helps_enemies": ("Released fairies also heal enemies", "Les fées libérées soignent aussi les ennemis"),
 }
 
+LABELS.update({
+    "nocturne_trigger": ("Nocturne requirement", "Condition du Nocturne"),
+    "prelude_trigger": ("Prelude requirement", "Condition du Prélude"),
+    "bridge_medallions": ("Medallions needed for the bridge", "Médaillons requis pour le pont"),
+    "lacs_medallions": ("Medallions needed for Zelda's key", "Médaillons requis pour la clé de Zelda"),
+    "skulls_by_day": ("Night Skulltulas also appear by day", "Skulltulas nocturnes présentes aussi le jour"),
+    "night_skulls_suns_song": ("Require Sun's Song for night Skulltulas", "Exiger le Chant du Soleil pour les Skulltulas nocturnes"),
+    "free_scarecrow": ("Scarecrow without the child song lesson", "Épouvantail sans la leçon enfant"),
+    "skip_tower_escape": ("Skip the tower escape", "Passer la fuite de la tour"),
+    "skip_area_intros": ("Skip first-visit area camera tours", "Passer les présentations des zones"),
+    "dungeon_key_tracker": ("Dungeon key information", "Informations sur les clés de donjon"),
+    "dpad_gear_cycle": ("Cycle masks and boots with the D-pad", "Changer de masque et de bottes avec la croix"),
+    "fishing_any_fish": ("Fishing prizes for any fish", "Récompenses de pêche avec n'importe quel poisson"),
+    "faster_ocarina_minigame": ("Shorter Skull Kids' memory game", "Jeu de mémoire des Skull Kids raccourci"),
+    "dampe_one_race": ("Both Dampe prizes in one race", "Deux récompenses d'Igor en une course"),
+    "dampe_first_dig": ("Dampe's first correct dig wins", "Récompense au premier bon trou d'Igor"),
+    "disable_low_health_warnings": ("Silence low-health warnings", "Désactiver les alertes de vie faible"),
+    "owl_warps": ("Reusable owl rides", "Voyages répétés avec le hibou"),
+    "starting_bunny_hood": ("Start with the Bunny Hood", "Commencer avec le Masque du Lapin"),
+    "shuffle_ice_traps": ("Mix Ice Traps into the item pool", "Ajouter des pièges de glace au mélange"),
+    "ice_trap_count": ("Number of Ice Traps", "Nombre de pièges de glace"),
+    "cosmetic_color_mode": ("Colour mode", "Mode des couleurs"),
+    "cosmetic_colors": ("Individual colours", "Couleurs détaillées"),
+    "shuffle_music": ("Music shuffle", "Mélange des musiques"),
+    "shuffle_sfx": ("Sound-effect shuffle", "Mélange des effets sonores"),
+    "item_plando": ("Planned local placements", "Placements d'objets choisis"),
+    "damage_taken": ("Global damage taken", "Dégâts subis globaux"),
+    "enemy_sizes": ("Random enemy sizes", "Tailles aléatoires des ennemis"),
+    "enemy_sizes_health": ("Health follows random enemy size", "Vie liée à la taille aléatoire des ennemis"),
+    "shorter_timers": ("Shorter challenge timers", "Chronomètres des défis raccourcis"),
+    "unbreakable_bowling_grass": ("Unbreakable Bombchu Bowling obstacles", "Obstacles indestructibles au bowling Teigneux"),
+    "harder_talon_cuccos": ("Harder Super Cucco game", "Jeu des super cocottes plus difficile"),
+    "fireball_storms": ("Falling fire-rock storms", "Pluies de rochers enflammés"),
+    "volvagia_roams": ("Volvagia in adult Hyrule Field", "Volcania dans la plaine d'Hyrule adulte"),
+    "mega_like_likes": ("Giant Like Likes", "Like Likes géants"),
+    "random_fuses": ("Random explosive fuses", "Mèches d'explosifs aléatoires"),
+    "enemy_randomizer": ("Shuffle supported enemy types", "Mélanger les types d'ennemis pris en charge"),
+})
+
 GROUPS = {
     "Archipelago": "Archipelago", "Shuffle": "Mélange", "Dungeon items": "Objets de donjon",
     "World": "Monde", "Goal": "Objectif", "Starting inventory": "Inventaire initial",
     "Quality of life": "Confort", "Difficulty": "Difficulté", "Economy": "Économie",
+    "Cosmetics": "Apparence et sons", "Planned placements": "Placements choisis",
 }
 
 # Display order and visibility only: the single public schema still owns every
 # value, default and validation rule used by the editor and APWorld.
 GROUP_ORDER = ("Archipelago", "Shuffle", "Dungeon items", "World", "Goal", "Economy",
-               "Starting inventory", "Quality of life", "Difficulty")
+               "Starting inventory", "Quality of life", "Cosmetics", "Planned placements", "Difficulty")
 ESSENTIAL_SETTINGS = frozenset({
     "death_link", "shops_always_open", "shuffle_chests", "shuffle_shops", "shuffle_skulltulas",
     "shuffle_freestanding_items", "shuffle_rewards", "shuffle_songs", "shuffle_dungeon_rewards",
@@ -163,6 +204,28 @@ for _count in range(1, 5):
     CHOICES["deals_" + str(_count)] = (f"{_count} special deals per shop", f"{_count} offres spéciales par boutique")
 
 CHOICE_OVERRIDES = {
+    ("damage_taken", "normal"): ("Normal damage", "Dégâts normaux"),
+    ("damage_taken", "double"): ("Double damage", "Dégâts doublés"),
+    ("damage_taken", "quadruple"): ("Quadruple damage", "Dégâts quadruplés"),
+    ("damage_taken", "one_hit"): ("One-hit knockout", "Un coup mortel"),
+    ("enemy_sizes", "mild"): ("Moderate size changes", "Variations de taille modérées"),
+    ("enemy_sizes", "wild"): ("Large size changes", "Grandes variations de taille"),
+    ("shorter_timers", "three_quarters"): ("75% of normal time", "75 % du temps normal"),
+    ("shorter_timers", "half"): ("50% of normal time", "50 % du temps normal"),
+    ("cosmetic_color_mode", "off"): ("Original colours", "Couleurs d'origine"),
+    ("cosmetic_color_mode", "custom"): ("Individual picks below", "Choix détaillés ci-dessous"),
+    ("cosmetic_color_mode", "random"): ("Random colour for each part", "Une couleur aléatoire par élément"),
+    ("cosmetic_color_mode", "shared"): ("Shades of one random hue", "Nuances d'une teinte aléatoire"),
+    ("shuffle_music", "grouped"): ("Shuffle within music categories", "Mélanger par catégorie musicale"),
+    ("shuffle_music", "anywhere"): ("Mix music categories", "Mélanger les catégories musicales"),
+    ("shuffle_sfx", "grouped"): ("Shuffle similar sounds", "Mélanger les sons similaires"),
+    ("shuffle_sfx", "anywhere"): ("Mix sound categories", "Mélanger les catégories de sons"),
+    ("nocturne_trigger", "vanilla"): ("Clear Forest, Fire and Water Temples", "Terminer les temples de la Forêt, du Feu et de l'Eau"),
+    ("nocturne_trigger", "classic"): ("Hold the Forest, Fire and Water Medallions", "Posséder les médaillons de la Forêt, du Feu et de l'Eau"),
+    ("prelude_trigger", "vanilla"): ("Clear Forest Temple", "Terminer le temple de la Forêt"),
+    ("prelude_trigger", "classic"): ("Hold the Forest Medallion", "Posséder le médaillon de la Forêt"),
+    ("bridge", "medallions"): ("Count Medallions only", "Compter seulement les médaillons"),
+    ("shuffle_ganon_bosskey", "lacs_medallions"): ("Zelda's key: Medallion count", "Clé de Zelda : nombre de médaillons"),
     ("skip_cutscenes", "off"): ("Native manual skipping", "Saut manuel d'origine"),
     ("skip_cutscenes", "story"): ("Opening and credits", "Introduction et générique"),
     ("skip_cutscenes", "all"): ("Also title-screen demos", "Inclure les démonstrations du titre"),
@@ -335,6 +398,35 @@ for _name in ("scrub_prices", "merchant_prices", "fairy_prices"):
     CHOICE_HELP[(_name, "fixed")] = ("Use exactly the Fixed amount below for each affected sale or offering; zero makes it free.", "Utiliser exactement le Prix fixe indiqué pour chaque achat ou offrande concerné ; zéro le rend gratuit.")
 del _name, _value, _help, _count
 
+CHOICE_HELP.update({
+    ("bridge", "medallions"): ("Open the bridge after the chosen number of Medallions; Spiritual Stones never count toward this condition.", "Ouvrir le pont après le nombre choisi de médaillons ; les pierres ancestrales ne comptent jamais pour cette condition."),
+    ("shuffle_ganon_bosskey", "lacs_medallions"): ("Zelda gives the Ganon Boss Key after the chosen Medallion count. Spiritual Stones do not count; Light Arrows join the AP pool.", "Zelda donne la clé du boss de Ganon après le nombre choisi de médaillons. Les pierres ne comptent pas ; les Flèches de Lumière rejoignent le pool AP."),
+    ("nocturne_trigger", "vanilla"): ("Adult Kakariko burns after clearing Forest, Fire and Water Temples, as in the remake. Owning the Medallions alone is insufficient.", "Cocorico adulte brûle après avoir terminé les temples de la Forêt, du Feu et de l'Eau, comme dans le remake. Posséder seulement leurs médaillons ne suffit pas."),
+    ("nocturne_trigger", "classic"): ("Adult Kakariko burns once you hold the Forest, Fire and Water Medallions, including those received from other games.", "Cocorico adulte brûle dès que tu possèdes les médaillons de la Forêt, du Feu et de l'Eau, y compris ceux reçus des autres jeux."),
+    ("prelude_trigger", "vanilla"): ("Sheik offers the Prelude after clearing Forest Temple, as in the remake.", "Sheik propose le Prélude après avoir terminé le temple de la Forêt, comme dans le remake."),
+    ("prelude_trigger", "classic"): ("Sheik offers the Prelude once you hold the Forest Medallion, including one received through Archipelago.", "Sheik propose le Prélude dès que tu possèdes le médaillon de la Forêt, même reçu par Archipelago."),
+    ("cosmetic_color_mode", "off"): ("Use the game's original colours; individual colour picks remain inactive.", "Utiliser les couleurs d'origine du jeu ; les choix détaillés restent inactifs."),
+    ("cosmetic_color_mode", "custom"): ("Use only your individual colour picks. Unlisted parts keep their original colours; each listed part can be exact or random.", "Utiliser seulement tes choix de couleurs détaillés. Les éléments non listés gardent leur couleur d'origine ; chaque choix peut être précis ou aléatoire."),
+    ("cosmetic_color_mode", "random"): ("Draw an independent random colour for every supported part; individual picks are inactive.", "Tirer une couleur aléatoire indépendante pour chaque élément pris en charge ; les choix détaillés sont inactifs."),
+    ("cosmetic_color_mode", "shared"): ("Draw one random hue and give every supported part a shade of it.", "Tirer une seule teinte aléatoire et donner à chaque élément pris en charge une nuance de cette teinte."),
+    ("shuffle_music", "off"): ("Keep each native music track in its original place.", "Conserver chaque musique native à sa place d'origine."),
+    ("shuffle_music", "grouped"): ("Shuffle music within compatible native categories, keeping battle, boss and other groups separate.", "Mélanger les musiques à l'intérieur de leurs catégories compatibles, en séparant combats, boss et autres groupes."),
+    ("shuffle_music", "anywhere"): ("Mix compatible music across categories; a scene may use music of another category.", "Mélanger les musiques compatibles entre catégories ; une scène peut jouer une musique d'une autre catégorie."),
+    ("shuffle_sfx", "off"): ("Keep the game's original sound effects.", "Conserver les effets sonores d'origine du jeu."),
+    ("shuffle_sfx", "grouped"): ("Shuffle similar compatible sound effects within their groups.", "Mélanger les effets sonores compatibles similaires à l'intérieur de leurs groupes."),
+    ("shuffle_sfx", "anywhere"): ("Mix compatible sound effects between groups, while retaining the adapter's native safety exclusions.", "Mélanger les effets sonores compatibles entre groupes, en conservant les exclusions natives de l'adaptateur."),
+    ("damage_taken", "normal"): ("Keep the normal global damage multiplier. A separate Enemy attack damage setting can still change enemy hits.", "Garder le multiplicateur global normal. Le réglage séparé des dégâts d'attaque ennemis peut toujours modifier leurs coups."),
+    ("damage_taken", "double"): ("Take twice the normal damage from enemies, traps and falls; enemy attack scaling also applies.", "Subir deux fois les dégâts habituels des ennemis, pièges et chutes ; le multiplicateur d'attaque ennemi s'applique aussi."),
+    ("damage_taken", "quadruple"): ("Take four times the normal damage from enemies, traps and falls; enemy attack scaling also applies.", "Subir quatre fois les dégâts habituels des ennemis, pièges et chutes ; le multiplicateur d'attaque ennemi s'applique aussi."),
+    ("damage_taken", "one_hit"): ("A damaging hit can knock Link out regardless of his current hearts. This is separate from DeathLink.", "Un coup causant des dégâts peut tuer Link quel que soit son nombre de cœurs. Ce réglage est distinct de DeathLink."),
+    ("enemy_sizes", "off"): ("Keep original enemy sizes; size-based health scaling is inactive.", "Conserver les tailles d'origine des ennemis ; l'adaptation de vie selon leur taille est inactive."),
+    ("enemy_sizes", "mild"): ("Use moderate random size variations at supported enemy spawns.", "Utiliser des variations de taille aléatoires modérées sur les ennemis pris en charge."),
+    ("enemy_sizes", "wild"): ("Use a wider random size range at supported enemy spawns.", "Utiliser une plage de tailles aléatoires plus large sur les ennemis pris en charge."),
+    ("shorter_timers", "off"): ("Keep the original durations of supported timed challenges.", "Conserver les durées d'origine des défis chronométrés pris en charge."),
+    ("shorter_timers", "three_quarters"): ("Use 75 percent of each supported challenge's original time.", "Accorder 75 pour cent du temps d'origine pour chaque défi pris en charge."),
+    ("shorter_timers", "half"): ("Use half of each supported challenge's original time.", "Accorder la moitié du temps d'origine pour chaque défi pris en charge."),
+})
+
 TOGGLE_OFF_HELP = {
     "death_link": ("Do not send or receive DeathLink deaths.", "Ne pas envoyer ni recevoir de morts DeathLink."),
     "shops_always_open": ("Use the shops' native opening hours; quest locks still apply.", "Utiliser les horaires d'origine des boutiques ; leurs conditions de quête restent nécessaires."),
@@ -394,6 +486,41 @@ for _name, _help in TOGGLE_OFF_HELP.items():
 del _name, _help
 
 
+TOGGLE_OFF_HELP.update({
+    "skulls_by_day": ("Keep night-only Skulltulas restricted to night.", "Conserver les Skulltulas nocturnes uniquement la nuit."),
+    "night_skulls_suns_song": ("Logic may reach night Skulltulas by waiting for night, without requiring Sun's Song.", "La logique peut atteindre les Skulltulas nocturnes en attendant la nuit, sans exiger le Chant du Soleil."),
+    "free_scarecrow": ("Keep the native child song-recording requirement before adult Scarecrow use.", "Conserver la condition native d'enregistrement du chant enfant avant d'utiliser l'épouvantail adulte."),
+    "skip_tower_escape": ("Play the normal timed escape between Ganondorf and the final Ganon fight.", "Jouer la fuite chronométrée habituelle entre Ganondorf et le combat final contre Ganon."),
+    "skip_area_intros": ("Keep first-visit area camera tours, subject to the existing opening-skip behavior.", "Conserver les présentations des premières visites, selon le comportement existant du saut de l'introduction."),
+    "dungeon_key_tracker": ("Keep the original dungeon-map information display.", "Conserver l'affichage d'informations d'origine des cartes de donjon."),
+    "dpad_gear_cycle": ("Keep the original D-pad equipment shortcuts without hold-to-cycle behavior.", "Conserver les raccourcis d'équipement d'origine sans changement en maintenant la croix."),
+    "fishing_any_fish": ("Keep the normal fish-size and lure requirements for pond prizes.", "Conserver les conditions habituelles de taille et de leurre pour les récompenses de pêche."),
+    "faster_ocarina_minigame": ("Keep the Skull Kids' normal memory-game rounds.", "Conserver les manches habituelles du jeu de mémoire des Skull Kids."),
+    "dampe_one_race": ("Keep the original separate race requirements for Dampe's two rewards.", "Conserver les conditions de courses séparées d'origine pour les deux récompenses d'Igor."),
+    "dampe_first_dig": ("Keep Dampe's normal dig lottery and fees.", "Conserver les tirages et paiements habituels des creusements d'Igor."),
+    "disable_low_health_warnings": ("Keep the game's low-health sound and visual warnings.", "Conserver les alertes sonores et visuelles de vie faible du jeu."),
+    "owl_warps": ("Keep the native owl appearances and flight availability.", "Conserver les apparitions et disponibilités de voyage natives du hibou."),
+    "starting_bunny_hood": ("Do not grant the Bunny Hood at the start.", "Ne pas donner le Masque du Lapin au départ."),
+    "shuffle_ice_traps": ("Do not replace AP filler items with Ice Traps.", "Ne pas remplacer les objets de remplissage AP par des pièges de glace."),
+    "unbreakable_bowling_grass": ("Keep Bombchu Bowling obstacles normally destructible.", "Conserver la destruction habituelle des obstacles du bowling Teigneux."),
+    "harder_talon_cuccos": ("Keep Talon's normal Super Cucco minigame setup.", "Conserver la configuration habituelle du jeu des super cocottes de Talon."),
+    "fireball_storms": ("Do not add the optional falling fire-rock storms.", "Ne pas ajouter les pluies facultatives de rochers enflammés."),
+    "volvagia_roams": ("Do not add the optional field Volvagia encounter.", "Ne pas ajouter la rencontre facultative avec Volcania dans la plaine."),
+    "mega_like_likes": ("Keep the normal Like Like sizes.", "Conserver les tailles habituelles des Like Likes."),
+    "random_fuses": ("Keep supported explosives' native fuse durations.", "Conserver les durées de mèches natives des explosifs pris en charge."),
+    "enemy_randomizer": ("Keep ordinary enemy types at their original spawns.", "Conserver les types d'ennemis ordinaires à leurs emplacements d'origine."),
+    "enemy_sizes_health": ("Random enemy size does not add another health multiplier.", "La taille aléatoire des ennemis n'ajoute pas de multiplicateur de vie supplémentaire."),
+})
+
+
+for _quarantined in QUARANTINED_DEFAULTS:
+    LABELS.pop(_quarantined, None)
+    TOGGLE_OFF_HELP.pop(_quarantined, None)
+CHOICE_HELP = {key: value for key, value in CHOICE_HELP.items() if key[0] in SPEC_BY_ID}
+CHOICE_OVERRIDES = {key: value for key, value in CHOICE_OVERRIDES.items() if key[0] in SPEC_BY_ID}
+del _quarantined
+
+
 def choice_description(name, value, language="en"):
     """Explain one selected value, or a draft list of starting items/songs."""
     spec, fr = SPEC_BY_ID[name], is_french(language)
@@ -406,6 +533,10 @@ def choice_description(name, value, language="en"):
         if not selected:
             return "Aucun choix ajouté au départ." if fr else "No additional starting selections."
         return ("Au départ : " if fr else "Starting selections: ") + ", ".join(selected) + ". " + description(name, language)
+    if spec["kind"] == "dict":
+        count = len(value) if isinstance(value, dict) else 0
+        return ((f"{count} choix configuré(s). " if fr else f"{count} configured entries. ")
+                + description(name, language))
     help_text = CHOICE_HELP.get((name, value))
     if help_text:
         return help_text[int(fr)]
@@ -447,7 +578,8 @@ def selection_summary(values, language="en"):
             + (" ; cartes : " if fr else "; maps: ") + choice_label("shuffle_mapcompass", effective["shuffle_mapcompass"], language),
             ("Porte du Temps : " if fr else "Door of Time: ") + choice_label("door_of_time_condition", effective["door_of_time_condition"], language)
             + (" ; pont : " if fr else "; bridge: ") + choice_label("bridge", effective["bridge"], language)
-            + ((" (" + str(effective["bridge_rewards"]) + ")") if effective["bridge"] == "dungeons" else "")
+            + ((" (" + str(effective["bridge_rewards"]) + ")") if effective["bridge"] == "dungeons" else
+               (" (" + str(effective["bridge_medallions"]) + ")") if effective["bridge"] == "medallions" else "")
             + (" ; épreuves : " if fr else "; trials: ")
             + str(0 if effective["skip_ganon_trials"] else effective["trials"])]
     ignored = sum(draft[spec["id"]] != spec["default"] and bool(active_reason(spec["id"], draft, language))
@@ -470,6 +602,18 @@ def active_reason(name, values, language="en"):
         return ("Nécessite : " if fr else "Requires: ") + label
     if name == "bridge_rewards" and values["bridge"] != "dungeons":
         return requires("bridge", "dungeons")
+    if name == "bridge_medallions" and values["bridge"] != "medallions":
+        return requires("bridge", "medallions")
+    if name == "lacs_medallions" and values["shuffle_ganon_bosskey"] != "lacs_medallions":
+        return requires("shuffle_ganon_bosskey", "lacs_medallions")
+    if name == "night_skulls_suns_song" and values["skulls_by_day"]:
+        return "Désactiver les Skulltulas présentes aussi le jour." if fr else "Turn off Skulltulas appearing by day."
+    if name == "cosmetic_colors" and values["cosmetic_color_mode"] != "custom":
+        return requires("cosmetic_color_mode", "custom")
+    if name == "ice_trap_count" and not values["shuffle_ice_traps"]:
+        return requires("shuffle_ice_traps")
+    if name in {"bean_pitch", "zora_ambush"} and not values[name]:
+        return "Compatibilité avec les anciennes configurations uniquement." if fr else "Older configuration compatibility only."
     if name == "trials" and values["skip_ganon_trials"]:
         return "Désactiver le saut des épreuves." if fr else "Turn off Skip Ganon's trials."
     if name == "door_of_time_escape" and values["door_of_time_condition"] not in {"open", "song"}:
@@ -523,6 +667,13 @@ def validation_message(error, language="en"):
     text = str(error)
     if not is_french(language):
         return text
+    for name, explanation in {
+        "volvagia_roams": "La séquence de mort de Volcania en liberté est incomplète ; ce réglage reste désactivé jusqu'à un correctif testé.",
+        "enemy_sizes": "Le jeu ignore les modifications de taille du placement seul ; ce réglage reste désactivé jusqu'à un correctif testé.",
+        "enemy_sizes_health": "La vie selon la taille dépend du réglage de taille des ennemis actuellement indisponible.",
+    }.items():
+        if text.startswith("Unavailable setting: " + name + ". "):
+            return "Réglage indisponible : " + name + ". " + explanation
     messages = {
         "Starting Bombchus also require a bomb bag in starting_items.": "Sélectionne aussi un sac de bombes dans l'équipement initial pour commencer avec des Bombchus.",
         "open_kakariko: open already grants Impa's song; remove zeldas_lullaby from starting_songs.": "L'ouverture de la grille accorde déjà le chant d'Impa : retire la Berceuse de Zelda des chants initiaux.",

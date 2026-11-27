@@ -102,6 +102,27 @@ to your hosted room. On Linux, the runner builds a separate native test
 library when needed. Protocol tests are different from official generation:
 the Windows generator harness below does **not** support `AP_SOURCE`.
 
+### Keep private gameplay history consistent
+
+When reusing a private room and game save, preserve both the server's item
+history and the game's saved receipt cursor. Request an explicit server save,
+wait for confirmation and shut the server down gracefully before copying or
+restarting the fixture. Abruptly terminating the process can leave its
+`.apsave` behind the game's autosave.
+
+Before testing another receipt, verify that the server's ordered history
+contains the exact item and origin prefix already consumed by the saved cursor.
+A completed connection handshake alone does not establish this consistency.
+For example, a game at cursor 3 cannot receive a newly sent item at server
+index 1; it has already consumed that index. Such a fixture cannot diagnose a
+delivery failure.
+
+If known test history was lost, restore that exact prefix through ordinary AP
+server commands, or start a fresh matched room and profile. Do not edit the
+game's receipt cursor, set inventory flags or force a grant to make the probe
+pass. Record the initial history length, saved cursor, new item index and final
+saved cursor alongside the observed inventory and animation.
+
 ## Official Archipelago generation from a fresh checkout
 
 This optional harness runs the **Windows Archipelago 0.6.8 frozen generator**.

@@ -192,7 +192,7 @@ def build_restoration_flow(raw, roster, settings=None):
             commit = awake
 
         reward = commit
-        if record["local"]:
+        if record["local"] and ITEM_DATA[record["item"]].get("mode") != "trap":
             metadata = ITEM_DATA[record["item"]]
             core_name = stem + "_Pouch"
             recipe = append_recipe(editor, metadata, core_name, grant_entry, commit, pickup=True)

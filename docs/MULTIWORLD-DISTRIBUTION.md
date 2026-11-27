@@ -1,9 +1,10 @@
 # Multiworld item distribution
 
-The existing native randomizer creates the seed and its access proof.
-Archipelago then fills every supported source selected by that randomization
-in a new room. A maximum configuration has 1,211 checks, plus the optional
-Master Sword. The default configuration has 169.
+The compatible native constructor creates the donor seed; the integration
+exports the room's selected sources and versioned access rules. Archipelago
+fills those supported sources. New 0.10.4 rooms have 185 checks by default; tested broad coverage
+reaches 1,229 including the optional Master Sword. The count depends on the
+selected options, and older rooms retain their own catalogue.
 
 Enabled families include chests, shops, all 100 Skulltulas in Matched mode,
 NPCs, songs, dungeon rewards, adult trades, cows, merchants, Scrubs, minigames,

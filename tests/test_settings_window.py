@@ -41,11 +41,12 @@ class SettingsExportTests(unittest.TestCase):
     def test_selected_values_and_language_reach_yaml_without_reinterpreting_game_rules(self):
         values = default_options()
         values.update(death_link=True, shops_always_open=True, starting_hearts=5, open_forest="open",
-                      shuffle_shops="random", starting_items=["bow"], skip_cutscenes="story")
+                      shuffle_shops="random", starting_items=["bow"], skip_cutscenes="story",
+                      cosmetic_color_mode="random")
         for language in ("en", "fr"):
             rendered = yaml_content('Link "AP"', values, language)
             selected = parsed_values(rendered)
-            expected = dict(values, shuffle_shops="random_deals")
+            expected = dict(values, shuffle_shops="random_deals", cosmetic_color_mode="random_colors")
             self.assertEqual(selected, expected)
             self.assertEqual(rendered.count("  death_link:"), 1)
             self.assertIn(description("shops_always_open", language).split(".")[0], rendered)

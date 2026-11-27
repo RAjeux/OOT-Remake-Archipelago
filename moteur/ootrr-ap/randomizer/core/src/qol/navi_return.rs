@@ -285,6 +285,61 @@ pub fn patch(raw: &[u8], mode: Mode) -> Res<Vec<u8>> {
     Ok(out)
 }
 
+/// Add the upstream timer/safety fix to the pinned builder's generated flow.
+/// The separate feature preparation pass calls this only for new-format rooms;
+/// the legacy builder and its original localized messages remain unchanged.
+pub fn repair_generated_safety(b: &mut Bf) -> Res<usize> {
+    const MARK: &str = "APNaviSafety";
+    let f = b.flows.iter_mut().find(|f| f.name == FLOW)
+        .ok_or(Error::Format("navi safety: no NaviHint flow"))?;
+    if f.events.iter().any(|e| e.name.starts_with(MARK)) { return Ok(0); }
+    let entry = f.entries.iter().position(|e| e.name == ENTRY)
+        .ok_or(Error::Format("navi safety: no field entry"))?;
+    if !f.events.iter().any(|e| e.name.starts_with(PREFIX)) { return Ok(0); }
+    let warps: Vec<usize> = f.events.iter().enumerate().filter_map(|(i, e)| {
+        match &e.kind {
+            Kind::Action { actor, act, .. } if e.name.starts_with(PREFIX)
+                && f.actors.get(*actor as usize).is_some_and(|a|
+                    a.name == "GameSystemActor" && a.actions.get(*act as usize)
+                        .is_some_and(|x| x == "EventReserveBancChange")) => Some(i),
+            _ => None,
+        }
+    }).collect();
+    if !matches!(warps.len(), 12 | 14) {
+        return Err(Error::Format("navi safety: unsupported generated destination list"));
+    }
+    let stay = (0..f.events.len()).find(|&i| is_nothing(f, i))
+        .map(idx).transpose()?.ok_or(Error::Format("navi safety: no do-nothing exit"))?;
+    let (leave_a, leave_x) = slot(f, "GameSystemActor", "EventTriggerLeaveGameSafetySection")?;
+    // System actors must use GameSystemActor's member creation policy, as the
+    // game's own pedestal flow does, instead of inheriting Navi's policy.
+    if !f.actors.iter().any(|a| a.name == "ChallengeSystemActor" && a.sub.is_empty()) {
+        let base = f.actors.iter().find(|a| a.name == "GameSystemActor" && a.sub.is_empty())
+            .cloned().ok_or(Error::Format("navi safety: no system actor"))?;
+        f.actors.push(Actor { name: "ChallengeSystemActor".to_string(),
+            actions: Vec::new(), queries: Vec::new(), ..base });
+    }
+    let (stop_a, stop_x) = slot(f, "ChallengeSystemActor", "EventTriggerMiniGameTimerStop")?;
+    let (hide_a, hide_x) = slot(f, "ChallengeSystemActor", "EventTriggerUnshowTimerUI")?;
+    let (timer_a, timer_q) = query_slot(f, "ChallengeSystemActor", "EventQueryMiniGameTimerIsCounting")?;
+    let before = f.events.len();
+    for i in warps {
+        let at = idx(f.events.len())?;
+        let warp = f.events[i].kind.clone();
+        f.events.push(Event { name: format!("{MARK}Stop{i}"), kind:
+            Kind::Action { next: at + 1, actor: stop_a, act: stop_x, params: None } });
+        f.events.push(Event { name: format!("{MARK}Hide{i}"), kind:
+            Kind::Action { next: at + 2, actor: hide_a, act: hide_x, params: None } });
+        f.events.push(Event { name: format!("{MARK}Warp{i}"), kind: warp });
+        f.events[i].kind = Kind::Action { next: at, actor: leave_a, act: leave_x, params: None };
+    }
+    let guard = idx(f.events.len())?;
+    f.events.push(Event { name: format!("{MARK}Timer"), kind: Kind::Switch {
+        actor: timer_a, query: timer_q, cases: two(stay, f.entries[entry].main), params: None } });
+    f.entries[entry].main = guard;
+    Ok(f.events.len() - before)
+}
+
 fn ask(label: &str, archive: &str) -> &'static str {
     let name: &str = archive.rsplit(['/', '\\']).next().unwrap_or(archive);
     let french: bool = name.get(2..4).is_some_and(|code| code.eq_ignore_ascii_case("fr"));
@@ -492,6 +547,57 @@ mod tests {
     use super::*;
     use crate::bfevfl::Actor;
     use crate::bfevfl::flow::Entry;
+
+    #[test]
+    fn repaired_builder_returns_check_the_timer_and_leave_safety_before_each_warp() {
+        for mode in [Mode::Dungeons, Mode::Everywhere] {
+            let mut b = sample();
+            patch_flow(&mut b, mode).unwrap();
+            let original = b.flows[0].clone();
+            let added = repair_generated_safety(&mut b).unwrap();
+            let f = &b.flows[0];
+            let destinations = if mode == Mode::Dungeons { 12 } else { 14 };
+            assert_eq!(added, destinations * 3 + 1);
+            let guard = &f.events[f.entries[0].main as usize];
+            let Kind::Switch { actor, query, cases, .. } = &guard.kind else { panic!("no timer guard") };
+            assert_eq!(query_name(f, *actor, *query), "ChallengeSystemActor.EventQueryMiniGameTimerIsCounting");
+            assert!(is_nothing(f, cases.iter().find(|c| c.val == 0).unwrap().ev as usize));
+            assert_eq!(cases.iter().find(|c| c.val == 1).unwrap().ev, original.entries[0].main);
+            let call = |ev: &Event| match &ev.kind {
+                Kind::Action { actor, act, .. } => format!("{}.{}", f.actors[*actor as usize].name,
+                    f.actors[*actor as usize].actions[*act as usize]),
+                _ => String::new(),
+            };
+            for (i, e) in original.events.iter().enumerate() {
+                if let Kind::Action { actor, act, .. } = &e.kind
+                    && original.actors[*actor as usize].actions[*act as usize] == "EventReserveBancChange" {
+                    let mut at = i;
+                    for expected in ["GameSystemActor.EventTriggerLeaveGameSafetySection",
+                        "ChallengeSystemActor.EventTriggerMiniGameTimerStop",
+                        "ChallengeSystemActor.EventTriggerUnshowTimerUI",
+                        "GameSystemActor.EventReserveBancChange"] {
+                        assert_eq!(call(&f.events[at]), expected);
+                        let Kind::Action { next, .. } = f.events[at].kind else { panic!() };
+                        if next != NONE { at = next as usize; }
+                    }
+                    assert_eq!(f.events[at].kind, e.kind);
+                } else { assert_eq!(&f.events[i], e); }
+            }
+            let raw = b.write().unwrap();
+            assert_eq!(repair_generated_safety(&mut b).unwrap(), 0);
+            assert_eq!(b.write().unwrap(), raw);
+        }
+    }
+
+    #[test]
+    fn safety_repair_leaves_vanilla_and_legacy_generation_unchanged() {
+        let mut b = sample();
+        let raw = b.write().unwrap();
+        assert_eq!(repair_generated_safety(&mut b).unwrap(), 0);
+        assert_eq!(b.write().unwrap(), raw);
+        patch_flow(&mut b, Mode::Dungeons).unwrap();
+        assert!(!b.flows[0].events.iter().any(|e| e.name.starts_with("APNaviSafety")));
+    }
 
     fn text_book(pairs: &[(&str, &str)]) -> Vec<u8> {
         let mut m = Msbt { be: false, unk_a: [0, 0], enc: 0, ver: 3, unk_b: [0, 0], pad: [0; 10],

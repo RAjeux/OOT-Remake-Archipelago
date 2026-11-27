@@ -1,5 +1,6 @@
 """Windows WASI must see long-path overlays and publish only successful edits."""
 from contextlib import nullcontext
+import json
 import os
 from pathlib import Path
 import shutil
@@ -9,6 +10,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import zlib
+from types import SimpleNamespace
 
 import zstandard
 
@@ -123,6 +125,34 @@ class WindowsEnginePathTests(unittest.TestCase):
             with self.assertRaises(engine.EnginePathError):
                 with engine._wasi_paths("patch", (self.game, self.mod)):
                     self.fail("A recursive projection must not start")
+
+
+class NativeFileIndexTests(unittest.TestCase):
+    def test_feature_and_cosmetic_passes_receive_private_relative_file_indexes(self):
+        with tempfile.TemporaryDirectory(prefix="ap-index-") as folder:
+            root = Path(folder)
+            game, mod = root / "game", root / "stage"
+            put(game / "Pack/Original.pack.zs", b"original")
+            put(mod / "Banc/Changed.byml.zs", b"overlay")
+            calls = []
+
+            def run(arguments, **kwargs):
+                metadata = Path(arguments[-1]) / "files.json"
+                self.assertTrue(metadata.is_file())
+                self.assertEqual(json.loads(metadata.read_text()), dict(schema=1, files={
+                    "game": ["Pack/Original.pack.zs"], "mod": ["Banc/Changed.byml.zs"]}))
+                self.assertNotEqual(metadata.parent, game)
+                self.assertNotEqual(metadata.parent, mod)
+                calls.append(metadata)
+                return SimpleNamespace(returncode=0, stdout=b"prepared", stderr=b"")
+
+            with patch.object(engine, "bundled_node", return_value="node"), patch.object(engine, "run_process", side_effect=run):
+                for command in ("features", "cosmetics"):
+                    self.assertEqual(engine.run_engine(command, {}, game, mod), "prepared")
+            self.assertEqual(len(calls), 2)
+            self.assertTrue(all(not metadata.exists() for metadata in calls), "Indexes must be removed after preparation.")
+            self.assertEqual((game / "Pack/Original.pack.zs").read_bytes(), b"original")
+            self.assertEqual((mod / "Banc/Changed.byml.zs").read_bytes(), b"overlay")
 
 
 if __name__ == "__main__":

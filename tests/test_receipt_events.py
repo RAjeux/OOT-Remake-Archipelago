@@ -113,9 +113,12 @@ class GraphRun:
                     assert data.entry_point_name == SILENT_ENTRY
                     self.run(data.entry_point_name, params)
                 else:
-                    assert (data.res_flowchart_name, data.entry_point_name) == ("Dm_SY_Get", "CheckHeart")
-                    assert any(command == "EventTriggerAddOrSubGameDataInt" and values["GameDataName"] == CURSOR
-                               for command, values in self.trace), "Refresh before the receipt cursor"
+                    if (data.res_flowchart_name, data.entry_point_name) == ("Dm_SY_GetInEvent", "AP_IceTrap"):
+                        self.trace.append(("FixtureNativeIceTrap", {}))
+                    else:
+                        assert (data.res_flowchart_name, data.entry_point_name) == ("Dm_SY_Get", "CheckHeart")
+                        assert any(command == "EventTriggerAddOrSubGameDataInt" and values["GameDataName"] == CURSOR
+                                   for command, values in self.trace), "Refresh before the receipt cursor"
                 node = data.nxt.v
             else:
                 raise AssertionError("Blocking or unsupported receipt node: " + type(data).__name__)
@@ -154,7 +157,11 @@ class ReceiptFlowTests(unittest.TestCase):
                     trace = GraphRun(self.flow.flowchart, hook=hook).run(event_name(ITEM_IDS[name]))
                     self.assert_receipt(trace)
                     grants = [params for command, params in trace if command == "EventTriggerAddOrRemovePouchContent"]
-                    if metadata["mode"] == "generic" or metadata["kind"] == "TCGSmallKey":
+                    if metadata["mode"] == "trap":
+                        self.assertFalse(grants)
+                        self.assertEqual(sum(command == "FixtureNativeIceTrap" for command, _ in trace), 1)
+                        self.assertEqual(trace[0][0], "FixtureNativeIceTrap")
+                    elif metadata["mode"] == "generic" or metadata["kind"] == "TCGSmallKey":
                         self.assertFalse(grants)
                         for command, params in trace:
                             key = params.get("GameDataName")

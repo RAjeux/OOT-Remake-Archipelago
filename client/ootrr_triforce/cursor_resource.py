@@ -22,6 +22,172 @@ def append_saved_bools(raw, marker_keys, value=False):
     return _append_saved_values(raw, marker_keys, int(bool(value)), "Bool", 0xd0, strict_collisions=True)
 
 
+def register_chest_flags(raw, actor_hashes):
+    """Give converted chests their actual qualified, persistent Bool keys.
+
+    The native engine may allocate a chest Struct member using a spare Bool.
+    AP host readers address ``IsTreasureBoxOpen.<actor>`` directly instead.
+    Keep every spare/native save slot intact, append only missing qualified
+    Bools, and redirect a small cloned Struct-member array. Existing nodes can
+    be shared by BYML; none of their member words are changed in place.
+    """
+    from .network_catalog import murmur3
+    actor_hashes = list(actor_hashes)
+    def invalid(detail):
+        return ValueError(tr('Invalid GameData or receipt index.') + " " + detail)
+    if (any(type(actor) is not int or not 0 < actor < 2**64 for actor in actor_hashes)
+            or len(set(actor_hashes)) != len(actor_hashes)):
+        raise invalid("Invalid converted chest identities.")
+    if not actor_hashes:
+        return raw
+    wanted = [(murmur3(str(actor)), murmur3("IsTreasureBoxOpen." + str(actor)))
+              for actor in actor_hashes]
+    if (len({member for member, _ in wanted}) != len(wanted)
+            or len({qualified for _, qualified in wanted}) != len(wanted)):
+        raise invalid("Converted chest hashes collide.")
+    if raw[:2] not in (b"YB", b"BY"):
+        raise invalid("Missing BYML header.")
+    endian = "<" if raw[:2] == b"YB" else ">"
+    order = "little" if endian == "<" else "big"
+    word = struct.Struct(endian + "I")
+    def bounded(at, length):
+        if type(at) is not int or at < 0 or length < 0 or at + length > len(raw):
+            raise invalid("Truncated chest GameData.")
+        return at
+    def read(at):
+        return word.unpack_from(raw, bounded(at, 4))[0]
+    def small(at):
+        bounded(at, 3)
+        return int.from_bytes(raw[at:at + 3], order)
+    def fields(node):
+        bounded(node, 4)
+        if raw[node] != 0xc1:
+            raise invalid("Expected a chest GameData dictionary.")
+        count = small(node + 1)
+        bounded(node + 4, count * 8)
+        result = {}
+        for index in range(count):
+            at = node + 4 + index * 8
+            key = small(at)
+            if key in result:
+                raise invalid("Duplicate chest GameData field.")
+            result[key] = at + 4
+        return result
+    def field(node, name):
+        at = fields(node).get(keys.get(name))
+        if at is None:
+            raise invalid("Missing chest GameData field: " + name)
+        return at
+    def child(node, name, kind):
+        at = field(node, name)
+        target = read(at)
+        bounded(target, 4)
+        if raw[at - 1] != kind or raw[target] != kind:
+            raise invalid("Unexpected chest GameData type: " + name)
+        return target
+    def array(node):
+        bounded(node, 4)
+        if raw[node] != 0xc0:
+            raise invalid("Expected a chest GameData array.")
+        count = small(node + 1)
+        bounded(node + 4, count)
+        first = (node + 4 + count + 3) & ~3
+        bounded(first, 4 * count)
+        return [(raw[node + 4 + index], read(first + 4 * index)) for index in range(count)]
+    def number(node, name):
+        at = field(node, name)
+        if raw[at - 1] not in (0xd1, 0xd3):
+            raise invalid("Expected a 32-bit chest GameData hash: " + name)
+        return read(at)
+
+    table = read(4)
+    bounded(table, 4)
+    if not table or raw[table] != 0xc2:
+        raise invalid("Missing chest GameData name table.")
+    count = small(table + 1)
+    bounded(table + 4, count * 4)
+    keys = {}
+    for index in range(count):
+        at = table + read(table + 4 + 4 * index)
+        bounded(at, 1)
+        end = raw.find(b"\0", at)
+        if end < 0:
+            raise invalid("Unterminated chest GameData name.")
+        name = raw[at:end].decode("utf-8")
+        if name in keys:
+            raise invalid("Duplicate chest GameData name.")
+        keys[name] = index
+    data = child(read(12), "Data", 0xc1)
+    names = {index: name for name, index in keys.items()}
+    # Index all 32-bit key spaces so a same-hash Int/Struct cannot be silently
+    # mistaken for an existing Bool. Native 64-bit actor keys are independent.
+    registered = {}
+    for key, at in fields(data).items():
+        if raw[at - 1] != 0xc0:
+            continue
+        for kind, row in array(read(at)):
+            if kind != 0xc1:
+                continue
+            hashed = fields(row).get(keys.get("Hash"))
+            if hashed is None or raw[hashed - 1] not in (0xd1, 0xd3):
+                continue
+            registered.setdefault(read(hashed), []).append((names.get(key), row))
+    opened = registered.get(murmur3("IsTreasureBoxOpen"), [])
+    if len(opened) != 1 or opened[0][0] != "Struct":
+        raise invalid("Opened chest Struct is missing or ambiguous.")
+    member_array = child(opened[0][1], "DefaultValue", 0xc0)
+    member_items = array(member_array)
+    member_first = (member_array + 4 + len(member_items) + 3) & ~3
+    members = {}
+    for index, (kind, row) in enumerate(member_items):
+        if kind != 0xc1:
+            raise invalid("Invalid opened chest member.")
+        members.setdefault(number(row, "Hash"), []).append((row, member_first + index * 4))
+
+    def saved_bool(key, *, qualified):
+        rows = registered.get(key, [])
+        if len(rows) != 1 or rows[0][0] != "Bool":
+            raise invalid("Chest Bool is missing, duplicated or has a typed hash collision.")
+        row = rows[0][1]
+        default = field(row, "DefaultValue")
+        if (raw[default - 1] != 0xd0 or read(default) != 0
+                or number(row, "SaveFileIndex") != 0
+                or (qualified and number(row, "ResetTypeValue") != 8)):
+            raise invalid("Chest Bool does not have the expected saved-false schema.")
+
+    missing, edits = [], []
+    for member, qualified in wanted:
+        rows = members.get(member, [])
+        if len(rows) != 1:
+            raise invalid("Selected chest Struct member is missing or ambiguous.")
+        row, pointer = rows[0]
+        at = field(row, "Value")
+        old = number(row, "Value")
+        saved_bool(old, qualified=old == qualified)
+        if qualified in registered:
+            saved_bool(qualified, qualified=True)
+        else:
+            missing.append(qualified)
+        if old != qualified:
+            edits.append((row, pointer, at, qualified))
+    result = append_saved_bools(raw, missing)
+    if not edits:
+        return result
+    out = bytearray(result)
+    def append(blob):
+        out.extend(bytes(-len(out) % 4))
+        at = len(out)
+        out.extend(blob)
+        return at
+    cloned_array = bytearray(raw[member_array:member_first + 4 * len(member_items)])
+    for row, pointer, at, qualified in edits:
+        clone = bytearray(raw[row:row + 4 + 8 * small(row + 1)])
+        word.pack_into(clone, at - row, qualified)
+        word.pack_into(cloned_array, pointer - member_array, append(clone))
+    word.pack_into(out, field(opened[0][1], "DefaultValue"), append(cloned_array))
+    return bytes(out)
+
+
 def append_transient_string64(raw, key):
     """Add an empty, unsaved pickup argument without enlarging any save table."""
     return _append_saved_value(raw,key,0,"String64",0xa0,save_file=-1)

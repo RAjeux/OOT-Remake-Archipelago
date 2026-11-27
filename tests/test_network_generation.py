@@ -21,6 +21,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from zipfile import ZipFile
 import zlib
@@ -120,7 +121,10 @@ def probe_engine(engine, output, *, seed="AP-NETWORK-AUDIT", broad=True):
     from ootrr_triforce.catalog import ITEM_DATA
     from ootrr_triforce.network_catalog import validate_sources
     from ootrr_triforce.settings import default_options, engine_settings
-    command = [shutil.which("node"), "--no-warnings", str(ROOT / "client/ootrr_triforce/engine.cjs"), str(Path(engine).resolve()), "generate"]
+    node = os.environ.get("OOTRR_NODE") or shutil.which("node")
+    if not node:
+        raise RuntimeError("Install Node.js or set OOTRR_NODE before probing the built engine.")
+    command = [node, "--no-warnings", str(ROOT / "client/ootrr_triforce/engine.cjs"), str(Path(engine).resolve()), "generate"]
     process = subprocess.run(command, input=json.dumps({"settings": engine_settings(broad_values() if broad else default_options()),
                                                        "seed": seed}).encode(), capture_output=True, timeout=120,
                              creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
@@ -134,8 +138,17 @@ def probe_engine(engine, output, *, seed="AP-NETWORK-AUDIT", broad=True):
                   if row["generated_item"] in ITEM_DATA and ITEM_DATA[row["generated_item"]]["mode"] == "generic"
                   and not ITEM_DATA[row["generated_item"]].get("dungeon")}
     proven = {name for row in result["waves"] for name in row}
+    missing = sorted(sources.keys() - proven)
+    graph_won = None
+    if "access_logic" in result:
+        from ootrr_triforce.access_logic import AccessLogic
+        access = AccessLogic(result["access_logic"])
+        full = access.sweep(Counter(row["generated_item"] for row in sources.values()))
+        missing = sorted(sources.keys() - full.reach)
+        graph_won = full.won
     return {"sources": len(sources), "kinds": dict(Counter(row["kind"] for row in sources.values())),
-            "missing_proof": sorted(sources.keys() - proven), "unsupported_items": unsupported,
+            "missing_proof": missing, "donor_wave_only_missing": sorted(sources.keys() - proven),
+            "native_access_graph_victory": graph_won, "unsupported_items": unsupported,
             "unresolved_dungeon_items": no_dungeon, "optional": result.get("optional_sources", {})}
 
 
@@ -144,15 +157,22 @@ def check_room(archive_path, player_names, candidate=None, settings_by_slot=None
     from ootrr_triforce.catalog import LOCATION_IDS
     from ootrr_triforce.master_sword import LOCATION as SWORD
     from ootrr_triforce.network_catalog import SOURCES, validate_sources
+    from ootrr_triforce.pool_adjustments import from_manifest as manifest_pool
+    from ootrr_triforce.access_logic import AccessLogic, key_caps
     if candidate is not None:
         # Audit the exact package that generated the room. Source changes made
         # by a parallel worker must not invalidate this frozen proof midway.
         with ZipFile(candidate) as package:
             catalogue = json.loads(package.read("ootrr_remake/network_sources.json"))
+            additional = (json.loads(package.read("ootrr_remake/additional_sources.json"))
+                          if "ootrr_remake/additional_sources.json" in package.namelist() else
+                          dict(schema=catalogue["schema"], sources={}, rewards={}))
             tree = ast.parse(package.read("ootrr_remake/network_catalog.py").decode("utf-8"))
-        namespace = {"SCHEMA": catalogue["schema"], "SOURCES": catalogue["sources"], "copy": copy}
+        namespace = {"SCHEMA": additional["schema"], "LEGACY_SOURCES": catalogue["sources"],
+                     "ADDITIONAL_SOURCES": additional["sources"], "ADDITIONAL_REWARDS": additional["rewards"],
+                     "SOURCES": dict(catalogue["sources"], **additional["sources"]), "copy": copy}
         nodes = [node for node in tree.body if isinstance(node, ast.FunctionDef)
-                 and node.name in {"enabled", "validate_sources"}]
+                 and node.name in {"enabled", "_additional_reward", "validate_sources"}]
         exec(compile(ast.Module(body=nodes, type_ignores=[]), "frozen_network_catalog.py", "exec"), namespace)
         SOURCES, validate_sources = namespace["SOURCES"], namespace["validate_sources"]
     with ZipFile(archive_path) as archive:
@@ -162,8 +182,21 @@ def check_room(archive_path, player_names, candidate=None, settings_by_slot=None
     lines = spoiler.splitlines()
     # Playthrough repeats some assignments. Map by source+slot to count each once.
     assignments = {}
+    expected_pools = {}
+    access_models = {}
     for manifest in manifests:
         slot = manifest["slot"]
+        # Use the launcher's real input validator as well as independent AP
+        # pool/logic checks. This catches an unreadable player file immediately.
+        from ootrr_triforce.player import read_manifest
+        with tempfile.TemporaryDirectory(prefix="manifest-audit-", dir=Path(archive_path).parent) as folder:
+            player_path = Path(folder) / "player.apootrr"
+            player_path.write_text(json.dumps(manifest), encoding="utf-8")
+            assert read_manifest(player_path) == manifest
+        if settings_by_slot and manifest.get("features") is not None:
+            from ootrr_triforce.feature_settings import feature_config, read_features
+            expected_features = read_features(feature_config(settings_by_slot[slot]))
+            assert manifest["features"] == expected_features, "AP option conversion changed the requested native features"
         assert set(manifest["checks"]) == set(manifest["moved"])
         descriptors = validate_sources(manifest)
         expected = set(descriptors)
@@ -176,6 +209,17 @@ def check_room(archive_path, player_names, candidate=None, settings_by_slot=None
         if manifest.get("shuffle_master_sword"):
             original["Master Sword"] += 1
         assert Counter(manifest["moved"].values()) == original
+        pool = manifest_pool(manifest)
+        expected_pools[manifest["player"]] = Counter(pool.values())
+        if "access_logic" in manifest:
+            access = AccessLogic(manifest["access_logic"], master_sword=manifest.get("shuffle_master_sword", False))
+            assert set(access.routes) == set(manifest["checks"]), "Access graph lost an enabled AP check"
+            complete = access.sweep(expected_pools[manifest["player"]])
+            assert complete.won, "Actual AP pool cannot beat the exported native rules"
+            assert set(manifest["checks"]) <= complete.reach, "Actual AP pool cannot reach its enabled checks"
+            access_models[manifest["player"]] = access
+            if "key_caps" in manifest:
+                assert manifest["key_caps"] == key_caps(manifest["access_logic"], pool.values())
         for name in manifest["checks"]:
             prefix = f"{name} ({slot}): " if len(player_names) > 1 else f"{name}: "
             hits = [line.strip() for line in lines if line.startswith(prefix)]
@@ -184,6 +228,8 @@ def check_room(archive_path, player_names, candidate=None, settings_by_slot=None
             owner = next((owner for owner in player_names if item.endswith(" (" + owner + ")")), None) if len(player_names) > 1 else slot
             assert owner is not None, item
             assignments[(slot, name)] = (owner, item[:-(len(owner) + 3)] if len(player_names) > 1 else item)
+        for name, item in (manifest.get("features") or {}).get("settings", {}).get("item_plando", {}).items():
+            assert assignments.get((slot, name)) == (slot, item), "The exact requested local plan was not placed"
     owners = Counter()
     all_assignments = {}
     for line in lines:
@@ -223,11 +269,12 @@ def check_room(archive_path, player_names, candidate=None, settings_by_slot=None
                 native_binary_pools[recipient][item_names[code]] += 1
     for manifest in manifests:
         player = manifest["player"]
-        assert native_binary_pools[player] == Counter(manifest["moved"].values()), "Binary AP item pool differs from the native recipes"
+        assert native_binary_pools[player] == expected_pools[player], "Binary AP item pool differs from the native recipes"
         actual_locations = multidata["locations"][player]
         assert set(actual_locations) == {LOCATION_IDS[name] for name in manifest["checks"]}
         for name, descriptor in manifest["network_sources"].items():
-            if descriptor.get("placement", {}).get("junk_only"):
+            if (descriptor.get("placement", {}).get("junk_only")
+                    or name in getattr(access_models.get(player), "optional", ())):
                 code, recipient, flags = actual_locations[LOCATION_IDS[name]]
                 assert not (flags & 1), (name, code, recipient, "unsafe source contains progression")
                 if multidata["slot_info"][recipient].game == GAME:
@@ -240,13 +287,18 @@ def check_room(archive_path, player_names, candidate=None, settings_by_slot=None
     for manifest in manifests:
         slot = manifest["slot"]
         actual = Counter({item: count for (owner, item), count in owners.items() if owner == slot})
-        assert actual == Counter(manifest["moved"].values()), (slot, "final AP pool differs", actual - Counter(manifest["moved"].values()))
+        assert actual == expected_pools[manifest["player"]], (slot, "final AP pool differs", actual - expected_pools[manifest["player"]])
         results.append({"slot": slot, "checks": len(manifest["checks"]),
                         "kinds": dict(Counter(row["kind"] for row in manifest["network_sources"].values())),
                         "ownership_at_checks": dict(matrix[slot]),
                         "pool_exact": True, "all_enabled_sources_ap": True,
                         "final_placement_checked": settings_by_slot is not None,
                         "native_delivery_recipes_exact": True,
+                        "launcher_manifest_readable": True,
+                        "native_access_graph_checked": manifest["player"] in access_models,
+                        "features_round_trip_checked": bool(settings_by_slot and manifest.get("features") is not None),
+                        "pool_substitutions": len(manifest.get("pool_substitutions", {})),
+                        "planned_local_placements": len((manifest.get("features") or {}).get("settings", {}).get("item_plando", {})),
                         "unsafe_sources_filler_only": protected_count[manifest["player"]]})
     assert "Playthrough:" in spoiler, "Official generation must calculate a playthrough."
     if len(player_names) > 1:

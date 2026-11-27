@@ -88,7 +88,7 @@ def patch_message_archive(raw, records, roster, language, *, hints):
 
 def prepare_offer_texts(romfs, mod, roster, settings):
     """Run after localization, only for a new native-network room schema."""
-    if settings.get("network_sources_schema") != 1:
+    if settings.get("network_sources_schema") not in (1, 2):
         return {}
     from oot_rando.game.resource_allocations import grow_resources
     from .engine import run_engine

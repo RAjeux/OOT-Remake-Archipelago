@@ -35,6 +35,12 @@ the immutable reference check, and the tag must equal `v` followed by `VERSION`.
 Keep generated files in ignored `build/` and `dist/`. Publish the standalone
 EXE as the normal player download; the developer ZIP is a separate artifact.
 
+For a development candidate without a release tag, commit and push its reviewed
+source first, then build with `tools/build_app.py --source-ref <full-commit-SHA>`.
+The embedded source notice then links to that exact commit and its archive,
+instead of a tag which has not been published. The default release build keeps
+the versioned tag links.
+
 ## Tag and publish
 
 Commit the version, source changes, release notes and new reference. Let normal

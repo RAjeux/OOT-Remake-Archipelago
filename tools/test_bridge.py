@@ -8,7 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 CHECKS = ("test_restore_host", "test_menu_bridge", "test_menu_editing", "test_language_host",
-          "test_link", "test_deathlink_host")
+          "test_link", "test_deathlink_host", "test_longshot_setup")
 
 
 def main():

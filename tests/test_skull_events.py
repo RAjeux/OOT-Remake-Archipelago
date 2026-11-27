@@ -111,6 +111,10 @@ class Pickup:
     def call(self, entry, args, flow_name="GetPouchContent"):
         if (flow_name, entry) in self.ignored_entries:
             return
+        if (flow_name, entry) == ("Dm_SY_GetInEvent", "AP_IceTrap") and flow_name not in self.charts:
+            # This fixture records the exact external native effect boundary.
+            # Resource tests separately validate the cold sensor implementation.
+            return
         chart = self.charts[flow_name]
         event = next(point.main_event.v for point in chart.entry_points if point.name == entry)
         steps = 0
@@ -222,7 +226,10 @@ class SkullEventTests(unittest.TestCase):
                     metadata = ITEM_DATA[record["local_item"]]
                     pouch = [args["Actor"] for command, args in run.trace
                              if command == "EventTriggerAddOrRemovePouchContent"]
-                    if metadata["mode"] == "generic" or metadata["kind"] == "TCGSmallKey" or is_cure(metadata):
+                    if metadata["mode"] == "trap":
+                        self.assertFalse(pouch)
+                        self.assertEqual(sum(command == "call:AP_IceTrap" for command, _ in run.trace), 1)
+                    elif metadata["mode"] == "generic" or metadata["kind"] == "TCGSmallKey" or is_cure(metadata):
                         self.assertFalse(pouch)
                     elif metadata["actor"] in AMMO_BAGS:
                         self.assertFalse(pouch)

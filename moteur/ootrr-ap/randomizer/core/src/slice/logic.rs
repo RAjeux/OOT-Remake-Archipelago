@@ -59,8 +59,15 @@ fn unique(files: Vec<Json>) -> Vec<Json> {
 const HEART_GOALS: [&str; 3] = ["bridge", "lacs_condition", "shuffle_ganon_bosskey"];
 
 pub fn spec(d: &Data, over: &[(&str, &str)]) -> Res<Spec> {
+    spec_for(d, over, false)
+}
+
+/// New AP rooms use the reviewed remake rules. Native historical seeds retain
+/// their original bundle so loading one never silently reinterprets its logic.
+pub fn spec_for(d: &Data, over: &[(&str, &str)], modern: bool) -> Res<Spec> {
     let mut s: Spec = Spec::from_bundle(SHIMS)?;
-    s.settings = Settings::from_json(&parse(SETTINGS)?)?;
+    let settings = if modern { include_str!("../../../../data/ap_logic_v2/settings.json") } else { SETTINGS };
+    s.settings = Settings::from_json(&parse(settings)?)?;
     for (k, v) in over {
         match v.parse::<i64>() {
             Ok(n) => s.settings.set_int(k, n),
@@ -75,10 +82,29 @@ pub fn spec(d: &Data, over: &[(&str, &str)]) -> Res<Spec> {
         let heart: bool = crate::slice::generate::HEARTS.iter().any(|h| it.name.starts_with(h));
         s.add_item(&it.name, it.adv && (hearts || !heart), 0);
     }
-    s.add_helpers(HELPERS)?;
+    s.add_helpers(if modern { include_str!("../../../../data/ap_logic_v2/LogicHelpers.json") } else { HELPERS })?;
     let mut files: Vec<Json> = Vec::new();
-    for t in crate::slice::world_files::all() {
+    let inputs = if modern { crate::slice::modern_world_files::all() } else { crate::slice::world_files::all() };
+    for t in inputs {
         files.push(parse(t)?);
+    }
+    if modern {
+        // Released AP Skulltula rules reference this fact. Its meaning stays
+        // local to a child reaching the real lobby, never a free root event.
+        for file in &mut files {
+            let Json::Arr(regions) = file else { continue };
+            for region in regions {
+                let Json::Obj(fields) = region else { continue };
+                if !fields.iter().any(|(k, v)| k == "region_name" && v.as_str() == Some("Water Temple Lobby")) { continue; }
+                if let Some((_, Json::Obj(events))) = fields.iter_mut().find(|(k, _)| k == "events") {
+                    if !events.iter().any(|(k, _)| k == "Child Water Temple") {
+                        events.push(("Child Water Temple".into(), Json::Str("is_child".into())));
+                    }
+                } else {
+                    fields.push(("events".into(), Json::Obj(vec![("Child Water Temple".into(), Json::Str("is_child".into()))])));
+                }
+            }
+        }
     }
     if crate::slice::skull_rules::wanted(over) {
         crate::slice::skull_rules::apply(&mut files)?;

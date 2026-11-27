@@ -51,7 +51,9 @@ flowchart TD
 1. The APWorld translates supported YAML values into native settings.
    `generate_early()` calls `engine.run_engine("generate", ...)`. Node runs the
    packaged `engine.wasm`, which returns the native `seed_file`, enabled source
-   descriptors, item progression proof and access waves.
+   descriptors, the current access graph and the historical donor proof/waves.
+   New AP rooms evaluate the graph's actual regions, events, ages and item
+   predicates; they do not use the donor waves to order the final fill.
 2. The APWorld creates regions and items from that result. Archipelago performs
    the final multiworld placement, subject to selected song/dungeon scopes and
    source safety rules. The engine's original donor reward is distinct from
@@ -74,6 +76,25 @@ flowchart TD
 Windows path constraints. The single Windows application includes Node; the
 computer running Archipelago generation needs Node 22 or 24 available as
 documented in [TESTING.md](TESTING.md).
+
+New rooms use source schema 2 and a versioned `features` envelope. The reviewed
+rule bundle lives in `moteur/ootrr-ap/data/ap_logic_v2/`; it does not replace the
+0.8.1 constructor's data or seed format. Additional source identities are
+append-only. Post-constructor `features` and `cosmetics` passes apply the opted-in
+native changes; the shared `access_logic.py` evaluates the exported rules in AP.
+Feature choices and the graph salt the room identity. Files without these
+extensions keep their historical preparation and access paths.
+
+The `IsTreasureBoxOpen.<actor>` keys watched by the native client must be actual
+saved Bool keys, not only a Struct member pointing to a differently named spare.
+`cursor_resource.register_chest_flags()` registers and connects the six newly
+converted frozen chests while preserving native aliases and saved data. The
+client reads those same canonical hashes on every supported native host.
+
+See [selective upstream integration](UPSTREAM-INTEGRATION.md) for the retained
+constructor boundary, source import tools and features intentionally not copied.
+The [Longshot source prototype](LONGSHOT-PROTOTYPE.md) has its own experimental
+scheduler adapter and remains unavailable in the public host selector.
 
 ## APWorld packaging and generated artifacts
 

@@ -1,17 +1,17 @@
 # Port compatibility
 
-Use the [current 0.10.3-alpha.1 launcher](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.3-alpha.1) and the [installation guide](INSTALLATION.md). This page separates current setup requirements from the historical tests supporting them.
+Use the [current 0.10.4-alpha.1 launcher](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.1) and the [installation guide](INSTALLATION.md). This page separates current setup requirements from the historical tests supporting them.
 
 ## Current support
 
 | Host | Installation status | What has been checked |
 | --- | --- | --- |
-| **Triforce, Windows x64** | Main supported route, with game version **1.1.1** and the host's build tools. The installer checks source hooks and tool metadata before preparing. | **0.8.3:** actual title-screen connection and same-process reconnect. **0.8.1:** actual startup/reconnect. **0.8.0:** menu/source compatibility and private compilation. Earlier **0.6.0** gameplay evidence is separate. |
+| **Triforce, Windows x64** | Main supported route, with game version **1.1.1** and the host's build tools. The installer checks source hooks and tool metadata before preparing. | **0.8.3:** actual title-screen connection/reconnect, plus a private 0.10.4 room's native Bow/quiver and five-rupee receipts with saved-cursor checks. **0.8.1:** actual startup/reconnect. **0.8.0:** menu/source compatibility and private compilation. Earlier **0.6.0** gameplay evidence is separate. |
 | **Hookshot 3.0.1, Windows x64** | **Experimental**, pinned to exact host/menu sources with original tools and retained build files. Other revisions are rejected. | Adapter/menu compilation and installer checks; earlier prototype gameplay observations below. No complete current-installer playthrough is claimed. |
 | **Fritchii 5.8.4** | **No AP gameplay backend.** Not an installation target for this launcher. | RomFS overlay loading and the title badge only. |
 | Other hosts, other Hookshot revisions or Linux | Unsupported by this installer. | Loading a mod or running a host on another platform does not establish AP item/check support. |
 
-Triforce 0.8.3's startup/reconnect result is not an inventory, DeathLink or full-playthrough result. The expanded AP catalogue has automated generation/resource coverage but has not been manually completed in the game. See [testing](TESTING.md) and [delivery safety](DELIVERY-SAFETY.md).
+The historical startup/reconnect checks alone do not establish inventory or DeathLink. The additional 0.10.4 receipt observations are scoped in [release validation](UPSTREAM-VALIDATION.md); no complete new-candidate playthrough is claimed. Longshot remains an unsupported internal prototype and is not a launcher installation target. See [testing](TESTING.md) and [delivery safety](DELIVERY-SAFETY.md).
 
 ## Triforce setup
 
@@ -122,6 +122,14 @@ test remains separate evidence from the new installer tests.
 The gameplay test used a new private save and a copied local room with a second test player. It does not establish that every physical chest, all eight shop purchases, or every item presentation has been replayed on Hookshot. A natural outgoing DeathLink has not been tested in this host.
 
 The first remote check granted five rupees and saved received index 1. An incoming DeathLink then changed Link's life from 12 to 0 without an outgoing echo. A second five-rupee item was sent while no Hookshot game process was running. After restarting and loading the same private save, the game reached ten rupees and saved received index 2, with exactly one new receipt event. The first item and the previous DeathLink were not replayed.
+
+### Longshot internal prototype
+
+The separate [Longshot source prototype](LONGSHOT-PROTOTYPE.md) has actual
+Windows title-screen AP connection, reconnection and isolated incoming-DeathLink
+evidence at one pinned source revision. It remains internal: there is no
+Longshot launcher option or claim of complete receipt, rollback or gameplay
+compatibility.
 
 ### Fritchii scope
 
