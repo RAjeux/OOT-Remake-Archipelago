@@ -151,8 +151,34 @@ class ReleaseTests(unittest.TestCase):
              patch.object(updates,'_identity_for_handle',return_value=dict(parent,created=2)):
             updates._wait_for_parents({'parents':[parent]})
         kernel.OpenProcess.assert_called_once()
-        kernel.WaitForSingleObject.assert_not_called()
+        kernel.WaitForSingleObject.assert_called_once_with(987,0)
         kernel.CloseHandle.assert_called_once_with(987)
+
+    def test_exited_parent_does_not_require_its_unavailable_image_name(self):
+        kernel=Mock()
+        kernel.OpenProcess.return_value=987
+        kernel.WaitForSingleObject.return_value=0
+        parent=dict(pid=101,created=1,image='C:/synthetic.exe')
+        with patch.object(updates.ctypes,'WinDLL',return_value=kernel,create=True), \
+             patch.object(updates,'_identity_for_handle',side_effect=AssertionError('Exited process must not be queried')):
+            updates._wait_for_parents({'parents':[parent]})
+        kernel.CloseHandle.assert_called_once_with(987)
+
+    def test_parent_exit_during_image_query_is_accepted_only_with_signalled_handle(self):
+        parent=dict(pid=101,created=1,image='C:/synthetic.exe')
+        for after_query in (0,258):
+            with self.subTest(after_query=after_query):
+                kernel=Mock()
+                kernel.OpenProcess.return_value=987
+                kernel.WaitForSingleObject.side_effect=[258,after_query]
+                with patch.object(updates.ctypes,'WinDLL',return_value=kernel,create=True), \
+                     patch.object(updates,'_identity_for_handle',side_effect=updates.UpdateError('process')):
+                    if after_query==0:
+                        updates._wait_for_parents({'parents':[parent]})
+                    else:
+                        with self.assertRaises(updates.UpdateError):
+                            updates._wait_for_parents({'parents':[parent]})
+                kernel.CloseHandle.assert_called_once_with(987)
 
     def test_version_reader_uses_system_dll_with_extension_avoiding_version_resource(self):
         library=Mock()
@@ -180,8 +206,8 @@ class DownloadAndReplacementTests(unittest.TestCase):
         with patch.object(updates,'_open',side_effect=lambda url:BytesIO(self.responses[url])):
             return updates.download_update(self.release,base=self.base)
 
-    def schedule(self,download,world_target=None):
-        target=self.home/'Portable launcher renamed.exe'
+    def schedule(self,download,world_target=None,target_name=None):
+        target=self.home/(target_name or 'Portable launcher renamed.exe')
         target.write_bytes(executable(b'old'))
         self.target=target
         def spawn(command,**kwargs):
@@ -353,7 +379,7 @@ class DownloadAndReplacementTests(unittest.TestCase):
         update=self.download()
         custom=self.home/'Archipelago/custom_worlds';custom.mkdir(parents=True)
         world_path=custom/'ootrr_remake.apworld';world_path.write_bytes(b'old world')
-        path=self.schedule(update,world_target=custom)
+        path=self.schedule(update,world_target=custom,target_name=Path(update['executable']).name)
         updates.apply_update_plan(path,base=self.base,wait_parent=lambda p:None,launcher=lambda command:None)
         with patch.object(updates.sys,'executable',str(self.target)), \
              patch.object(updates,'current_version',return_value=update['version']), \

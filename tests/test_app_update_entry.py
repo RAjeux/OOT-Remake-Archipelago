@@ -14,6 +14,24 @@ spec.loader.exec_module(entry)
 
 
 class ApplicationUpdateEntryTests(unittest.TestCase):
+    def test_filename_finalizer_never_initializes_runtime_or_opens_gui(self):
+        with patch.object(sys, "argv", ["app", "--finalize-update", "private-plan.json"]), \
+             patch("ootrr_triforce.update_finalize.helper_main", return_value=0) as helper, \
+             patch("ootrr_triforce.app_runtime.initialize") as initialize, \
+             patch("ootrr_triforce.app_window.main") as window:
+            self.assertEqual(entry.main(), 0)
+        helper.assert_called_once_with(Path("private-plan.json"))
+        initialize.assert_not_called()
+        window.assert_not_called()
+
+    def test_filename_handoff_exits_before_opening_the_old_named_window(self):
+        with patch.object(sys, "argv", ["app", "--complete-update", "private-plan.json"]), \
+             patch("ootrr_triforce.app_runtime.initialize"), \
+             patch("ootrr_triforce.update_service.complete_update", return_value={"restart_scheduled": True}), \
+             patch("ootrr_triforce.app_window.main") as window:
+            self.assertEqual(entry.main(), 0)
+        window.assert_not_called()
+
     def test_helper_runs_before_runtime_and_never_opens_the_main_window(self):
         with patch.object(sys, "argv", ["app", "--apply-update", "private-plan.json"]), \
              patch("ootrr_triforce.update_service.helper_main", return_value=0) as helper, \

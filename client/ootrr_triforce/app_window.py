@@ -109,6 +109,7 @@ TEXT = {
     "launcher_download_ready": "Launcher update downloaded and checked. Choose Install and restart when ready.",
     "launcher_download_cancelled": "Launcher update download cancelled.",
     "launcher_updated": "Launcher updated.",
+    "launcher_finalize_failed": "The launcher update could not be finalized. You can keep using this application. See the log for details.",
     "launcher_world_updated": "Launcher and Archipelago world updated. Restart Archipelago before generating a room.",
     "launcher_world_failed": "Launcher updated, but its Archipelago world could not be installed. Use Install APWorld to try again.",
     "nav_play": "YOUR ADVENTURE",
@@ -184,7 +185,8 @@ class AppWindow:
         self.update_window_revision = self.update_target_revision = 0
         self.update_notice_key, self.update_notice_values = "", {}
         if startup_notice:
-            self.update_notice_key = ("launcher_world_failed" if startup_notice.get("error_code") else
+            self.update_notice_key = ("launcher_finalize_failed" if startup_notice.get("completion_failed") else
+                                      "launcher_world_failed" if startup_notice.get("error_code") else
                                       "launcher_world_updated" if startup_notice.get("world_updated") else "launcher_updated")
         self.language = "en"
         self.current = {}

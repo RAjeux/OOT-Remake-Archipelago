@@ -549,5 +549,6 @@
   "The application update is ready.": "La mise à jour de l’application est prête.",
   "The application was updated, but the APWorld could not be replaced.": "L’application a été mise à jour, mais l’APWorld n’a pas pu être remplacé.",
   "The room is missing its versioned access rules.": "Il manque les règles d’accès versionnées de cette salle.",
-  "The room is missing its versioned feature settings.": "Il manque les paramètres versionnés de cette salle."
+  "The room is missing its versioned feature settings.": "Il manque les paramètres versionnés de cette salle.",
+  "The launcher update could not be finalized. You can keep using this application. See the log for details.": "La mise à jour du launcher n’a pas pu être finalisée. Tu peux continuer à utiliser cette application. Consulte le journal pour les détails."
 }

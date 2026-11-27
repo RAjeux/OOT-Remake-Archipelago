@@ -1,5 +1,14 @@
 # Stability fixes and upgrade scope
 
+## 0.10.4 alpha 2: launcher replacement and filenames
+
+Successful updates use the new release's canonical versioned EXE name in the
+same folder and keep the previous executable in private LocalAppData rollback
+storage. Older 0.10.4 launchers use their normal update action; a shortcut to
+the old filename may need retargeting. Game integration and APWorld generation
+rules are unchanged; its optional refresh includes updated shared translations.
+See the [patch notes](RELEASE-NOTES-0.10.4-alpha.2.md).
+
 ## 0.10.4 alpha 1: selective upstream additions
 
 Reviewed access rules, 17 additional physical sources and optional gameplay,

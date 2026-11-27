@@ -4,7 +4,7 @@
 
 ## Le bon téléchargement
 
-**[Télécharger le launcher Windows 0.10.4-alpha.1](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.1/OOT-Remake-Archipelago-0.10.4-alpha.1.exe)** · [Page de cette release](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.1)
+**[Télécharger le launcher Windows 0.10.4-alpha.2](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.2/OOT-Remake-Archipelago-0.10.4-alpha.2.exe)** · [Page de cette release](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.2)
 
 Un seul EXE suffit : le client AP, Python, Node.js et l'APWorld sont inclus. Le builder OOTRR compatible est téléchargé au premier besoin.
 
@@ -60,6 +60,8 @@ Pour les sessions suivantes, ouvre le même launcher et clique sur **Jouer**. Tu
 ## Sauvegardes, mises à jour et aide
 
 Les données sont conservées dans `%LOCALAPPDATA%\OOTRR-Archipelago`, indépendamment de l'EXE. Hookshot possède un espace séparé : changer de port ne transfère pas la sauvegarde.
+
+Après une mise à jour réussie, le launcher porte le nom de la version téléchargée dans le même dossier. L'ancien EXE est conservé dans les données privées de mise à jour, sans rester à côté du nouveau. Un raccourci que tu avais créé vers l'ancien nom peut devoir être modifié. La correction de 0.10.4-alpha.2 conserve les règles de génération de l'APWorld et celles de ta partie ; son actualisation facultative contient des traductions partagées corrigées.
 
 Tu peux continuer une salle native 0.10 avec son `.apootrr` et sa sauvegarde après avoir mis le launcher à jour. Si une préparation est demandée, ferme Zelda et prépare **le même fichier joueur compatible** : ses réglages, checks et placements restent identiques.
 
