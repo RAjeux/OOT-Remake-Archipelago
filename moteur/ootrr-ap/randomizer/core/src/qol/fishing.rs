@@ -91,4 +91,3 @@ pub fn patch(b: &mut Bf) -> Res<()> {
     set_case(&mut f.events[*l], YES, first);
     Ok(())
 }
-

@@ -63,11 +63,11 @@ Private Longshot tests use the exact experimental source pin documented in
 [the prototype notes](LONGSHOT-PROTOTYPE.md). They establish title connectivity,
 reconnection and incoming DeathLink. A fully prepared new room also demonstrates
 actual native ice and thaw on child Link, an acknowledged receipt with no Bow or
-  quiver grant, and delivery deferred while Link descends a ladder. The first
-  indoor trial did not visibly freeze Link; its cause has not been established.
-  Later outdoor trials showed native ice and thaw without a code change or an
-  artificial damage/animation override. These observations do not make Longshot
-  a supported launcher host.
+quiver grant, and delivery deferred while Link descends a ladder. The first
+indoor trial did not visibly freeze Link; its cause has not been established.
+Later outdoor trials showed native ice and thaw without a code change or an
+artificial damage/animation override. These observations do not make Longshot
+a supported launcher host.
 
 There has been no complete new-candidate playthrough on Triforce or Hookshot,
 nor a complete manual tour of every source. Existing host and gameplay evidence

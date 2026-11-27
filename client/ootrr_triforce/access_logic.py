@@ -690,5 +690,3 @@ class AccessLogic:
         else:
             held = state.counts
         return self.sweep(held)
-
-
