@@ -1,12 +1,12 @@
-OOT Remake Archipelago · 0.10.4-alpha.2
+OOT Remake Archipelago · 0.10.4-alpha.3
 One Windows x64 launcher for Triforce and experimental Hookshot 3.0.1.
 
 DOWNLOAD THIS VERSION
-https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.2/OOT-Remake-Archipelago-0.10.4-alpha.2.exe
+https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.3/OOT-Remake-Archipelago-0.10.4-alpha.3.exe
 Release notes:
-https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.2
+https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.3
 Guide rapide en français:
-https://github.com/RAjeux/OOT-Remake-Archipelago/blob/v0.10.4-alpha.2/docs/INSTALLATION.fr.md
+https://github.com/RAjeux/OOT-Remake-Archipelago/blob/v0.10.4-alpha.3/docs/INSTALLATION.fr.md
 
 The discontinued 0.11/0.12 Full experiment is not the current release,
 even though its version number is higher. Its player files use a different
@@ -106,7 +106,10 @@ archipelago.gg uses TLS automatically. 127.0.0.1:38281 means a server on
 YOUR OWN PC; for a remote room, use the organizer's address.
 
 Updates and saved data
-Version 0.10.4-alpha.2 fixes launcher replacement and the versioned EXE name.
+Version 0.10.4-alpha.3 fixes a startup crash with the optional dungeon-key
+tracker. Close Zelda and prepare the same player file again when requested.
+Your existing room, settings, item placements and save remain supported.
+This version retains alpha 2's launcher replacement and versioned EXE fix.
 After a successful update, the new EXE uses its release filename in the same
 folder. The previous EXE is kept in private update data under LocalAppData
 for rollback. A shortcut targeting the old filename may need retargeting.
@@ -149,7 +152,7 @@ Hookshot 3.0.1 remains experimental; Fritchii has no AP gameplay backend.
 Longshot is an internal prototype, not a supported launcher host.
 The installer does not support Linux or other emulators. Current setup
 instructions and historical evidence are separate in:
-https://github.com/RAjeux/OOT-Remake-Archipelago/blob/v0.10.4-alpha.2/docs/PORT-COMPATIBILITY.md
+https://github.com/RAjeux/OOT-Remake-Archipelago/blob/v0.10.4-alpha.3/docs/PORT-COMPATIBILITY.md
 
 If a player file is rejected, check its extension, slot, room and native
 0.10 compatibility. If Archipelago cannot find Ocarina of Time Remake,

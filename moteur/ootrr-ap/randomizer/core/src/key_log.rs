@@ -382,6 +382,69 @@ pub fn stage_menu(rf: &mut Romfs, more: &mut Vec<Out>) -> Res<()> {
     Ok(())
 }
 
+/// A menu panel is deserialized into native objects, not just copied from BYML.
+/// Its heap therefore grows with the panel count as well as the serialized file.
+/// Keep the native per-panel allowance, rounded to 256 bytes, and another 1 KiB
+/// for each added panel's strings, checklist arrays and allocator metadata.
+pub fn menu_budget(native: u32, old_panels: usize, new_panels: usize, old_bytes: usize, new_bytes: usize) -> Res<u32> {
+    const PANEL_ALIGN: u64 = 0x100;
+    const PANEL_HEADROOM: u64 = 0x400;
+    let bad = || Error::Format("key log: the menu allocation size does not fit");
+    if native == 0 || old_panels == 0 || new_panels < old_panels || old_bytes == 0 || new_bytes == 0 {
+        return Err(Error::Format("key log: invalid native or staged menu allocation inputs"));
+    }
+    let aligned = |n: u64, a: u64| -> Res<u64> {
+        n.checked_add(a - 1).map(|v| v / a * a).ok_or_else(bad)
+    };
+    let before = u64::try_from(old_panels).map_err(|_| bad())?;
+    let added = u64::try_from(new_panels - old_panels).map_err(|_| bad())?;
+    let peer = aligned(u64::from(native).div_ceil(before), PANEL_ALIGN)?
+        .checked_add(PANEL_HEADROOM).ok_or_else(bad)?;
+    let parsed = added.checked_mul(peer).and_then(|v| u64::from(native).checked_add(v)).ok_or_else(bad)?;
+    let old = aligned(u64::try_from(old_bytes).map_err(|_| bad())?, crate::rsizetable::ALIGN)?;
+    let new = aligned(u64::try_from(new_bytes).map_err(|_| bad())?, crate::rsizetable::ALIGN)?;
+    let serialized = if new_bytes > old_bytes {
+        u64::from(native).checked_add(new.saturating_sub(old))
+            .and_then(|v| v.checked_add(u64::from(crate::staging::MARGIN))).ok_or_else(bad)?
+    } else { u64::from(native) };
+    u32::try_from(parsed.max(serialized)).map_err(|_| bad())
+}
+
+fn menu_panels(raw: &[u8]) -> Res<usize> {
+    let y = Byml::parse(raw)?;
+    let panels = y.root.get("ChallengeMenuParamArray").and_then(Node::as_arr)
+        .ok_or(Error::Format("key log: the menu table has no panel list"))?;
+    if panels.is_empty() || panels.iter().any(|r| panel_name(r).is_empty()) {
+        return Err(Error::Format("key log: the menu has an empty panel or panel list"));
+    }
+    Ok(panels.len())
+}
+
+fn reserve_menu(table: &mut crate::rsizetable::Rst, minimum: u32) -> Res<()> {
+    let current = table.get(MENU_FILE).filter(|n| *n > 0)
+        .ok_or(Error::Format("key log: the menu has no native allocation table entry"))?;
+    if minimum > current {
+        table.set_size(MENU_FILE, minimum)?;
+    }
+    Ok(())
+}
+
+/// Run after generic packed-file growth, taking the original game's allowance
+/// as the stable baseline. Repeated preparation never compounds this reserve.
+pub fn allocate_menu(rf: &mut Romfs, outs: &[Out], table: &mut crate::rsizetable::Rst) -> Res<()> {
+    let native = crate::rsizetable::load(rf)?.get(MENU_FILE).filter(|n| *n > 0)
+        .ok_or(Error::Format("key log: the original menu has no native allocation table entry"))?;
+    let original = sarc::parse(&rf.read_zs(MENU_PACK)?)?;
+    let before = &sarc::get(&original, MENU_FILE)
+        .ok_or(Error::Format("key log: the original boot pack has no menu table"))?.data;
+    let staged = outs.iter().find(|out| out.path == MENU_PACK)
+        .ok_or(Error::Format("key log: the staged boot pack is missing"))?;
+    let entries = sarc::parse(&rf.zs.decompress(&staged.z)?)?;
+    let after = &sarc::get(&entries, MENU_FILE)
+        .ok_or(Error::Format("key log: the staged boot pack has no menu table"))?.data;
+    reserve_menu(table, menu_budget(native, menu_panels(before)?, menu_panels(after)?, before.len(), after.len())?)
+}
+
 pub fn stage(rf: &mut Romfs, more: &mut Vec<Out>, p: &Plan) -> Res<()> {
     stage_menu(rf, more)?;
     let l: crate::flags::FlagList = crate::flags_build::load(rf)?;
@@ -496,6 +559,42 @@ pub fn stage_flows(rf: &mut Romfs, late: &mut Vec<Out>, work: &std::path::Path) 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn expanded_menu_reserves_native_objects_instead_of_only_byml_bytes() {
+        // The reported startup crash: 20 native panels become 29. Generic
+        // filesize growth only allowed 17,648 bytes and exhausted the parser.
+        assert_eq!(menu_budget(14_992, 20, 29, 4_564, 6_204).unwrap(), 31_120);
+        assert_eq!(menu_budget(14_992, 20, 20, 4_564, 4_564).unwrap(), 14_992);
+        assert!(menu_budget(14_992, 20, 29, 4_564, 100_000).unwrap() >= 111_440,
+            "large serialized changes must also retain the generic byte-growth floor");
+    }
+
+    #[test]
+    fn menu_reserve_is_monotonic_idempotent_and_requires_a_native_entry() {
+        let mut table = crate::rsizetable::Rst { version: 1, name_len: 160, crc: Vec::new(), names: Vec::new() };
+        assert!(reserve_menu(&mut table, 31_120).is_err());
+        table.set_size(MENU_FILE, 17_648).unwrap();
+        reserve_menu(&mut table, 31_120).unwrap();
+        assert_eq!(table.get(MENU_FILE), Some(31_120));
+        let once = table.clone();
+        reserve_menu(&mut table, 31_120).unwrap();
+        assert_eq!(table, once);
+        table.set_size(MENU_FILE, 100_000).unwrap();
+        reserve_menu(&mut table, 31_120).unwrap();
+        assert_eq!(table.get(MENU_FILE), Some(100_000));
+    }
+
+    #[test]
+    fn menu_budget_rejects_bad_counts_and_checked_size_overflow() {
+        assert!(menu_budget(0, 20, 29, 4_564, 6_204).is_err());
+        assert!(menu_budget(14_992, 0, 29, 4_564, 6_204).is_err());
+        assert!(menu_budget(14_992, 20, 19, 4_564, 6_204).is_err());
+        assert!(menu_budget(14_992, 20, 29, 0, 6_204).is_err());
+        assert!(menu_budget(u32::MAX, 1, 2, 4_564, 6_204).is_err());
+        assert!(menu_budget(14_992, 20, usize::MAX, 4_564, 6_204).is_err());
+        assert!(menu_budget(14_992, 20, 29, 4_564, usize::MAX).is_err());
+    }
 
     #[test]
     fn tracker_keeps_native_and_archipelago_menu_panels() {

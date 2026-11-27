@@ -199,6 +199,9 @@ pub fn prepare(game: &Path, work: &Path, features: &Json, key_caps: Option<&[u32
             // new actor pack and every renamed component using native peers.
         } else { staging::grow_out(&mut rf, &mut table, out)?; }
     }
+    if options.dungeon_key_tracker {
+        crate::key_log::allocate_menu(&mut rf, &outs, &mut table)?;
+    }
     let table_frame = crate::zs::compress_raw(&table.write()?, dict)?;
     for out in &outs {
         let target = work.join(crate::modpack::rel(&out.path)?);
@@ -302,5 +305,17 @@ mod tests {
         let panels = y.root.get("ChallengeMenuParamArray").unwrap().as_arr().unwrap();
         assert!(panels.iter().any(|r| r.get("ChallengeShort").and_then(crate::byml::Node::as_str) == Some("DoorOfTime")));
         assert!(panels.iter().any(|r| r.get("ChallengeShort").and_then(crate::byml::Node::as_str) == Some(crate::key_log::PARENT)));
+        let native_entries = crate::sarc::parse(&rf.zs.decompress(&original).unwrap()).unwrap();
+        let native_menu = &crate::sarc::get(&native_entries, crate::key_log::MENU_FILE).unwrap().data;
+        let native_y = Byml::parse(native_menu).unwrap();
+        let native_panels = native_y.root.get("ChallengeMenuParamArray").unwrap().as_arr().unwrap();
+        assert_eq!(native_panels.len(), 20);
+        assert_eq!(panels.len(), 29, "the tracker retains every native quest panel");
+        let native_table = crate::rsizetable::load(&mut rf).unwrap();
+        let minimum = crate::key_log::menu_budget(native_table.get(crate::key_log::MENU_FILE).unwrap(),
+            native_panels.len(), panels.len(), native_menu.len(),
+            crate::sarc::get(&entries, crate::key_log::MENU_FILE).unwrap().data.len()).unwrap();
+        assert!(table.get(crate::key_log::MENU_FILE).unwrap() >= minimum,
+            "the expanded native menu needs parsed-object capacity, not only BYML byte growth");
     }
 }

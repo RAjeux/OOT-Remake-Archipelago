@@ -1,5 +1,13 @@
 # Stability fixes and upgrade scope
 
+## 0.10.4 alpha 3: dungeon-key tracker startup
+
+The expanded quest menu now reserves memory for the native parser's additional
+panels and metadata, alongside the serialized BYML. Original quest panels and
+the optional key tracker are retained. Existing prepared mods require one
+preparation with the same player file and save; room generation and placements
+remain unchanged. See the [patch notes](RELEASE-NOTES-0.10.4-alpha.3.md).
+
 ## 0.10.4 alpha 2: launcher replacement and filenames
 
 Successful updates use the new release's canonical versioned EXE name in the
