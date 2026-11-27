@@ -747,6 +747,14 @@ class AppWindowTests(unittest.TestCase):
         self.assertIsNone(window.update_window)
         self.assertEqual(window.update_world_button.winfo_manager(), "grid")
 
+    def test_filename_failure_does_not_offer_an_unrelated_apworld_repair(self):
+        self.service.discovery["language"] = "fr"
+        window = self.open(startup_notice={"world_updated": False, "error_code": "update_completion_failed", "completion_failed": True})
+        self.pump(lambda: self.updater.checks and not window.update_checking)
+        self.assertEqual(window.update_notice.cget("text"), window._text("launcher_finalize_failed"))
+        self.assertNotEqual(window.update_notice.cget("text"), TEXT["launcher_finalize_failed"])
+        self.assertEqual(window.update_world_button.winfo_manager(), "")
+
     def test_stale_prepared_resources_explain_repreparation_without_asking_for_a_new_save(self):
         self.service.discovery.update(ready=False, profile=str(self.base / "profile"), resources_update_required=True)
         self.service.discovery["language"] = "fr"

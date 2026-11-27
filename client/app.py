@@ -118,6 +118,7 @@ def main():
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--self-test", type=Path, help=argparse.SUPPRESS)
     mode.add_argument("--apply-update", type=Path, help=argparse.SUPPRESS)
+    mode.add_argument("--finalize-update", type=Path, help=argparse.SUPPRESS)
     mode.add_argument("--complete-update", type=Path, help=argparse.SUPPRESS)
     options = parser.parse_args()
     try:
@@ -126,6 +127,9 @@ def main():
         if options.apply_update:
             from ootrr_triforce.update_service import helper_main
             return helper_main(options.apply_update)
+        if options.finalize_update:
+            from ootrr_triforce.update_finalize import helper_main
+            return helper_main(options.finalize_update)
         from ootrr_triforce import app_runtime
         app_runtime.initialize()
         if options.self_test:
@@ -135,14 +139,16 @@ def main():
             try:
                 from ootrr_triforce.update_service import complete_update
                 startup_notice = complete_update(options.complete_update)
+                if startup_notice.get("restart_scheduled"):
+                    return 0
             except Exception:
                 logging.exception("Update completion could not be recorded")
-                startup_notice = dict(world_updated=False, error_code="update_completion_failed")
+                startup_notice = dict(world_updated=False, error_code="update_completion_failed", completion_failed=True)
         from ootrr_triforce.app_window import main as open_window
         open_window(startup_notice=startup_notice)
         return 0
     except Exception as exc:
-        if options.apply_update:
+        if options.apply_update or options.finalize_update:
             # A helper can fail after the parent window has closed. Keep its
             # traceback in the same persistent log exposed by Help, without
             # initializing Tk, Node or the old extraction directory.

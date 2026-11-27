@@ -626,6 +626,19 @@ def _plan(path, base=None):
     if (backup.parent != target.parent or not re.fullmatch(re.escape(target.name) + r"\.previous-[0-9a-f]{12}\.exe", backup.name)
             or adjacent.parent != target.parent or not re.fullmatch(r"\." + re.escape(target.name) + r"\.update-[0-9a-f]{32}\.tmp", adjacent.name)):
         _fail("plan")
+    # New applications finish schema-1 updates initiated by older launchers.
+    # These paths are derived from the already verified transaction, never
+    # accepted as a general destination or cleanup instruction.
+    if "installed_target" in plan:
+        installed = _local_path(plan["installed_target"])
+        if (installed != target.with_name("OOT-Remake-Archipelago-" + plan["version"] + ".exe")
+                or plan.get("state") not in {"applied", "completed"}):
+            _fail("plan")
+    if "private_backup" in plan:
+        private_backup = _local_path(plan["private_backup"])
+        if (private_backup != stage / "previous-launcher.exe" or not private_backup.is_file()
+                or _sha(private_backup) != plan["original_sha256"]):
+            _fail("plan")
     parents = plan.get("parents")
     if not isinstance(parents, list) or not 1 <= len(parents) <= 2:
         _fail("plan")
@@ -646,6 +659,7 @@ def _wait_for_parents(plan, timeout=180):
     kernel.OpenProcess.restype = w.HANDLE
     kernel.CloseHandle.argtypes = [w.HANDLE]
     kernel.WaitForSingleObject.argtypes = [w.HANDLE, w.DWORD]
+    kernel.WaitForSingleObject.restype = w.DWORD
     deadline = time.monotonic() + timeout
     for parent in plan["parents"]:
         if parent["pid"] == os.getpid():
@@ -656,7 +670,18 @@ def _wait_for_parents(plan, timeout=180):
                 continue
             _fail("process")
         try:
-            if _identity_for_handle(kernel, handle, parent["pid"]) != parent:
+            if kernel.WaitForSingleObject(handle, 0) == 0:
+                continue
+            try:
+                identity = _identity_for_handle(kernel, handle, parent["pid"])
+            except UpdateError:
+                # The pinned process can finish between opening its handle
+                # and querying its image. A signalled handle proves its exit
+                # without trusting a potentially reused PID.
+                if kernel.WaitForSingleObject(handle, 0) == 0:
+                    continue
+                raise
+            if identity != parent:
                 continue  # Keep the checked handle; PID reuse cannot change it.
             milliseconds = max(0, int((deadline - time.monotonic()) * 1000))
             if kernel.WaitForSingleObject(handle, milliseconds) != 0:
@@ -741,14 +766,21 @@ def helper_main(plan_path):
 def complete_update(plan_path, base=None):
     """Run inside the NEW app so an optional APWorld gets its NEW Node runtime."""
     path, plan = _plan(plan_path, base)
-    if (plan.get("state") not in {"applied", "completed"} or Path(sys.executable).resolve() != Path(plan["target"])
-            or _sha(plan["target"]) != plan["hashes"]["executable"] or current_version() != plan["version"]):
+    installed = plan.get("installed_target", plan["target"])
+    if (plan.get("state") not in {"applied", "completed"} or Path(sys.executable).resolve() != Path(installed)
+            or _sha(installed) != plan["hashes"]["executable"] or current_version() != plan["version"]):
         _fail("completion_identity")
     if plan["state"] == "completed":
         if not isinstance(plan.get("completion"), dict):
             _fail("plan")
         return dict(plan["completion"])
-    result = dict(world_updated=False, world_path=None, version=plan["version"], backup=plan["backup"])
+    from .update_finalize import prepare_completion
+    handoff = prepare_completion(path, plan, base=base)
+    if handoff is not None:
+        return handoff
+    path, plan = _plan(path, base)
+    result = dict(world_updated=False, world_path=None, version=plan["version"],
+                  backup=plan.get("private_backup", plan["backup"]))
     if plan.get("world_target") is not None:
         try:
             result.update(install_world(plan, plan["world_target"], base=base))
