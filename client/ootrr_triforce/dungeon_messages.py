@@ -5,6 +5,8 @@ native window may open before the queued credit has settled. Quiet recovery
 does not call this module's window helper.
 """
 from pathlib import Path
+from collections.abc import Mapping
+import re
 
 from .catalog import ITEM_DATA
 
@@ -96,12 +98,42 @@ def _name(messages, label, fallback):
     return value[:-1]
 
 
-def patch_message_archive(raw):
+def _dungeon_aliases(aliases):
+    """Accept named AP aliases only, never rewrite a canonical native actor."""
+    if aliases is None:
+        return {}
+    if not isinstance(aliases, Mapping):
+        raise ValueError("Invalid Archipelago dungeon-item aliases.")
+    selected = {}
+    for actor, metadata in aliases.items():
+        if not isinstance(metadata, Mapping):
+            raise ValueError("Invalid Archipelago dungeon-item alias metadata.")
+        if message_id(metadata) is None:
+            continue
+        if (not isinstance(actor, str) or not re.fullmatch(r"Item_AP_[A-Za-z0-9_]+", actor)
+                or actor == metadata.get("actor")):
+            raise ValueError("Invalid Archipelago dungeon-item alias actor.")
+        selected[actor] = metadata
+    return selected
+
+
+def _put_raw(messages, label, content):
+    if messages.get(label) == content:
+        return False
+    # Native and AP labels can share an existing text index. Append a private
+    # entry rather than changing any other label that points to the same text.
+    messages.labels[label] = len(messages.texts)
+    messages.texts.append(content)
+    return True
+
+
+def patch_message_archive(raw, aliases=None):
     """Keep native names and binary grammar tags, without changing other text."""
     from oot_rando.formats.byml_codec import build_sarc
     from oot_rando.formats.inspect_resources import sarc
     from oot_rando.formats.msbt import dump, load
 
+    aliases = _dungeon_aliases(aliases)
     members = sarc(raw)
     if not {MESSAGE_FILE, NAMES_FILE, PLACES_FILE} <= members.keys():
         raise ValueError("The game text archive has no native dungeon-item names.")
@@ -111,24 +143,39 @@ def patch_message_archive(raw):
     for label, (item, dungeon, fallback_item, fallback_dungeon) in _definitions().items():
         content = (_name(names, item, fallback_item) + b"\n"
                    + _name(places, dungeon, fallback_dungeon) + b"\0")
-        if messages.get(label) == content:
-            continue
-        # A table may share an existing text index between labels. Append a
-        # private entry, rather than mutating an unrelated native message.
-        messages.labels[label] = len(messages.texts)
-        messages.texts.append(content)
-        changed = True
-    if not changed:
+        changed = _put_raw(messages, label, content) or changed
+    aliases_changed = False
+    from .receipt_events import DUNGEONS
+    for actor, metadata in sorted(aliases.items()):
+        # These aliases were already created by the AP item/shop preparation.
+        # A missing label means the native preparation contract changed; do
+        # not fabricate an incomplete actor or modify a donor's native text.
+        labels = (actor + "_Name", actor + "_GetMessage")
+        if any(label not in names.labels for label in labels):
+            raise ValueError("Missing Archipelago dungeon-item alias message: " + actor)
+        dungeon = DUNGEONS[metadata["dungeon"]]
+        place = "GanonCastle" if dungeon in {"InsideGanonCastle", "FinalBattleField"} else dungeon
+        item = _name(names, metadata["actor"] + "_Name", FALLBACK_NAMES[KINDS[metadata["kind"]]])
+        destination = _name(places, place, metadata["dungeon"])
+        title = item + b" (" + destination + b")\0"
+        message = item + b"\n" + destination + b"\0"
+        aliases_changed = _put_raw(names, labels[0], title) or aliases_changed
+        aliases_changed = _put_raw(names, labels[1], message) or aliases_changed
+    if not changed and not aliases_changed:
         return raw
-    members[MESSAGE_FILE] = dump(messages)
+    if changed:
+        members[MESSAGE_FILE] = dump(messages)
+    if aliases_changed:
+        members[NAMES_FILE] = dump(names)
     return build_sarc(members)
 
 
-def prepare_messages(romfs, mod):
+def prepare_messages(romfs, mod, aliases=None):
     """Write localized windows into a staged mod, reserving Mals allocations."""
     from oot_rando.game.resource_allocations import grow_resources
     from .mod_codec import Codec
 
+    aliases = _dungeon_aliases(aliases)
     romfs, mod = Path(romfs), Path(mod)
     if (mod.name != "romfs" or mod.parent.name != "Archipelago"
             or mod.resolve() == romfs.resolve()):
@@ -147,7 +194,7 @@ def prepare_messages(romfs, mod):
     for path in archives:
         frame = source(path)
         before = codec.decode(frame)
-        after = patch_message_archive(before)
+        after = patch_message_archive(before, aliases=aliases)
         if after != before:
             changed[path] = codec.encode(after, frame)
             growths[path] = max(0, len(after) - len(before))

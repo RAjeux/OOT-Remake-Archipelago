@@ -80,6 +80,28 @@ class ShopRecordTests(unittest.TestCase):
             self.assertEqual(len(engine.call_args.args[1]["shops"]), 8)
             self.assertEqual((romfs / "Mals/ignore.txt").read_bytes(), b"untouched")
 
+    def test_personal_dungeon_shelf_labels_are_named_after_the_native_factory(self):
+        first = sorted(self.roster)[0]
+        self.roster[first].update(item="Boss Key (Forest Temple)", player="Link", local=True,
+                                  item_id=ITEM_IDS["Boss Key (Forest Temple)"])
+        record = next(row for row in shop_records(self.roster, self.settings) if row["name"] == first)
+        order = []
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            romfs, mod = root / "game", root / "load/Archipelago/romfs"
+            (mod / "Mals").mkdir(parents=True)
+            (mod / "Mals/EUfr.Product.110.sarc.zs").write_bytes(b"fixture")
+            with patch("ootrr_triforce.ap_shops.run_engine", side_effect=lambda *_: order.append("factory") or ""), \
+                    patch("ootrr_triforce.dungeon_messages.prepare_messages", side_effect=lambda *_, **__: order.append("names")) as names, \
+                    patch("ootrr_triforce.shop_identity.prepare_shop_identities"), \
+                    patch("ootrr_triforce.shop_poses.prepare_shop_poses"), \
+                    patch("ootrr_triforce.shop_layout.prepare_shop_layout"), \
+                    patch("ootrr_triforce.shop_events.prepare_shop_events"):
+                prepare_shops(romfs, mod, self.roster, self.settings)
+            self.assertEqual(order, ["factory", "names"])
+            names.assert_called_once_with(romfs, mod,
+                aliases={record["actor"]: ITEM_DATA["Boss Key (Forest Temple)"]})
+
 
 class SpecialDealRecordTests(unittest.TestCase):
     def setUp(self):

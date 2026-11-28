@@ -1,13 +1,16 @@
 # OOT Remake Archipelago 0.10.4 alpha 12: dungeon names on received keys
 
+This candidate was superseded before publication by alpha 13, which also fixes
+the separate text aliases used by personal shop purchases.
+
 Personal dungeon items previously used the generic native item name during
 some Archipelago presentations, making it hard to identify where a key belonged.
 Small keys, boss keys, maps and compasses now display both the item name and
 the destination dungeon in the native item dialog.
 
 The fix covers personal chests, network receipts, NPC rewards routed through
-the shared item dispatcher, and ground pickups. Ordinary shop purchases retain
-their existing named AP item labels. Foreign items keep their recipient text.
+the shared item dispatcher, and ground pickups. The separate generic shop
+aliases are addressed in alpha 13. Foreign items keep their recipient text.
 The dialog uses the existing native text command and item style, with the
 game's localized item and dungeon names. It replaces the generic window once;
 models, camera, sounds and dungeon credits retain their existing routes.

@@ -78,6 +78,13 @@ def prepare_shops(romfs, mod, roster, settings):
     if not messages:
         raise ValueError(tr('Shop text archives were not found in Mals.'))
     print(run_engine("shops", {"shops": records, "messages": messages}, romfs, mod).strip(), flush=True)
+    from .dungeon_messages import message_id, prepare_messages
+    dungeon_aliases = {record["actor"]: ITEM_DATA[record["local_item"]] for record in records
+                      if record.get("local_item") and message_id(ITEM_DATA[record["local_item"]]) is not None}
+    if dungeon_aliases:
+        # The native factory copies generic pouch labels onto personal shelf
+        # aliases. Name their destination after that copy has completed.
+        prepare_messages(romfs, mod, aliases=dungeon_aliases)
     from .shop_identity import prepare_shop_identities
     prepare_shop_identities(romfs, mod, records)
     from .shop_poses import prepare_shop_poses

@@ -16,7 +16,7 @@ from .mod_codec import Codec
 REST = "System/Resource/ResourceSizeTable.Product.111.Nin_Ounce_NVN2.rsizetable.zs"
 GET = ("Dm_SY_GetInEvent", "GetInEvent_NotTurn_NotNpc")
 CHEST_ENTRY = "Success_"
-REVISION = 24
+REVISION = 25
 
 
 def chest_flows(raw, records, *, native_pouch=None, small_raw=None):

@@ -4,7 +4,7 @@
 
 ## Le bon téléchargement
 
-**[Télécharger le launcher Windows 0.10.4-alpha.12](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.12/OOT-Remake-Archipelago-0.10.4-alpha.12.exe)** · [Page de cette release](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.12)
+**[Télécharger le launcher Windows 0.10.4-alpha.13](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.13/OOT-Remake-Archipelago-0.10.4-alpha.13.exe)** · [Page de cette release](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.13)
 
 Un seul EXE suffit : le client AP, Python, Node.js et l'APWorld sont inclus. Le builder OOTRR compatible est téléchargé au premier besoin.
 

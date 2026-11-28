@@ -57,6 +57,22 @@ def archive(language="en", *, missing=()):
                        NAMES_FILE: book(names), PLACES_FILE: book(places), "Unrelated.bin": b"untouched"})
 
 
+def with_aliases(raw, aliases):
+    """Native shop preparation reuses generic item text for these AP actors."""
+    members = sarc(raw)
+    names = msbt.load(members[NAMES_FILE])
+    for actor, metadata in aliases.items():
+        # Sharing the canonical text index also tests that updating a shop
+        # alias cannot accidentally rename the source/native item globally.
+        names.labels[actor + "_Name"] = names.labels[metadata["actor"] + "_Name"]
+        for suffix, text in (("_GetMessage", "Native generic get message"),
+                             ("_Caption", "Keep the native caption"),
+                             ("_GetCaption", "Keep the native get caption")):
+            names.add(actor + suffix, text)
+    members[NAMES_FILE] = msbt.dump(names)
+    return build_sarc(members)
+
+
 class DungeonWindowTests(unittest.TestCase):
     def test_distinct_dungeons_and_key_families_have_explicit_ids(self):
         expected = {
@@ -123,6 +139,62 @@ class DungeonWindowTests(unittest.TestCase):
 
 
 class DungeonMessageTests(unittest.TestCase):
+    def test_shop_aliases_keep_distinct_dungeon_names_and_leave_donors_and_captions_intact(self):
+        aliases = {"Item_AP_ForestKey": ITEM_DATA["Small Key (Forest Temple)"],
+                   "Item_AP_FireKey": ITEM_DATA["Small Key (Fire Temple)"],
+                   "Item_AP_ForestBoss": ITEM_DATA["Boss Key (Forest Temple)"],
+                   "Item_AP_WaterBoss": ITEM_DATA["Boss Key (Water Temple)"]}
+        unchanged_aliases = copy.deepcopy(aliases)
+        for language in ("en", "fr"):
+            with self.subTest(language=language):
+                # Base construction has already installed the shared windows;
+                # the subsequent shop phase only needs to fix its own aliases.
+                raw = with_aliases(patch_message_archive(archive(language)), aliases)
+                original = sarc(raw)
+                source_names = msbt.load(original[NAMES_FILE])
+                places = msbt.load(original[PLACES_FILE])
+                after_raw = patch_message_archive(raw, aliases=aliases)
+                after = sarc(after_raw)
+                changed = msbt.load(after[NAMES_FILE])
+                for actor, metadata in aliases.items():
+                    item = source_names.get(metadata["actor"] + "_Name")[:-1]
+                    place = places.get(DUNGEONS[metadata["dungeon"]])[:-1]
+                    self.assertEqual(changed.get(actor + "_Name"), item + b" (" + place + b")\0")
+                    self.assertEqual(changed.get(actor + "_GetMessage"), item + b"\n" + place + b"\0")
+                modified = {actor + suffix for actor in aliases for suffix in ("_Name", "_GetMessage")}
+                for label in source_names.labels:
+                    if label not in modified:
+                        self.assertEqual(changed.get(label), source_names.get(label), label)
+                for member in original:
+                    if member != NAMES_FILE:
+                        self.assertEqual(after[member], original[member], member)
+                self.assertNotEqual(changed.get("Item_AP_ForestKey_Name"), changed.get("Item_AP_FireKey_Name"))
+                self.assertNotEqual(changed.get("Item_AP_ForestBoss_Name"), changed.get("Item_AP_WaterBoss_Name"))
+                self.assertEqual(patch_message_archive(after_raw, aliases=aliases), after_raw)
+                self.assertEqual(patch_message_archive(after_raw), after_raw)
+        self.assertEqual(aliases, unchanged_aliases)
+
+    def test_only_existing_ap_dungeon_aliases_can_be_rewritten(self):
+        raw = patch_message_archive(archive())
+        # Ordinary or foreign items remain untouched, even if their actor is
+        # absent: this pass only owns explicit local dungeon-item aliases.
+        self.assertEqual(patch_message_archive(raw, aliases={"Item_AP_Bow": ITEM_DATA["Bow"]}), raw)
+        self.assertEqual(patch_message_archive(raw, aliases={}), raw)
+        metadata = ITEM_DATA["Small Key (Forest Temple)"]
+        with self.assertRaisesRegex(ValueError, "Missing.*alias message"):
+            patch_message_archive(raw, aliases={"Item_AP_Missing": metadata})
+        with self.assertRaisesRegex(ValueError, "alias actor"):
+            patch_message_archive(raw, aliases={metadata["actor"]: metadata})
+        with self.assertRaisesRegex(ValueError, "alias actor"):
+            patch_message_archive(raw, aliases={"Item_AP_Canonical": dict(metadata, actor="Item_AP_Canonical")})
+        alias = "Item_AP_Incomplete"
+        members = sarc(raw)
+        names = msbt.load(members[NAMES_FILE])
+        names.add(alias + "_Name", "Existing title without the required get message")
+        members[NAMES_FILE] = msbt.dump(names)
+        with self.assertRaisesRegex(ValueError, "Missing.*alias message"):
+            patch_message_archive(build_sarc(members), aliases={alias: metadata})
+
     def test_all_ap_destinations_get_localized_names_and_original_tokens(self):
         for language in ("en", "fr"):
             with self.subTest(language=language):
@@ -198,6 +270,21 @@ class DungeonMessageTests(unittest.TestCase):
                 staged = {path.relative_to(mod): path.read_bytes() for path in mod.rglob("*") if path.is_file()}
                 self.assertEqual(prepare_messages(source, mod)["archives"], 0)
                 self.assertEqual(staged, {path.relative_to(mod): path.read_bytes() for path in mod.rglob("*") if path.is_file()})
+                # Simulate the subsequent native shop pass adding aliases with
+                # generic key text, then verify an alias-only reservation.
+                aliases = {"Item_AP_ForestShopKey": ITEM_DATA["Small Key (Forest Temple)"]}
+                for path in paths:
+                    target = mod / path
+                    target.write_bytes(with_aliases(target.read_bytes(), aliases))
+                old_allocations = (mod / REST).read_bytes()
+                self.assertEqual(prepare_messages(source, mod, aliases=aliases)["archives"], 3)
+                for path in paths:
+                    names = msbt.load(sarc((mod / path).read_bytes())[NAMES_FILE])
+                    self.assertIn(b" (", names.get("Item_AP_ForestShopKey_Name"))
+                    self.assertGreater(allocation((mod / REST).read_bytes(), path), allocation(old_allocations, path))
+                last = {path.relative_to(mod): path.read_bytes() for path in mod.rglob("*") if path.is_file()}
+                self.assertEqual(prepare_messages(source, mod, aliases=aliases)["archives"], 0)
+                self.assertEqual(last, {path.relative_to(mod): path.read_bytes() for path in mod.rglob("*") if path.is_file()})
             self.assertEqual(originals, {path.relative_to(source): path.read_bytes() for path in source.rglob("*") if path.is_file()})
             with self.assertRaisesRegex(ValueError, "staging folder"):
                 prepare_messages(source, source)
@@ -205,6 +292,29 @@ class DungeonMessageTests(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get("OOTRR_ROMFS"), "requires native v1.1.1 messages")
 class NativeDungeonMessagesTests(unittest.TestCase):
+    def test_french_native_shop_aliases_name_their_distinct_boss_dungeons(self):
+        from ootrr_triforce import app_runtime
+        from ootrr_triforce.mod_codec import Codec
+        game = Path(os.environ["OOTRR_ROMFS"])
+        with patch.object(app_runtime, "_resource_override", Path(os.environ.get("OOTRR_CODEC_RESOURCES", ROOT / "dist"))):
+            codec = Codec((game / "Pack/ZsDic.pack.zs").read_bytes())
+            raw = codec.decode((game / "Mals/EUfr.Product.110.sarc.zs").read_bytes())
+        aliases = {"Item_AP_NativeForestBoss": ITEM_DATA["Boss Key (Forest Temple)"],
+                   "Item_AP_NativeWaterBoss": ITEM_DATA["Boss Key (Water Temple)"]}
+        raw = with_aliases(raw, aliases)
+        before = sarc(raw)
+        original = msbt.load(before[NAMES_FILE])
+        places = msbt.load(before[PLACES_FILE])
+        changed = msbt.load(sarc(patch_message_archive(raw, aliases=aliases))[NAMES_FILE])
+        for actor, metadata in aliases.items():
+            item = original.get(metadata["actor"] + "_Name")[:-1]
+            place = places.get(DUNGEONS[metadata["dungeon"]])[:-1]
+            self.assertEqual(changed.get(actor + "_Name"), item + b" (" + place + b")\0")
+            self.assertEqual(changed.get(actor + "_GetMessage"), item + b"\n" + place + b"\0")
+            self.assertEqual(changed.get(actor + "_Caption"), original.get(actor + "_Caption"))
+            self.assertEqual(changed.get(actor + "_GetCaption"), original.get(actor + "_GetCaption"))
+        self.assertEqual(changed.get("Item_Dungeon_BossKey_Name"), original.get("Item_Dungeon_BossKey_Name"))
+
     def test_native_names_and_system_actor_match_the_window_recipe(self):
         from ootrr_triforce import app_runtime
         from ootrr_triforce.mod_codec import Codec
