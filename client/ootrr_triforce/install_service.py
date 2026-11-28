@@ -27,7 +27,7 @@ from .save_bridge import atomic, exclusive, history_cursor, write_json
 
 # Copied NPC handovers need their complete transitive native action bindings,
 # alongside the earlier menu and opening repairs. Older resources can stall.
-PREPARED_RESOURCE_REVISION = 5
+PREPARED_RESOURCE_REVISION = 6
 PREPARED_RESOURCE_MARKER = Path("Archipelago/prepared-v1.json")
 
 

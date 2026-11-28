@@ -4,7 +4,8 @@ Inlining a native external flow keeps its entry-scoped actor arguments, but a
 local call can reuse its caller's bound participant. That participant must
 advertise every action/query required by the aliases forwarded to the callee.
 Only declarations are extended: graph nodes, parameters and identities stay
-unchanged, and every added method already belongs to a native callee actor.
+unchanged, and every added method already belongs to a native participant in
+the same typed forwarding graph.
 """
 
 
@@ -17,7 +18,9 @@ def complete_forwarded_actor_bindings(chart):
     and concrete participant. The finite fixed point handles shared tails and
     cycles and native entries sharing an action body whose actor names another
     entry's argument scope. External flows and undeclared world-actor literals retain their
-    native binding behavior. Repeating the operation makes no further change.
+    native binding behavior. A uniquely resolved provider also completes its
+    earlier aliases; shared or unknown alternative providers stay conservative.
+    Repeating the operation makes no further change.
     """
     from evfl.common import ActorIdentifier, Argument, StringHolder
     from evfl.event import SubFlowEvent, SubFlowSwitchEvent
@@ -31,6 +34,7 @@ def complete_forwarded_actor_bindings(chart):
     actors = list(chart.actors)
     by_identifier = {}
     requirements, edges = {}, set()
+    provider_edges, provider_sets, reversible = set(), {}, set()
     unresolved_literals = set()
 
     def ensure(node):
@@ -41,9 +45,20 @@ def complete_forwarded_actor_bindings(chart):
         ensure(destination)
         edges.add((source, destination))
 
+    def provider(source, destination):
+        provider_sets.setdefault(source, set())
+        provider_sets.setdefault(destination, set())
+        provider_edges.add((source, destination))
+
+    def alias(source, destination):
+        connect(source, destination)
+        provider(source, destination)
+        reversible.add((source, destination))
+
     for index, actor in enumerate(actors):
         by_identifier.setdefault(actor.identifier, []).append(index)
         node = ("actor", index)
+        provider_sets[node] = set()
         actions, queries = ensure(node)
         for collection, destination in ((actor.actions, actions), (actor.queries, queries)):
             for method in collection:
@@ -56,8 +71,10 @@ def complete_forwarded_actor_bindings(chart):
                 raise ValueError("Actor forwarding has an invalid entry-scoped participant.")
             argument = ("argument", binding.name, actor.argument_name)
             # The argument and every alias for it need the same callback set.
-            connect(node, argument)
-            connect(argument, node)
+            alias(node, argument)
+            alias(argument, node)
+        else:
+            provider_sets[node].add(node)
 
     # Build all argument edges first. An intermediate entry can merely forward
     # an argument, so requirements cannot be inferred from actor rows alone.
@@ -83,7 +100,7 @@ def complete_forwarded_actor_bindings(chart):
             # this invocation receives the argument in the active entry.
             argument = ("argument", owner, participant.argument_name)
             node = ("actor", indices[0])
-            connect(node, argument)
+            alias(node, argument)
 
     for owner in entries.values():
         for event in reachable(owner.main_event.v):
@@ -110,14 +127,57 @@ def complete_forwarded_actor_bindings(chart):
                 if len(matches) > 1:
                     raise ValueError("Actor forwarding has an ambiguous concrete participant: " + str(value))
                 if matches:
-                    connect(source, ("actor", matches[0]))
+                    actor = actors[matches[0]]
+                    destination = ("actor", matches[0])
+                    connect(source, destination)
+                    reversible.add((source, destination))
+                    # A shared native body can name a different canonical
+                    # argument scope. Resolve its actual invocation's provider.
+                    supplied = (("argument", owner, actor.argument_name)
+                                if actor.argument_entry_point.v is not None else destination)
+                    provider(source, supplied)
                 else:
                     # A native literal can refer directly to a world actor,
                     # without reusing any participant declared in this chart.
                     unresolved_literals.add(str(value))
+                    opaque = ("world", str(value))
+                    provider_sets.setdefault(opaque, set()).add(opaque)
+                    provider(source, opaque)
             elif isinstance(value, Argument):
                 destination = ("argument", owner, str(value))
-                connect(source, destination)
+                alias(source, destination)
+
+    def resolve_providers():
+        changed = True
+        while changed:
+            changed = False
+            for source, destination in sorted(provider_edges):
+                missing = provider_sets[destination] - provider_sets[source]
+                if missing:
+                    provider_sets[source].update(missing)
+                    changed = True
+
+    resolve_providers()
+    # An unresolved entry argument/cycle is opaque, not evidence that a known
+    # alternative is the only possible provider. In particular A + unknown
+    # must never be treated as uniquely A.
+    for node, supplied in provider_sets.items():
+        if not supplied:
+            supplied.add(("unresolved", *node))
+    resolve_providers()
+    reverse_edges = set()
+    ambiguous_edges = set()
+    for source, destination in reversible:
+        supplied = provider_sets.get(source, set())
+        if len(supplied) == 1 and supplied == provider_sets.get(destination, set()):
+            reverse_edges.add((destination, source))
+        else:
+            ambiguous_edges.add((source, destination))
+    # The engine may retain the binder initialized by an earlier entry alias.
+    # Complete that alias too, but only for one proven provider. Shared callee
+    # arguments supplied by A and B retain the original one-way requirements;
+    # A's own methods must not become B's requirements through that callee.
+    edges.update(reverse_edges)
 
     changed = True
     while changed:
@@ -142,4 +202,5 @@ def complete_forwarded_actor_bindings(chart):
             updates.append(dict(actor=str(actor.identifier), actions=added[0], queries=added[1]))
     return dict(actors=updates, actions=sum(len(row["actions"]) for row in updates),
                 queries=sum(len(row["queries"]) for row in updates),
-                forwarding_edges=len(edges), world_actor_literals=sorted(unresolved_literals))
+                forwarding_edges=len(edges), world_actor_literals=sorted(unresolved_literals),
+                reverse_provider_edges=len(reverse_edges), ambiguous_provider_edges=len(ambiguous_edges))

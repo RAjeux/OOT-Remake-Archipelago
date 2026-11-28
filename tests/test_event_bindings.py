@@ -69,6 +69,76 @@ def structure(editor):
 
 
 class ForwardedActorTests(unittest.TestCase):
+    def test_earlier_argument_provider_receives_later_native_callbacks(self):
+        editor = fixture()
+        concrete = editor.chart.actors[0]
+        editor.action("LaterNativeCleanup", str(concrete.identifier), "EventGoOffstageForUser", {"IsWaitEnd": False})
+        earlier = EntryPoint("EarlierInitTalk")
+        editor.chart.entry_points.append(earlier)
+        alias = copy.deepcopy(editor.chart.actors[2])
+        alias.identifier = ActorIdentifier("Npc_EventStarter", "EarlierInitTalk(Arg_Actor)")
+        alias.argument_name = "Arg_Actor"
+        alias.argument_entry_point = make_index(earlier)
+        alias.actions, alias.queries = [], []
+        editor.chart.actors.append(alias)
+        earlier.main_event = make_index(editor.action("EarlierGreeting", str(alias.identifier), "EventTalk", None))
+        before_call = editor.subflow("MainInitTalk", "", "EarlierInitTalk",
+                                     {"Arg_Actor": copy.deepcopy(concrete.identifier)})
+        after_call = next(e for e in editor.chart.events if e.name == "MainToOuter")
+        link(before_call, after_call)
+        next(p for p in editor.chart.entry_points if p.name == "Main").main_event = make_index(before_call)
+        before = structure(editor)
+        self.assertNotIn("EventGoOffstageForUser", methods(alias)[0])
+        result = complete_forwarded_actor_bindings(editor.chart)
+        self.assertIn("EventGoOffstageForUser", methods(alias)[0])
+        self.assertIn("EventDoNothing", methods(alias)[0])
+        self.assertIn("EventQueryNative", methods(alias)[1])
+        self.assertGreater(result["reverse_provider_edges"], 0)
+        self.assertEqual(structure(editor), before)
+        editor.write("Earlier native argument provider")
+        self.assertEqual(complete_forwarded_actor_bindings(editor.chart)["actors"], [])
+
+    def test_shared_callee_does_not_cross_transfer_different_providers_methods(self):
+        editor = fixture()
+        concrete = editor.chart.actors[0]
+        other = copy.deepcopy(concrete)
+        other.identifier = ActorIdentifier("Npc_Different")
+        editor.chart.actors.append(other)
+        editor.action("NativeA", str(concrete.identifier), "EventOnlyA", {"Native": 1})
+        editor.action("NativeB", str(other.identifier), "EventOnlyB", {"Native": 2})
+        root = EntryPoint("OtherRoot")
+        editor.chart.entry_points.append(root)
+        root.main_event = make_index(editor.subflow("OtherToOuter", "", "Outer",
+                                                    {"NpcActor": copy.deepcopy(other.identifier)}))
+        before = structure(editor)
+        complete_forwarded_actor_bindings(editor.chart)
+        self.assertNotIn("EventOnlyB", methods(concrete)[0])
+        self.assertNotIn("EventOnlyA", methods(other)[0])
+        for provider in (concrete, other):
+            self.assertIn("EventDoNothing", methods(provider)[0])
+            self.assertIn("EventQueryNative", methods(provider)[1])
+        for alias in (editor.chart.actors[1], editor.chart.actors[2]):
+            self.assertNotIn("EventOnlyA", methods(alias)[0])
+            self.assertNotIn("EventOnlyB", methods(alias)[0])
+        self.assertEqual(structure(editor), before)
+        editor.write("Shared native callee provider isolation")
+
+    def test_unknown_provider_alternative_cannot_look_uniquely_concrete(self):
+        for unknown in (ActorIdentifier("UndeclaredNativeWorldActor"), Argument("ExternalNpc")):
+            with self.subTest(unknown=unknown):
+                editor = fixture()
+                concrete = editor.chart.actors[0]
+                editor.action("ConcreteOnly", str(concrete.identifier), "EventOnlyConcrete", None)
+                root = EntryPoint("ExternalRoot")
+                editor.chart.entry_points.append(root)
+                root.main_event = make_index(editor.subflow("ExternalToOuter", "", "Outer", {"NpcActor": unknown}))
+                before = structure(editor)
+                result = complete_forwarded_actor_bindings(editor.chart)
+                self.assertGreater(result["ambiguous_provider_edges"], 0)
+                self.assertNotIn("EventOnlyConcrete", methods(editor.chart.actors[1])[0])
+                self.assertEqual(structure(editor), before)
+                self.assertEqual(complete_forwarded_actor_bindings(editor.chart)["actors"], [])
+
     def test_three_level_argument_forwarding_binds_alias_and_concrete_actor(self):
         editor = fixture()
         before = structure(editor)
@@ -187,6 +257,25 @@ class ForwardedActorTests(unittest.TestCase):
         self.assertEqual(second["actions"], 0)
         self.assertEqual(second["queries"], 0)
         self.assertIsNotNone(leaf_point.main_event.v)
+
+    def test_unbound_actor_argument_cycle_remains_opaque_and_finite(self):
+        editor = fixture()
+        next(p for p in editor.chart.entry_points if p.name == "Main").main_event = make_index(None)
+        # Remove the detached caller as well: no concrete participant supplies
+        # this closed native argument cycle from any local invocation.
+        editor.chart.events = [e for e in editor.chart.events if e.name != "MainToOuter"]
+        action = next(e for e in editor.chart.events if e.name == "LeafDoNothing")
+        cycle = editor.subflow("LeafToOuter", "", "Outer", {"NpcActor": Argument("Npc")})
+        link(action, cycle)
+        concrete = editor.chart.actors[0]
+        editor.action("ConcreteNotPassed", str(concrete.identifier), "EventOnlyUnusedConcrete", None)
+        before = structure(editor)
+        result = complete_forwarded_actor_bindings(editor.chart)
+        self.assertGreater(result["ambiguous_provider_edges"], 0)
+        for actor in editor.chart.actors[1:]:
+            self.assertNotIn("EventOnlyUnusedConcrete", methods(actor)[0])
+        self.assertEqual(structure(editor), before)
+        self.assertEqual(complete_forwarded_actor_bindings(editor.chart)["actors"], [])
 
     def test_ambiguous_concrete_participant_is_rejected_before_mutation(self):
         editor = fixture()

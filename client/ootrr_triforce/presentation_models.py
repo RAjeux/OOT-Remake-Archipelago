@@ -25,16 +25,20 @@ WORLD_CHEST_MODELS = frozenset({
 
 
 def _separate_model(actor):
-    return (actor.startswith("Item_Melody_") or actor in {
+    return (actor.startswith(("Item_Melody_", "Item_Medal_", "Item_Stone_")) or actor in {
         "Item_Ocarina_Fairy", "Item_Ocarina_Time", "Weapon_Sword_Master"})
+
+
+def _pouch_guest_alias(actual_actor):
+    # Chest guests retain their native pouch performer. A shown receipt model
+    # instead follows Player's own get-item binding and has no pouch performer.
+    return "Item_AP_Chest_" + hashlib.sha256(actual_actor.encode()).hexdigest()[:12]
 
 
 def model_actor(actual_actor):
     """Display alias only; never pass this to a pouch/window command."""
     if actual_actor == "Item_Dungeon_SmallKey":
         return "Obj_MiniGame_SmallKey"
-    if actual_actor.startswith(("Item_Medal_", "Item_Stone_")):
-        return actual_actor + "_ImportantMenu"
     if _separate_model(actual_actor):
         return "Item_AP_Show_" + hashlib.sha256(actual_actor.encode()).hexdigest()[:12]
     return actual_actor
@@ -52,8 +56,112 @@ def chest_model_actor(actual_actor):
         return "Obj_MiniGame_SmallKey"
     if (model_actor(actual_actor) != actual_actor or actual_actor.startswith("Shop_")
             or actual_actor in WORLD_CHEST_MODELS):
-        return "Item_AP_Chest_" + hashlib.sha256(actual_actor.encode()).hexdigest()[:12]
+        return _pouch_guest_alias(actual_actor)
     return actual_actor
+
+
+def receipt_model_aliases(raw):
+    """Upgrade only known AP receipt model arguments in a compatible old base.
+
+    The constructor may already contain room-bound receipt graphs. Reusing it
+    must not retain inventory-menu actors after the visual guest changes.
+    Real pouch/window arguments, graph nodes, continuations and IDs stay exact.
+    """
+    from evfl.event import SubFlowEvent
+    from oot_rando.patching.progressive import FlowEditor
+    from .catalog import ITEM_DATA, ITEM_IDS
+    from .native_presentations import PRESENTER_NAME, PRESENTER_ENTRY
+    from .receipt_events import PREFIX, event_name
+
+    rewards = {old: (name, row["actor"])
+               for name, row in ITEM_DATA.items()
+               if row["actor"].startswith(("Item_Medal_", "Item_Stone_"))
+               for old in (row["actor"] + "_ImportantMenu", _pouch_guest_alias(row["actor"]))}
+    editor = FlowEditor(raw, "Archipelago held reward models")
+    entries = {}
+    for entry in editor.chart.entry_points:
+        if entry.name in entries:
+            raise ValueError("Receipt model upgrade has duplicate native entries.")
+        entries[entry.name] = entry
+    planned = []
+    for event in editor.chart.events:
+        if not event.name.startswith(PREFIX):
+            continue
+        data = event.data
+        params = getattr(data, "params", None)
+        old = params.data.get(SHOW_ACTOR_ARGUMENT) if params is not None else None
+        if type(old) is not str or old not in rewards:
+            continue
+        name, actual = rewards[old]
+        item_id = ITEM_IDS[name]
+        stem = event_name(item_id)
+        entry = entries.get(stem)
+        if (event.name != stem + "_Show" or not isinstance(data, SubFlowEvent)
+                or data.res_flowchart_name != PRESENTER_NAME
+                or data.entry_point_name != "OOTRR_APShow_" + str(item_id) + "_" + PRESENTER_ENTRY
+                or params.data.get("ActorName") != actual
+                or params.data.get("IsNpcEventStarter") is not False
+                or entry is None or entry.main_event.v is not event):
+            raise ValueError("Receipt model upgrade does not match its native AP item identity: " + event.name)
+        planned.append((event, old, actual, model_actor(actual)))
+    if not planned:
+        return raw, []
+    # Validate all candidates before changing any parsed event.
+    changes = []
+    for event, old, actual, shown in planned:
+        event.data.params.data[SHOW_ACTOR_ARGUMENT] = shown
+        editor.expected[event.name] = dict(event.data.params.data)
+        changes.append(dict(event=event.name, actor=actual, before=old, after=shown))
+    return editor.write("Native AP held model upgrade")[0], changes
+
+
+def prepare_receipt_model_aliases(romfs, mod):
+    """Migrate cached AP receipts after their native visual guests are staged."""
+    from oot_rando.formats import byml_codec
+    from oot_rando.formats.inspect_resources import sarc
+    from oot_rando.game.resource_allocations import grow_resources
+    from .mod_codec import Codec
+    from .receipt_events import FLOW_PATH
+
+    romfs, mod = Path(romfs), Path(mod)
+    # Only constructor/staged receipts can contain AP entries. A native game
+    # flow, or a historical chest-only stage without receipts, needs no pass.
+    if not (mod / FLOW_PATH).is_file():
+        return {"models": 0, "written": 0}
+    codec = Codec((romfs / "Pack/ZsDic.pack.zs").read_bytes())
+    def frame(path):
+        target = mod / path
+        return (target if target.is_file() else romfs / path).read_bytes()
+    original = frame(FLOW_PATH)
+    before = codec.decode(original)
+    raw, changes = receipt_model_aliases(before)
+    if not changes:
+        return {"models": 0, "written": 0}
+    # A compatible constructor can predate these nine visual-only actors.
+    # Stage their packs/registries/allocations only after every old receipt
+    # identity has been validated, before publishing its new model argument.
+    prepare_presentation_models(romfs, mod)
+    for actual, alias in sorted({(row["actor"], row["after"]) for row in changes}):
+        pack = sarc(codec.decode(frame("Pack/Actor/" + alias + ".pack.zs")))
+        components = _visual_root(pack, "Actor/" + alias + ".engine__actor__ActorParam.bgyml",
+                                  byml_codec)["root"]["Components"]
+        if (components.get("ASRef") != "?AS/Item_Common.root.asb"
+                or "Item_GetDemo" not in components.get("ASInfoRef", "")
+                or not components.get("ModelBindRef") or components.get("AIInfoRef")
+                or "PouchContentRef" in components or "EventPerformerRef" in components):
+            raise ValueError("Receipt model upgrade has no isolated native held-item model: " + alias)
+        native = sarc(codec.decode((romfs / ("Pack/Actor/" + actual + ".pack.zs")).read_bytes()))
+        if _model(pack, alias, byml_codec) != _model(native, actual, byml_codec):
+            raise ValueError("Receipt model upgrade changed its native item mesh: " + alias)
+    rest_frame = frame(REST)
+    rest, _ = grow_resources(codec.decode(rest_frame), {FLOW_PATH: max(0, len(raw) - len(before))})
+    encoded = {FLOW_PATH: codec.encode(raw, original), REST: codec.encode(rest, rest_frame)}
+    # No resource is written before every receipt identity/guest has passed.
+    for path, content in encoded.items():
+        target = mod / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(content)
+    return {"models": len(changes), "written": len(encoded)}
 
 
 def _model_path(pack, actor, byml_codec):

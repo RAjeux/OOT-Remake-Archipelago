@@ -5,7 +5,34 @@ Candidate: **0.10.4-alpha.1**, reviewed OOTRR source
 These results describe automated checks and explicitly scoped native observations.
 They do not certify every game area or option combination.
 
+## Alpha 8 Potion Shop and held-item regressions
+
+On Triforce **0.8.4, source `9ad57a40`**, the first Potion Shop gift passed
+both with a saved bottle and with a bottle received from AP in that session.
+The failure was reproduced naturally after catching and returning the shop's
+insect. A read-only private probe caught `EventGoOffstageForUser` missing from
+the earlier actor provider reused by the later reward. Extending only that
+earlier declaration fixed the exchange. The general unique-provider completion
+also passed: one foreign reward, native quest completion, shop dialogue, HUD,
+movement and saved flags, without an extra bottle or potion. No winning-event
+or outcome fixture was needed for this exchange.
+
+Inventory-menu actors did not supply the correct held-item rendering contract.
+A first chest-guest substitution still clipped quest models above the frame.
+The final nine visual-only receipt models use the established native Common
+animation path without pouch performers. Goron Ruby and Spirit Medallion were
+visible above Link's hands; the Ruby test was repeated at the same problematic
+world position with a comparable camera. Actual ownership and received cursor
+were retained, while neither Forest Medallion nor proxy inventory was added.
+No camera offset, forced control handover or replacement animation was used.
+
+Private gameplay evidence is recorded in
+`build/triforce-bottle-20261128/runtime/bottle-gameplay-proof.json`. It covers
+these specific regressions and normal saving, not every source or game area.
+
 ## Alpha 7 NPC handover regression
+
+Alpha 7 remained an unpublished candidate; its fixes are included in alpha 8.
 
 Triforce **0.8.4, source `9ad57a40`**, was tested offline with a private copy
 of a current native room and save. Talon's authored victory/reward sequence
