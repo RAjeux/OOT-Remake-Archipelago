@@ -69,6 +69,14 @@ def is_cure(metadata):
     return metadata["actor"] in CURES or metadata.get("pouch_category") == "CureItem"
 
 
+HEART_GROWTH_ACTORS = frozenset({"Obj_Heart_Container", "Obj_Heart_Piece"})
+
+
+def owns_health_refresh(metadata):
+    """The AP recipe owns these effects; presentation must not repeat them."""
+    return is_cure(metadata) or metadata["actor"] in HEART_GROWTH_ACTORS
+
+
 def receipt_style(metadata, native_info):
     """Use the game's item metadata to choose ordinary, short or major get."""
     if metadata.get("mode") == "trap":
@@ -150,6 +158,33 @@ def append_recipe(editor, metadata, stem, grant_entry, commit, *, pickup=False):
         return node
     arguments = {"ActorName": Argument("ActorName"), "IsGetInEvent": not pickup,
                  "IsShowNumDisplay": pickup, "IsTreasureBox": not pickup}
+    if metadata["actor"] in HEART_GROWTH_ACTORS:
+        from evfl.entry_point import EntryPoint
+        from evfl.util import make_index
+        from .ap_skulls import _after_writes
+        # Presented grants use IsGetEvent=True: the native pouch records heart
+        # ownership but leaves count/life effects to CheckHeart's cure.
+        # Quiet/pickup grants use False and apply those effects themselves;
+        # curing again would grow a container twice or recreate a fourth piece.
+        # Both paths must settle before any saved AP commit.
+        after = _after_writes(editor, stem + "_HeartSettled0",
+                             _after_writes(editor, stem + "_HeartSettled1", None))
+        refresh = after
+        if not pickup:
+            refresh = editor.action(stem + "_HeartRefresh", "PouchSystemActor", "EventTriggerRecoverByCureItem",
+                                    {"ActorName": Argument("ActorName")})
+            link(refresh, after)
+        ready = _after_writes(editor, stem + "_HeartReady0",
+                             _after_writes(editor, stem + "_HeartReady1", refresh))
+        native = editor.subflow(stem + "_Give", "", grant_entry,
+                                {name: Argument(name) for name in arguments})
+        link(native, ready)
+        entry = EntryPoint(stem + "_HeartEffect")
+        entry.main_event = make_index(native)
+        editor.chart.entry_points.append(entry)
+        # Keep the public result a subflow. Callers attach their commit to its
+        # return, after the complete effect, rather than overwriting its tail.
+        return editor.subflow(stem + "_WithHeartEffect", "", entry.name, arguments)
     if metadata["actor"] not in STARTER_KITS:
         return editor.subflow(stem + "_Give", "", grant_entry, arguments)
     from evfl.entry_point import EntryPoint
@@ -215,7 +250,7 @@ def copy_receipt_presenter(editor, metadata, item_id, core_name, *, style="large
 
     def skip(event):
         data, action = event.data, _action(event)
-        if (is_cure(metadata) and getattr(data, "res_flowchart_name", None) == "Dm_SY_Get"
+        if (owns_health_refresh(metadata) and getattr(data, "res_flowchart_name", None) == "Dm_SY_Get"
                 and getattr(data, "entry_point_name", None) == "CheckHeart"):
             return True
         if not natural_camera:
@@ -289,6 +324,7 @@ def append_local_chests(editor, pouch_raw, rewards, *, small_raw=None):
     """Give local AP rewards in the actual chest scene, without an AP cursor."""
     from evfl.common import Argument
     from evfl.entry_point import EntryPoint
+    from evfl.event import SubFlowEvent
     from evfl.util import make_index
     from oot_rando.patching.progressive import FlowEditor, link
     from .catalog import ITEM_DATA, ITEM_IDS
@@ -300,8 +336,7 @@ def append_local_chests(editor, pouch_raw, rewards, *, small_raw=None):
     _silent_grant(native, None, entry_name="OOTRR_APTemporaryGrant", prefix="OOTRR_APTemporary")
     grant_entry = copy_entry(
         native.chart, editor, "OOTRR_APTemporaryGrant", "OOTRR_APLocalNative",
-        skip=lambda event: _action(event) in {"EventTriggerSetForGetWindow", "EventTriggerSetHavePlayedGetEvent"},
-        after=opened)
+        skip=lambda event: _action(event) in {"EventTriggerSetForGetWindow", "EventTriggerSetHavePlayedGetEvent"})
     source, source_entry = editor.chart, "Success_"
     generic = next(entry for entry in source.entry_points if entry.name == source_entry).main_event.v
     if (getattr(generic.data, "res_flowchart_name", None) == "Dm_SY_TreasureboxSmall"
@@ -318,6 +353,8 @@ def append_local_chests(editor, pouch_raw, rewards, *, small_raw=None):
         stem = LOCAL_CHEST_PREFIX + str(item_id)
         core_name = stem + "_Pouch"
         recipe = append_recipe(editor, metadata, core_name, grant_entry, opened)
+        if isinstance(recipe.data, SubFlowEvent):
+            link(recipe, opened)
         window = editor.subflow(core_name + "_Window", FLOW_NAME, "DisplayGetByActorName",
                                 {"ActorName": Argument("ActorName")})
         link(window, recipe)
@@ -339,7 +376,7 @@ def append_local_chests(editor, pouch_raw, rewards, *, small_raw=None):
             data = event.data
             return (_action(event) in {"EventGetDungeonMap", "EventGetDungeonCompass",
                                         "EventGetDungeonBossKey", "EventGetDungeonSmallKey"}
-                    or (is_cure(metadata) and getattr(data, "res_flowchart_name", None) == "Dm_SY_Get"
+                    or (owns_health_refresh(metadata) and getattr(data, "res_flowchart_name", None) == "Dm_SY_Get"
                         and getattr(data, "entry_point_name", None) == "CheckHeart"))
 
         cloned_entry = copy_entry(source, editor, source_entry, stem + "_Native",

@@ -43,15 +43,34 @@ observed pause can still be queued. Observed loading, a changed actor/manager/
 player/life identity, a local death, a replaced connection or a full client
 restart invalidates the hold.
 
-One inventory edge case still needs an in-game check: if the native menu stops
-all Link callbacks before the bridge can observe `Sequence_IsPause`, the DLL
-only knows the previous gameplay state. It continues to reject deaths against
-that stale state, as it does at the title screen. Automated tests cannot prove
-that every inventory transition exposes a paused callback; an independent
-main-thread lifecycle hook would be required if the supported hosts omit it.
-Likewise, an entirely unobserved title/load transition which reuses every
-tracked guest identity cannot be distinguished from that paused life by this
-movement hook alone. This lifecycle case remains unverified in-game.
+Triforce preparation also installs a bounded observer of the original OOT
+1.1.1 GameData Bool setter. It observes only `Sequence_IsPause` and
+`Sequence_IsLoading`, for the manager already validated by Link's update.
+The observer records host state under a lock; it neither reads guest objects
+nor starts game events on the setter's worker. A pause keeps DeathLink pending
+even while inventory stops Link's callbacks. A loading edge invalidates the
+hold and delivery context, including when the game reuses the same addresses.
+
+New event requests check this intent both before preparing their arguments and
+immediately before native dispatch. A pause which begins after the movement
+check therefore still defers delivery. Closing the pause alone cannot rearm
+it: a fresh native player-state read is required. Native calls run outside the
+observer lock, and an aborted request releases its temporary actor links.
+
+The private Triforce 0.8.4 gameplay regression receives a real peer DeathLink
+while the inventory has suspended Link's update; closing the inventory applies
+one death without an NPC interaction or a reflected death. Separate deaths
+sent during a zone load or at the title screen do not kill the loaded Link.
+The title screen itself can retain the last cached active state; the following
+native load invalidates that state before normal control returns. This is not
+a claim that title transitions always expose an immediate inactive callback.
+
+The installer validates the supported lifted setter's exact declaration,
+requires exactly one match and includes its observer in the build cache key.
+Unknown source layouts are rejected before compilation. The independent
+observer is currently a Triforce integration; Hookshot retains the shared
+movement-based gate and has not received equivalent callback-free pause
+gameplay validation.
 
 `tests/test_deathlink_host.py` compiles the real native gate against bounded
 guest memory and exercises all verbs through `0x12f`, the wrapper, missing

@@ -235,6 +235,17 @@ pub fn check_excluded(w: &World, p: &Plan, free: &[LocId], base: &Placement) -> 
 }
 
 pub fn generate_data(d: &Data, s: &Settings, seed: &str, o: &GenOpts) -> Res<Generated> {
+    generate_data_mode(d, s, seed, o, false)
+}
+
+/// A native vanilla construction donor for AP-owned checks. AP performs the
+/// final randomized placement. Standalone generation never selects this mode.
+pub fn generate_data_vanilla_donor(d: &Data, s: &Settings, seed: &str, o: &GenOpts) -> Res<Generated> {
+    if !o.plando.is_empty() { return Err(E::Format("native vanilla donor does not accept standalone plando")); }
+    generate_data_mode(d, s, seed, o, true)
+}
+
+fn generate_data_mode(d: &Data, s: &Settings, seed: &str, o: &GenOpts, vanilla_donor: bool) -> Res<Generated> {
     if d.scan.rows.is_empty() {
         return Err(E::Format("the chest list in data/slice.json is empty, run slice-scan first"));
     }
@@ -371,7 +382,7 @@ pub fn generate_data(d: &Data, s: &Settings, seed: &str, o: &GenOpts) -> Res<Gen
     // which changes nothing, and the assumed fill cannot place them since the logic counts
     // hearts. They keep their own spots.
     let hearts_only: bool = pk.free.iter().all(|l| base.get(*l).is_some_and(|i| HEARTS.contains(&w.items.names[i].as_str())));
-    let got: Placement = if pk.free.is_empty() || hearts_only {
+    let got: Placement = if vanilla_donor || pk.free.is_empty() || hearts_only {
         base.clone()
     } else {
         let anywhere: bool = p.songs == Songs::Anywhere;
@@ -385,6 +396,12 @@ pub fn generate_data(d: &Data, s: &Settings, seed: &str, o: &GenOpts) -> Res<Gen
             },
         }
     };
+    if vanilla_donor && plan.iter().any(|(loc, item)| got.get(*loc) != Some(*item)) {
+        return Err(E::Format("native vanilla AP donor cannot satisfy forced native placements"));
+    }
+    if vanilla_donor && !crate::search::explore(&w, &got, &[]).won() {
+        return Err(E::Format("the native vanilla AP construction donor is not beatable"));
+    }
     if p.skulls != crate::slice::skulls::Mode::Off {
         crate::slice::skulls::check_tokens(&w, &vanilla, &got)?;
     }

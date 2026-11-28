@@ -43,7 +43,7 @@
   "shuffle_ganon_bosskey": "Choisir où trouver ta clé de Ganon, supprimer son verrou, ou la recevoir de Zelda dans la scène des Flèches de Lumière. La scène peut compter les pierres et médaillons ensemble, ou seulement les médaillons, selon le nombre correspondant ci-dessous. Elle place les Flèches de Lumière dans le pool AP et exige les récompenses PNJ et les coffres de donjon.",
   "shuffle_mapcompass": "Choisir où apparaissent les cartes et boussoles. Les restrictions de donjon et région les gardent dans votre monde Zelda ; Partout autorise les autres jeux. Supprimer et Disponibles dès le départ donnent tous deux leurs effets au début de la partie.",
   "open_forest": "Fermé conserve l'exigence d'épée et de bouclier de Mido ainsi que le début de la quête. Ouvert permet d'accéder à l'Arbre Mojo et de sortir de la forêt dès le départ.",
-  "open_kakariko": "open ouvre la grille du Mont du Péril et saute la visite à Zelda. Exige open_forest: open ; la lettre de Zelda et le chant d'Impa sont accordés au départ.",
+  "open_kakariko": "Ouvert ouvre la grille du Mont du Péril et passe la visite à Zelda. Exige une forêt ouverte. Les deux récompenses de cette visite sont récupérées au départ ; les checks mélangés suivent les placements Archipelago.",
   "zora_fountain": "Le roi Zora bloque le passage normalement, ou ne le bloque jamais.",
   "jabu_open": "Entrer dans Jabu-Jabu sans poisson, une fois le passage du roi Zora libre.",
   "time_always_passes": "Le cycle jour/nuit fonctionne dès le début de la partie.",

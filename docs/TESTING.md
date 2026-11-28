@@ -47,6 +47,25 @@ it for an ordinary PR without changing a published release's reference or
 incrementing a version simply to satisfy CI. `verify_release.py` instead checks
 an immutable published reference; recording one is a maintainer release action.
 
+`tests/test_reward_matrix.py` runs every AP item through recovery, including
+all progressive ownership masks, ammunition equipment prerequisites, full
+bottle deferral and the separate dungeon counters. It also recovers every
+registered foreign location twice, retaining the received-item cursor and
+checking that no inventory or payment effect occurs. Its pouch-command model
+does not establish native animation, stock clamping or a physical playthrough.
+The quantity fixture records selected v1.1.1 metadata for all reward actors;
+`tests/test_native_bundle_quantities.py` can compare it with read-only original
+resources when `OOTRR_ROMFS` and `OOTRR_CODEC_RESOURCES` are supplied.
+
+`tests/test_dispatch_banks.py` checks long pickup selectors independently of
+reward effects. It compares every identity and the native fallback, typed
+argument forwarding, entry-scoped participants, exact bank preload indices,
+idempotence and rejection before resource writes. Native EventFlow traverses
+switch branches recursively during binding, so a valid binary round-trip and
+indices within the format's bounds do not establish safe native loading.
+Large-room checks must include title/new-game loading and a real collection
+that crosses bank boundaries, with the original heap budgets retained.
+
 ### Native Go and C/C++
 
 ```powershell
@@ -58,9 +77,10 @@ Pop-Location
 
 Go's race detector and cgo need a supported platform and C compiler. CI runs
 the race checks on Linux. `tools/test.py --c` invokes the same bridge runner;
-use `CC`/`CXX` or its flags to select compilers. The six bridge entry points are
+use `CC`/`CXX` or its flags to select compilers. The bridge entry points are
 `test_restore_host`, `test_menu_bridge`, `test_menu_editing`,
-`test_language_host`, `test_link` and `test_deathlink_host`.
+`test_language_host`, `test_link` and `test_deathlink_host`; the runner also
+checks the isolated, experimental Longshot adapter.
 
 ### Rust source and a fresh WASM
 
@@ -194,6 +214,40 @@ Those generated rooms contain spoilers and identities from the test; attach
 only the relevant sanitized evidence to an issue. Nothing under `build/` is a
 release input merely because one campaign passed.
 
+## Two OOT Remake players through every enabled check
+
+The [28 November validation record](OVERNIGHT-VALIDATION.md) separates the
+frozen campaign results from resource models and native gameplay controls.
+
+After preparing the isolated AP dependencies described above, run:
+
+```powershell
+.\.venv\Scripts\python.exe tools/test_two_player_campaign.py --ap-root 'C:\path\to\Archipelago' --dependencies build/ap-test-dependencies --output build/two-oot-campaign --cases all --seeds-per-case 2
+```
+
+Use a new output directory. This generates 36 private two-player rooms across
+18 configuration families. Each check is compared with the authoritative
+multiworld's item, owner and location. Two separate processes load the shipped
+native DLL and exercise collection reporting, exact filtered item histories,
+duplicates, index gaps, conflicting packets, offline checks/items, restart,
+lost journals, older-save recovery, deferred restoration and completion.
+Enabled DeathLink configurations are checked in both directions. The audit
+also checks joint progression, pool conservation and wallet-price gates.
+
+The runner freezes its code, APWorld, DLL and Python adapter and records their
+hashes with the results. `--cases default,broad` selects a shorter campaign;
+`--generate-only` omits the network phase. To replay a generated two-player
+room without rerolling, use `--room path/to/AP_room.zip` with a fresh output
+directory. The two players must both use OOT Remake's `all_locations` mode.
+
+The DLLs and local server are real. Native collection flags, saved receipt
+cursors and completed restoration effects are explicit test models. Passing
+this campaign establishes protocol behavior for every selected source; it does
+not establish physical access, native inventory effects or a full playthrough.
+Use separate gameplay tests for those boundaries. The ten Treasure Chest Game
+puzzle chests are not exposed by the public source settings and are not silently
+added to this test's reachable catalogue.
+
 ## Optional real-resource preparation
 
 Use your own supported game 1.1.1 dump and the compatible OOTRR 0.8.1 builder.
@@ -215,6 +269,12 @@ adds a worst-case native-callback-size variant; it is a test roster and does
 not force production items to stay in their own world. Unset these opt-in
 variables after use. Do not commit or upload game dumps, saves, generated mods
 or game-derived audit resources.
+
+For a genuine ownership upper bound, also generate a separate one-player room
+with the same maximum source settings. Derive its roster from its authoritative
+multidata: all rewards then belong to that player naturally. Keep the original
+seed, player file, roster and constructor proof together. This complements the
+synthetic stress fixture; it does not replace the two-player ownership tests.
 
 ## Manual private gameplay and CI boundaries
 

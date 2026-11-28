@@ -1,5 +1,69 @@
 # Stability fixes and upgrade scope
 
+## 0.10.4-alpha.9: large catalogues, native rewards and lifecycle
+
+Long AP pickup selectors now use local function boundaries after each group of
+64 comparisons. The native binder recursively visits switch branches; very
+large chains could crash before the title screen even with valid file indices.
+The same large room started with these boundaries and its original heap
+budgets. Existing matches, fallback, arguments and reward effects are preserved.
+Quiet recovery also shares identical item cores while each source keeps its
+own flags, stock, deferred status and save.
+
+Personal shop rewards retain their unique AP actor identity through the native
+shelf's actor-name reference. Previously, selecting the displayed original
+actor could bypass AP check reporting and progressive grant logic. The display
+mesh, native purchase event and price remain separate from that identity.
+
+A room-bound quiet reconciliation event repairs consumed personal shelves
+whose AP flag was missing, or a completed AP shelf with incomplete native
+stock counters. It updates only the canonical check and stock fields and saves
+only when those fields changed. The stock repair never grants inventory,
+charges rupees or advances the network receipt cursor. It cannot infer or compensate
+uncertain historical inventory effects.
+
+Presented heart grants record ownership with `IsGetEvent=True`, then need the
+game's separate cure action to apply the container or piece. Quiet restoration
+and physical pickups use `False`: the pouch command already applies that effect.
+Repeating the cure there could grow a container twice or recreate a quarter
+after the fourth-piece conversion. The shared recipe follows this native
+distinction and waits for the full effect before committing its AP source or
+receipt. Copied presentations relinquish their duplicate refresh.
+
+Native comparisons verified the fourth physical piece, four remote pieces,
+and an older save recovering a personal container, including the missing and
+duplicate effects of the incorrect variants. Save/reload controls retain the
+correct result. The broader transaction tests remain models, not an all-items
+playthrough.
+
+Skipping the castle visit also used to give the constructor's local Zelda
+letter and Impa-song donor items, even when those checks belonged to another
+player. Selected donors are now removed from the opening. The ready-player
+reconciliation gives the actual personal AP reward or completes the foreign
+check, using the existing source flag for once-per-save recovery. Unselected
+native gifts and story state remain intact. This also catches up an older
+save; uncertain old donor inventory is not removed.
+
+The Triforce bridge observes native pause/loading writes even while inventory
+suspends Link's update. It retains a paused DeathLink, invalidates it at a
+loading boundary and blocks new item requests until fresh player state has
+been read. Its SDK installer validates and caches the observer together with
+the host build. See [delivery safety](DELIVERY-SAFETY.md).
+
+Generation also handles the specific native token-capacity refusal when all
+Skulltulas are shuffled with chests disabled. A validated native vanilla donor
+preserves the original items and tokens; AP still performs the final fill.
+Separate provenance prevents mixing that construction with an older room.
+An omitted native catalogue entry is admitted only when its unchanged AP
+access rules and actual pool prove a route. Unknown failures remain errors.
+
+Existing rooms retain their placements, options, IDs and player files. Close
+the game and prepare the same `.apootrr` when updated resources are requested.
+The lifecycle change requires rebuilding the supported Triforce host. New
+generation fixes affect newly generated rooms, not an existing room's fill.
+See the [validation record](OVERNIGHT-VALIDATION.md) for the separate network,
+resource, modeled transaction and observed gameplay evidence.
+
 ## 0.10.4 alpha 6: portable construction of progressive AP pickups
 
 A valid room could fail before installation because the pinned OOTRR 0.8.1

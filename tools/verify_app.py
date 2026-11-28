@@ -20,6 +20,9 @@ REQUIRED_MODULES = {"ootrr_triforce.app_window", "ootrr_triforce.app_runtime", "
                     "ootrr_triforce.ui_theme",
                     "ootrr_triforce.update_service", "ootrr_triforce.update_window", "ootrr_triforce.update_finalize",
                     "ootrr_triforce.player", "ootrr_triforce.connection_window", "ootrr_triforce.hookshot_setup",
+                    "ootrr_triforce.native_lifecycle", "ootrr_triforce.shop_identity",
+                    "ootrr_triforce.shop_poses", "ootrr_triforce.shop_layout", "ootrr_triforce.shop_tracking",
+                    "ootrr_triforce.opening_rewards", "ootrr_triforce.dispatch_banks",
                     "tkinter", "zstandard"}
 
 
@@ -124,6 +127,8 @@ def inspect_app(path, extra_markers=()):
     expected_wasm = sha((ROOT / "client/ootrr_triforce/engine.wasm").read_bytes())
     components = [("native/archipelago.dll", expected_native),
                   ("ootrr_triforce/engine.wasm", expected_wasm),
+                  ("ootrr_triforce/shop_layout_profiles.json",
+                   sha((ROOT / "client/ootrr_triforce/shop_layout_profiles.json").read_bytes())),
                   ("runtime/node/node.exe", NODE_SHA256)]
     components.extend(("native/" + name, sha((ROOT / "native" / name).read_bytes())) for name in HOST_FILES)
     for name, expected in components:

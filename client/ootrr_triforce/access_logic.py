@@ -430,6 +430,12 @@ def validate(raw):
 
     if not isinstance(raw, dict) or type(raw.get("schema")) is not int or raw["schema"] != 1:
         fail()
+    donor = raw.get("constructor_donor")
+    if donor is not None and (not isinstance(donor, dict)
+            or set(donor) != {"schema", "mode", "reason"}
+            or type(donor.get("schema")) is not int or donor["schema"] != 1
+            or donor.get("mode") != "native_vanilla" or donor.get("reason") != "native_token_capacity"):
+        fail()
     w = raw.get("world")
     if not isinstance(w, dict):
         fail()

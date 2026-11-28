@@ -550,5 +550,10 @@
   "The application was updated, but the APWorld could not be replaced.": "L’application a été mise à jour, mais l’APWorld n’a pas pu être remplacé.",
   "The room is missing its versioned access rules.": "Il manque les règles d’accès versionnées de cette salle.",
   "The room is missing its versioned feature settings.": "Il manque les paramètres versionnés de cette salle.",
-  "The launcher update could not be finalized. You can keep using this application. See the log for details.": "La mise à jour du launcher n’a pas pu être finalisée. Tu peux continuer à utiliser cette application. Consulte le journal pour les détails."
+  "The launcher update could not be finalized. You can keep using this application. See the log for details.": "La mise à jour du launcher n’a pas pu être finalisée. Tu peux continuer à utiliser cette application. Consulte le journal pour les détails.",
+  "Invalid Archipelago shop identity.": "Identité de l’achat Archipelago invalide.",
+  "Unsupported native Archipelago shop geometry.": "La présentation des objets de boutique n’est pas compatible avec cette version du jeu.",
+  "Invalid Archipelago shop tracking.": "Les données de suivi des achats Archipelago sont invalides.",
+  "Invalid Archipelago pickup dispatcher.": "Le routage des objets à ramasser Archipelago est invalide.",
+  "Unsupported Archipelago opening rewards.": "Les récompenses Archipelago des scènes de départ ne sont pas compatibles avec cette version du jeu."
 }

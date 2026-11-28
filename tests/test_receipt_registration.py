@@ -158,11 +158,11 @@ class ReceiptRegistrationTests(unittest.TestCase):
                 self.assertEqual(settings["EventSoundSetting"], PICKUP_SOUND)
                 self.assertIn("FellingInGameFlowchartEvent.", settings["EventSettingComponentList"])
 
-    def test_medium_registers_transitive_generated_callbacks_without_camera(self):
+    def test_medium_heart_effect_stays_local_without_unused_camera_or_children(self):
         settings, analyzed = self.rows("Piece of Heart")
         self.assertEqual(set(analyzed["SubFlowList"]), {
-            "GetPouchContent", "Dm_SY_GetInEvent", "Dm_SY_Get", "ReceiptHealthFixture"})
-        self.assertEqual(set(analyzed["ChildEventList"]), {"FixtureChild", "FixtureGrandchild"})
+            "GetPouchContent", "Dm_SY_GetInEvent"})
+        self.assertNotIn("ChildEventList", analyzed)
         self.assertNotIn("RecordedCameraInfo", analyzed)
         self.assertEqual(settings["EventSoundSetting"], PICKUP_SOUND)
         self.assertIn("FellingInGameFlowchartEvent.", settings["EventSettingComponentList"])

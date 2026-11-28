@@ -71,6 +71,7 @@ class ShopRecordTests(unittest.TestCase):
             (mod / "Mals/USen.Product.110.sarc.zs").write_bytes(b"fixture")
             (romfs / "Mals/ignore.txt").write_bytes(b"untouched")
             with patch("ootrr_triforce.ap_shops.run_engine", return_value="prepared") as engine, \
+                 patch("ootrr_triforce.shop_layout.prepare_shop_layout"), \
                  patch("ootrr_triforce.shop_events.prepare_shop_events", return_value={"ok": True}):
                 self.assertEqual(prepare_shops(romfs, mod, self.roster, self.settings), {"ok": True})
             self.assertEqual(engine.call_args.args[0], "shops")

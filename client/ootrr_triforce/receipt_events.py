@@ -212,10 +212,7 @@ def build_receipt_flow(raw, token, names=None):
     if any(entry.name.startswith(PREFIX) or entry.name == SILENT_ENTRY
            for entry in editor.chart.entry_points):
         raise ValueError(tr('Archipelago receipts are already prepared.'))
-    silent_acknowledgement = editor.action("OOTRR_APSilentAcknowledge", "GameDataActor",
-                                          "EventTriggerAddOrSubGameDataInt",
-                                          {"GameDataName": CURSOR_PREFIX + token, "Index": -1, "Value": 1})
-    _silent_grant(editor, silent_acknowledgement)
+    _silent_grant(editor, None)
 
     def action(name, command, params):
         return editor.action(name, "GameDataActor", command, params)
@@ -233,16 +230,16 @@ def build_receipt_flow(raw, token, names=None):
         return node
 
     def finish(stem, actor=None):
-        # No animation, popup, wait or save occurs between the native grant
-        # and this cursor update. Both use the game's GameData update queue.
+        # A container/piece's life effect lives in the native CheckHeart call,
+        # separately from its pouch add. Finish that effect before committing
+        # the received index and asking the game to save.
         save = editor.action(stem + "_Save", "GameSystemActor", "EventTriggerRequestAutoSave", None)
-        after = save
+        after = integer(stem + "_Acknowledge", CURSOR_PREFIX + token, save)
         if actor is not None:
             refresh = editor.subflow(stem + "_Refresh", "Dm_SY_Get", "CheckHeart", {"ActorName": actor})
             link(refresh, after)
             after = refresh
-        return (integer(stem + "_Acknowledge", CURSOR_PREFIX + token, after)
-                if actor is None else after)
+        return after
 
     def grant(stem, actor):
         from .native_presentations import append_starter_kit
@@ -319,6 +316,7 @@ def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, nat
     """V2: native pickup/short/major gets, one inventory effect and AP ack."""
     from evfl.common import Argument
     from evfl.entry_point import EntryPoint
+    from evfl.event import SubFlowEvent
     from evfl.util import make_index
     from oot_rando.patching.progressive import FlowEditor, link
     from .native_presentations import (AMMO_BAGS, PRESENTER_NAME, PRESENTER_PATH,
@@ -335,7 +333,7 @@ def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, nat
         raise ValueError(tr('Archipelago receipts are already prepared.'))
     ack = pouch.action("OOTRR_APVisualAcknowledge", "GameDataActor", "EventTriggerAddOrSubGameDataInt",
                        {"GameDataName": CURSOR_PREFIX + token, "Index": -1, "Value": 1})
-    _silent_grant(pouch, ack, entry_name="OOTRR_APVisualGrant", prefix="OOTRR_APVisualNative")
+    _silent_grant(pouch, None, entry_name="OOTRR_APVisualGrant", prefix="OOTRR_APVisualNative")
     entries = {}
     for name in names:
         metadata, item_id = ITEM_DATA[name], ITEM_IDS[name]
@@ -355,6 +353,8 @@ def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, nat
         style = receipt_style(metadata, native_info)
         recipe = append_recipe(pouch, metadata, core_name, "OOTRR_APVisualGrant", ack,
                                pickup=style == "pickup")
+        if isinstance(recipe.data, SubFlowEvent):
+            link(recipe, ack)
         root = recipe
         if style != "pickup":
             window = pouch.subflow(core_name + "_Window", "", "DisplayGetByActorName",

@@ -164,6 +164,7 @@ def build_restoration_flow(raw, roster, settings=None):
         settle = EntryPoint(TRADE_RECONCILE)
         settle.main_event = make_index(append_reconcile(editor, PREFIX + "SharedTradeState", None))
         chart.entry_points.append(settle)
+    shared_effects = {}
     for record in records:
         stem = event_name(record["id"])
         done = status(stem + "_Done", record["id"])
@@ -194,19 +195,26 @@ def build_restoration_flow(raw, roster, settings=None):
         reward = commit
         if record["local"] and ITEM_DATA[record["item"]].get("mode") != "trap":
             metadata = ITEM_DATA[record["item"]]
-            core_name = stem + "_Pouch"
-            recipe = append_recipe(editor, metadata, core_name, grant_entry, commit, pickup=True)
-            if isinstance(recipe.data, SubFlowEvent):
-                recipe.data.params.data["IsShowNumDisplay"] = False
-                recipe.data.params.data["IsTreasureBox"] = False
-                editor.expected[recipe.name] = dict(recipe.data.params.data)
-                link(recipe, commit)
-            core = EntryPoint(core_name)
-            core.main_event = make_index(recipe)
-            chart.entry_points.append(core)
+            # The native effect depends on the item, not the source that earned
+            # it. Return from a shared quiet core before each source commits its
+            # own flags, stock, trade state, save and restoration status.
+            core_name = shared_effects.get(record["item"])
+            if core_name is None:
+                core_name = PREFIX + "Item_" + str(ITEM_IDS[record["item"]]) + "_Pouch"
+                recipe = append_recipe(editor, metadata, core_name, grant_entry, None, pickup=True)
+                if isinstance(recipe.data, SubFlowEvent):
+                    recipe.data.params.data["IsShowNumDisplay"] = False
+                    recipe.data.params.data["IsTreasureBox"] = False
+                    editor.expected[recipe.name] = dict(recipe.data.params.data)
+                core = EntryPoint(core_name)
+                core.main_event = make_index(recipe)
+                chart.entry_points.append(core)
+                shared_effects[record["item"]] = core_name
 
             def give(branch, actor):
-                return editor.subflow(branch + "_Give", "", core_name, {"ActorName": actor})
+                call = editor.subflow(branch + "_Give", "", core_name, {"ActorName": actor})
+                link(call, commit)
+                return call
 
             reward = append_tier_choice(editor, metadata, stem, give, no_ammo=commit)
             if metadata.get("bottle_item") and metadata.get("pouch_special") == "NotPushToPouch":

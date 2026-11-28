@@ -238,7 +238,12 @@ class PresentedReceiptTests(unittest.TestCase):
         self.assertEqual(commands["FixtureItemWindow"], 1)
         sound = next(params["Sound"] for command, params in trace if command == "FixtureNativeSound")
         self.assertEqual(sound, "native-important" if important else "native-minor")
-        self.assertEqual(commands["FixtureCheckHeart"], int(not is_cure(ITEM_DATA[name])))
+        # Heart growth belongs to the pouch recipe now, before the saved
+        # cursor, rather than the presenter's later native refresh callback.
+        heart_growth = ITEM_DATA[name]["actor"] in {"Obj_Heart_Container", "Obj_Heart_Piece"}
+        self.assertEqual(commands["FixtureCheckHeart"], int(not (is_cure(ITEM_DATA[name]) or heart_growth)))
+        if heart_growth:
+            self.assertEqual(commands["EventTriggerRecoverByCureItem"], 1)
         effects = {"EventTriggerAddOrRemovePouchContent", "EventTriggerRecoverByCureItem",
                    "EventTriggerPushToEmptyBottle", "EventGetDungeonSmallKey", "EventGetDungeonBossKey",
                    "EventGetDungeonCompass", "EventGetDungeonMap"}

@@ -324,23 +324,28 @@ pub fn selected(seed: &SeedFile) -> Result<Json> {
 /// The native fill deliberately allows optional rewards outside its progression
 /// proof. Keep these locations explicit instead of silently leaving them local
 /// or pretending that an arbitrary missing sphere is safe.
+pub(super) fn optional_reason(name: &str) -> Option<&'static str> {
+    Some(match name {
+        "Colossus Freestanding PoH" | "DMC Volcano Freestanding PoH" | "DMT Freestanding PoH" =>
+            "The native logic requires a planted bean route that this rolled world did not prove.",
+        "LW GS Above Theater" | "ZR GS Near Raised Grottos" =>
+            "The native conservative Skulltula rule requires a bean route that this rolled world did not prove.",
+        "Kak 100 Gold Skulltula Reward" =>
+            "The native search did not prove all one hundred tokens with its mapped token sources.",
+        "LW Ocarina Memory Game" =>
+            "The native imported rule requires individual ocarina-button items that the remake does not shuffle.",
+        _ => return None,
+    })
+}
+
 pub fn optional_sources(seed: &SeedFile, spheres: &[Vec<(String, String)>]) -> Result<Json> {
     let proven: BTreeSet<&str> = spheres.iter().flatten().map(|(name, _)| name.as_str()).collect();
     let selected = selected(seed)?;
     let mut optional = Vec::new();
     for (name, _) in selected.as_obj().ok_or("native sources are not an object")? {
         if proven.contains(name.as_str()) { continue; }
-        let reason = match name.as_str() {
-            "Colossus Freestanding PoH" | "DMC Volcano Freestanding PoH" | "DMT Freestanding PoH" =>
-                "The native logic requires a planted bean route that this rolled world did not prove.",
-            "LW GS Above Theater" | "ZR GS Near Raised Grottos" =>
-                "The native conservative Skulltula rule requires a bean route that this rolled world did not prove.",
-            "Kak 100 Gold Skulltula Reward" =>
-                "The native search did not prove all one hundred tokens with its mapped token sources.",
-            "LW Ocarina Memory Game" =>
-                "The native imported rule requires individual ocarina-button items that the remake does not shuffle.",
-            _ => return Err(format!("native randomized source has no access proof or known optional rule: {name}").into()),
-        };
+        let reason = optional_reason(name).ok_or_else(||
+            format!("native randomized source has no access proof or known optional rule: {name}"))?;
         optional.push((name.clone(), Json::obj().with("reason", reason.into())));
     }
     Ok(Json::Obj(optional))

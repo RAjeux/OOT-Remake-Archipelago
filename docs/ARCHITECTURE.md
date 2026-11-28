@@ -91,6 +91,21 @@ saved Bool keys, not only a Struct member pointing to a differently named spare.
 converted frozen chests while preserving native aliases and saved data. The
 client reads those same canonical hashes on every supported native host.
 
+Preparation orders matter. Personal shelves first receive their AP selection
+identity, native pose and measured display transform. Receipt and physical
+callbacks are followed by quiet restoration, skipped-opening rewards and stock
+tracking. Identical restoration item cores are shared; source guards, stock,
+deferred results and saves remain attached to each check.
+
+`dispatch_banks.py` runs after those adapters and before the final trade seals.
+It replaces only long AP identity-chain boundaries with local tail calls,
+forwarding the original arguments. The native binder recursively visits switch
+branches, so valid serialized indices alone do not establish safe traversal.
+Keep this pass last: earlier native-source extraction deliberately recognizes
+the original dispatcher shape. Tests verify exact selector equivalence, native
+fallback, typed forwarding, unchanged external dependencies and idempotence.
+See the [native and network validation record](OVERNIGHT-VALIDATION.md).
+
 See [selective upstream integration](UPSTREAM-INTEGRATION.md) for the retained
 constructor boundary, source import tools and features intentionally not copied.
 The [Longshot source prototype](LONGSHOT-PROTOTYPE.md) has its own experimental

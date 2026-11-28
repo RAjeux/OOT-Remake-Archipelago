@@ -78,4 +78,10 @@ def prepare_shops(romfs, mod, roster, settings):
     if not messages:
         raise ValueError(tr('Shop text archives were not found in Mals.'))
     print(run_engine("shops", {"shops": records, "messages": messages}, romfs, mod).strip(), flush=True)
+    from .shop_identity import prepare_shop_identities
+    prepare_shop_identities(romfs, mod, records)
+    from .shop_poses import prepare_shop_poses
+    prepare_shop_poses(romfs, mod, records)
+    from .shop_layout import prepare_shop_layout
+    prepare_shop_layout(romfs, mod, records)
     return prepare_shop_events(romfs, mod, records)

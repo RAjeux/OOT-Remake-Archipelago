@@ -27,16 +27,36 @@ fn inspect_settings(j: &Json) -> Result<()> {
     Ok(())
 }
 
+#[path = "ootrr_ap/modern_proof.rs"]
+mod modern_proof;
+
 fn generate(j: &Json) -> Result<()> {
     let settings = read_settings(j)?;
-    let g = slice::generate_with(&settings, field(j, "seed")?, &GenOpts::default())?;
-    let waves = g.spheres.iter().map(|row| Json::strs(row.iter().map(|(loc, _)| loc.as_str()))).collect();
+    let seed = field(j, "seed")?;
+    let (g, vanilla_donor) = match slice::generate_with(&settings, seed, &GenOpts::default()) {
+        Ok(g) => (g, false),
+        Err(e) => {
+            let message = e.to_string();
+            if settings.text("shuffle_chests")? != "off" || settings.text("shuffle_skulltulas")? != "matched"
+                || !message.contains(slice::fill::SHORT)
+                || !message.contains(" items (Gold Skulltula Token) can only go to ") { return Err(e.into()); }
+            let data = ootrr_core::slice::data::Data::load()?;
+            (slice::generate::generate_data_vanilla_donor(&data, &settings, seed, &GenOpts::default())?, true)
+        }
+    };
     let extra = additional_sources::selected(&settings)?;
-    let sources = additional_sources::merge(network_sources::selected(&g.seed_file)?, &extra, &settings)?;
-    let optional = network_sources::optional_sources(&g.seed_file, &g.spheres)?;
+    let native_sources = network_sources::selected(&g.seed_file)?;
+    let sources = additional_sources::merge(native_sources.clone(), &extra, &settings)?;
     let features = j.get("features").cloned().unwrap_or_else(Json::obj);
     let (world, placement) = ootrr_core::slice::modern::rebuild(&g.seed_file, &features)?;
-    let access = access_logic::from_world(&world, &placement, &sources)?;
+    let mut access = access_logic::from_world(&world, &placement, &sources)?;
+    if vanilla_donor {
+        access = access.with("constructor_donor", Json::obj().with("schema", 1_i64.into())
+            .with("mode", "native_vanilla".into()).with("reason", "native_token_capacity".into()));
+    }
+    let proof = modern_proof::supplement(&world, &placement, &native_sources, &sources, &g.spheres)?;
+    let waves = proof.iter().map(|row| Json::strs(row.iter().map(|(loc, _)| loc.as_str()))).collect();
+    let optional = network_sources::optional_sources(&g.seed_file, &proof)?;
     let mut output = Json::obj().with("seed_file", g.seed_file.to_json()).with("waves", Json::Arr(waves))
         .with("access_logic", access)
         .with("network_sources_schema", 2_i64.into()).with("network_sources", sources)
@@ -579,5 +599,38 @@ mod tests {
         let cleanup_parent = env::temp_dir().canonicalize().unwrap();
         assert_eq!(cleanup_root.parent(), Some(cleanup_parent.as_path()));
         fs::remove_dir_all(cleanup_root).unwrap();
+    }
+}
+
+#[cfg(test)]
+mod vanilla_donor_tests {
+    use super::*;
+    use ootrr_core::slice::{data::Data, generate::generate_data_vanilla_donor};
+    use ootrr_core::settings::Value;
+    fn settings() -> Settings {
+        let mut s=Settings::default();
+        for (key,value) in [("shuffle_chests","off"),("shuffle_skulltulas","matched"),("shuffle_freestanding_items","all"),("shuffle_rewards","off")] {
+            s.set(key,Value::s(value)).unwrap();
+        }
+        s
+    }
+    #[test]
+    fn native_vanilla_donor_preserves_all_original_tokens_and_physical_sources() {
+        let s=settings();let d=Data::load().unwrap();
+        assert!(slice::generate_with(&s,"native-donor-proof",&GenOpts::default()).unwrap_err().to_string().contains(slice::fill::SHORT));
+        let g=generate_data_vanilla_donor(&d,&s,"native-donor-proof",&GenOpts::default()).unwrap();
+        assert_eq!(g.seed_file.placements.values().filter(|i|i.as_str()=="Gold Skulltula Token").count(),100);
+        for (source,item) in &g.seed_file.placements {
+            if slice::skulls::is_skull(&d,source) || slice::pickups::listed(&d,source) {
+                assert_eq!(Some(item.as_str()),d.vanilla_of(source),"{source}");
+            }
+        }
+        assert_eq!(g.seed_file.settings_string,s.encode().unwrap());
+        assert!(g.spheres.iter().flatten().any(|(name,_)|name=="Ganon"));
+    }
+    #[test]
+    fn standalone_plando_is_never_ignored_by_vanilla_donor_mode() {
+        let mut options=GenOpts::default();options.plando.push(slice::plando::Entry{location:"Colossus GS Tree".into(),item:"Rupee (1)".into()});
+        assert!(generate_data_vanilla_donor(&Data::load().unwrap(),&settings(),"plando",&options).unwrap_err().to_string().contains("plando"));
     }
 }

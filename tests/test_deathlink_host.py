@@ -54,6 +54,11 @@ header = r'''
 #include <stddef.h>
 
 typedef int Ctx;
+typedef struct { int held; } SRWLOCK;
+#define SRWLOCK_INIT {0}
+static void AcquireSRWLockExclusive(SRWLOCK *lock) { assert(!lock->held); lock->held=1; }
+static void ReleaseSRWLockExclusive(SRWLOCK *lock) { assert(lock->held); lock->held=0; }
+static void reset_lifecycle_model(void);
 enum { OOT_GAMEDATA_SLOT = 20, OOT_EVENTMGR_SLOT = 21 };
 static uint64_t core[1024], components_memory[128], controller_memory[64], action_memory[16], actor_memory, event_manager[16];
 static struct Life { uint64_t type; int32_t current; uint32_t hash; } life, max_life;
@@ -143,6 +148,7 @@ static int death_api(int state) {
 static int (*ap_death16)(int) = death_api;
 
 static void reset(void) {
+    reset_lifecycle_model();
     memset(core, 0, sizeof core);
     memset(components_memory, 0, sizeof components_memory);
     memset(controller_memory, 0, sizeof controller_memory);
@@ -168,6 +174,12 @@ static void reset(void) {
 }
 '''
 checks = r'''
+static void reset_lifecycle_model(void) {
+    assert(!ap_lifecycle_lock16.held);
+    ap_lifecycle_mgr16=ap_lifecycle_generation16=ap_lifecycle_observed16=0;
+    ap_lifecycle_active16=ap_lifecycle_paused16=ap_lifecycle_loading16=0;
+    ap_lifecycle_dirty16=0;
+}
 static void blocked(Ctx *c, uint64_t actor, uint64_t components) {
     uint64_t before_core[1024], before_components[128];
     struct Life before_life = life, before_max = max_life;
@@ -309,6 +321,49 @@ int main(void) {
         assert(state_count==3 && states[1]==-1 && states[2]==1);
         assert(!remote_pending && !model_outgoing_deaths && !gd_count && !marks);
     }
+    /* Pause intent can arrive on another native worker just before its Bool
+       queue has drained, and no player callback need run until the menu closes. */
+    reset();assert(ap_player16(&c,actor,components,1000000000));
+    ootrr_ap_gamedata_bool16(123,0x604aebe1u,1,"fixture");
+    assert(model_death_state==2 && ap_lifecycle_paused16);
+    assert(ap_delivery_ready16 && ap_lifecycle_blocked16());
+    assert(ap_player16(&c,actor,components,1100000000) && !ap_delivery_ready16);
+    remote_pending=1;
+    ootrr_ap_gamedata_bool16(123,0x604aebe1u,0,"fixture");
+    assert(ap_lifecycle_blocked16());
+    paused=1;assert(ap_player16(&c,actor,components,9000000000) && life.current==12);
+    paused=0;assert(!ap_player16(&c,actor,components,9100000000));
+    assert(life.current==0 && !remote_pending && !model_outgoing_deaths && marks==1);
+
+    reset();assert(ap_player16(&c,actor,components,1000000000));
+    ootrr_ap_gamedata_bool16(123,0x604aebe1u,1,"fixture");
+    ootrr_ap_gamedata_bool16(123,0x604aebe1u,0,"fixture");
+    assert(ap_delivery_ready16 && ap_lifecycle_blocked16());
+    assert(ap_player16(&c,actor,components,1100000000));
+    assert(ap_delivery_ready16 && !ap_lifecycle_blocked16() && !ap_lifecycle_dirty16);
+
+    /* A whole loading pulse between callbacks invalidates the old life even
+       when the manager, player, core and life addresses are all reused. */
+    reset();assert(ap_player16(&c,actor,components,1000000000));
+    const uint64_t before_epoch=ap_delivery_epoch16;
+    ootrr_ap_gamedata_bool16(123,0x604aebe1u,1,"fixture");remote_pending=1;
+    ootrr_ap_gamedata_bool16(123,0xef2b60c2u,1,"fixture");
+    assert(!remote_pending && !ap_lifecycle_active16);
+    ootrr_ap_gamedata_bool16(123,0x604aebe1u,1,"fixture");
+    assert(!ap_lifecycle_paused16 && model_death_state==-1);
+    assert(!ap_player16(&c,actor,components,1200000000));
+    ootrr_ap_gamedata_bool16(123,0xef2b60c2u,0,"fixture");
+    assert(ap_player16(&c,actor,components,3000000000) && life.current==12);
+    assert(ap_delivery_epoch16==before_epoch+1 && !model_outgoing_deaths && !marks);
+
+    reset();
+    ootrr_ap_gamedata_bool16(123,0x604aebe1u,1,"fixture");
+    assert(!state_count && !ap_lifecycle_active16 && !ap_lifecycle_paused16);
+    assert(ap_player16(&c,actor,components,1000000000));
+    const int before_calls=state_count;
+    ootrr_ap_gamedata_bool16(124,0x604aebe1u,1,"fixture");
+    ootrr_ap_gamedata_bool16(123,0x12345678u,1,"fixture");
+    assert(state_count==before_calls && !ap_lifecycle_paused16);
     return 0;
 }
 '''
@@ -322,4 +377,4 @@ executable = home / ("check_deathlink_host.exe" if os.name == "nt" else "check_d
 compiler = os.environ.get("CC") or shutil.which("gcc") or "clang"
 subprocess.run([compiler, "-std=c11", "-Wall", "-Werror", str(c_file), "-o", str(executable)], check=True)
 subprocess.run([str(executable)], check=True)
-print("PASS actual host helpers: title/save/loading/type/context guards; native action whitelist, pause/unknown/fishing/crawl/animation deferral; no temporary-state epoch reset; atomic remote life zero, MaxLife preservation and acknowledgement.")
+print("PASS actual host helpers: title/save/loading/type/context guards; native action whitelist, pause/unknown/fishing/crawl/animation deferral; callback-free pause retention, same-address loading invalidation and inactive-manager guards; no temporary-state epoch reset; atomic remote life zero, MaxLife preservation and acknowledgement.")

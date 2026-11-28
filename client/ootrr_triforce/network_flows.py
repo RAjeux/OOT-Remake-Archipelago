@@ -206,7 +206,7 @@ class NativeReward:
         from evfl.common import Argument
         from evfl.container import Container
         from oot_rando.patching.progressive import FlowEditor
-        from .native_presentations import copy_entry, is_cure
+        from .native_presentations import copy_entry, owns_health_refresh
         key = (flow, entry)
         if key in self.copies:
             return self.copies[key]
@@ -271,7 +271,7 @@ class NativeReward:
             action = getattr(getattr(data, "actor_action", None), "v", None)
             if getattr(action, "v", None) == "EventTriggerSetHavePlayedGetEvent":
                 return True
-            return ("local_item" in self.record and is_cure(ITEM_DATA[self.record["local_item"]])
+            return ("local_item" in self.record and owns_health_refresh(ITEM_DATA[self.record["local_item"]])
                     and getattr(data, "res_flowchart_name", None) == "Dm_SY_Get"
                     and getattr(data, "entry_point_name", None) == "CheckHeart")
 

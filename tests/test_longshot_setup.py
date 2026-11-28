@@ -33,11 +33,28 @@ class LongshotTests(unittest.TestCase):
         self.assertIn(b"OOTRR_AP_BASE", changed)
         self.assertIn(b'#include "ootrr_ap_longshot_event.inc"', changed)
         self.assertIn(b"if (!ap_event_mode16 || !ap_cursor16", changed)
+        self.assertIn(b"now<next || ap_lifecycle_blocked16()) return;", changed)
+        self.assertIn(b"static int ap_player_inner16", changed)
+        self.assertIn(b"static int ap_player16", changed)
         self.assertIn(b"hos_save_dir_chosen()", changed)
         self.assertIn(b"_stricmp(ap_chosen_saves,ap_expected_saves)", changed)
         self.assertNotIn(b"const Ctx saved", changed)
         self.assertNotIn(b"a64_lookup(", changed)
         self.assertEqual(path.read_bytes(), original)
+
+    def test_reviewed_legacy_gate_is_supported_and_unknown_gates_fail_closed(self):
+        original = (ROOT / "native/ootrr_archipelago.inc").read_bytes()
+        current = b"    if (!ap_cursor16 || now<next || ap_lifecycle_blocked16()) return;"
+        legacy = b"    if (!ap_cursor16 || now<next) return;"
+        self.assertEqual(original.count(current), 1)
+        known_legacy = original.replace(current, legacy)
+        changed = setup.isolated_bridge(known_legacy)
+        self.assertIn(b"if (!ap_event_mode16 || !ap_cursor16 || now<next) return;", changed)
+        for raw in (original.replace(current, b"    if (!ap_cursor16) return;"),
+                    original + b"\n" + current,
+                    original + b"\n" + legacy):
+            with self.subTest(source=raw[-120:]), self.assertRaises(setup.LongshotError):
+                setup.isolated_bridge(raw)
 
     def test_private_launch_overrides_inherited_host_profile_without_changing_the_input(self):
         previous = {"LONGSHOT_PROFILE": "another profile", "HOS_MODS": "another mod"}

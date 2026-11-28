@@ -11,6 +11,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "client"))
 from ootrr_triforce.native_setup import BUILD_MARK, MENU_BUILD_MARK, MENU_FILES, compiled_game, runtime_cache_name
+from ootrr_triforce.native_lifecycle import BUILD_MARK as LIFECYCLE_BUILD_MARK, LIFT_FILES
 from ootrr_triforce import native_setup
 
 
@@ -28,11 +29,13 @@ class CompiledGameTests(unittest.TestCase):
             (tools / "host").mkdir(parents=True)
             (tools / "gpu/vk").mkdir(parents=True)
             for path in [*(tools / "host" / name for name in native_setup.RT_FILES),
+                         *(tools / "nx2" / name for name in (*LIFT_FILES, "oot_patches.py")),
                          *(tools / "gpu/vk" / name for name in (*MENU_FILES, "vk_menu.cpp"))]:
+                path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_bytes(b"unchanged AP adapter")
                 os.utime(path, ns=(1_000_000_000, 1_000_000_000))
             executable, renderer = romfs.parent / "Triforce.exe", romfs.parent / "triforce_vk.dll"
-            executable.write_bytes(BUILD_MARK + hashlib.sha256(module).digest())
+            executable.write_bytes(BUILD_MARK + LIFECYCLE_BUILD_MARK + hashlib.sha256(module).digest())
             renderer.write_bytes(MENU_BUILD_MARK)
             for path in (executable, renderer):
                 os.utime(path, ns=(2_000_000_000, 2_000_000_000))
@@ -68,18 +71,22 @@ class CompiledGameTests(unittest.TestCase):
             expected = hashlib.sha256(b"current DLL").digest()
             old = hashlib.sha256(b"previous DLL").digest()
             with patch.object(sys, "argv", [str(root / "release/Client-OOT-Remake.pyz")]):
-                executable.write_bytes(BUILD_MARK + expected)
+                executable.write_bytes(BUILD_MARK + LIFECYCLE_BUILD_MARK + expected)
                 self.assertFalse(compiled_game(romfs), "A missing bundle cannot certify a build.")
                 dll.write_bytes(b"current DLL")
-                for binary in (b"", BUILD_MARK, BUILD_MARK + old, expected):
+                for binary in (b"", BUILD_MARK + LIFECYCLE_BUILD_MARK,
+                               BUILD_MARK + LIFECYCLE_BUILD_MARK + old, LIFECYCLE_BUILD_MARK + expected):
                     executable.write_bytes(binary)
                     self.assertFalse(compiled_game(romfs))
-                executable.write_bytes(BUILD_MARK + b"\0" * 32 + expected)
+                executable.write_bytes(BUILD_MARK + LIFECYCLE_BUILD_MARK + b"\0" * 32 + expected)
                 self.assertFalse(compiled_game(romfs), "The Options menu renderer must be rebuilt too.")
                 renderer.write_bytes(b"old renderer")
                 self.assertFalse(compiled_game(romfs))
                 renderer.write_bytes(MENU_BUILD_MARK)
                 self.assertTrue(compiled_game(romfs))
+                executable.write_bytes(BUILD_MARK + expected)
+                self.assertFalse(compiled_game(romfs), "The player callback alone does not observe suspended inventory pauses.")
+                executable.write_bytes(BUILD_MARK + LIFECYCLE_BUILD_MARK + expected)
                 tools = root / "tools"
                 host = tools / "host"
                 host.mkdir(parents=True)
@@ -92,6 +99,11 @@ class CompiledGameTests(unittest.TestCase):
                 for name in (*MENU_FILES, "vk_menu.cpp"):
                     helper = menu / name
                     helper.write_bytes(b"installed menu adapter")
+                    os.utime(helper, ns=(1_000_000_000, 1_000_000_000))
+                for name in (*LIFT_FILES, "oot_patches.py"):
+                    helper = tools / "nx2" / name
+                    helper.parent.mkdir(parents=True, exist_ok=True)
+                    helper.write_bytes(b"installed native lift adapter")
                     os.utime(helper, ns=(1_000_000_000, 1_000_000_000))
                 os.utime(executable, ns=(2_000_000_000, 2_000_000_000))
                 os.utime(renderer, ns=(2_000_000_000, 2_000_000_000))

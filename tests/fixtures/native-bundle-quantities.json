@@ -3,6 +3,36 @@
   "resource": "RSDB/PouchActorInfo.Product.111.rstbl.byml.zs",
   "decoded_sha256": "ff56b92eeb7162b04a6137b8c78ecbf8b94a4eac0b6ae64f4e23cb1edf8d6a96",
   "actors": {
+    "Item_AgonyStone": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "AgonyStone"
+    },
+    "Item_AlarmCucco": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Arrow_Fire": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Bow",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Arrow_Ice": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Bow",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Arrow_Light": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Bow",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
     "Item_Arrow_Normal": {
       "BundleActorNum": 1,
       "MaxNumGameData": "Arrow",
@@ -19,11 +49,189 @@
       "PouchSpecialDeal": "None",
       "SmallBagActor": "Work/Actor/Item_BombBag_Small.engine__actor__ActorParam.gyml"
     },
+    "Item_BombBag_Large": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "Bomb",
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_BombBag_Medium": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "Bomb",
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_BombBag_Small": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "Bomb",
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
     "Item_BombBundle_Small": {
       "BundleActor": "Work/Actor/Item_Bomb.engine__actor__ActorParam.gyml",
       "BundleActorNum": 5,
       "PouchCategory": "Material",
       "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Bombchu": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "Bomb",
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None",
+      "SmallBagActor": "Work/Actor/Item_BombBag_Small.engine__actor__ActorParam.gyml"
+    },
+    "Item_BombchuBundle_Large": {
+      "BundleActor": "Work/Actor/Item_Bombchu.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 20,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_BombchuBundle_Medium": {
+      "BundleActor": "Work/Actor/Item_Bombchu.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 10,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_BombchuBundle_Small": {
+      "BundleActor": "Work/Actor/Item_Bombchu.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 5,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Boomerang": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Bottle": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "Bottle"
+    },
+    "Item_Bottle_BigPoe": {
+      "BottleItem": "BigPoe",
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "Bottle"
+    },
+    "Item_Bottle_BlueFire": {
+      "BottleItem": "BlueFire",
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "Bottle"
+    },
+    "Item_Bottle_BluePotion": {
+      "BottleItem": "BluePotion",
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "Bottle"
+    },
+    "Item_Bottle_Bug": {
+      "BottleItem": "Bug",
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "Bottle"
+    },
+    "Item_Bottle_Fairy": {
+      "BottleItem": "Fairy",
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "Bottle"
+    },
+    "Item_Bottle_Fish": {
+      "BottleItem": "Fish",
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "Bottle"
+    },
+    "Item_Bottle_GreenPotion": {
+      "BottleItem": "GreenPotion",
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "Bottle"
+    },
+    "Item_Bottle_Letter": {
+      "BottleItem": "Letter",
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "Bottle"
+    },
+    "Item_Bottle_Milk": {
+      "BottleItem": "MaxMilk",
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "Bottle"
+    },
+    "Item_Bottle_Poe": {
+      "BottleItem": "Poe",
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "Bottle"
+    },
+    "Item_Bottle_RedPotion": {
+      "BottleItem": "RedPotion",
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "Bottle"
+    },
+    "Item_BrokenSword": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_BulletBag_Large": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "DekuSeed",
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_BulletBag_Medium": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "DekuSeed",
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_BulletBag_Small": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "DekuSeed",
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_ClaimCheck": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_CojiroCucco": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
       "PouchSpecialDeal": "None"
     },
     "Item_DekuNut": {
@@ -42,10 +250,632 @@
       "PouchSpecialDeal": "None",
       "SmallBagActor": "Work/Actor/Item_BulletBag_Small.engine__actor__ActorParam.gyml"
     },
+    "Item_DekuStick": {
+      "BundleActorNum": 1,
+      "IsAbleToGetBagIfGet": true,
+      "MaxNumGameData": "DekuStick",
+      "PouchCategory": "Material",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None",
+      "SmallBagActor": "Work/Actor/Item_StickBag_Small.engine__actor__ActorParam.gyml"
+    },
+    "Item_DekuStickBundle_Small": {
+      "BundleActor": "Work/Actor/Item_DekuStick.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 3,
+      "PouchCategory": "Material",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_DinFire": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Heart",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Dungeon_BossKey": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "NotPushToPouch"
+    },
+    "Item_Dungeon_Compass": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "NotPushToPouch"
+    },
+    "Item_Dungeon_Map": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "NotPushToPouch"
+    },
+    "Item_Dungeon_SmallKey": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "SmallKey"
+    },
+    "Item_EyeDrop": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_EyeballFrog": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_FairyBless_DefenseDouble": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Heart",
+      "PouchSpecialDeal": "FairyBlessDefenseDouble"
+    },
+    "Item_FairyBless_MP": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Heart",
+      "PouchSpecialDeal": "FairyBlessMP"
+    },
+    "Item_FairyBless_MPDouble": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Heart",
+      "PouchSpecialDeal": "FairyBlessMPDouble"
+    },
+    "Item_FaroreWind": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Heart",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Gauntlet_Gold": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "Gauntlet"
+    },
+    "Item_Gauntlet_Goron": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "GoronGauntlet"
+    },
+    "Item_Gauntlet_Silver": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "Gauntlet"
+    },
+    "Item_GlassTruth": {
+      "BundleActorNum": 1,
+      "PouchCategory": "HeadArmor",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "GlassTruth"
+    },
+    "Item_Hammer": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_HeavyBoot": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Boot",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Hookshot": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_HoverBoot": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Boot",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Longshot": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_MagicBean": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Mask_Bunny": {
+      "BundleActorNum": 1,
+      "PouchCategory": "HeadArmor",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Mask_Gerudo": {
+      "BundleActorNum": 1,
+      "PouchCategory": "HeadArmor",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Mask_Goron": {
+      "BundleActorNum": 1,
+      "PouchCategory": "HeadArmor",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Mask_Keaton": {
+      "BundleActorNum": 1,
+      "PouchCategory": "HeadArmor",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Mask_Skull": {
+      "BundleActorNum": 1,
+      "PouchCategory": "HeadArmor",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Mask_Spooky": {
+      "BundleActorNum": 1,
+      "PouchCategory": "HeadArmor",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Mask_Truth": {
+      "BundleActorNum": 1,
+      "PouchCategory": "HeadArmor",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Mask_Zora": {
+      "BundleActorNum": 1,
+      "PouchCategory": "HeadArmor",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Medal_Fire": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Medal_Forest": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Medal_Light": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Medal_Shadow": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Medal_Spirit": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Medal_Water": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Melody_EponaSong": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "Melody"
+    },
+    "Item_Melody_FireBolero": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "Melody"
+    },
+    "Item_Melody_ForestMinuet": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "Melody"
+    },
+    "Item_Melody_LightPrelude": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "Melody"
+    },
+    "Item_Melody_SariaSong": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "Melody"
+    },
+    "Item_Melody_ScarecrowSong": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "Melody"
+    },
+    "Item_Melody_ShadowNocturne": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "Melody"
+    },
+    "Item_Melody_SpiritRequiem": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "Melody"
+    },
+    "Item_Melody_StormSong": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "Melody"
+    },
+    "Item_Melody_SunSong": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "Melody"
+    },
+    "Item_Melody_TimeSong": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "Melody"
+    },
+    "Item_Melody_WaterSerenade": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "Melody"
+    },
+    "Item_Melody_ZeldaLullaby": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "Melody"
+    },
+    "Item_NayruLove": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Heart",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_NutBag_Large": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "DekuNut",
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_NutBag_Medium": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "DekuNut",
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_NutBag_Small": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "DekuNut",
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Ocarina_Fairy": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "Ocarina"
+    },
+    "Item_Ocarina_Time": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "Ocarina"
+    },
+    "Item_OddMushroom": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_OddPowder": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_PoacherSaw": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_PocketCucco": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_PocketEgg": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Prescription": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Quiver_Large": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "Arrow",
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Quiver_Medium": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "Arrow",
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Quiver_Small": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "Arrow",
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Range_Bow": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Bow",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Range_SlingShot": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Bow",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Scale_Gold": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Scale_Silver": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_ScrubBusinessSeed": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Shield_Mirror": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Shield",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_StickBag_Large": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "DekuStick",
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_StickBag_Medium": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "DekuStick",
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_StickBag_Small": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "DekuStick",
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Stone_Fire": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Stone_Forest": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Stone_Water": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Sword_Biggoron": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Weapon",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Sword_Giant": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Weapon",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Sword_Kokiri": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Weapon",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Token_Gerudo": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Token_Gold": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Medium",
+      "PouchSpecialDeal": "TokenGold"
+    },
+    "Item_Wallet_Large": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "Rupee",
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Wallet_Medium": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "Rupee",
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_Wallet_Small": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "Rupee",
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_WeirdEgg": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Item_ZeldaLetter": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Obj_Armor_Goron": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Armor",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Obj_Armor_Zora": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Armor",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Obj_Fairy": {
+      "BottleItem": "Fairy",
+      "BundleActorNum": 1,
+      "PouchCategory": "CureItem",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "NotPushToPouch"
+    },
+    "Obj_Heart": {
+      "BundleActorNum": 1,
+      "PouchCategory": "CureItem",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "NotPushToPouch"
+    },
+    "Obj_Heart_Container": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Heart",
+      "PouchSpecialDeal": "HeartContainer"
+    },
+    "Obj_Heart_Piece": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Medium",
+      "PouchSpecialDeal": "HeartPiece"
+    },
+    "Obj_MiniGame_SmallKey": {
+      "BundleActorNum": 1,
+      "PouchCategory": "KeyItem",
+      "PouchGetType": "Medium",
+      "PouchSpecialDeal": "NotPushToPouch"
+    },
+    "Obj_Rupee_Green": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "Rupee",
+      "PouchCategory": "Rupee",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None",
+      "SmallBagActor": "Work/Actor/Item_Wallet_Small.engine__actor__ActorParam.gyml"
+    },
+    "Shop_Armor_Goron": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Armor",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_Armor_Zora": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Armor",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_ArrowBundle_01": {
+      "BundleActor": "Work/Actor/Item_Arrow_Normal.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 10,
+      "PouchCategory": "Arrow",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
     "Shop_ArrowBundle_02": {
       "BundleActor": "Work/Actor/Item_Arrow_Normal.engine__actor__ActorParam.gyml",
       "BundleActorNum": 30,
       "PouchCategory": "Arrow",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_ArrowBundle_03": {
+      "BundleActor": "Work/Actor/Item_Arrow_Normal.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 50,
+      "PouchCategory": "Arrow",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_BombBundle_01": {
+      "BundleActor": "Work/Actor/Item_Bomb.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 5,
+      "PouchCategory": "Material",
       "PouchGetType": "Small",
       "PouchSpecialDeal": "None"
     },
@@ -62,6 +892,127 @@
       "PouchCategory": "Material",
       "PouchGetType": "Small",
       "PouchSpecialDeal": "None"
+    },
+    "Shop_BombBundle_04": {
+      "BundleActor": "Work/Actor/Item_Bomb.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 30,
+      "PouchCategory": "Material",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_BombchuBundle_01": {
+      "BundleActor": "Work/Actor/Item_Bombchu.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 10,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_BombchuBundle_02": {
+      "BundleActor": "Work/Actor/Item_Bombchu.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 20,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_BombchuBundle_03": {
+      "BundleActor": "Work/Actor/Item_Bombchu.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 1,
+      "MaxNumGameData": "Bomb",
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None",
+      "SmallBagActor": "Work/Actor/Item_BombBag_Small.engine__actor__ActorParam.gyml"
+    },
+    "Shop_BombchuBundle_04": {
+      "BundleActor": "Work/Actor/Item_Bombchu.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 3,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_BombchuBundle_05": {
+      "BundleActor": "Work/Actor/Item_Bombchu.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 5,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_BombchuBundle_06": {
+      "BundleActor": "Work/Actor/Item_Bombchu.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 8,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_BombchuBundle_07": {
+      "BundleActor": "Work/Actor/Item_Bombchu.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 15,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_BombchuBundle_08": {
+      "BundleActor": "Work/Actor/Item_Bombchu.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 30,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_Bottle_BlueFire": {
+      "BottleItem": "BlueFire",
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "NotPushToPouch"
+    },
+    "Shop_Bottle_Bug": {
+      "BottleItem": "Bug",
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "NotPushToPouch"
+    },
+    "Shop_Bottle_Fairy": {
+      "BottleItem": "Fairy",
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "NotPushToPouch"
+    },
+    "Shop_Bottle_Fish": {
+      "BottleItem": "Fish",
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "NotPushToPouch"
+    },
+    "Shop_Bottle_GreenPotion": {
+      "BottleItem": "GreenPotion",
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "NotPushToPouch"
+    },
+    "Shop_Bottle_HalfMilk": {
+      "BottleItem": "HalfMilk",
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "NotPushToPouch"
+    },
+    "Shop_Bottle_Poe": {
+      "BottleItem": "Poe",
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "NotPushToPouch"
+    },
+    "Shop_Bottle_RedPotion": {
+      "BottleItem": "RedPotion",
+      "BundleActorNum": 1,
+      "PouchCategory": "Material",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "NotPushToPouch"
     },
     "Shop_DekuNutBundle_01": {
       "BundleActor": "Work/Actor/Item_DekuNut.engine__actor__ActorParam.gyml",
@@ -84,9 +1035,63 @@
       "PouchGetType": "Small",
       "PouchSpecialDeal": "None"
     },
+    "Shop_DekuSeedBundle_02": {
+      "BundleActor": "Work/Actor/Item_DekuSeed.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 10,
+      "PouchCategory": "Arrow",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_DekuStick": {
+      "BundleActorNum": 1,
+      "IsAbleToGetBagIfGet": true,
+      "MaxNumGameData": "DekuStick",
+      "PouchCategory": "Material",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None",
+      "SmallBagActor": "Work/Actor/Item_StickBag_Small.engine__actor__ActorParam.gyml"
+    },
+    "Shop_DekuStickBundle_Medium": {
+      "BundleActor": "Work/Actor/Item_DekuStick.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 5,
+      "PouchCategory": "Material",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_Heart": {
+      "BundleActorNum": 1,
+      "PouchCategory": "CureItem",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "NotPushToPouch"
+    },
+    "Shop_MagicJar_Small": {
+      "BundleActorNum": 1,
+      "PouchCategory": "CureItem",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "NotPushToPouch"
+    },
+    "Shop_Weapon_Shield_Deku": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Shield",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Shop_Weapon_Shield_Hylian": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Shield",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
     "TBox_ArrowBundle_Large": {
       "BundleActor": "Work/Actor/Item_Arrow_Normal.engine__actor__ActorParam.gyml",
       "BundleActorNum": 10,
+      "PouchCategory": "Arrow",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "TBox_ArrowBundle_Medium": {
+      "BundleActor": "Work/Actor/Item_Arrow_Normal.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 5,
       "PouchCategory": "Arrow",
       "PouchGetType": "Small",
       "PouchSpecialDeal": "None"
@@ -102,6 +1107,66 @@
       "BundleActor": "Work/Actor/Item_DekuSeed.engine__actor__ActorParam.gyml",
       "BundleActorNum": 5,
       "PouchCategory": "Arrow",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "TBox_Rupee_Blue": {
+      "BundleActor": "Work/Actor/Obj_Rupee_Green.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 5,
+      "PouchCategory": "Rupee",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "TBox_Rupee_Gold": {
+      "BundleActor": "Work/Actor/Obj_Rupee_Green.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 200,
+      "PouchCategory": "Rupee",
+      "PouchGetType": "Medium",
+      "PouchSpecialDeal": "None"
+    },
+    "TBox_Rupee_Green": {
+      "BundleActorNum": 1,
+      "MaxNumGameData": "Rupee",
+      "PouchCategory": "Rupee",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None",
+      "SmallBagActor": "Work/Actor/Item_Wallet_Small.engine__actor__ActorParam.gyml"
+    },
+    "TBox_Rupee_Purple": {
+      "BundleActor": "Work/Actor/Obj_Rupee_Green.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 50,
+      "PouchCategory": "Rupee",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "TBox_Rupee_Red": {
+      "BundleActor": "Work/Actor/Obj_Rupee_Green.engine__actor__ActorParam.gyml",
+      "BundleActorNum": 20,
+      "PouchCategory": "Rupee",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "None"
+    },
+    "TBox_Shield_Deku": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Shield",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "TBox_Shield_Hylian": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Shield",
+      "PouchGetType": "Large",
+      "PouchSpecialDeal": "None"
+    },
+    "Tbox_MagicJar_Large": {
+      "BundleActorNum": 1,
+      "PouchCategory": "CureItem",
+      "PouchGetType": "Small",
+      "PouchSpecialDeal": "NotPushToPouch"
+    },
+    "Weapon_Sword_Master": {
+      "BundleActorNum": 1,
+      "PouchCategory": "Weapon",
       "PouchGetType": "Small",
       "PouchSpecialDeal": "None"
     }

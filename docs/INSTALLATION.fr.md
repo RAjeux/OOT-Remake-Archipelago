@@ -4,7 +4,7 @@
 
 ## Le bon téléchargement
 
-**[Télécharger le launcher Windows 0.10.4-alpha.8](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.8/OOT-Remake-Archipelago-0.10.4-alpha.8.exe)** · [Page de cette release](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.8)
+**[Télécharger le launcher Windows 0.10.4-alpha.9](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.9/OOT-Remake-Archipelago-0.10.4-alpha.9.exe)** · [Page de cette release](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.9)
 
 Un seul EXE suffit : le client AP, Python, Node.js et l'APWorld sont inclus. Le builder OOTRR compatible est téléchargé au premier besoin.
 
@@ -61,7 +61,7 @@ Pour les sessions suivantes, ouvre le même launcher et clique sur **Jouer**. Tu
 
 Les données sont conservées dans `%LOCALAPPDATA%\OOTRR-Archipelago`, indépendamment de l'EXE. Hookshot possède un espace séparé : changer de port ne transfère pas la sauvegarde.
 
-Après une mise à jour réussie, le launcher porte le nom de la version téléchargée dans le même dossier. L'ancien EXE est conservé dans les données privées de mise à jour, sans rester à côté du nouveau. Un raccourci que tu avais créé vers l'ancien nom peut devoir être modifié. La version 0.10.4-alpha.8 corrige les remises de récompenses de Talon et de la boutique de potions, ainsi que les médaillons et pierres invisibles pendant leur animation. Ferme Zelda et prépare le même fichier joueur si le launcher le demande : tu conserves ta salle, tes réglages, tes objets et tes sauvegardes. Les correctifs précédents de préparation, des coffres, des modèles et du démarrage sont inclus.
+Après une mise à jour réussie, le launcher porte le nom de la version téléchargée dans le même dossier. L'ancien EXE est conservé dans les données privées de mise à jour, sans rester à côté du nouveau. Un raccourci que tu avais créé vers l'ancien nom peut devoir être modifié. La version 0.10.4-alpha.9 corrige les achats personnels, l'affichage des objets en boutique, les effets des cœurs, les récompenses du début sauté et la sécurité des réceptions pendant une pause ou un chargement sur Triforce. Les correctifs de Talon, de l'apothicaire et des médaillons et pierres restent inclus. Ferme Zelda et prépare le même fichier joueur si le launcher le demande : tu conserves ta salle, tes réglages, tes objets et tes sauvegardes. Les correctifs précédents de préparation, des coffres, des modèles et du démarrage sont inclus.
 
 Tu peux continuer une salle native 0.10 avec son `.apootrr` et sa sauvegarde après avoir mis le launcher à jour. Si une préparation est demandée, ferme Zelda et prépare **le même fichier joueur compatible** : ses réglages, checks et placements restent identiques.
 

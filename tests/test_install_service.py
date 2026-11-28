@@ -136,6 +136,7 @@ class InstallationTransactionTests(unittest.TestCase):
             (self.tools / "gpu/vk/vk_api.h", b"#define HOS_SHARE_NOTICE 1"),
             (self.tools / "gpu/vk/vk_menu.cpp", (ROOT / "tests/fixtures/triforce-menu-source.cpp").read_bytes()),
             (self.tools / "nx2/build.py", b"native build entry"),
+            (self.tools / "nx2/oot_patches.py", b"original lift patches"),
             (self.game / "user/save/slot_00/progress.sav", b"original game save"),
             (self.profile / "user/save/slot_00/progress.sav", b"room save"),
             (self.profile / "native-checks.json", b'{"checked":[1,2,3]}'),
@@ -174,6 +175,9 @@ class InstallationTransactionTests(unittest.TestCase):
             put(self.tools / "host/hos_main.c", b"new host")
             for name in service.native_setup.RT_FILES:
                 put(self.tools / "host" / name, b"new helper")
+            put(self.tools / "nx2/oot_patches.py", b"new lift patches")
+            for name in service.native_setup.LIFT_FILES:
+                put(self.tools / "nx2" / name, b"new lift helper")
             return self.tools
         self.tools_install = self.stack.enter_context(patch.object(service.native_setup, "install_tools", side_effect=install_tools))
         def save_session(root, runtime, data, roster, prepared):
@@ -258,6 +262,8 @@ class InstallationTransactionTests(unittest.TestCase):
             self.assertEqual(path.read_bytes(), raw, str(path))
         self.assertFalse((self.mods / "Archipelago/romfs/new").exists())
         self.assertTrue((self.mods / "My Seed").is_dir())
+        for name in service.native_setup.LIFT_FILES:
+            self.assertFalse((self.tools / "nx2" / name).exists())
 
     def test_cancel_after_preparation_leaves_active_installation_untouched(self):
         event = threading.Event()

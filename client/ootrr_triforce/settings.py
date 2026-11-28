@@ -74,7 +74,7 @@ _BASE_SPECS = (
     _choice("open_forest", "closed", ("closed", "open"),
             "Closed keeps Mido's sword-and-shield requirement and the opening quest. Open allows access to the Deku Tree and the forest exit from the start."),
     _choice("open_kakariko", "closed", ("closed", "open"),
-            "open unlocks the Death Mountain gate and skips the Zelda visit. Requires open_forest: open; Zelda's Letter and Impa's song are granted at the start."),
+            "Open unlocks the Death Mountain gate and skips the Zelda visit. Requires open_forest: open. The two skipped rewards are claimed at the start; shuffled checks follow their Archipelago placements."),
     _choice("zora_fountain", "closed", ("closed", "open"),
             "King Zora blocks the passage normally, or never blocks it."),
     _toggle("jabu_open", False, "Enter Jabu-Jabu without a fish once King Zora no longer blocks the passage.", "World"),
@@ -294,7 +294,7 @@ def validate_options(values):
         if result["open_forest"] != "open":
             raise ValueError("open_kakariko: open requires open_forest: open.")
         if "zeldas_lullaby" in result["starting_songs"]:
-            raise ValueError("open_kakariko: open already grants Impa's song; remove zeldas_lullaby from starting_songs.")
+            raise ValueError("Remove zeldas_lullaby from starting_songs when open_kakariko is open.")
     if result["early_beds"] and not result["time_always_passes"]:
         raise ValueError("early_beds requires time_always_passes: true.")
     if result["bridge"] == "open":

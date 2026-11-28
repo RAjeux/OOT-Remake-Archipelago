@@ -25,9 +25,9 @@ from .room_view import RoomView
 from .save_bridge import atomic, exclusive, history_cursor, write_json
 
 
-# Copied NPC handovers need their complete transitive native action bindings,
-# alongside the earlier menu and opening repairs. Older resources can stall.
-PREPARED_RESOURCE_REVISION = 6
+# Shop selection identities and presentation transforms must be regenerated
+# alongside the earlier NPC handover, menu and opening repairs.
+PREPARED_RESOURCE_REVISION = 7
 PREPARED_RESOURCE_MARKER = Path("Archipelago/prepared-v1.json")
 
 
@@ -612,6 +612,7 @@ def _install(request, progress, cancel, base, diagnostic):
             if host == "nx2navi":
                 mutable += [tools / "host" / name for name in (*native_setup.RT_FILES, "hos_main.c")]
                 mutable += [tools / "gpu/vk" / name for name in (*native_setup.MENU_FILES, "vk_menu.cpp")]
+                mutable += [tools / "nx2" / name for name in (*native_setup.LIFT_FILES, "oot_patches.py")]
             copies = _backup_files(mutable, backup / "files")
             old_mod = mods / "Archipelago"
             old_inode = old_mod.stat().st_ino if old_mod.exists() else None

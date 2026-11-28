@@ -17,6 +17,7 @@ async def check(tmp):
     write(host/'hos_main.c',orig)
     write(host/'nn_applet.c',b'const char *hos_desired_language(void) { return "en-US"; }\n')
     write(tools/'nx2/build.py',b'')
+    write(tools/'nx2/oot_patches.py',b'def apply(gen, *, required=False):\n    pass\n')
     write(tools/'gpu/vk/vk_api.h',(triforce_root()/'gpu/vk/vk_api.h').read_bytes())
     renderer_orig=Path('tests/fixtures/triforce-menu-source.cpp').read_bytes()
     renderer=tools/'gpu/vk/vk_menu.cpp'
@@ -32,6 +33,7 @@ async def check(tmp):
     assert not (profile/'native-016/archipelago.dll').exists()
     for name in n.RT_FILES:assert (host/name).read_bytes()==(dist/'native'/name).read_bytes()
     for name in n.MENU_FILES:assert (renderer.parent/name).read_bytes()==(dist/'native'/name).read_bytes()
+    for name in n.LIFT_FILES:assert (tools/'nx2'/name).read_bytes()==(dist/'native'/name).read_bytes()
     with ZipFile(next(Path('tests/fixtures/neutre').glob('*.zip'))) as z:
         for name in z.namelist():
             if name.endswith(('.apootrr','.archipelago')):z.extract(name,tmp)

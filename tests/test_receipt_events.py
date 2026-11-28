@@ -117,8 +117,9 @@ class GraphRun:
                         self.trace.append(("FixtureNativeIceTrap", {}))
                     else:
                         assert (data.res_flowchart_name, data.entry_point_name) == ("Dm_SY_Get", "CheckHeart")
-                        assert any(command == "EventTriggerAddOrSubGameDataInt" and values["GameDataName"] == CURSOR
-                                   for command, values in self.trace), "Refresh before the receipt cursor"
+                        assert not any(command == "EventTriggerAddOrSubGameDataInt" and values["GameDataName"] == CURSOR
+                                       for command, values in self.trace), "Receipt cursor committed before its native health effect"
+                        self.trace.append(("FixtureNativeCheckHeart", params))
                 node = data.nxt.v
             else:
                 raise AssertionError("Blocking or unsupported receipt node: " + type(data).__name__)

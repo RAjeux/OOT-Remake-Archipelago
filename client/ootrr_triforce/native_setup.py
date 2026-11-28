@@ -17,6 +17,7 @@ from .catalog import CHESTS, CHECK_FLAGS, SHOP_CHECKS, AP_SKULL_CHECKS, SKULL_CH
 from .medallions import REST
 from .mod_codec import Codec
 from .save_bridge import atomic, write_json
+from .native_lifecycle import LIFT_FILES, BUILD_MARK as LIFECYCLE_BUILD_MARK, patch_lift_driver
 
 GAME_DATA = "GameData/GameDataList.Product.110.byml.zs"
 MARKER = "Archipelago/room-v1.txt"
@@ -205,6 +206,12 @@ def install_tools(base, chooser, configured=None):
         raise ValueError(tr('Triforce tools are incompatible with the native client.'))
     renderer_original=renderer.read_bytes()
     renderer_updated=patch_renderer(renderer_original)
+    lift_driver=guess/"nx2/oot_patches.py"
+    if not lift_driver.is_file():
+        raise ValueError(tr('Triforce tools are incompatible with the native client.'))
+    lift_original=lift_driver.read_bytes()
+    lift_updated=patch_lift_driver(lift_original)
+    lift_helpers={n:(bundle/n).read_bytes() for n in LIFT_FILES}
     menu_helpers={n:(bundle/n).read_bytes() for n in MENU_FILES}
     digest=hashlib.sha256((bundle/"archipelago.dll").read_bytes()).digest()
     expected=("static const unsigned char ap_dll_sha16[32] = {"+",".join(map(str,digest))+"};\n").encode()
@@ -218,6 +225,10 @@ def install_tools(base, chooser, configured=None):
         backup=renderer.with_name("vk_menu.before-archipelago-"+hashlib.sha256(renderer_original).hexdigest()[:12]+".bak")
         if not backup.exists():
             shutil.copy2(renderer,backup)
+    if lift_updated!=lift_original:
+        backup=lift_driver.with_name("oot_patches.before-archipelago-"+hashlib.sha256(lift_original).hexdigest()[:12]+".bak")
+        if not backup.exists():
+            shutil.copy2(lift_driver,backup)
     for n,raw in helpers.items():
         path=host/n
         if not path.exists() or path.read_bytes()!=raw:
@@ -226,6 +237,12 @@ def install_tools(base, chooser, configured=None):
         path=renderer.parent/n
         if not path.exists() or path.read_bytes()!=raw:
             atomic(path,raw)
+    for n,raw in lift_helpers.items():
+        path=lift_driver.parent/n
+        if not path.exists() or path.read_bytes()!=raw:
+            atomic(path,raw)
+    if lift_updated!=lift_original:
+        atomic(lift_driver,lift_updated)
     if renderer_updated!=renderer_original:
         atomic(renderer,renderer_updated)
     if new!=orig:
@@ -290,7 +307,7 @@ def runtime_cache_name(baseline):
     # DLL. Hash bridge inputs explicitly so the old executable cannot be reused.
     native = resource_root() / "native"
     for helper in sorted(native.iterdir(), key=lambda path:path.name):
-        if helper.is_file() and helper.suffix in (".inc", ".h"):
+        if helper.is_file() and helper.suffix in (".inc", ".h", ".py"):
             digest.update(helper.name.encode("utf-8")); digest.update(helper.read_bytes())
     version=resource_root()/"VERSION"
     if getattr(sys, "frozen", False) and version.is_file():
@@ -311,6 +328,8 @@ def compiled_executable(romfs, tools=None):
         return None
     expected=hashlib.sha256(module).digest()
     helpers = [Path(tools)/"host"/name for name in RT_FILES] if tools else []
+    if tools:
+        helpers.extend(Path(tools)/"nx2"/name for name in (*LIFT_FILES,"oot_patches.py"))
     menu_helpers = ([Path(tools)/"gpu/vk"/name for name in (*MENU_FILES,"vk_menu.cpp")]
                     if tools else [])
     if any(not helper.is_file() for helper in (*helpers,*menu_helpers)):
@@ -326,7 +345,7 @@ def compiled_executable(romfs, tools=None):
         renderer=path.parent/"triforce_vk.dll"
         if path.is_file() and path.stat().st_size and renderer.is_file() and renderer.stat().st_size:
             with path.open("rb") as f,mmap.mmap(f.fileno(),0,access=mmap.ACCESS_READ) as binary:
-                if (binary.find(BUILD_MARK)>=0 and binary.find(expected)>=0
+                if (binary.find(BUILD_MARK)>=0 and binary.find(LIFECYCLE_BUILD_MARK)>=0 and binary.find(expected)>=0
                         and all(helper.stat().st_mtime_ns<=path.stat().st_mtime_ns for helper in (*helpers,*host_sources,*tool_version))
                         and all(helper.stat().st_mtime_ns<=renderer.stat().st_mtime_ns for helper in (*menu_helpers,*tool_version))):
                     with renderer.open("rb") as vf,mmap.mmap(vf.fileno(),0,access=mmap.ACCESS_READ) as menu_binary:

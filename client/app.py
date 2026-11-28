@@ -13,7 +13,7 @@ from zipfile import ZipFile
 def self_test(destination):
     """Exercise the frozen runtime without a room, game dump or connection."""
     from ootrr_triforce import app_runtime
-    from ootrr_triforce.catalog import DEFAULT_SETTINGS
+    from ootrr_triforce.catalog import DEFAULT_SETTINGS, ITEM_DATA
     from ootrr_triforce.engine import run_engine
     from ootrr_triforce.mod_codec import Codec
     from oot_rando.formats.byml_codec import build_sarc
@@ -50,6 +50,12 @@ def self_test(destination):
     assert codec.decode(codec.encode(value, frame)) == value
     for language in ("i18n_fr.json", "settings_fr.json"):
         assert json.loads(resources.files("ootrr_triforce").joinpath(language).read_bytes())
+    from ootrr_triforce.shop_layout import profiles as shop_profiles
+    shop_geometry = shop_profiles()
+    expected_models = {actor for item in ITEM_DATA.values()
+                       for actor in (item["actor"], *item.get("tiers", []))}
+    assert set(shop_geometry["actors"]) == expected_models
+    assert shop_geometry["foreign"]["preserve_native"] is True
     window = tk.Tk()
     window.withdraw()
     apply_theme(window)
@@ -107,6 +113,7 @@ def self_test(destination):
                   apworld_install=True, previous_apworld_preserved=True,
                   persistent_node_engine=True,
                   network_catalogue=True, native_sources=len(SOURCES),
+                  shop_display_models=len(expected_models),
                   yaml_editor_languages=["en", "fr"], yaml_editor_controls=len(OPTION_SPECS),
                   game_started=False, server_connected=False)
     Path(destination).write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")

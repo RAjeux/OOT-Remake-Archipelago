@@ -16,7 +16,7 @@ from .mod_codec import Codec
 REST = "System/Resource/ResourceSizeTable.Product.111.Nin_Ounce_NVN2.rsizetable.zs"
 GET = ("Dm_SY_GetInEvent", "GetInEvent_NotTurn_NotNpc")
 CHEST_ENTRY = "Success_"
-REVISION = 21
+REVISION = 23
 
 
 def chest_flows(raw, records, *, native_pouch=None, small_raw=None):
@@ -354,6 +354,10 @@ def prepare(root, settings, roster, moved):
             if settings.get("reward_mode")=="all_locations" and local_items:
                 from .restoration import prepare_restoration
                 prepare_restoration(romfs, mod, roster, settings=settings)
+            from .opening_rewards import prepare_opening_rewards
+            prepare_opening_rewards(romfs, mod, roster, settings)
+            from .shop_tracking import prepare_shop_tracking
+            prepare_shop_tracking(romfs, mod, roster, settings)
         if seed_settings is not None:
             localize_mod(romfs, mod, seed_settings)
         if roster and settings.get("network_sources_schema") in (1, 2):
@@ -361,6 +365,8 @@ def prepare(root, settings, roster, moved):
             prepare_offer_texts(romfs, mod, roster, settings)
         from .presentation_models import prepare_receipt_model_aliases
         prepare_receipt_model_aliases(romfs, mod)
+        from .dispatch_banks import prepare_dispatch_banks
+        prepare_dispatch_banks(romfs, mod)
         if settings.get("adult_trade_shuffle"):
             from .trade_receipts import finalize_trade_receipts
             finalize_trade_receipts(romfs, mod, settings["_ap_token"])

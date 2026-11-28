@@ -153,8 +153,10 @@ static int ap_boot16(void) {
 /* Request the seed's registered receipt event on Link's thread. The vanilla
    pouch/event actions own all item effects (including upgrades, bottles, magic
    and dungeon credit); the flow commits ReceivedIndex after its grant. */
+static int ap_lifecycle_blocked16(void);
+
 static int ap_request_item16(Ctx *c,uint64_t actor,const char *name) {
-    if (!ap_delivery_ready16 || actor!=ap_delivery_actor16) return 0;
+    if (!ap_delivery_ready16 || actor!=ap_delivery_actor16 || ap_lifecycle_blocked16()) return 0;
     const uint64_t events=oot_singleton(c,OOT_EVENTMGR_SLOT);
     A64Fn make_arg=a64_lookup(0x80d99f10ULL),request=a64_lookup(0x80d9a820ULL);
     A64Fn set_link=a64_lookup(0x802dc440ULL),release_link=a64_lookup(0x8022b6f0ULL);
@@ -171,7 +173,9 @@ static int ap_request_item16(Ctx *c,uint64_t actor,const char *name) {
     if (ok) {
         memcpy(A64_PTR(buf),name,strlen(name)+1);
         c->x[31]=arg;c->x[0]=arg+0x1950;c->x[1]=actor;c->x[2]=0;set_link(c);
-        c->x[31]=arg;c->x[0]=events;c->x[1]=arg;request(c);result=c->x[0];
+        if (!ap_lifecycle_blocked16()) {
+            c->x[31]=arg;c->x[0]=events;c->x[1]=arg;request(c);result=c->x[0];
+        }
     }
     for (unsigned i=0;i<2;i++) {
         const uint64_t link=arg+(i?0x1950:0x1968);
@@ -193,6 +197,51 @@ static void ap_invalidate_delivery16(void) {
         ap_delivery_mgr16=ap_delivery_core16=ap_delivery_life16=0;
         ap_delivery_epoch16++;
     }
+}
+
+/* A native inventory pause stops Link's update entirely. Observe the game's
+   own Bool writes, without reading guest objects or starting events from that
+   other worker. Serialize its notification with the player's lifecycle check.
+   Loading invalidates a held death even when every guest address is reused. */
+static SRWLOCK ap_lifecycle_lock16 = SRWLOCK_INIT;
+static uint64_t ap_lifecycle_mgr16;
+static uint64_t ap_lifecycle_generation16,ap_lifecycle_observed16;
+static int ap_lifecycle_active16,ap_lifecycle_paused16,ap_lifecycle_loading16,ap_lifecycle_dirty16;
+
+/* A pause can begin after the player gate but before this frame's request.
+   Read only host intent here, never guest memory on the setter's worker.
+   Unlock before any native event call, which can itself write a Bool. */
+static int ap_lifecycle_blocked16(void) {
+    AcquireSRWLockExclusive(&ap_lifecycle_lock16);
+    const int blocked=ap_lifecycle_dirty16 || ap_lifecycle_paused16 || ap_lifecycle_loading16 ||
+        !ap_lifecycle_active16 || ap_lifecycle_generation16!=ap_lifecycle_observed16;
+    ReleaseSRWLockExclusive(&ap_lifecycle_lock16);
+    return blocked;
+}
+
+void ootrr_ap_gamedata_bool16(uint64_t mgr,uint32_t key,uint32_t value,const char *build_mark) {
+    (void)build_mark; /* The lifted call's marker proves the observer was linked. */
+    if (key!=0x604aebe1u && key!=0xef2b60c2u) return;
+    AcquireSRWLockExclusive(&ap_lifecycle_lock16);
+    /* A nonzero manager is published under this lock only after boot and a
+       successful player check. Do not read API pointers during boot here. */
+    if (mgr && mgr==ap_lifecycle_mgr16) {
+        if (key==0xef2b60c2u) {
+            ap_lifecycle_dirty16=1;
+            if (value && !ap_lifecycle_loading16) {
+                ap_lifecycle_generation16++;
+                ap_lifecycle_active16=0;
+                ap_lifecycle_paused16=0;
+                ap_death16(-1);
+            }
+            ap_lifecycle_loading16=value!=0;
+        } else if (ap_lifecycle_active16 && !ap_lifecycle_loading16) {
+            ap_lifecycle_dirty16=1;
+            ap_lifecycle_paused16=value!=0;
+            if (value) ap_death16(2);
+        }
+    }
+    ReleaseSRWLockExclusive(&ap_lifecycle_lock16);
 }
 
 /* OOT 1.1.1's SelectorEventQueryCheckPlayerState (0x807672d0 /
@@ -231,12 +280,12 @@ static int ap_can_receive16(Ctx *c,uint64_t components,uint64_t core) {
 /* Link's life object is separate from the saved PlayerStatus.Life value. The
    supported port identifies this core actor in hos_oot_lift_player too. Only
    this gameplay thread may touch it; title/loading/death also gate item grants. */
-static int ap_player16(Ctx *c,uint64_t actor,uint64_t components,int64_t now) {
+static int ap_player_inner16(Ctx *c,uint64_t actor,uint64_t components,int64_t now) {
     (void)now;
     if (!ap_cursor16 || !ap_death16) { ap_invalidate_delivery16(); return 0; }
     uint64_t mgr=oot_singleton(c,OOT_GAMEDATA_SLOT);
     int loading=0;
-    if (!actor || !components || !mgr || !oot_gd_int(c,mgr,ap_cursor16) ||
+    if (ap_lifecycle_loading16 || !actor || !components || !mgr || !oot_gd_int(c,mgr,ap_cursor16) ||
         oot_pouch_count(c,oot_item_names[0])<0 ||
         (oot_gamedata_bool(c,0xef2b60c2u,&loading)&&loading)) {
         ap_invalidate_delivery16();
@@ -257,7 +306,8 @@ static int ap_player16(Ctx *c,uint64_t actor,uint64_t components,int64_t now) {
     int current=(int32_t)recomp_load32(c,life+8);
     if (current<=0) { ap_invalidate_delivery16(); ap_death16(1); return 0; }
     const uint64_t events=oot_singleton(c,OOT_EVENTMGR_SLOT);
-    ap_delivery_ready16=events && !recomp_load64(c,events+104) && ap_can_receive16(c,components,core);
+    ap_delivery_ready16=!ap_lifecycle_paused16 && !ap_lifecycle_loading16 &&
+        events && !recomp_load64(c,events+104) && ap_can_receive16(c,components,core);
     const int death_state=ap_delivery_ready16 ? 0 : 2;
     if (ap_death16(death_state)) {
         ap_invalidate_delivery16();
@@ -273,9 +323,29 @@ static int ap_player16(Ctx *c,uint64_t actor,uint64_t components,int64_t now) {
     return 1;
 }
 
+static int ap_player16(Ctx *c,uint64_t actor,uint64_t components,int64_t now) {
+    AcquireSRWLockExclusive(&ap_lifecycle_lock16);
+    ap_lifecycle_dirty16=0; /* Only a fresh player/native-state read rearms delivery. */
+    const uint64_t mgr=oot_singleton(c,OOT_GAMEDATA_SLOT);
+    if (ap_lifecycle_mgr16 && mgr!=ap_lifecycle_mgr16) {
+        ap_lifecycle_active16=ap_lifecycle_paused16=ap_lifecycle_loading16=0;
+    }
+    if (ap_lifecycle_observed16!=ap_lifecycle_generation16) {
+        ap_invalidate_delivery16();
+        if (ap_death16) ap_death16(-1);
+        ap_lifecycle_observed16=ap_lifecycle_generation16;
+    }
+    const int result=ap_player_inner16(c,actor,components,now);
+    ap_lifecycle_active16=result!=0;
+    if (result) ap_lifecycle_mgr16=ap_delivery_mgr16;
+    else ap_lifecycle_paused16=0;
+    ReleaseSRWLockExclusive(&ap_lifecycle_lock16);
+    return result;
+}
+
 static void ap_tick16(Ctx *c,int64_t now) {
     static int64_t next, next_notice;
-    if (!ap_cursor16 || now<next) return;
+    if (!ap_cursor16 || now<next || ap_lifecycle_blocked16()) return;
     next=now+300000000;
     if (now>=next_notice) {
         char text[62];
@@ -290,6 +360,34 @@ static void ap_tick16(Ctx *c,int64_t now) {
     if (!entry) return;
     int loading=0;
     if (oot_gamedata_bool(c,0xef2b60c2u,&loading)&&loading) return;
+    /* Older local shelves could consume native stock without their AP flag.
+       A room-bound quiet event reconciles only tracking/stock, never inventory.
+       Observe its completion before reporting checks or scheduling recovery;
+       an accepted but not yet started event must not be requested twice. */
+    static uint64_t shop_tracking_mgr,shop_tracking_epoch;
+    static int shop_tracking_state;
+    if (shop_tracking_mgr!=mgr || shop_tracking_epoch!=ap_delivery_epoch16) {
+        shop_tracking_state=0;
+        shop_tracking_mgr=mgr;shop_tracking_epoch=ap_delivery_epoch16;
+    }
+    const uint64_t shop_tracking=ap_event_mode16
+        ? oot_gd_int(c,mgr,oot_murmur3("Archipelago.ShopTrackingResult")) : 0;
+    if (shop_tracking && shop_tracking_state!=3) {
+        const int status=(int32_t)recomp_load32(c,shop_tracking+0x1c);
+        if (shop_tracking_state==2) {
+            if (status!=1) return;
+            shop_tracking_state=3;
+        } else {
+            if (!ap_delivery_ready16) return;
+            if (status) {
+                if (!shop_tracking_state && oot_gd_set(c,mgr,
+                        oot_murmur3("Archipelago.ShopTrackingResult"),0,0)) shop_tracking_state=1;
+                return;
+            }
+            if (ap_request_item16(c,ap_delivery_actor16,"OOTRR_APShopTracking")) shop_tracking_state=2;
+            return;
+        }
+    }
     uint32_t opened[4096]; uint8_t states[4096]; int count=0,snapshot_valid=1;
     for(int i=0;i<ap_flag_count16;i++) {
         const char state=oot_flag_state(c,1,ap_flags16[i]);

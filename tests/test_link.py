@@ -27,7 +27,8 @@ static int oot_gamedata_bool(Ctx *c,uint32_t h,int *v){*v=loading;return 1;}
 static char oot_flag_state(Ctx *c,int loaded,uint32_t h){return h==102?'1':'0';}
 static uint32_t recomp_load32(Ctx *c,uint64_t ptr){if(ptr==100+0x1c)return cursor;if(ptr==200+0x1c)return won;if(ptr==300+0x1c)return coins;assert(0);return 0;}
 static uint64_t recomp_load64(Ctx *c,uint64_t ptr){assert(ptr==400+104);return event_busy;}
-static uint32_t oot_murmur3(const char *name){assert(!strcmp(name,"Archipelago.RestoreResult"));return 44;}
+static uint32_t oot_murmur3(const char *name){if(!strcmp(name,"Archipelago.ShopTrackingResult"))return 55;assert(!strcmp(name,"Archipelago.RestoreResult"));return 44;}
+static int ap_lifecycle_blocked16(void){return 0;}
 static void ap_opened16(uint32_t *f,int n,int goal){assert(n==1&&f[0]==102&&goal==won);opened++;}
 static int ap_next16(int i){return reward_request==2?(i>=2&&i<=7?1998+i:i==8?9999:0):!reward_request?0:i==0?1000:i==1?1001:0;}
 static const char *ap_eventname16(int id){static const char *names[]={"OOTRR_APReceive_Token","OOTRR_APReceive_HeartPiece","OOTRR_APReceive_Bundle","OOTRR_APReceive_Map","OOTRR_APReceive_Progressive","OOTRR_APReceive_SmallKey"};return id>=2000&&id<=2005?names[id-2000]:NULL;}
@@ -93,6 +94,7 @@ print("PASS actual host callback: legacy shield/rupees, wallet cap and frame ack
 # The actual event request helper gets a bounded guest stack, the same callback
 # ABI as the port, and a real Ctx restored after every success/failure branch.
 request=src[src.index("static int ap_request_item16("):src.index("static void ap_invalidate_delivery16(")]
+observer=src[src.index("static SRWLOCK ap_lifecycle_lock16"):src.index("/* OOT 1.1.1's SelectorEventQueryCheckPlayerState")]
 request_header=r'''
 #include <stdint.h>
 #include <string.h>
@@ -102,9 +104,15 @@ typedef struct { uint64_t x[32]; } Ctx;
 typedef void (*A64Fn)(Ctx*);
 static unsigned char memory[65536];
 static int event_busy, reject, no_functions, small_buffer, requests, released, held_deaths;
+static int pause_during_link,lock_depth;
+typedef struct { int held; } SRWLOCK;
+#define SRWLOCK_INIT {0}
+static void AcquireSRWLockExclusive(SRWLOCK *lock){assert(!lock->held&&!lock_depth);lock->held=lock_depth=1;}
+static void ReleaseSRWLockExclusive(SRWLOCK *lock){assert(lock->held&&lock_depth);lock->held=lock_depth=0;}
+void ootrr_ap_gamedata_bool16(uint64_t,uint32_t,uint32_t,const char*);
 static int ap_delivery_ready16=1;
 static uint64_t ap_delivery_actor16=77;
-static int death_api(int state){assert(state==2);held_deaths++;return 0;}
+static int death_api(int state){assert(state==2||state==-1);if(state==2)held_deaths++;return 0;}
 static int (*ap_death16)(int)=death_api;
 static int64_t wall_time=10000000000LL;
 static struct { int64_t requested_at; } teleport;
@@ -114,9 +122,9 @@ static uint64_t recomp_load64(Ctx*c,uint64_t a){uint64_t n;assert(a+8<=sizeof me
 static uint32_t recomp_load32(Ctx*c,uint64_t a){uint32_t n;assert(a+4<=sizeof memory);memcpy(&n,memory+a,4);return n;}
 static void recomp_store64(Ctx*c,uint64_t a,uint64_t n){assert(a+8<=sizeof memory);memcpy(memory+a,&n,8);}
 static void make_arg(Ctx*c){uint64_t a=c->x[0],p=1000;uint32_t size=small_buffer?1:128;memcpy(memory+a+6800,&p,8);memcpy(memory+a+6808,&size,4);}
-static void set_link(Ctx*c){assert(c->x[1]==77);recomp_store64(c,c->x[0],77);}
+static void set_link(Ctx*c){assert(c->x[1]==77);recomp_store64(c,c->x[0],77);if(pause_during_link)ootrr_ap_gamedata_bool16(123,0x604aebe1u,1,"fixture");}
 static void release_link(Ctx*c){assert(recomp_load64(c,c->x[0])==0x84994b20ULL);released++;}
-static void request_event(Ctx*c){assert(c->x[0]==500);assert(!strcmp((char*)memory+1000,"OOTRR_APReceive_2000"));assert(recomp_load64(c,c->x[1]+0x1950)==77);requests++;c->x[0]=!reject;}
+static void request_event(Ctx*c){assert(!lock_depth);assert(c->x[0]==500);assert(!strcmp((char*)memory+1000,"OOTRR_APReceive_2000"));assert(recomp_load64(c,c->x[1]+0x1950)==77);requests++;c->x[0]=!reject;}
 static A64Fn a64_lookup(uint64_t a){return no_functions?NULL:a==0x80d99f10ULL?make_arg:a==0x80d9a820ULL?request_event:a==0x802dc440ULL?set_link:a==0x8022b6f0ULL?release_link:NULL;}
 static uint64_t oot_singleton(Ctx*c,int slot){assert(slot==21);uint64_t b=event_busy;memcpy(memory+500+104,&b,8);return 500;}
 static int64_t hos_now_ns(void){return wall_time;}
@@ -125,6 +133,7 @@ static void hos_log(const char *format,...){(void)format;}
 request_test=r'''
 int main(void){
     Ctx c={{0}},saved;c.x[31]=50000;c.x[1]=123;saved=c;
+    ap_lifecycle_mgr16=123;ap_lifecycle_active16=1;
     ap_delivery_ready16=0;assert(!ap_request_item16(&c,77,"OOTRR_APReceive_2000"));
     ap_delivery_ready16=1;assert(!ap_request_item16(&c,78,"OOTRR_APReceive_2000"));
     assert(!requests&&!released&&!held_deaths&&!memcmp(&c,&saved,sizeof c));
@@ -134,10 +143,30 @@ int main(void){
     teleport.requested_at=0;reject=1;assert(!ap_request_item16(&c,77,"OOTRR_APReceive_2000"));assert(requests==2&&released==4&&!memcmp(&c,&saved,sizeof c));
     reject=0;small_buffer=1;assert(!ap_request_item16(&c,77,"OOTRR_APReceive_2000"));assert(requests==2&&released==6&&!memcmp(&c,&saved,sizeof c));
     no_functions=1;assert(!ap_request_item16(&c,77,"OOTRR_APReceive_2000"));assert(released==6&&held_deaths==1&&!memcmp(&c,&saved,sizeof c));
+    no_functions=small_buffer=0;
+    /* Native pause intent can arrive after the ready player snapshot. No
+       additional player callback occurs before these real request calls. */
+    ootrr_ap_gamedata_bool16(123,0x604aebe1u,1,"fixture");
+    assert(ap_delivery_ready16&&ap_lifecycle_blocked16());
+    assert(!ap_request_item16(&c,77,"OOTRR_APReceive_2000")&&requests==2&&released==6);
+    ootrr_ap_gamedata_bool16(123,0x604aebe1u,0,"fixture");
+    assert(ap_lifecycle_blocked16()); /* Closing alone cannot rearm stale readiness. */
+    assert(!ap_request_item16(&c,77,"OOTRR_APReceive_2000")&&requests==2);
+    ap_lifecycle_dirty16=0; /* A fresh player read is tested in test_deathlink_host. */
+    assert(ap_request_item16(&c,77,"OOTRR_APReceive_2000")&&requests==3&&released==8);
+    /* Intent can also arrive during native argument/link preparation. Recheck
+       it before dispatch, then still release links and restore the full Ctx. */
+    pause_during_link=1;
+    assert(!ap_request_item16(&c,77,"OOTRR_APReceive_2000")&&requests==3&&released==10);
+    assert(!memcmp(&c,&saved,sizeof c)&&ap_lifecycle_blocked16()&&!lock_depth);
+    pause_during_link=0;
+    ootrr_ap_gamedata_bool16(123,0xef2b60c2u,1,"fixture");
+    ootrr_ap_gamedata_bool16(123,0xef2b60c2u,0,"fixture");
+    assert(!ap_request_item16(&c,77,"OOTRR_APReceive_2000")&&requests==3);
     return 0;
 }
 '''
-request_c=home/'check_receipt_request.c';request_c.write_text(request_header+request+request_test,encoding='utf-8')
+request_c=home/'check_receipt_request.c';request_c.write_text(request_header+observer+request+request_test,encoding='utf-8')
 request_exe=home/('check_receipt_request.exe' if os.name=='nt' else 'check_receipt_request')
 subprocess.run([os.environ.get('CC') or shutil.which('gcc') or 'clang','-std=c11','-Wall','-Werror',str(request_c),'-o',str(request_exe)],check=True)
 subprocess.run([str(request_exe.resolve())],check=True)

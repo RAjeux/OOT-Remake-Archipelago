@@ -1,8 +1,8 @@
 # Updating the launcher and APWorld
 
-**[Download the current Windows launcher, 0.10.4-alpha.8](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.8/OOT-Remake-Archipelago-0.10.4-alpha.8.exe)**
+**[Download the current Windows launcher, 0.10.4-alpha.9](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.9/OOT-Remake-Archipelago-0.10.4-alpha.9.exe)**
 if your older launcher does not have an update button. The [versioned release
-page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.8)
+page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.9)
 identifies the supported native release. Prepared rooms, connection preferences
 and saves remain in LocalAppData when the executable is replaced.
 
@@ -28,13 +28,16 @@ or [the French quickstart](INSTALLATION.fr.md).
 
 ## Update the launcher
 
-Version 0.10.4-alpha.8 fixes native NPC handovers, including Talon's Super
-Cucco reward and the Potion Shop insect exchange, and restores visible
-medallions and Spiritual Stones during item receipts.
+Version 0.10.4-alpha.9 corrects personal shop checks and displays, native heart
+effects, skipped-story rewards, and inventory-pause/loading safety on Triforce.
+The matching APWorld also fixes specific generation failures. The earlier NPC
+handover and visible medallion/Spiritual Stone fixes remain included.
 Close Zelda and prepare the same player file when the launcher requests
-updated resources. No new room or YAML is needed; saves and item history stay
-with their existing room. The earlier constructor, chest, startup, opening and
-updater fixes are included.
+updated resources. The Triforce host must rebuild for its lifecycle observer.
+No new room or YAML is needed for these runtime corrections; saves and item
+history stay with their existing room. Updating the organizer's APWorld affects
+future generations. See the [patch notes](RELEASE-NOTES-0.10.4-alpha.9.md) and
+[validation record](OVERNIGHT-VALIDATION.md) for the test scope.
 
 Version 0.10.4 adds reviewed source, access-logic and optional gameplay changes
 for newly generated rooms. Existing native 0.10 player files, YAMLs and saves
@@ -60,7 +63,7 @@ restart**. The downloaded files and the Windows product/version information
 are verified before replacement. The launcher closes only after its separate
 update helper is ready. After a successful update, the new executable has the
 release's canonical versioned filename in the same folder, for example
-`OOT-Remake-Archipelago-0.10.4-alpha.8.exe`. The previous executable is retained
+`OOT-Remake-Archipelago-0.10.4-alpha.9.exe`. The previous executable is retained
 for rollback in private update data under `%LOCALAPPDATA%\OOTRR-Archipelago`,
 rather than alongside the launcher. Failures before a successful handoff retain
 or restore the previous version. Helper failures are written to the application

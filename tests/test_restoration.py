@@ -67,6 +67,9 @@ class SaveRun:
         self.entries = {point.name: point.main_event.v for point in FlowEditor(raw, "recovery model").chart.entry_points}
         self.values = {"Fixture.NativeHookEnabled": True}
         self.inventory, self.trace, self.saves = Counter(), [], []
+        # Historical generic dungeon items ask the native game to select the
+        # current dungeon. Record that command, without inventing its context.
+        self.dungeon_commands = Counter()
         self.empty_bottle = False
         self.steps = 0
 
@@ -95,6 +98,9 @@ class SaveRun:
                     self.empty_bottle = False
                 elif action == "EventTriggerRecoverByCureItem":
                     self.inventory[params["ActorName"]] += 1
+                elif action in {"EventGetDungeonSmallKey", "EventGetDungeonBossKey",
+                                "EventGetDungeonCompass", "EventGetDungeonMap"}:
+                    self.dungeon_commands[action] += 1
                 elif action == "EventTriggerRequestAutoSave":
                     self.saves.append((copy.deepcopy(self.values), self.inventory.copy()))
                 elif action == "EventWait":
@@ -359,6 +365,86 @@ class RestorationPreparationTests(unittest.TestCase):
             self.assertEqual((row["ItemID"], row["Recipient"], row["Owner"]), (123456, 1, "Friend"))
             with self.assertRaises(ValueError):
                 native_setup.save_session(root, config, data, roster | {CHEST: reward() | {"owner": 1}}, prepared=mod)
+
+
+class SharedRestorationEffectsTests(unittest.TestCase):
+    """Item bodies share memory; source state and every grant stay independent."""
+    def build(self, roster):
+        raw, entries = restore.build_restoration_flow(pouch(), roster)
+        self.assertEqual(set(entries), {LOCATION_IDS[name] for name in roster})
+        return raw, SaveRun(raw)
+
+    def test_repeated_same_item_preserves_independent_sources_and_once_effects(self):
+        names = list(CHESTS)[:3]
+        roster = {name: reward("Rupees (20)") for name in names}
+        raw, run = self.build(roster)
+        actor = ITEM_DATA["Rupees (20)"]["actor"]
+        run.restore(names[0])
+        self.assertEqual(run.inventory[actor], 1)
+        self.assertFalse(any(run.values.get(flag) for flag in restore.restoration_records({names[1]: roster[names[1]]})[0]["flags"]))
+        run.restore(names[1])
+        self.assertEqual(run.inventory[actor], 2)
+        run.restore(names[0])
+        self.assertEqual(run.inventory[actor], 2)
+        self.assertEqual(run.values[restore.RESULT], LOCATION_IDS[names[0]])
+        chart = FlowEditor(raw, "shared effects").chart
+        helpers = [p for p in chart.entry_points if p.name.startswith(restore.PREFIX + "Item_")]
+        self.assertEqual(len(helpers), 1)
+        self.assertEqual(len(run.saves), 3)
+
+    def test_progressive_source_calls_recheck_current_native_tier(self):
+        names = list(CHESTS)[:2]
+        _, run = self.build({name: reward("Progressive Hookshot") for name in names})
+        run.restore(names[0]);run.restore(names[1])
+        self.assertEqual((run.inventory["Item_Hookshot"], run.inventory["Item_Longshot"]), (1, 1))
+        run.restore(names[0])
+        self.assertEqual((run.inventory["Item_Hookshot"], run.inventory["Item_Longshot"]), (1, 1))
+
+    def test_missing_ammo_bag_commits_only_that_source_without_filler(self):
+        names = list(CHESTS)[:2]
+        _, run = self.build({name: reward("Bombs (5)") for name in names})
+        run.restore(names[0])
+        self.assertFalse(any(run.inventory.values()))
+        run.inventory["Item_BombBag_Small"] = 1
+        run.restore(names[1]);run.restore(names[0])
+        self.assertEqual(run.inventory[ITEM_DATA["Bombs (5)"]["actor"]], 1)
+        self.assertEqual(run.inventory["TBox_Rupee_Green"], 0)
+
+    def test_empty_bottle_preflight_and_deferred_id_remain_source_bound(self):
+        names = list(SHOP_CHECKS)[:2]
+        _, run = self.build({name: reward("Buy Bottle Bug") for name in names})
+        run.restore(names[0])
+        self.assertEqual(run.values[restore.RESULT], -LOCATION_IDS[names[0]])
+        self.assertFalse(run.saves)
+        self.assertFalse(any(run.inventory.values()))
+        run.empty_bottle = True;run.restore(names[1])
+        self.assertEqual(run.values[restore.RESULT], LOCATION_IDS[names[1]])
+        self.assertEqual(sum(run.inventory.values()), 1)
+        run.restore(names[0])
+        self.assertEqual(run.values[restore.RESULT], -LOCATION_IDS[names[0]])
+        self.assertEqual(sum(run.inventory.values()), 1)
+        self.assertEqual(len(run.saves), 1)
+
+    def test_native_trade_wakeup_and_spent_state_stay_source_specific(self):
+        from ootrr_triforce.trade_catalog import TALON_AWAKE
+        trade = next(name for name, row in TRADE_CHECKS.items() if row["wake_talon"])
+        _, run = self.build({CHEST: reward("Rupees (20)"), trade: reward("Rupees (20)")})
+        run.restore(CHEST)
+        self.assertFalse(run.values.get(TALON_AWAKE))
+        run.restore(trade)
+        self.assertTrue(run.values[TALON_AWAKE])
+        self.assertEqual(run.inventory[ITEM_DATA["Rupees (20)"]["actor"]], 2)
+
+    def test_large_repeated_catalogue_adds_public_entries_not_duplicate_item_bodies(self):
+        names = list(CHESTS)[:100]
+        raw, run = self.build({name: reward("Rupee (1)") for name in names})
+        chart = FlowEditor(raw, "large repeated effects").chart
+        self.assertEqual(len([p for p in chart.entry_points if p.name.startswith(restore.PREFIX + "Item_")]), 1)
+        for name in names:run.restore(name)
+        self.assertEqual(run.inventory[ITEM_DATA["Rupee (1)"]["actor"]], len(names))
+        self.assertEqual(len(run.saves), len(names))
+        for name in names:run.restore(name)
+        self.assertEqual(run.inventory[ITEM_DATA["Rupee (1)"]["actor"]], len(names))
 
 
 if __name__ == "__main__":

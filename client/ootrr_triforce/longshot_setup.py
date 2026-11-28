@@ -99,7 +99,17 @@ def isolated_bridge(raw):
     text = text[:first] + '#include "ootrr_ap_longshot_event.inc"\n' + text[last:]
     before = "    ap_event_mode16=event_delivery();"
     guard = before + '\n    if (!ap_event_mode16) { hos_log("Longshot AP requires native receipt events; prepare this room again."); return 0; }'
-    tick = "    if (!ap_cursor16 || now<next) return;"
+    # Keep the shared host's complete readiness gate. The passive Bool hook is
+    # installed only by Triforce; its wrapper's ordinary player snapshots also
+    # remain valid in this isolated prototype. Recognize only reviewed shapes.
+    tick_contracts = (
+        "    if (!ap_cursor16 || now<next) return;",
+        "    if (!ap_cursor16 || now<next || ap_lifecycle_blocked16()) return;",
+    )
+    matches = [line for line in tick_contracts if text.count(line) == 1]
+    if len(matches) != 1 or any(text.count(line) > 1 for line in tick_contracts):
+        raise LongshotError("The shared native delivery contract changed.")
+    tick = matches[0]
     user = "    hos_user_dir=ap_profile16;"
     profile_guard = (
         "    extern const char *hos_save_dir_chosen(void);\n"
@@ -112,7 +122,7 @@ def isolated_bridge(raw):
     if text.count(before) != 1 or text.count(tick) != 1 or text.count(user) != 1:
         raise LongshotError("The shared native delivery contract changed.")
     return text.replace(user, profile_guard).replace(before, guard).replace(
-        tick, "    if (!ap_event_mode16 || !ap_cursor16 || now<next) return;").encode("utf-8")
+        tick, tick.replace("if (", "if (!ap_event_mode16 || ", 1)).encode("utf-8")
 
 
 def launch_environment(profiles, token, mods, *, environment=None):

@@ -222,6 +222,32 @@ data. `tools/generate_item_header.py` regenerates the native item table, and
 Existing AP IDs and flags remain append-only. Do not regenerate fixtures or
 registries merely to make a failing compatibility check pass.
 
+### Review shop display measurements
+
+The optional `tools/generate_shop_layout_profiles.py` maintainer tool reads an
+original supported RomFS and produces numeric mesh/pose bounds and resource
+hashes. It requires NumPy; the measurement environment used CPython 3.14 and
+NumPy 2.5.3. Neither NumPy nor extracted meshes or animation keys are required
+by the player application. Keep new measurements below `build/` for review:
+
+```powershell
+python tools/generate_shop_layout_profiles.py --romfs 'C:\path\to\romfs' --output build/shop-layout-candidate.json
+```
+
+Use `--codec-resources` when the compression runtime is in a separate prepared
+resource directory. The tool never writes to the original RomFS. Review the
+native shop animation commands, their actual fallback poses and selected-item
+rotation before accepting a profile. A rest-mesh bound or a get-item pose alone
+does not establish the shape the shop displays. Repeat the measurement and
+compare its output, run the layout/pose tests, then inspect the original game
+render for every supported model and the narrower Kokiri grid.
+
+The runtime validates the measured native resource hashes and changes only
+reviewed display properties. Purchase identity, prices, stock, item effects and
+AP callbacks require separate tests with a coherent generated room; a gallery
+which substitutes display models cannot prove those transactions. Do not
+publish copied game resources or their rendered screenshots with the report.
+
 ## Build a distributable application
 
 Install the additional packaging dependencies, then build and inspect the

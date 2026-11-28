@@ -24,21 +24,24 @@ static uint32_t ap_cursor16=33,ap_flags16[]={101,102,103};
 static int ap_flag_count16=3,ap_event_mode16=1;
 static uint64_t ap_delivery_actor16=77,ap_delivery_epoch16,manager=1;
 static int ap_delivery_ready16=1;
+static int lifecycle_blocked;
+static int ap_lifecycle_blocked16(void){return lifecycle_blocked;}
 static int active,save_exists,loading,event_exists,event_busy,ready,whitelist;
 static int cursor,status,status_exists,queued_clear,clear_ok,request_ok;
 static int clear_calls,restore_calls,restore_requests,remote_requests,request_attempts;
 static int quiet_requests,replay_allowed,replay_calls;
+static int shop_exists,shop_status,shop_queued_clear,shop_clear_calls,shop_requests;
 static int deferred,last_deferred,acks,next_calls,network_item,want_second,unknown_snapshots;
 static char flag_states[3];
 static int64_t now=1000000000LL,deferred_until;
 static uint64_t oot_singleton(Ctx*c,int slot){(void)c;return !active?0:slot==OOT_GAMEDATA_SLOT?manager:event_exists?500:0;}
-static uint64_t oot_gd_int(Ctx*c,uint64_t mgr,uint32_t key){(void)c;assert(mgr==manager);return key==33?(save_exists?100:0):key==44?(status_exists?400:0):key==0x641e0375u?200:0;}
+static uint64_t oot_gd_int(Ctx*c,uint64_t mgr,uint32_t key){(void)c;assert(mgr==manager);return key==33?(save_exists?100:0):key==44?(status_exists?400:0):key==55?(shop_exists?600:0):key==0x641e0375u?200:0;}
 static int oot_gamedata_bool(Ctx*c,uint32_t key,int*v){(void)c;assert(key==0xef2b60c2u);*v=loading;return 1;}
 static char oot_flag_state(Ctx*c,int loaded,uint32_t key){(void)c;assert(loaded&&key>=101&&key<=103);return flag_states[key-101];}
-static uint32_t recomp_load32(Ctx*c,uint64_t ptr){(void)c;if(ptr==100+0x1c)return cursor;if(ptr==200+0x1c)return 0;if(ptr==400+0x1c)return (uint32_t)status;assert(0);return 0;}
+static uint32_t recomp_load32(Ctx*c,uint64_t ptr){(void)c;if(ptr==100+0x1c)return cursor;if(ptr==200+0x1c)return 0;if(ptr==400+0x1c)return (uint32_t)status;if(ptr==600+0x1c)return (uint32_t)shop_status;assert(0);return 0;}
 static uint64_t recomp_load64(Ctx*c,uint64_t ptr){(void)c;assert(ptr==500+104);return event_busy;}
-static uint32_t oot_murmur3(const char*s){assert(!strcmp(s,"Archipelago.RestoreResult"));return 44;}
-static int oot_gd_set(Ctx*c,uint64_t mgr,uint32_t key,uint32_t value,int boolean){(void)c;assert(mgr==manager&&key==44&&value==0&&!boolean);clear_calls++;if(!clear_ok)return 0;queued_clear=0;return 1;}
+static uint32_t oot_murmur3(const char*s){if(!strcmp(s,"Archipelago.ShopTrackingResult"))return 55;assert(!strcmp(s,"Archipelago.RestoreResult"));return 44;}
+static int oot_gd_set(Ctx*c,uint64_t mgr,uint32_t key,uint32_t value,int boolean){(void)c;assert(mgr==manager&&(key==44||key==55)&&value==0&&!boolean);if(key==55){shop_clear_calls++;if(!clear_ok)return 0;shop_queued_clear=0;return 1;}clear_calls++;if(!clear_ok)return 0;queued_clear=0;return 1;}
 static int ap_note16(char*s,int n){(void)s;(void)n;return 0;}
 static void hos_save_share_say(int row,const char*s){(void)row;(void)s;assert(0);}
 static void ap_opened16(uint32_t*flags,int count,int won){assert(!won);for(int i=0;i<count;i++)assert(flag_states[flags[i]-101]=='1');}
@@ -65,6 +68,7 @@ static void (*ap_restore_deferred16)(int)=defer_api;
 static int ap_request_item16(Ctx*c,uint64_t actor,const char*name){
     (void)c;assert(actor==77);request_attempts++;
     if(event_busy||!event_exists||!request_ok)return 0;
+    if(!strcmp(name,"OOTRR_APShopTracking")){shop_requests++;return 1;}
     if(!strcmp(name,"OOTRR_APReceive_1000")){remote_requests++;return 1;}
     if(!strcmp(name,"OOTRR_APTradeReplay_1000")){quiet_requests++;return 1;}
     assert(!strcmp(name,"OOTRR_APRestore_501")||!strcmp(name,"OOTRR_APRestore_502"));
@@ -78,10 +82,12 @@ static int oot_capacity(Ctx*c,uint64_t mgr,const char*s,int*n){(void)c;(void)mgr
 static void reset(void){
     manager++;ap_delivery_epoch16++;ap_delivery_actor16=77;ap_cursor16=33;ap_event_mode16=1;
     ap_delivery_ready16=1;
+    lifecycle_blocked=0;
     active=save_exists=event_exists=ready=whitelist=status_exists=clear_ok=request_ok=1;
     loading=event_busy=cursor=status=0;queued_clear=INT_MIN;deferred_until=0;
     clear_calls=restore_calls=restore_requests=remote_requests=request_attempts=deferred=last_deferred=acks=next_calls=network_item=want_second=unknown_snapshots=0;
     quiet_requests=replay_allowed=replay_calls=0;ap_receipt_replay16=NULL;
+    shop_exists=shop_status=shop_clear_calls=shop_requests=0;shop_queued_clear=INT_MIN;
     memcpy(flag_states,"000",3);now+=61000000000LL;
 }
 static void commit_clear(void){assert(queued_clear==0);status=queued_clear;queued_clear=INT_MIN;}
@@ -91,6 +97,36 @@ static void tick(Ctx*c){now+=400000000LL;ap_tick16(c,now);}
 checks = r'''
 int main(void){
     Ctx c=0;
+    reset();shop_exists=1;network_item=1;lifecycle_blocked=1;
+    tick(&c);assert(!request_attempts&&!next_calls&&!shop_requests&&!restore_calls);
+    lifecycle_blocked=0;tick(&c);assert(shop_requests==1&&!remote_requests);
+    /* A legacy sold shelf is reconciled before any receipt or recovery. The
+       event owns tracking/stock effects; this host only requests and observes. */
+    reset();shop_exists=1;network_item=1;ap_delivery_ready16=0;
+    tick(&c);assert(!shop_requests&&!next_calls&&!restore_calls&&cursor==0);
+    ap_delivery_ready16=1;tick(&c);
+    assert(shop_requests==1&&!next_calls&&!restore_calls&&!shop_clear_calls&&cursor==0);
+    now+=3600000000000LL;tick(&c);
+    assert(shop_requests==1&&!next_calls&&!remote_requests&&!restore_requests);
+    shop_status=-1;tick(&c);assert(shop_requests==1&&!next_calls); /* native dirty sentinel */
+    shop_status=2;tick(&c);assert(shop_requests==1&&!next_calls);
+    shop_status=1;tick(&c);assert(remote_requests==1&&shop_requests==1&&!acks&&cursor==0);
+    /* The native result can survive a same-address load. Wait for the queued
+       clear to become visible before requesting the new epoch's event. */
+    reset();shop_exists=1;shop_status=1;clear_ok=0;
+    tick(&c);assert(shop_clear_calls==1&&!shop_requests&&!next_calls);
+    clear_ok=1;tick(&c);assert(shop_clear_calls==2&&shop_queued_clear==0&&!shop_requests);
+    now+=61000000000LL;tick(&c);assert(shop_clear_calls==2&&!shop_requests);
+    shop_status=shop_queued_clear;shop_queued_clear=INT_MIN;request_ok=0;
+    tick(&c);assert(!shop_requests&&!next_calls&&!restore_requests);
+    request_ok=1;tick(&c);assert(shop_requests==1&&!next_calls);
+    shop_status=1;flag_states[0]='1';tick(&c);
+    assert(shop_requests==1&&!restore_requests&&cursor==0&&!acks);
+    ap_delivery_epoch16++;tick(&c);assert(shop_clear_calls==3&&shop_requests==1);
+    shop_status=0;tick(&c);assert(shop_requests==2&&!restore_requests);
+    manager++;shop_status=0;tick(&c);assert(shop_requests==3&&!restore_requests);
+    /* Unprepared historical resources have no capability field and retain
+       the existing delivery behavior, exercised by all following scenarios. */
     reset();network_item=1;ap_receipt_replay16=replay_api;replay_allowed=1;
     tick(&c);assert(quiet_requests==1&&remote_requests==0&&restore_requests==0&&replay_calls==1&&cursor==0&&!acks);
     now+=61000000000LL;tick(&c);assert(quiet_requests==1&&replay_calls==1&&!restore_requests);
@@ -188,4 +224,4 @@ exe = path.with_suffix(".exe" if os.name == "nt" else "")
 subprocess.run([os.environ.get("CC") or shutil.which("gcc") or "clang", "-std=c11", "-Wall", "-Werror",
                 str(path), "-o", str(exe)], check=True)
 subprocess.run([str(exe)], check=True)
-print("PASS actual restore scheduler: remote priority, exact result/epoch gating, no timeout retry, queued status clear, explicit refill deferral, subsequent checks, committed flags, no AP cursor change, legacy and unloaded-state guards.")
+print("PASS actual restore scheduler: shop tracking before delivery, explicit result/dirty/epoch gating and queued clear; remote priority, no timeout retry, explicit refill deferral, subsequent checks, committed flags, no AP cursor change, legacy and unloaded-state guards.")

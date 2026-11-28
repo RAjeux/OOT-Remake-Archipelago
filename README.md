@@ -2,16 +2,16 @@
 
 Play Ocarina of Time Remake in an Archipelago multiworld with a single Windows application. It prepares the mod, manages the connection and launches your compatible game host.
 
-**Current release: 0.10.4-alpha.8.** This patch fixes NPC reward handovers
-and restores visible medallions and Spiritual Stones during item receipts;
-see the [update notes](docs/RELEASE-NOTES-0.10.4-alpha.8.md).
+**Current release: 0.10.4-alpha.9.** This patch corrects large-catalogue startup,
+shop checks and displays, heart effects, skipped-story rewards and pause/loading safety;
+see the [update notes](docs/RELEASE-NOTES-0.10.4-alpha.9.md).
 The 0.10.4 selective upstream integration adds
 current AP access rules, 17 physical sources and optional gameplay, cosmetic
 and difficulty controls. See [what is adapted and how it is validated](docs/UPSTREAM-INTEGRATION.md).
 Existing native 0.10 rooms remain supported. New sources and options require
 the matching APWorld and a newly generated room with its own save.
 
-**[Download the Windows launcher · 0.10.4-alpha.8](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.8/OOT-Remake-Archipelago-0.10.4-alpha.8.exe)** · [Release page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.8) · [Installation en français](docs/INSTALLATION.fr.md)
+**[Download the Windows launcher · 0.10.4-alpha.9](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.9/OOT-Remake-Archipelago-0.10.4-alpha.9.exe)** · [Release page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.9) · [Installation en français](docs/INSTALLATION.fr.md)
 
 > **Use the native 0.10 release above.** The discontinued **0.11/0.12 Full-network experiment** has a higher number but a different player-file format. Its `.apootrr` files are not converted by this launcher. If you came from Full, export a fresh YAML with the current editor, generate a new room with the current APWorld and keep the old saves separate.
 
@@ -50,7 +50,7 @@ The launcher does not generate or host the multiworld. See the [organizer instru
 
 | File | Purpose | Who uses it? |
 | --- | --- | --- |
-| `OOT-Remake-Archipelago-0.10.4-alpha.8.exe` | The desktop launcher; includes the APWorld and runtimes. | Zelda players and the organizer. |
+| `OOT-Remake-Archipelago-0.10.4-alpha.9.exe` | The desktop launcher; includes the APWorld and runtimes. | Zelda players and the organizer. |
 | `Player-name.yaml` | A player's settings **before generation**. | Player sends it to the organizer. |
 | `ootrr_remake.apworld` | The custom game integration loaded by Archipelago's generator. | Organizer installs it with this launcher's **Install APWorld** action. |
 | `AP_123456_P1_Link.apootrr` | Generated data for **one Zelda slot in one room**; filename shown as an example. | That Zelda player selects it in **Set up a room**. |
@@ -61,7 +61,7 @@ Changing a YAML after generation does not change the existing room. A new room n
 
 | Host | Current scope |
 | --- | --- |
-| **Triforce, Windows x64** | Main installation route. Triforce **0.8.4** has private save-loading and Talon reward regression coverage; **0.8.3** also has title-screen connection/reconnect and Bow/rupee receipt checks. Setup checks the host's tools and source hooks. |
+| **Triforce, Windows x64** | Main installation route. Triforce **0.8.4** has private save-loading, NPC/shop reward and pause/loading DeathLink regression coverage; **0.8.3** also has title-screen connection/reconnect and Bow/rupee receipt checks. Setup checks the host's tools and source hooks. |
 | **Hookshot 3.0.1, Windows x64** | Experimental adapter requiring its matching original tools and retained build files. Other revisions are rejected. |
 | **Fritchii 5.8.4** | RomFS overlay loading was tested; **there is no emulator AP gameplay backend**. |
 | Other hosts or Linux | Not supported by this installer. |
@@ -93,7 +93,7 @@ Archipelago fills the selected sources without a general Zelda recipient quota. 
 
 Major received items use the game's native turn toward the player camera and item presentation pose. Ordinary pickups retain their native central display and sounds.
 
-New receipts and older-save restorations wait for normal player control. Crawling, fishing, climbing, swimming, combat, active events and pause defer delivery; unknown actions also defer it. Observed paused or busy DeathLink states retain a pending death until normal control returns. An inventory transition which suspends all callbacks before pause is observed still needs a gameplay check. See [delivery safety and validation limits](docs/DELIVERY-SAFETY.md).
+New receipts and older-save restorations wait for normal player control. Crawling, fishing, climbing, swimming, combat, active events and pause defer delivery; unknown actions also defer it. Paused or busy DeathLink states retain a pending death until normal control returns. Triforce also observes native inventory pauses while Link's callbacks are suspended and invalidates pending deaths at a loading boundary. The independent pause observer has gameplay coverage on Triforce 0.8.4; Hookshot retains its existing movement-based gate. See [delivery safety and validation limits](docs/DELIVERY-SAFETY.md).
 
 Reprepared adult-trade rooms silently recover remote quest items which a completed exchange has already consumed. The corresponding check and its personal reward still recover normally. A DeathLink packet from a replaced connection is discarded. See the [stability and update notes](docs/STABILITY.md) for the targeted story fixes and validation scope.
 
