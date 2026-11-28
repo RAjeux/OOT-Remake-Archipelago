@@ -1,4 +1,4 @@
-"""Typed settings editor for new AP rooms; no YAML parser or second schema."""
+"""Typed settings editor, with explicit preservation of imported YAML values."""
 import copy
 import re
 import tkinter as tk
@@ -36,11 +36,19 @@ def setting_search_text(spec):
 
 
 class SettingsWindow:
-    def __init__(self, master, values=None, language="en", on_apply=None):
+    def __init__(self, master, values=None, language="en", on_apply=None,
+                 preserve_unchanged=False, preserved_options=()):
         self.language = language
         self.on_apply = on_apply
         self.closed = False
         self.initial = validate_options({} if values is None else values)
+        self._initial_effective = normalize_inactive(self.initial)
+        self.preserve_unchanged = preserve_unchanged
+        known = {spec["id"] for spec in OPTION_SPECS}
+        self.preserved_options = set(preserved_options).intersection(known)
+        self.changed_keys = set()
+        self._replaced_options = set()
+        self._reset_all = False
         self.window = tk.Toplevel(master)
         apply_theme(self.window)
         self.window.title(self._text("OOT Remake — Archipelago settings", "OOT Remake — Réglages Archipelago"))
@@ -57,6 +65,8 @@ class SettingsWindow:
         self.rows, self.group_ids = {}, []
         self.titles = {}
         self.fields = {}
+        self.value_fields = {}
+        self.imported_fields, self.replace_buttons = {}, {}
         self._panel_mode = None
         self._compact_controls = None
         self.summary_expanded = False
@@ -87,11 +97,16 @@ class SettingsWindow:
         self.header = header = ttk.Frame(outer)
         header.grid(row=0, column=0, columnspan=3, sticky="ew", pady=(0, 16))
         header.columnconfigure(0, weight=1)
-        ttk.Label(header, text=self._text("Settings for a new room", "Réglages d'une nouvelle salle"),
+        title = self._text("Edit imported settings", "Modifier les réglages importés") if self.preserve_unchanged else self._text(
+            "Settings for a new room", "Réglages d'une nouvelle salle")
+        ttk.Label(header, text=title,
                   style="App.Title.TLabel").grid(row=0, column=0, sticky="w")
-        self.intro = ttk.Label(header, text=self._text(
+        intro = self._text(
+            "Only settings changed here replace your imported choices. Random or weighted values are kept until you choose Replace.",
+            "Seuls les réglages modifiés remplacent tes choix importés. Les valeurs aléatoires ou pondérées sont conservées jusqu'à un clic sur Modifier.") if self.preserve_unchanged else self._text(
             "Apply your choices, then save the YAML and generate a room. Existing player files and saves are unchanged.",
-            "Applique tes choix, puis enregistre le YAML et génère une salle. Les fichiers joueur et sauvegardes existants ne changent pas."),
+            "Applique tes choix, puis enregistre le YAML et génère une salle. Les fichiers joueur et sauvegardes existants ne changent pas.")
+        self.intro = ttk.Label(header, text=intro,
             wraplength=1100, style="App.Muted.TLabel")
         self.intro.grid(row=1, column=0, sticky="ew", pady=(6, 0))
         self.toolbar = toolbar = ttk.Frame(outer)
@@ -179,8 +194,9 @@ class SettingsWindow:
         self.footer = buttons = ttk.Frame(outer)
         buttons.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(16, 0))
         buttons.columnconfigure(1, weight=1)
-        ttk.Button(buttons, text=self._text("Reset to defaults", "Rétablir les valeurs par défaut"), style="App.Quiet.TButton",
-                   command=lambda: self._load_values(default_options())).grid(row=0, column=0)
+        self.reset_button = ttk.Button(buttons, text=self._text("Reset to defaults", "Rétablir les valeurs par défaut"),
+                                       style="App.Quiet.TButton", command=self._reset_defaults)
+        self.reset_button.grid(row=0, column=0)
         ttk.Button(buttons, text=self._text("Cancel", "Annuler"), style="App.Quiet.TButton", command=self.close).grid(row=0, column=2, padx=(10, 8))
         self.apply_button = ttk.Button(buttons, text=self._text("Apply settings", "Appliquer les réglages"),
                                       style="App.Primary.TButton", command=self.apply)
@@ -234,6 +250,20 @@ class SettingsWindow:
             control.bind("<<ListboxSelect>>", lambda _event: self.update_dependencies())
         self.fields[name] = field if kind == "set" else control
         self.fields[name].grid(row=0, column=1, sticky="ne")
+        self.value_fields[name] = self.fields[name]
+        if name in self.preserved_options:
+            imported = ttk.Frame(row, style="App.Card.TFrame")
+            imported.columnconfigure(0, weight=1)
+            ttk.Label(imported, text=self._text("Imported value kept", "Valeur importée conservée"),
+                      style="App.CardMuted.TLabel").grid(row=0, column=0, sticky="w", padx=(0, 10))
+            replace = ttk.Button(imported, text=self._text("Replace", "Modifier"), style="App.Quiet.TButton",
+                                 command=lambda name=name: self._replace_imported(name))
+            replace.grid(row=0, column=1, sticky="e")
+            replace.bind("<FocusIn>", lambda _event, name=name: self._reveal_control(name), add="+")
+            self.imported_fields[name], self.replace_buttons[name] = imported, replace
+            self.fields[name].grid_remove()
+            self.fields[name] = imported
+            imported.grid(row=0, column=1, sticky="ne")
         help_text = description(name, self.language)
         if kind == "set":
             help_text += self._text(" Click each item to select or clear it.", " Clique sur chaque objet pour le sélectionner ou le retirer.")
@@ -340,6 +370,10 @@ class SettingsWindow:
 
     def _focus_first_setting(self, _event=None):
         for name in self.visible_names:
+            if name in self.preserved_options:
+                self.replace_buttons[name].focus_set()
+                self._reveal_control(name)
+                break
             if str(self.controls[name].cget("state")) != "disabled":
                 self.controls[name].focus_set()
                 self._reveal_control(name)
@@ -394,7 +428,7 @@ class SettingsWindow:
             if words:
                 if not all(word in self._search_index[name] for word in words):
                     continue
-            elif ((not self.show_advanced.get() and is_advanced(name))
+            elif name not in self.preserved_options and ((not self.show_advanced.get() and is_advanced(name))
                   or (self.hide_inactive.get() and self.reasons[name].cget("text"))):
                 continue
             matching.append(name)
@@ -472,6 +506,29 @@ class SettingsWindow:
             self._updating = False
         self.update_dependencies()
 
+    def _replace_imported(self, name, *, update=True):
+        """Use an editable typed value only after an explicit replacement."""
+        if name not in self.preserved_options:
+            return
+        self.preserved_options.remove(name)
+        self._replaced_options.add(name)
+        self.imported_fields[name].grid_remove()
+        self.fields[name] = self.value_fields[name]
+        compact = bool(self._compact_controls)
+        self.fields[name].grid(row=1 if compact else 0, column=0 if compact else 1,
+                               columnspan=2 if compact else 1, sticky="ew" if compact else "ne",
+                               pady=(10, 0) if compact else 0)
+        if update:
+            self.update_dependencies()
+            if str(self.controls[name].cget("state")) != "disabled":
+                self.controls[name].focus_set()
+
+    def _reset_defaults(self):
+        self._reset_all = True
+        for name in tuple(self.preserved_options):
+            self._replace_imported(name, update=False)
+        self._load_values(default_options())
+
     def _read_values(self, *, allow_invalid=False):
         values = {}
         self._last_invalid = None
@@ -516,20 +573,33 @@ class SettingsWindow:
         try:
             for spec in OPTION_SPECS:
                 name = spec["id"]
-                reason = active_reason(name, normalized, self.language)
-                state = "disabled" if reason else "readonly" if spec["kind"] == "choice" else "normal"
+                preserved = name in self.preserved_options
+                reason = "" if preserved else active_reason(name, normalized, self.language)
+                state = "disabled" if preserved or reason else "readonly" if spec["kind"] == "choice" else "normal"
                 self.controls[name].configure(state=state)
                 self.reasons[name].configure(text=reason)
                 self.reasons[name].grid() if reason else self.reasons[name].grid_remove()
-                try:
-                    help_text = choice_description(name, values[name], self.language)
-                except (ValueError, TypeError):
-                    help_text = description(name, self.language)
+                if preserved:
+                    help_text = description(name, self.language) + self._text(
+                        " The original YAML value is kept as written. Choose Replace to select a new value.",
+                        " La valeur du YAML est conservée telle quelle. Choisis Modifier pour sélectionner une nouvelle valeur.")
+                else:
+                    try:
+                        help_text = choice_description(name, values[name], self.language)
+                    except (ValueError, TypeError):
+                        help_text = description(name, self.language)
                 if spec["kind"] == "set":
                     help_text += self._text(" Click to select or clear an item.", " Clique pour sélectionner ou retirer un élément.")
                 self.rows[name][1].configure(text=help_text)
             try:
-                self.summary.configure(text="\n".join(selection_summary(values, self.language)))
+                if self.preserved_options:
+                    count = len(self.preserved_options)
+                    summary = self._text(
+                        f"{count} imported YAML values are kept as written. Their random or weighted outcomes are not shown in this preview. Only settings you change will be replaced.",
+                        f"{count} valeurs importées du YAML sont conservées telles quelles. Leurs résultats aléatoires ou pondérés ne sont pas affichés dans cet aperçu. Seuls les réglages que tu modifies seront remplacés.")
+                else:
+                    summary = "\n".join(selection_summary(values, self.language))
+                self.summary.configure(text=summary)
             except (ValueError, TypeError):
                 self.summary.configure(text=self._text("Check the entered numbers before applying.", "Vérifie les nombres saisis avant d'appliquer."))
         finally:
@@ -538,8 +608,21 @@ class SettingsWindow:
 
     def selected_values(self):
         # Filtering and disabling never erase the editor's remembered choices.
-        # Apply/export retains the existing normalization and native validation.
-        normalized = normalize_inactive(self._read_values(allow_invalid=True))
+        values = self._read_values(allow_invalid=True)
+        normalized = normalize_inactive(values)
+        if self.preserve_unchanged and not self._reset_all:
+            # An imported inactive choice can still be valid and intentional.
+            # Reset a dependent field only when an edit changed its dependency,
+            # including descendants disabled by the same parent edit.
+            selected = copy.deepcopy(values)
+            for spec in OPTION_SPECS:
+                name = spec["id"]
+                reason = active_reason(name, normalized)
+                if (name not in self.preserved_options and reason
+                        and (reason != active_reason(name, self.initial)
+                             or normalized[name] != self._initial_effective[name])):
+                    selected[name] = normalized[name]
+            normalized = selected
         if self._last_invalid and not isinstance(normalized[self._last_invalid], str):
             self._last_invalid = None
         return validate_options(normalized)
@@ -562,6 +645,10 @@ class SettingsWindow:
             messagebox.showerror(self._text("Check settings", "Vérifier les réglages"),
                                  validation_message(error, self.language), parent=self.window)
             return
+        self.changed_keys = ({spec["id"] for spec in OPTION_SPECS} if self._reset_all else
+                             {name for name, value in values.items()
+                              if value != self.initial[name] and name not in self.preserved_options}
+                             | self._replaced_options)
         if self.on_apply is not None:
             self.on_apply(copy.deepcopy(values))
         self.close()

@@ -4,9 +4,9 @@
 
 ## Download the current launcher
 
-**[Download OOT-Remake-Archipelago-0.10.4-alpha.10.exe](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.10/OOT-Remake-Archipelago-0.10.4-alpha.10.exe)**
+**[Download OOT-Remake-Archipelago-0.10.4-alpha.11.exe](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.11/OOT-Remake-Archipelago-0.10.4-alpha.11.exe)**
 
-The [versioned release page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.10) contains the release notes and other assets. A player needs only the EXE; its AP client, Python, Node.js and APWorld are included. The compatible OOTRR 0.8.1 builder is downloaded when preparation first needs it.
+The [versioned release page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.11) contains the release notes and other assets. A player needs only the EXE; its AP client, Python, Node.js and APWorld are included. The compatible OOTRR 0.8.1 builder is downloaded when preparation first needs it.
 
 **Do not choose the discontinued 0.11/0.12 Full-network experiment because its version number is higher.** Its generated player files use a different format and are not converted. Export a fresh YAML with the current editor, generate a new room with the current APWorld and keep the Full saves separate. Native 0.10 rooms follow the [update guide](UPDATING.md).
 
@@ -24,7 +24,7 @@ A player joining a generated room does **not** need an Archipelago installation.
 
 | File | Meaning | Where it goes |
 | --- | --- | --- |
-| `OOT-Remake-Archipelago-0.10.4-alpha.10.exe` | This project's desktop application. | Keep it in a convenient folder and open it to set up or play. |
+| `OOT-Remake-Archipelago-0.10.4-alpha.11.exe` | This project's desktop application. | Keep it in a convenient folder and open it to set up or play. |
 | `Player-name.yaml` | A player's options before generation. | Send it to the organizer. It is not the file selected in **Set up a room**. |
 | `ootrr_remake.apworld` | Archipelago's custom game integration. | The organizer uses this launcher's **Install APWorld** action; no separate download is needed. |
 | `AP_…_P…_name.apootrr` | The generated Zelda player file for one slot and room. | That player selects it in **Set up a room**. Keep it to prepare that room again later. |
@@ -52,6 +52,16 @@ Do this before the organizer generates the room:
 5. Send the exported `.yaml` to the organizer. Each player of another game supplies that game's own YAML.
 
 The editor exports the selected values. **Random?** rolls an option value independently and can produce incompatible combinations; it does not guarantee a valid configuration. Inactive sub-options keep their saved values but do not affect generation. The [settings compatibility guide](SETTINGS-COMPATIBILITY.md) lists the supported controls.
+
+### Reuse an existing YAML
+
+1. Choose **Create YAML → Import YAML…** and open the player's `.yaml` or `.yml`.
+2. The name and supported settings are loaded. Open **Choose settings…** and change the options you need.
+3. Choose **Save YAML**. The file chooser proposes `<original-name>-modified.yaml` in the original folder; your source file is kept unless you explicitly choose to replace it.
+
+Additional Archipelago settings, such as starting inventory, local items, accessibility, triggers and weighted selections, stay in the exported YAML. A weighted or otherwise protected setting is marked **Imported value kept**: use **Replace** to choose a new value. Changing another option does not roll or replace its weights. **New configuration** discards the imported draft and starts with this version's defaults.
+
+**Import details…** lists preserved settings and compatibility changes. Supported older `OOTRR1-` settings codes are decoded into current controls. Active obsolete options without an equivalent require confirmation before conversion; invalid values must be replaced before saving. The discontinued Full-network format is not re-enabled by importing its YAML. YAML comments and original formatting are regenerated, while untouched option values are preserved. Random selections can still produce incompatible combinations during generation.
 
 ## Organizer: generate and host
 

@@ -76,7 +76,7 @@ TEXT = {
     "launch_failed": "The game could not be launched. Check the selected host's folder in Set up a room.",
     "launched": "Game launched.",
     "build_needed": "Preparation is complete, but the selected host still needs to build the game.",
-    "yaml_intro": "Create a configuration with all supported settings, then generate a room with the other players' YAML files in Archipelago.",
+    "yaml_intro": "Create a configuration or import an existing YAML, adjust its settings, then generate a room in Archipelago.",
     "player_name": "Player name",
     "yaml_settings": "Choose settings…",
     "save_yaml": "Save YAML…",
@@ -84,6 +84,38 @@ TEXT = {
     "yaml_saved": "YAML saved. Generate your room in Archipelago.",
     "saving_yaml": "Saving YAML…",
     "yaml_failed": "The YAML could not be saved. Choose a writable folder and try again.",
+    "import_yaml": "Import YAML…",
+    "importing_yaml": "Reading the YAML settings…",
+    "yaml_imported": "YAML imported. Adjust the settings, then save a copy.",
+    "yaml_import_failed": "The YAML could not be imported. Your current settings are kept.",
+    "yaml_loaded": "Imported: {filename}",
+    "yaml_import_tip": "Import a previous configuration to reuse its settings.",
+    "yaml_import_details": "Import details…",
+    "new_yaml": "New configuration",
+    "yaml_new": "New configuration. Choose your settings, then save the YAML.",
+    "yaml_preserved_note": "Additional and weighted settings are kept unless you replace them.",
+    "yaml_review_note": "Some imported settings need review. Open Import details.",
+    "yaml_preserved_preview": "Imported settings are loaded. Values kept from the file are marked in the settings editor.",
+    "yaml_import_review_title": "Review older settings",
+    "yaml_import_review_body": "Some older settings cannot be used by this version.\n\n{details}\n\nImport the compatible settings? Your original file is kept.",
+    "yaml_notice_preserved": "Kept as written in the file: {settings}",
+    "yaml_notice_unknown": "Additional settings kept in the YAML: {settings}",
+    "yaml_notice_projection": "Kept from the file; replace in the editor to change: {settings}",
+    "yaml_notice_invalid": "Replace these unsupported values in the settings editor before saving: {settings}",
+    "yaml_notice_normalized": "Equivalent option names adapted for this version: {settings}",
+    "yaml_notice_removed": "Older options removed from the new copy: {settings}",
+    "yaml_notice_legacy_migrated": "The old settings code was decoded and its supported settings were loaded.",
+    "yaml_notice_legacy_unsupported": "Settings from the old code without an equivalent in this version: {settings}",
+    "yaml_details_original": "Saving uses a file chooser. The imported file is not changed automatically.",
+    "yaml_error_read": "This YAML could not be read. Choose an existing, readable file.",
+    "yaml_error_size": "This YAML is too large. Choose a player configuration file.",
+    "yaml_error_syntax": "This YAML has invalid syntax. Check its indentation and try again.",
+    "yaml_error_duplicate": "This YAML contains a duplicate setting. Keep one value for each setting.",
+    "yaml_error_tag": "This YAML uses unsupported data tags. Choose a standard Archipelago player YAML.",
+    "yaml_error_format": "Choose a single Archipelago player YAML configuration.",
+    "yaml_error_game": "Choose a player YAML for Ocarina of Time Remake.",
+    "yaml_error_legacy": "The older settings code could not be decoded. Your current settings are kept.",
+    "yaml_error_settings": "Some imported settings need replacement before saving. Review the values marked in the editor.",
     "install_world": "Install APWorld…",
     "world_intro": "On the computer generating the room, install the APWorld into Archipelago once.",
     "world_folder": "Choose your Archipelago installation folder",
@@ -223,6 +255,9 @@ class AppWindow:
         self.player_name = tk.StringVar(value="Link")
         from .settings import default_options
         self.yaml_values = default_options()
+        self.yaml_imported = None
+        self.yaml_source = None
+        self.yaml_changed_keys = set()
         self.settings_window = None
         self._build()
         for name, variable in self.fields.items():
@@ -523,12 +558,24 @@ class AppWindow:
         self.yaml_intro = self._label(form, "yaml_intro", style="App.Muted.TLabel", wraplength=640)
         self.yaml_intro.grid(row=0, column=0, sticky="ew", pady=(0, 18))
         configuration = self._card(form, 1, "settings_preview")
-        self._label(configuration, "player_name").grid(row=1, column=0, sticky="w", pady=(0, 6))
+        imports = ttk.Frame(configuration, style="App.Card.TFrame")
+        imports.grid(row=1, column=0, sticky="ew", pady=(0, 10))
+        imports.columnconfigure(0, weight=1)
+        self.import_yaml_button = self._button(imports, "import_yaml", self.import_yaml, style="App.Action.TButton")
+        self.import_yaml_button.grid(row=0, column=0, sticky="w")
+        self.new_yaml_button = self._button(imports, "new_yaml", self.new_yaml, style="App.Quiet.TButton")
+        self.new_yaml_button.grid(row=0, column=1, sticky="e", padx=(12, 0))
+        self.yaml_import_note = ttk.Label(configuration, style="App.CardMuted.TLabel", wraplength=590)
+        self.yaml_import_note.grid(row=2, column=0, sticky="ew", pady=(0, 12))
+        self.yaml_details_button = self._button(configuration, "yaml_import_details", self.show_yaml_details,
+                                                style="App.Quiet.TButton")
+        self.yaml_details_button.grid(row=3, column=0, sticky="w", pady=(0, 12))
+        self._label(configuration, "player_name").grid(row=4, column=0, sticky="w", pady=(0, 6))
         self.name_entry = ttk.Entry(configuration, textvariable=self.player_name)
-        self.name_entry.grid(row=2, column=0, sticky="ew")
+        self.name_entry.grid(row=5, column=0, sticky="ew")
         self.form_widgets.append(self.name_entry)
         actions = ttk.Frame(configuration, style="App.Card.TFrame")
-        actions.grid(row=3, column=0, sticky="ew", pady=(16, 16))
+        actions.grid(row=6, column=0, sticky="ew", pady=(16, 16))
         actions.columnconfigure(0, weight=1)
         actions.columnconfigure(1, weight=1)
         self.settings_button = self._button(actions, "yaml_settings", self.open_settings, style="App.Action.TButton")
@@ -536,8 +583,8 @@ class AppWindow:
         self.save_yaml_button = self._button(actions, "save_yaml", self.save_yaml, style="App.Primary.TButton")
         self.save_yaml_button.grid(row=0, column=1, sticky="ew", padx=(8, 0))
         self.yaml_preview = ttk.Label(configuration, style="App.CardMuted.TLabel", wraplength=590)
-        self.yaml_preview.grid(row=4, column=0, sticky="ew", pady=(2, 12))
-        self._label(configuration, "yaml_tip", style="App.CardCaption.TLabel", wraplength=590).grid(row=5, column=0, sticky="ew")
+        self.yaml_preview.grid(row=7, column=0, sticky="ew", pady=(2, 12))
+        self._label(configuration, "yaml_tip", style="App.CardCaption.TLabel", wraplength=590).grid(row=8, column=0, sticky="ew")
         world = self._card(form, 2, "world_step")
         self._label(world, "appworld_note", style="App.CardMuted.TLabel", wraplength=590).grid(row=1, column=0, sticky="ew", pady=(0, 16))
         self.world_button = self._button(world, "install_world", self.install_world, style="App.Action.TButton")
@@ -573,7 +620,7 @@ class AppWindow:
             return
         available = max(300, self.pages.winfo_width() - 110)
         for label in (self.status, self.manifest_label, self.host_note, self.installation_label,
-                      self.setup_intro, self.yaml_intro, self.yaml_preview):
+                      self.setup_intro, self.yaml_intro, self.yaml_preview, self.yaml_import_note):
             label.configure(wraplength=available)
         self.home_room.configure(wraplength=max(210, available - 130))
         self.update_notice.configure(wraplength=max(220, available - 190))
@@ -712,7 +759,8 @@ class AppWindow:
                 logging.getLogger(__name__).warning("Application operation %s failed (%s).", task.kind, type(error).__name__)
                 result = {"_failed": True, "_cancelled": bool(getattr(error, "cancelled", False))
                           or (task.kind == "update_download" and isinstance(error, InterruptedError)),
-                          "_message": getattr(error, "public_message", "")}
+                          "_message": getattr(error, "public_message", ""),
+                          "_yaml_error": getattr(error, "code", "read") if task.kind == "yaml_import" else ""}
             self.results.put((task, result))
             del task, result
 
@@ -801,10 +849,13 @@ class AppWindow:
                 if result.get("_failed"):
                     self.status_key = "cancelled" if result.get("_cancelled") else {
                         "install": "setup_failed", "launch": "launch_failed", "yaml": "yaml_failed",
+                        "yaml_import": "yaml_import_failed",
                         "world": "world_failed", "licenses": "path_failed",
                         "update_download": "launcher_update_failed", "update_schedule": "launcher_update_failed"
                     }[task.kind]
                     self.progress_text = result.get("_message", "")
+                    if task.kind == "yaml_import":
+                        self.progress_text = self._yaml_error_text(result.get("_yaml_error", "read"))
                     if task.kind in {"update_download", "update_schedule"}:
                         self.update_installing = False
                         if task.kind == "update_schedule":
@@ -819,6 +870,11 @@ class AppWindow:
                             self.status_key = "launcher_download_cancelled"
                         if self.update_window and not self.update_window.closed:
                             self.update_window.finished(None, failed=True, cancelled=result.get("_cancelled", False))
+                elif task.kind == "yaml_import":
+                    if self.cancel_event.is_set():
+                        self.status_key = "cancelled"
+                    elif not self.close_requested:
+                        self._accept_yaml_import(result["imported"])
                 elif task.kind == "update_download":
                     self.update_download = result
                     self.status_key = "launcher_download_ready"
@@ -901,6 +957,7 @@ class AppWindow:
         self.connection_button.configure(state="normal" if self.current.get("profile") and not self.busy else "disabled")
         self.sidebar_connection.configure(state=self.connection_button.cget("state"))
         for widget in (self.setup_button, self.yaml_button, self.settings_button, self.save_yaml_button,
+                       self.import_yaml_button, self.new_yaml_button, self.yaml_details_button,
                        self.world_button, self.sidebar_world, *self.form_widgets):
             widget.configure(state="disabled" if self.busy else "normal")
         can_install = bool(self.manifest_info and self.installation_info and self.installation_info.get("valid")
@@ -915,7 +972,23 @@ class AppWindow:
         self.manifest_label.configure(foreground=COLORS["mint"] if self.manifest_info else
                                       COLORS["danger"] if self.manifest_message == "invalid_player" else COLORS["muted"])
         from .settings_labels import selection_summary
-        self.yaml_preview.configure(text="\n".join(selection_summary(self.yaml_values, self.language)[:4]))
+        from .settings import SPEC_BY_ID
+        preserved = (set(self.yaml_imported.preserved_options) - self.yaml_changed_keys
+                     if self.yaml_imported is not None else set())
+        opaque = preserved.intersection(SPEC_BY_ID)
+        self.yaml_preview.configure(text=self._text("yaml_preserved_preview") if opaque else
+                                    "\n".join(selection_summary(self.yaml_values, self.language)[:4]))
+        note = self._text("yaml_loaded", filename=self.yaml_source.name) if self.yaml_source else self._text("yaml_import_tip")
+        if self.yaml_imported is not None:
+            invalid = set(getattr(self.yaml_imported, "invalid_options", {})) - self.yaml_changed_keys
+            if invalid:
+                note += "\n" + self._text("yaml_review_note")
+            elif preserved:
+                note += "\n" + self._text("yaml_preserved_note")
+            self.yaml_details_button.grid()
+        else:
+            self.yaml_details_button.grid_remove()
+        self.yaml_import_note.configure(text=note)
         self.status.configure(text=self.progress_text or self._text(self.status_key, **self.status_values))
         failed = self.status_key.endswith("_failed") or self.status_key == "yaml_name_error"
         self.status_dot.itemconfigure("dot", fill=COLORS["gold"] if self.busy else COLORS["danger"] if failed else COLORS["mint"])
@@ -1074,16 +1147,26 @@ class AppWindow:
         if self.busy:
             return
         try:
-            content = yaml_content(self.player_name.get(), self.yaml_values, self.language)
-        except ValueError:
-            self.status_key = "yaml_name_error"
+            if self.yaml_imported is None:
+                content = yaml_content(self.player_name.get(), self.yaml_values, self.language)
+            else:
+                from .yaml_import import render_imported_yaml
+                content = render_imported_yaml(self.yaml_imported, self.player_name.get(), self.yaml_values,
+                                               self.language, changed_keys=self.yaml_changed_keys)
+        except ValueError as error:
+            name_error = str(error) == "invalid_player_name" or getattr(error, "code", "") == "name"
+            self.status_key = "yaml_name_error" if name_error else "yaml_import_failed"
+            self.progress_text = "" if name_error else self._yaml_error_text(getattr(error, "code", "settings"))
             self._render()
-            self.name_entry.focus_set()
+            if name_error:
+                self.name_entry.focus_set()
             return
         safe_name = re.sub(r"[^\w -]", "_", self.player_name.get().strip())
-        target = self.dialogs.asksaveasfilename(parent=self.master, title=self._text("save_yaml"),
-            defaultextension=".yaml", initialfile=f"Player-{safe_name}.yaml",
-            filetypes=((self._text("yaml_file"), "*.yaml"),))
+        options = dict(parent=self.master, title=self._text("save_yaml"), defaultextension=".yaml",
+                       initialfile=f"Player-{safe_name}.yaml", filetypes=((self._text("yaml_file"), "*.yaml *.yml"),))
+        if self.yaml_source is not None:
+            options.update(initialdir=str(self.yaml_source.parent), initialfile=self.yaml_source.stem + "-modified.yaml")
+        target = self.dialogs.asksaveasfilename(**options)
         if target:
             def save():
                 from .save_bridge import atomic
@@ -1099,10 +1182,91 @@ class AppWindow:
             return
         from .settings_window import SettingsWindow
         def apply(values):
-            self.yaml_values = values
+            if self.yaml_imported is None:
+                self.yaml_values = values
+            else:
+                changed = self.settings_window.changed_keys
+                self.yaml_values.update({name: values[name] for name in changed})
+                self.yaml_changed_keys.update(changed)
             self._render()
         self.settings_window = SettingsWindow(self.master, values=self.yaml_values,
-                                               language=self.language, on_apply=apply)
+                                               language=self.language, on_apply=apply,
+                                               preserve_unchanged=self.yaml_imported is not None,
+                                               preserved_options=(set(self.yaml_imported.preserved_options) - self.yaml_changed_keys
+                                                                  if self.yaml_imported is not None else ()))
+
+    def _yaml_error_text(self, code):
+        key = {"too_large": "yaml_error_size", "syntax": "yaml_error_syntax", "duplicate_key": "yaml_error_duplicate",
+               "unsupported_tag": "yaml_error_tag", "format": "yaml_error_format", "game": "yaml_error_game",
+               "name": "yaml_name_error", "legacy": "yaml_error_legacy", "settings": "yaml_error_settings"}.get(code, "yaml_error_read")
+        return self._text(key)
+
+    def import_yaml(self):
+        if self.busy:
+            return
+        options = dict(parent=self.master, title=self._text("import_yaml"),
+                       filetypes=((self._text("yaml_file"), "*.yaml *.yml"), (self._text("all_files"), "*.*")))
+        if self.yaml_source is not None:
+            options["initialdir"] = str(self.yaml_source.parent)
+        chosen = self.dialogs.askopenfilename(**options)
+        if chosen:
+            from .yaml_import import load_yaml
+            self._start("yaml_import", lambda: {"imported": load_yaml(chosen)}, "importing_yaml")
+
+    def _accept_yaml_import(self, imported):
+        if imported.requires_review and not messagebox.askyesno(self._text("yaml_import_review_title"),
+                self._text("yaml_import_review_body", details=self._yaml_details_text(imported)), parent=self.master):
+            self.status_key = "cancelled"
+            return
+        if self.settings_window and not self.settings_window.closed:
+            self.settings_window.close()
+        self.yaml_imported = imported
+        self.yaml_source = imported.source
+        from copy import deepcopy
+        self.yaml_values = deepcopy(imported.values)
+        self.yaml_changed_keys.clear()
+        self.player_name.set(imported.name)
+        self.status_key, self.progress_text = "yaml_imported", ""
+
+    def _yaml_details_text(self, imported=None):
+        from .settings import SPEC_BY_ID
+        from .settings_labels import setting_label
+        imported = imported or self.yaml_imported
+        if imported is None:
+            return ""
+        lines = []
+        invalid = set(imported.invalid_options)
+        if imported is self.yaml_imported:
+            invalid -= self.yaml_changed_keys
+        if invalid:
+            labels = [setting_label(name, self.language) for name in sorted(invalid)]
+            lines.append(self._text("yaml_notice_invalid", settings=", ".join(labels)))
+        for code in ("legacy_migrated", "removed", "legacy_unsupported", "normalized", "preserved", "projection", "unknown"):
+            notices = [notice for notice in imported.warnings if notice.code == code]
+            if not notices:
+                continue
+            names = sorted({notice.key for notice in notices if notice.key})
+            labels = [setting_label(name, self.language) if name in SPEC_BY_ID else name for name in names]
+            lines.append(self._text("yaml_notice_" + code, settings=", ".join(labels)))
+        lines.append(self._text("yaml_details_original"))
+        return "\n\n".join(lines)
+
+    def show_yaml_details(self):
+        if self.yaml_imported is not None and not self.busy:
+            messagebox.showinfo(self._text("yaml_import_details"), self._yaml_details_text(), parent=self.master)
+
+    def new_yaml(self):
+        if self.busy:
+            return
+        if self.settings_window and not self.settings_window.closed:
+            self.settings_window.close()
+        from .settings import default_options
+        self.yaml_imported = self.yaml_source = None
+        self.yaml_changed_keys.clear()
+        self.yaml_values = default_options()
+        self.player_name.set("Link")
+        self.status_key, self.progress_text = "yaml_new", ""
+        self._render()
 
     def install_world(self):
         if self.busy:

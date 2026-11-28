@@ -150,6 +150,13 @@ class FrozenArchiveSafetyTests(unittest.TestCase):
 
 
 class TkLicenseTests(unittest.TestCase):
+    def test_yaml_parser_license_is_included_from_the_installed_distribution(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with patch.object(build_app, "_tk_license_text", return_value="Vendor Tk terms"):
+                files = build_app.licenses(Path(temporary), Path(temporary)/"node-license")
+            license_file = files["licenses/PyYAML-LICENSE"]
+            self.assertIn("Permission is hereby granted", license_file.read_text(encoding="utf-8"))
+
     def interpreter(self, folder):
         class Tcl8:
             def call(self, command, argument):

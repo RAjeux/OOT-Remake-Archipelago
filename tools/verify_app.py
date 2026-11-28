@@ -23,7 +23,7 @@ REQUIRED_MODULES = {"ootrr_triforce.app_window", "ootrr_triforce.app_runtime", "
                     "ootrr_triforce.native_lifecycle", "ootrr_triforce.shop_identity",
                     "ootrr_triforce.shop_poses", "ootrr_triforce.shop_layout", "ootrr_triforce.shop_tracking",
                     "ootrr_triforce.opening_rewards", "ootrr_triforce.dispatch_banks",
-                    "tkinter", "zstandard"}
+                    "ootrr_triforce.yaml_import", "yaml", "tkinter", "zstandard"}
 
 
 def sha(raw):
@@ -124,6 +124,8 @@ def inspect_app(path, extra_markers=()):
         if versions != {("OOT Remake Archipelago", version)}:
             raise ValueError("The Windows product/version resource does not match the application.")
     expected_native = sha((ROOT / "prebuilt/windows-x64/archipelago.dll").read_bytes())
+    if "licenses/PyYAML-LICENSE" not in entries:
+        raise ValueError("The bundled YAML parser's license is missing.")
     expected_wasm = sha((ROOT / "client/ootrr_triforce/engine.wasm").read_bytes())
     components = [("native/archipelago.dll", expected_native),
                   ("ootrr_triforce/engine.wasm", expected_wasm),

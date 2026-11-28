@@ -4,7 +4,7 @@
 
 ## Le bon téléchargement
 
-**[Télécharger le launcher Windows 0.10.4-alpha.10](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.10/OOT-Remake-Archipelago-0.10.4-alpha.10.exe)** · [Page de cette release](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.10)
+**[Télécharger le launcher Windows 0.10.4-alpha.11](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.11/OOT-Remake-Archipelago-0.10.4-alpha.11.exe)** · [Page de cette release](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.11)
 
 Un seul EXE suffit : le client AP, Python, Node.js et l'APWorld sont inclus. Le builder OOTRR compatible est téléchargé au premier besoin.
 
@@ -36,6 +36,10 @@ L'intégration a été vérifiée au démarrage et en reconnexion avec Triforce 
 4. **Enregistre le YAML** (*Save YAML*) et envoie-le à l'organisateur.
 
 Le launcher et les descriptions suivent la langue connue du jeu ; les clés YAML restent identiques. Modifier le YAML après génération ne change pas une salle existante.
+
+Pour reprendre un ancien fichier, ouvre **Créer un YAML → Importer un YAML…**, sélectionne ton `.yaml` ou `.yml`, puis **Choisir les réglages…**. Le nom et les réglages compatibles sont chargés. Les autres options Archipelago et les valeurs pondérées sont conservées ; utilise **Modifier** sur une valeur importée protégée pour la remplacer. **Enregistrer le YAML** propose une copie `-modified.yaml` dans le même dossier.
+
+**Détails de l’import…** indique les réglages conservés et les adaptations nécessaires. Les anciens codes `OOTRR1-` sont décodés ; les options abandonnées actives demandent une vérification avant conversion. Une valeur invalide doit être corrigée avant l’enregistrement. Les commentaires et la mise en forme sont régénérés. **Nouvelle configuration** repart des réglages par défaut.
 
 ## Pour l'organisateur
 

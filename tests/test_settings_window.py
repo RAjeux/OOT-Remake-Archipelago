@@ -135,6 +135,128 @@ class SettingsWindowTests(unittest.TestCase):
         editor.close()
         self.assertEqual(original, default_options())
 
+    def test_imported_settings_apply_unchanged_and_edit_one_choice_without_resetting_others(self):
+        original = default_options()
+        original.update(starting_items=["bow"], cosmetic_color_mode="custom",
+                        cosmetic_colors={"kokiri": "#123456"}, bridge="dungeons", bridge_rewards=4,
+                        enemy_health=200)
+        for edit in (False, True):
+            with self.subTest(edit=edit):
+                result = []
+                editor = self.open(values=original, preserve_unchanged=True, on_apply=result.append)
+                editor.search_var.set("death_link")
+                editor.show_advanced.set(True)
+                editor.hide_inactive.set(False)
+                if edit:
+                    editor.variables["death_link"].set(True)
+                editor.apply()
+                self.assertEqual(editor.changed_keys, {"death_link"} if edit else set())
+                self.assertEqual(result, [dict(original, death_link=edit)])
+                self.assertEqual(original["cosmetic_colors"], {"kokiri": "#123456"})
+                self.assertFalse(original["death_link"])
+
+    def test_imported_parent_edit_resets_only_its_newly_inactive_dependencies(self):
+        cases = (("dungeons", 4, "vanilla", 9), ("open", 0, "vanilla", 9),
+                 ("dungeons", 4, "open", 0))
+        for before, count, after, expected in cases:
+            with self.subTest(before=before, after=after):
+                original = default_options()
+                original.update(bridge=before, bridge_rewards=count, enemy_health=200,
+                                starting_items=["bow"])
+                result = []
+                editor = self.open(values=original, preserve_unchanged=True, on_apply=result.append)
+                self.set_choice("bridge", after)
+                editor.apply()
+                self.assertTrue(editor.closed)
+                self.assertEqual(editor.changed_keys, {"bridge", "bridge_rewards"})
+                self.assertEqual(result, [dict(original, bridge=after, bridge_rewards=expected)])
+
+    def test_opaque_imported_values_are_visible_without_showing_default_controls(self):
+        opaque = {"bridge_rewards", "enemy_health", "starting_items", "cosmetic_colors"}
+        for language in ("en", "fr"):
+            with self.subTest(language=language):
+                editor = self.open(language=language, preserve_unchanged=True,
+                                   preserved_options=opaque | {"not_a_current_setting"})
+                self.assertEqual(editor.preserved_options, opaque)
+                self.assertTrue(opaque.issubset(editor.filtered_names), "imported values must survive inactive/advanced filters")
+                for name in opaque:
+                    self.assertTrue(editor.imported_fields[name].grid_info(), name)
+                    self.assertFalse(editor.value_fields[name].grid_info(), name)
+                    self.assertEqual(str(editor.controls[name].cget("state")), "disabled")
+                    labels = [child.cget("text") for child in editor.imported_fields[name].winfo_children()]
+                    self.assertIn("Valeur importée conservée" if language == "fr" else "Imported value kept", labels)
+                    self.assertEqual(editor.replace_buttons[name].cget("text"), "Modifier" if language == "fr" else "Replace")
+                editor.search_var.set("bridge_rewards")
+                self.assertIn("bridge_rewards", editor.visible_names)
+                self.assertIn("YAML", editor.rows["bridge_rewards"][1].cget("text"))
+                self.assertNotIn("Selected value:", editor.rows["bridge_rewards"][1].cget("text"))
+                editor._resized(type("Resize", (), {"width": 480})())
+                self.assertEqual(editor.fields["bridge_rewards"].grid_info()["row"], 1)
+                self.assertFalse(editor.value_fields["bridge_rewards"].grid_info())
+                editor._resized(type("Resize", (), {"width": 900})())
+                self.assertEqual(editor.fields["bridge_rewards"].grid_info()["row"], 0)
+                self.assertFalse(editor.value_fields["bridge_rewards"].grid_info())
+                editor.apply()
+                self.assertEqual(editor.changed_keys, set())
+
+    def test_replacing_an_opaque_value_is_an_explicit_change_even_at_the_default(self):
+        result = []
+        editor = self.open(preserve_unchanged=True, preserved_options=("shuffle_shops",), on_apply=result.append)
+        editor.replace_buttons["shuffle_shops"].invoke()
+        self.assertEqual(editor.preserved_options, set())
+        self.assertFalse(editor.imported_fields["shuffle_shops"].grid_info())
+        self.assertTrue(editor.value_fields["shuffle_shops"].grid_info())
+        self.assertEqual(str(editor.controls["shuffle_shops"].cget("state")), "readonly")
+        editor.apply()
+        self.assertEqual(editor.changed_keys, {"shuffle_shops"})
+        self.assertEqual(result, [default_options()])
+
+    def test_replaced_imported_list_and_mapping_use_the_real_editors(self):
+        original = default_options()
+        original["cosmetic_color_mode"] = "custom"
+        result = []
+        editor = self.open(values=original, preserve_unchanged=True,
+                           preserved_options=("starting_items", "cosmetic_colors"), on_apply=result.append)
+        editor.replace_buttons["starting_items"].invoke()
+        items = SPEC_BY_ID["starting_items"]["choices"]
+        editor.controls["starting_items"].selection_set(items.index("bow"))
+        editor.controls["starting_items"].event_generate("<<ListboxSelect>>")
+        editor.replace_buttons["cosmetic_colors"].invoke()
+        mapping = editor._edit_mapping("cosmetic_colors")
+        mapping.key_var.set(mapping._text("Kokiri tunic", "Tunique Kokiri"))
+        mapping.value_var.set("#123456")
+        mapping.add()
+        mapping.apply()
+        editor.apply()
+        self.assertEqual(editor.changed_keys, {"starting_items", "cosmetic_colors"})
+        self.assertEqual(result[0]["starting_items"], ["bow"])
+        self.assertEqual(result[0]["cosmetic_colors"], {"kokiri": "#123456"})
+        self.assertEqual(original["cosmetic_colors"], {})
+
+    def test_imported_reset_replaces_every_setting_and_cancel_never_applies(self):
+        original = default_options()
+        original.update(death_link=True, starting_items=["bow"])
+        result = []
+        editor = self.open(values=original, preserve_unchanged=True,
+                           preserved_options=("shuffle_shops", "starting_items", "cosmetic_colors"),
+                           on_apply=result.append)
+        editor.reset_button.invoke()
+        self.assertEqual(editor.preserved_options, set())
+        self.assertTrue(all(not field.grid_info() for field in editor.imported_fields.values()))
+        editor.apply()
+        self.assertEqual(editor.changed_keys, set(SPEC_BY_ID))
+        self.assertEqual(result, [default_options()])
+        self.assertTrue(original["death_link"])
+        result.clear()
+        editor = self.open(values=original, preserve_unchanged=True, preserved_options=("shuffle_shops",),
+                           on_apply=result.append)
+        editor.replace_buttons["shuffle_shops"].invoke()
+        editor.variables["death_link"].set(False)
+        editor.close()
+        self.assertEqual(result, [])
+        self.assertEqual(editor.changed_keys, set())
+        self.assertTrue(original["death_link"])
+
     def test_starting_equipment_multiple_selection_and_existing_dependencies(self):
         result = []
         editor = self.open(on_apply=result.append)

@@ -65,6 +65,23 @@ def self_test(destination):
     window.update_idletasks()
     from ootrr_triforce.settings import OPTION_SPECS, validate_options
     from ootrr_triforce.settings_window import SettingsWindow
+    from ootrr_triforce.yaml_import import parse_yaml, render_imported_yaml
+    import yaml
+    sample = {"name": "ImportTest", "game": "Ocarina of Time Remake",
+              "description": "Synthetic import verification",
+              "Ocarina of Time Remake": {"shuffle_skulltulas": {"off": 20, "matched": 80},
+                                         "death_link": False, "accessibility": "items"}}
+    imported = parse_yaml(yaml.safe_dump(sample))
+    revised = render_imported_yaml(imported, "ImportTest", dict(imported.values, death_link=True),
+                                   changed_keys={"death_link"})
+    expected = dict(sample)
+    expected["Ocarina of Time Remake"] = dict(sample["Ocarina of Time Remake"], death_link=True)
+    assert yaml.safe_load(revised) == expected
+    old = dict(sample, **{"Ocarina of Time Remake": {"ootrr_settings": DEFAULT_SETTINGS}})
+    migrated = parse_yaml(yaml.safe_dump(old))
+    assert migrated.legacy_settings == DEFAULT_SETTINGS and not migrated.invalid_options
+    migrated_text = render_imported_yaml(migrated, migrated.name, migrated.values)
+    assert "ootrr_settings" not in yaml.safe_load(migrated_text)["Ocarina of Time Remake"]
     for language in ("en", "fr"):
         editor = SettingsWindow(window, language=language)
         assert len(editor.controls) == len(OPTION_SPECS)
@@ -115,6 +132,8 @@ def self_test(destination):
                   network_catalogue=True, native_sources=len(SOURCES),
                   shop_display_models=len(expected_models),
                   yaml_editor_languages=["en", "fr"], yaml_editor_controls=len(OPTION_SPECS),
+                  yaml_import=True, yaml_import_preserves_weights=True,
+                  yaml_import_legacy_decoder=True,
                   game_started=False, server_connected=False)
     Path(destination).write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     return 0

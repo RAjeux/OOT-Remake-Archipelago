@@ -2,16 +2,16 @@
 
 Play Ocarina of Time Remake in an Archipelago multiworld with a single Windows application. It prepares the mod, manages the connection and launches your compatible game host.
 
-**Current release: 0.10.4-alpha.10.** This patch cleans up launcher-update lock files, including verified leftovers
-from earlier updates. The large-catalogue, native reward and lifecycle fixes remain included;
-see the [update notes](docs/RELEASE-NOTES-0.10.4-alpha.10.md).
+**Current release: 0.10.4-alpha.11.** Import a previous player YAML, edit the settings you need and save a copy.
+Additional Archipelago options and weighted values are preserved. The earlier runtime and updater fixes remain included;
+see the [update notes](docs/RELEASE-NOTES-0.10.4-alpha.11.md).
 The 0.10.4 selective upstream integration adds
 current AP access rules, 17 physical sources and optional gameplay, cosmetic
 and difficulty controls. See [what is adapted and how it is validated](docs/UPSTREAM-INTEGRATION.md).
 Existing native 0.10 rooms remain supported. New sources and options require
 the matching APWorld and a newly generated room with its own save.
 
-**[Download the Windows launcher · 0.10.4-alpha.10](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.10/OOT-Remake-Archipelago-0.10.4-alpha.10.exe)** · [Release page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.10) · [Installation en français](docs/INSTALLATION.fr.md)
+**[Download the Windows launcher · 0.10.4-alpha.11](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.11/OOT-Remake-Archipelago-0.10.4-alpha.11.exe)** · [Release page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.11) · [Installation en français](docs/INSTALLATION.fr.md)
 
 > **Use the native 0.10 release above.** The discontinued **0.11/0.12 Full-network experiment** has a higher number but a different player-file format. Its `.apootrr` files are not converted by this launcher. If you came from Full, export a fresh YAML with the current editor, generate a new room with the current APWorld and keep the old saves separate.
 
@@ -50,12 +50,14 @@ The launcher does not generate or host the multiworld. See the [organizer instru
 
 | File | Purpose | Who uses it? |
 | --- | --- | --- |
-| `OOT-Remake-Archipelago-0.10.4-alpha.10.exe` | The desktop launcher; includes the APWorld and runtimes. | Zelda players and the organizer. |
+| `OOT-Remake-Archipelago-0.10.4-alpha.11.exe` | The desktop launcher; includes the APWorld and runtimes. | Zelda players and the organizer. |
 | `Player-name.yaml` | A player's settings **before generation**. | Player sends it to the organizer. |
 | `ootrr_remake.apworld` | The custom game integration loaded by Archipelago's generator. | Organizer installs it with this launcher's **Install APWorld** action. |
 | `AP_123456_P1_Link.apootrr` | Generated data for **one Zelda slot in one room**; filename shown as an example. | That Zelda player selects it in **Set up a room**. |
 
 Changing a YAML after generation does not change the existing room. A new room needs its own `.apootrr` and dedicated save.
+
+To reuse a configuration, open **Create YAML → Import YAML…**, select your `.yaml` or `.yml`, then **Choose settings…**. The player name and supported settings are loaded. Weighted values, additional Archipelago options and untouched settings are preserved; use **Replace** to edit a weighted or otherwise protected value. **Save YAML** proposes a separate `-modified.yaml` copy. Older native settings codes are decoded, and unsupported legacy settings are reported before conversion. See [importing an existing YAML](docs/INSTALLATION.md#reuse-an-existing-yaml).
 
 ## Compatibility and current limits
 

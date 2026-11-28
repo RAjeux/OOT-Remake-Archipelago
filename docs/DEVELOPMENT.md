@@ -116,6 +116,12 @@ network and save flow. Historical internal names such as `ootrr_triforce` and
 | Tests and packaging | `tests/`, `tests/fixtures/`, `tools/test.py`, `tools/build.py`, `tools/build_app.py` |
 
 Python filenames without a full prefix above are in `client/ootrr_triforce/`.
+`yaml_import.py` parses player YAMLs using bounded PyYAML SafeLoader input,
+projects compatible values into the shared schema and preserves untouched
+Archipelago options for export. The settings editor reports explicit changed
+keys; opaque weighted values require replacement before they become editable.
+Legacy native codes use the same engine decoder as generation. Import tests
+cover both backend round trips and the actual Tk workflow.
 The shared settings schema drives YAML and the editor. English source messages
 use `tr()` with matching French entries, preserving placeholders. Translate
 display labels, not AP identifiers or YAML keys. The engine's `localize` pass

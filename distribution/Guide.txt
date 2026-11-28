@@ -51,6 +51,14 @@ Each Zelda player: choose settings before generation
 3. Apply the settings, Save YAML and send that file to the organizer.
 Changing a YAML later does not change an existing room.
 
+To reuse an old configuration, choose Create YAML -> Import YAML, open its
+.yaml/.yml, then Choose settings. The name and compatible settings are loaded.
+Additional AP options and weighted selections are kept. Use Replace on an
+"Imported value kept" setting to change it. Save YAML proposes a separate
+-modified.yaml copy, preserving the original. Import details lists compatibility
+changes; unsupported old options must be reviewed. New configuration starts
+over with the current defaults. Comments and formatting are regenerated.
+
 Organizer: generate and host
 1. Install official Archipelago, including its generator, from:
    https://github.com/ArchipelagoMW/Archipelago/releases

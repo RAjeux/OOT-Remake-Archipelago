@@ -25,6 +25,10 @@ distribution/runtime/ and distribution/sources/. Reference Triforce host
 sources retain their original notices and provenance in references/triforce/.
 See REFERENCES.md for the source revisions and the paths of these notices.
 
+The launcher uses PyYAML for importing and editing Archipelago player YAMLs.
+PyYAML is distributed under the MIT license. Its notice is bundled in the
+Windows application's licenses/PyYAML-LICENSE file.
+
 Artwork is licensed separately from the source code. The colored Archipelago
 icon is attributed to Krista Corkos and Christopher Wilson (2022), under
 Creative Commons Attribution-NonCommercial 4.0 International:

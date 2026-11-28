@@ -169,7 +169,8 @@ def licenses(work, node_license):
                        ("Gorilla-WebSocket-LICENSE.txt", ROOT / "native/vendor/github.com/gorilla/websocket/LICENSE"),
                        ("WebSockets-LICENSE.txt", ROOT / "client/websockets/LICENSE")):
         result["licenses/" + name] = path
-    for distribution, label in (("pyinstaller", "PyInstaller"), ("zstandard", "Python-Zstandard")):
+    for distribution, label in (("pyinstaller", "PyInstaller"), ("zstandard", "Python-Zstandard"),
+                                 ("PyYAML", "PyYAML")):
         package = importlib.metadata.distribution(distribution)
         for file in package.files or ():
             if file.name in ("COPYING.txt", "LICENSE"):
