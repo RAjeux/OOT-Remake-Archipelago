@@ -11,7 +11,14 @@ and difficulty controls. See [what is adapted and how it is validated](docs/UPST
 Existing native 0.10 rooms remain supported. New sources and options require
 the matching APWorld and a newly generated room with its own save.
 
+## Download the current version
+
 **[Download the Windows launcher · 0.10.4-alpha.14](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.14/OOT-Remake-Archipelago-0.10.4-alpha.14.exe)** · [Release page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.14) · [Installation en français](docs/INSTALLATION.fr.md)
+
+The Releases list can display older alpha versions first. Use this download
+link for the current supported version; releases marked **ARCHIVE** are kept
+for existing download links and historical use. Unpublished internal drafts
+are visible only to repository collaborators with the required access.
 
 > **Use the native 0.10 release above.** The discontinued **0.11/0.12 Full-network experiment** has a higher number but a different player-file format. Its `.apootrr` files are not converted by this launcher. If you came from Full, export a fresh YAML with the current editor, generate a new room with the current APWorld and keep the old saves separate.
 

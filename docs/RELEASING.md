@@ -67,6 +67,25 @@ digests with the reviewed files. Verify that a previous supported launcher
 offers the new release and that the new version reports itself as current.
 Do not overwrite published assets or move a published tag to another commit.
 
+## Keep the current download clear
+
+GitHub's Releases list is not a reliable chronological order for alpha tags.
+Keep the README's **Download the current version** section as the stable public
+entry point, linking to the reviewed version's exact EXE and release page.
+Do not use `/releases/latest` for the alpha channel: GitHub excludes prereleases
+from that endpoint, and alpha releases must retain their prerelease status.
+
+After the new release is public and verified, mark its title **CURRENT /
+ACTUELLE**. Mark older published release titles **ARCHIVE** and put a warning
+above their original notes, linking to
+`https://github.com/RAjeux/OOT-Remake-Archipelago#download-the-current-version`.
+The stable link follows later README updates. Move the previous current title
+to the archive label each time a new version is published. Keep tags, release
+IDs, dates, original notes and downloadable assets intact. Preserve a snapshot
+before changing display metadata and verify the updater still selects the
+newest public release. Internal held drafts must remain unpublished; use an
+explicit archive title so collaborators cannot mistake them for a release.
+
 ## Auditing an existing release
 
 Use the exact tagged source in a separate checkout or worktree to rebuild and
