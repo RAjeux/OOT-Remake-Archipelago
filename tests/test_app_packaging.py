@@ -151,8 +151,13 @@ class FrozenArchiveSafetyTests(unittest.TestCase):
 
 class TkLicenseTests(unittest.TestCase):
     def test_yaml_parser_license_is_included_from_the_installed_distribution(self):
+        # Portable checks install requirements-dev, before the optional freezer.
+        # Use PyYAML's actual distribution without requiring PyInstaller here.
+        distribution = build_app.importlib.metadata.distribution
         with tempfile.TemporaryDirectory() as temporary:
-            with patch.object(build_app, "_tk_license_text", return_value="Vendor Tk terms"):
+            with patch.object(build_app, "_tk_license_text", return_value="Vendor Tk terms"), \
+                    patch.object(build_app.importlib.metadata, "distribution", side_effect=lambda name:
+                                 distribution(name) if name == "PyYAML" else SimpleNamespace(files=())):
                 files = build_app.licenses(Path(temporary), Path(temporary)/"node-license")
             license_file = files["licenses/PyYAML-LICENSE"]
             self.assertIn("Permission is hereby granted", license_file.read_text(encoding="utf-8"))
