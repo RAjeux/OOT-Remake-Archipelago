@@ -25,9 +25,9 @@ from .room_view import RoomView
 from .save_bridge import atomic, exclusive, history_cursor, write_json
 
 
-# Expanded quest panels and the opening's local tracker actions need the
-# current resources. Do not reuse a prepared mod that can crash or stall.
-PREPARED_RESOURCE_REVISION = 4
+# Copied NPC handovers need their complete transitive native action bindings,
+# alongside the earlier menu and opening repairs. Older resources can stall.
+PREPARED_RESOURCE_REVISION = 5
 PREPARED_RESOURCE_MARKER = Path("Archipelago/prepared-v1.json")
 
 

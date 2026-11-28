@@ -2,16 +2,16 @@
 
 Play Ocarina of Time Remake in an Archipelago multiworld with a single Windows application. It prepares the mod, manages the connection and launches your compatible game host.
 
-**Current release: 0.10.4-alpha.6.** This patch fixes preparation failures
-for valid rooms with progressive rewards on physical AP pickups;
-see the [update notes](docs/RELEASE-NOTES-0.10.4-alpha.6.md).
+**Current release: 0.10.4-alpha.7.** This patch fixes NPC reward animations
+that could freeze or crash the game after Talon's Super Cucco minigame;
+see the [update notes](docs/RELEASE-NOTES-0.10.4-alpha.7.md).
 The 0.10.4 selective upstream integration adds
 current AP access rules, 17 physical sources and optional gameplay, cosmetic
 and difficulty controls. See [what is adapted and how it is validated](docs/UPSTREAM-INTEGRATION.md).
 Existing native 0.10 rooms remain supported. New sources and options require
 the matching APWorld and a newly generated room with its own save.
 
-**[Download the Windows launcher · 0.10.4-alpha.6](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.6/OOT-Remake-Archipelago-0.10.4-alpha.6.exe)** · [Release page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.6) · [Installation en français](docs/INSTALLATION.fr.md)
+**[Download the Windows launcher · 0.10.4-alpha.7](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.7/OOT-Remake-Archipelago-0.10.4-alpha.7.exe)** · [Release page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.7) · [Installation en français](docs/INSTALLATION.fr.md)
 
 > **Use the native 0.10 release above.** The discontinued **0.11/0.12 Full-network experiment** has a higher number but a different player-file format. Its `.apootrr` files are not converted by this launcher. If you came from Full, export a fresh YAML with the current editor, generate a new room with the current APWorld and keep the old saves separate.
 
@@ -50,7 +50,7 @@ The launcher does not generate or host the multiworld. See the [organizer instru
 
 | File | Purpose | Who uses it? |
 | --- | --- | --- |
-| `OOT-Remake-Archipelago-0.10.4-alpha.6.exe` | The desktop launcher; includes the APWorld and runtimes. | Zelda players and the organizer. |
+| `OOT-Remake-Archipelago-0.10.4-alpha.7.exe` | The desktop launcher; includes the APWorld and runtimes. | Zelda players and the organizer. |
 | `Player-name.yaml` | A player's settings **before generation**. | Player sends it to the organizer. |
 | `ootrr_remake.apworld` | The custom game integration loaded by Archipelago's generator. | Organizer installs it with this launcher's **Install APWorld** action. |
 | `AP_123456_P1_Link.apootrr` | Generated data for **one Zelda slot in one room**; filename shown as an example. | That Zelda player selects it in **Set up a room**. |
@@ -61,7 +61,7 @@ Changing a YAML after generation does not change the existing room. A new room n
 
 | Host | Current scope |
 | --- | --- |
-| **Triforce, Windows x64** | Main installation route. Triforce **0.8.3** has title-screen connection/reconnect coverage and a private current-room Bow/rupee receipt check. Setup checks the host's tools and source hooks. |
+| **Triforce, Windows x64** | Main installation route. Triforce **0.8.4** has private save-loading and Talon reward regression coverage; **0.8.3** also has title-screen connection/reconnect and Bow/rupee receipt checks. Setup checks the host's tools and source hooks. |
 | **Hookshot 3.0.1, Windows x64** | Experimental adapter requiring its matching original tools and retained build files. Other revisions are rejected. |
 | **Fritchii 5.8.4** | RomFS overlay loading was tested; **there is no emulator AP gameplay backend**. |
 | Other hosts or Linux | Not supported by this installer. |

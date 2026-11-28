@@ -5,6 +5,30 @@ Candidate: **0.10.4-alpha.1**, reviewed OOTRR source
 These results describe automated checks and explicitly scoped native observations.
 They do not certify every game area or option combination.
 
+## Alpha 7 NPC handover regression
+
+Triforce **0.8.4, source `9ad57a40`**, was tested offline with a private copy
+of a current native room and save. Talon's authored victory/reward sequence
+reproduced the empty-handed get pose, missing HUD, blocked movement and the
+same invalid EVFL action dispatch as the reported crash. A private debugger
+identified the absent `Npc_EventStarter.EventPlayAS` callback; the game's
+action lookup returned the end of its binding array.
+
+Adding only the forwarded native participant requirements fixed the reward.
+The final general normalizer also passed the same test: AP medal and foreign
+reward text, one source acknowledgement, native dialogue/fade cleanup and
+ordinary movement with the HUD restored. The superseded bottle and generated
+boss key were not granted. Received-item cursor and unrelated inventory stayed
+unchanged. The private condition fixture entered the authored victory through
+Talon's talk request and used its native preload list; it bypassed catching
+the three Cuccos. This is a reward regression test, not a complete minigame or
+whole-game playthrough. No public room or player save was modified by it.
+
+The repair preserves event nodes, actor identities, entry targets, parameters
+and inventory operations. Focused tests cover nested actor arguments, shared
+native entry bodies, query forwarding, cycles and idempotence. The source,
+action declarations and unchanged scene graph were independently reviewed.
+
 ## Automated checks
 
 | Layer | Result and scope |

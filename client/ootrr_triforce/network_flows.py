@@ -415,6 +415,7 @@ def prepare_flow_rewards(romfs, mod, records, settings, effects):
     from oot_rando.patching.event_info import reachable
     from oot_rando.patching.progressive import FlowEditor
     from oot_rando.game.resource_allocations import grow_resources
+    from oot_rando.patching.event_bindings import complete_forwarded_actor_bindings
     romfs, mod = Path(romfs), Path(mod)
     flows = [record for record in records if validate_record(record)["kind"] == "flow"]
     if not flows:
@@ -460,6 +461,9 @@ def prepare_flow_rewards(romfs, mod, records, settings, effects):
                           display["param"], record, number)
     changed = {}
     for path, editor in editors.items():
+        # Local native copies can forward the same NPC through several entry
+        # aliases. Their provider must expose the children's native callbacks.
+        complete_forwarded_actor_bindings(editor.chart)
         for point in editor.chart.entry_points:
             for event in reachable(point.main_event.v):
                 if event.name.startswith(PREFIX) and isinstance(event.data, SubFlowEvent):
