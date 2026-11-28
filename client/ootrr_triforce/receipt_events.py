@@ -322,6 +322,7 @@ def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, nat
     from .native_presentations import (AMMO_BAGS, PRESENTER_NAME, PRESENTER_PATH,
                                        append_recipe, append_tier_choice, copy_receipt_presenter, receipt_style)
     from .presentation_models import SHOW_ACTOR_ARGUMENT, model_actor, needs_model_alias
+    from .dungeon_messages import append_window
     if not re.fullmatch("[a-f0-9]{64}", token):
         raise ValueError(tr('Invalid room identifier for native receipts.'))
     names = sorted(ITEM_DATA if names is None else set(names))
@@ -357,8 +358,8 @@ def build_presented_receipts(pouch_raw, presenter_raw, token, names=None, *, nat
             link(recipe, ack)
         root = recipe
         if style != "pickup":
-            window = pouch.subflow(core_name + "_Window", "", "DisplayGetByActorName",
-                                   {"ActorName": Argument("ActorName")})
+            window = append_window(pouch, metadata, core_name,
+                                   params={"ActorName": Argument("ActorName")})
             link(window, root)
             root = window
         core = EntryPoint(core_name)

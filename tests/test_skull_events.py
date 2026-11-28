@@ -145,6 +145,8 @@ class Pickup:
                     self.message_target = values["Actor"]
                 elif command == "EventTriggerSetOwnNameToMessage":
                     self.message_target = self.guest_message_actor or args["ActorName"]
+                elif command == "EventTalk" and values.get("MessageId", "").startswith("EventFlowMsg/Dm_SY_Get:OOTRR_APDungeon_"):
+                    self.windows.append((values["MessageId"], dict(self.values)))
                 elif command == "EventTriggerAddOrRemovePouchContent":
                     self.held.add(OWNERS.get(values["Actor"], values["Actor"]))
                 event = data.nxt.v
@@ -246,8 +248,12 @@ class SkullEventTests(unittest.TestCase):
                         self.assertTrue(all(call["IsGetInEvent"] is False and call["IsTreasureBox"] is False
                                             and call["IsShowNumDisplay"] is True for call in calls))
                     self.assertNotIn(record["actor"], pouch)
+                    from ootrr_triforce.dungeon_messages import message_id
+                    dungeon_message = message_id(metadata)
                     self.assertEqual(sum(command == "call:OpenGetWindow" for command, _ in run.trace),
-                                     int(metadata["actor"] not in AMMO_BAGS))
+                                     int(metadata["actor"] not in AMMO_BAGS and dungeon_message is None))
+                    self.assertEqual([args["MessageId"] for command, args in run.trace if command == "EventTalk"],
+                                     [dungeon_message] if dungeon_message is not None else [])
                     committed = list(run.trace)
                     run.run(record["actor"])
                     self.assertEqual(sum(command == "EventTriggerAddOrRemovePouchContent" for command, _ in run.trace),
@@ -341,7 +347,8 @@ class SkullEventTests(unittest.TestCase):
                         guest_grants = [cmd for cmd, args in run.trace if cmd == "EventTriggerAddOwnToPouch"]
                         if "local_item" in record:
                             expected = ITEM_DATA[record["local_item"]].get("tiers", [record["native_actor"]])[0]
-                            self.assertEqual(target, expected)
+                            from ootrr_triforce.dungeon_messages import message_id
+                            self.assertEqual(target, message_id(ITEM_DATA[record["local_item"]]) or expected)
                             self.assertEqual(notices, [expected])
                             self.assertFalse(guest_grants)
                             self.assertEqual(run.values[NATIVE_SCRATCH], expected)

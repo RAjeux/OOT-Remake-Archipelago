@@ -27,7 +27,7 @@ from .save_bridge import atomic, exclusive, history_cursor, write_json
 
 # Shop selection identities and presentation transforms must be regenerated
 # alongside the earlier NPC handover, menu and opening repairs.
-PREPARED_RESOURCE_REVISION = 7
+PREPARED_RESOURCE_REVISION = 8
 PREPARED_RESOURCE_MARKER = Path("Archipelago/prepared-v1.json")
 
 

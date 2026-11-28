@@ -56,6 +56,11 @@ def self_test(destination):
                        for actor in (item["actor"], *item.get("tiers", []))}
     assert set(shop_geometry["actors"]) == expected_models
     assert shop_geometry["foreign"]["preserve_native"] is True
+    from ootrr_triforce.dungeon_messages import message_id as dungeon_message
+    dungeon_messages = {dungeon_message(item) for item in ITEM_DATA.values()} - {None}
+    assert len(dungeon_messages) == 35
+    assert dungeon_message(ITEM_DATA["Small Key (Forest Temple)"]) != dungeon_message(ITEM_DATA["Small Key (Fire Temple)"])
+    assert dungeon_message(ITEM_DATA["Small Key (Treasure Chest Game)"]) is None
     window = tk.Tk()
     window.withdraw()
     apply_theme(window)
@@ -131,6 +136,7 @@ def self_test(destination):
                   persistent_node_engine=True,
                   network_catalogue=True, native_sources=len(SOURCES),
                   shop_display_models=len(expected_models),
+                  dungeon_item_messages=len(dungeon_messages),
                   yaml_editor_languages=["en", "fr"], yaml_editor_controls=len(OPTION_SPECS),
                   yaml_import=True, yaml_import_preserves_weights=True,
                   yaml_import_legacy_decoder=True,

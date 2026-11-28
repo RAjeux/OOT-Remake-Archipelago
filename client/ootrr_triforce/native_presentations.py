@@ -329,6 +329,7 @@ def append_local_chests(editor, pouch_raw, rewards, *, small_raw=None):
     from oot_rando.patching.progressive import FlowEditor, link
     from .catalog import ITEM_DATA, ITEM_IDS
     from .receipt_events import FLOW_NAME, _action, _silent_grant
+    from .dungeon_messages import append_window
 
     opened = editor.action("OOTRR_APLocalOpened", "TreasureBox_EventStarter",
                            "EventTriggerTreasureBoxOpened", None)
@@ -355,8 +356,8 @@ def append_local_chests(editor, pouch_raw, rewards, *, small_raw=None):
         recipe = append_recipe(editor, metadata, core_name, grant_entry, opened)
         if isinstance(recipe.data, SubFlowEvent):
             link(recipe, opened)
-        window = editor.subflow(core_name + "_Window", FLOW_NAME, "DisplayGetByActorName",
-                                {"ActorName": Argument("ActorName")})
+        window = append_window(editor, metadata, core_name, flow=FLOW_NAME,
+                               params={"ActorName": Argument("ActorName")})
         link(window, recipe)
         core = EntryPoint(core_name)
         core.main_event = make_index(window)

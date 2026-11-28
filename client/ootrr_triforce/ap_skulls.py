@@ -112,6 +112,7 @@ def patch_skull_flow(raw, records, *, return_entries=False):
     from oot_rando.patching.event_info import reachable
     from oot_rando.patching.progressive import FlowEditor, link
     from .native_presentations import NO_AMMO_BAG, append_recipe, append_tier_choice, copy_entry
+    from .dungeon_messages import append_window
     from .receipt_events import _action, _silent_grant
 
     records = _records(records)
@@ -159,7 +160,8 @@ def patch_skull_flow(raw, records, *, return_entries=False):
         amount = editor.subflow(stem + "_Counter", "", "OpenRupeeUIIfNeed",
                                 {"ActorName": Argument("ActorName"), "IsShowNumDisplay": True})
         link(amount, recipe)
-        window = editor.subflow(stem + "_Window", "", "OpenGetWindow", None)
+        window = (append_window(editor, metadata, stem + "_Window", entry="OpenGetWindow")
+                  if metadata is not None else editor.subflow(stem + "_Window", "", "OpenGetWindow", None))
         link(window, amount)
         target = editor.action(stem + "_Target", "PouchSystemActor", "EventTriggerSetForGetWindow",
                                {"Actor": Argument("ActorName")})
@@ -244,6 +246,7 @@ def patch_pickup_presentation(raw, records, effect_entries, flow_name):
     from oot_rando.patching.progressive import FlowEditor, link
     from .shop_events import _retarget
     from .native_presentations import AMMO_BAGS, NO_AMMO_BAG, append_tier_choice
+    from .dungeon_messages import append_window, message_id
 
     records = _records(records)
     editor = FlowEditor(raw, flow_name)
@@ -337,6 +340,37 @@ def patch_pickup_presentation(raw, records, effect_entries, flow_name):
                 incoming += 1
         if not incoming:
             raise ValueError(tr("Unknown native pickup flow."))
+
+    # The guest's authored get window comes after its room-bound message
+    # selection and before the quiet effect callback. Keys share native actors,
+    # so select their dungeon text by the original unique AP pickup identity,
+    # never by the generic native actor or the scene Link happens to be in.
+    dungeon_records = [record for record in records
+                       if message_id(ITEM_DATA.get(record.get("local_item"), {})) is not None]
+    dungeon_windows = 0
+    for number, event in enumerate(originals):
+        data = event.data
+        if not (isinstance(data, SubFlowEvent) and data.res_flowchart_name == "GetPouchContent"
+                and data.entry_point_name == "OpenGetWindow"):
+            continue
+        dungeon_windows += 1
+        previous_nodes = list(chart.events)
+        branch = event
+        for index, record in reversed(list(enumerate(dungeon_records))):
+            window = append_window(editor, ITEM_DATA[record["local_item"]],
+                                   PREFIX + f"GroundDungeonWindow{number}_{index}")
+            link(window, data.nxt.v)
+            for alias, identity in enumerate((record["actor"], record["pickup"])):
+                branch = editor.switch(PREFIX + f"GroundDungeonWindowMatch{number}_{index}_{alias}",
+                                       "GameDataActor", "EventQueryIsGameDataString64",
+                                       {"GameDataName": SCRATCH, "Index": -1, "Value": identity}, window, branch)
+        for previous in previous_nodes:
+            _retarget(previous, event, branch)
+        for entry in chart.entry_points:
+            if entry.main_event.v is event:
+                entry.main_event = make_index(branch)
+    if dungeon_records and dungeon_windows != 1:
+        raise ValueError(tr("Unknown native pickup flow."))
 
     # This native notification takes an explicit actor after the grant. A
     # progressive reward may already own its new tier by then; use the concrete

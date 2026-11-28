@@ -354,6 +354,9 @@ def build(root, settings, data):
         if data.get("reward_mode") in ("all_chest_rewards", "all_locations"):
             from .receipt_events import prepare_receipts
             prepare_receipts(romfs,mod,data)
+            if data.get("local_items"):
+                from .dungeon_messages import prepare_messages
+                prepare_messages(romfs, mod)
         prepare_cosmetics(romfs, mod, data)
         if settings.get("native"):
             native_setup.bind_romfs(romfs,mod,data,settings["baseline"])

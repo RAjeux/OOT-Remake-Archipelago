@@ -58,8 +58,12 @@ class PresentationModelTests(unittest.TestCase):
                     models = [params["Actor"] for action, params in run.trace
                               if action == "EventCreateShowItemFromActorFileName"]
                     self.assertEqual(models, [model_actor(actor)])
+                    from ootrr_triforce.dungeon_messages import message_id
+                    dungeon_message = message_id(metadata)
                     self.assertEqual([params["ActorName"] for action, params in run.trace
-                                      if action == "FixtureItemWindow"], [actor])
+                                      if action == "FixtureItemWindow"], [] if dungeon_message else [actor])
+                    self.assertEqual([params["MessageId"] for action, params in run.trace if action == "EventTalk"],
+                                     [dungeon_message] if dungeon_message else [])
                     self.assertEqual([params["ContentName"] for flow, entry, params in run.calls
                                       if flow == CAMERA_FACING_FLOW], [actor])
                     self.assertNotIn(model_actor(actor), [params["Actor"] for action, params in run.trace

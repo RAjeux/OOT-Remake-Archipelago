@@ -23,7 +23,7 @@ REQUIRED_MODULES = {"ootrr_triforce.app_window", "ootrr_triforce.app_runtime", "
                     "ootrr_triforce.native_lifecycle", "ootrr_triforce.shop_identity",
                     "ootrr_triforce.shop_poses", "ootrr_triforce.shop_layout", "ootrr_triforce.shop_tracking",
                     "ootrr_triforce.opening_rewards", "ootrr_triforce.dispatch_banks",
-                    "ootrr_triforce.yaml_import", "yaml", "tkinter", "zstandard"}
+                    "ootrr_triforce.yaml_import", "ootrr_triforce.dungeon_messages", "yaml", "tkinter", "zstandard"}
 
 
 def sha(raw):

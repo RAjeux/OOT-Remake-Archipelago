@@ -235,7 +235,12 @@ class PresentedReceiptTests(unittest.TestCase):
             return trace
         self.assertEqual(commands["FixtureNativeModel"], 1)
         self.assertEqual(commands["FixtureNativeSound"], 1)
-        self.assertEqual(commands["FixtureItemWindow"], 1)
+        from ootrr_triforce.dungeon_messages import message_id
+        dungeon_message = message_id(ITEM_DATA[name])
+        self.assertEqual(commands["FixtureItemWindow"], int(dungeon_message is None))
+        if dungeon_message is not None:
+            self.assertEqual([params["MessageId"] for command, params in trace if command == "EventTalk"],
+                             [dungeon_message])
         sound = next(params["Sound"] for command, params in trace if command == "FixtureNativeSound")
         self.assertEqual(sound, "native-important" if important else "native-minor")
         # Heart growth belongs to the pouch recipe now, before the saved

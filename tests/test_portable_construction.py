@@ -117,7 +117,7 @@ class PortableConstructionTests(unittest.TestCase):
             for target in ("builder.validate_builder", "story_fixes.prepare_story_fixes", "quest_fixes.prepare_quest_fixes",
                            "fortress_fixes.prepare_fortress_fixes", "feature_setup.prepare_features",
                            "feature_setup.prepare_cosmetics", "native_setup.prepare_chest_flags", "shop_hours.prepare_shop_hours",
-                           "trade_state.prepare_trade_state", "receipt_events.prepare_receipts"):
+                           "trade_state.prepare_trade_state", "receipt_events.prepare_receipts", "dungeon_messages.prepare_messages"):
                 scope.enter_context(patch("ootrr_triforce." + target))
             player.build(root / "cache", dict(ootrr="ootrr", romfs=str(romfs)), data)
             installed = root / "cache/mods/Archipelago"
