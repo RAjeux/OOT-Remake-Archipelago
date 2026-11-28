@@ -136,6 +136,32 @@ def _archive(path, plan):
         _save(path, plan)
 
 
+def _cleanup_legacy_lock(plan, *, wait=False):
+    """Retire only a verified transaction's empty Windows updater lock."""
+    if os.name != "nt":
+        return
+    u = _updates()
+    target = Path(plan["target"])
+    lock = target.with_name("." + target.name + ".archipelago-update.lock")
+    deadline = time.monotonic() + (20 if wait else 0)
+    while True:
+        try:
+            with u._replacement_lock(lock, existing_only=True):
+                pass
+            return
+        except FileNotFoundError:
+            return
+        except BlockingIOError:
+            if time.monotonic() < deadline:
+                time.sleep(.1)
+                continue
+            logging.warning("Preserved an active launcher update lock")
+            return
+        except (OSError, ValueError) as error:
+            logging.warning("Preserved an unverified launcher update lock: %s", type(error).__name__)
+            return
+
+
 def _archive_history(path, current, base):
     """Move only verified, completed transactions' own adjacent backups."""
     u = _updates()
@@ -164,8 +190,7 @@ def _archive_history(path, current, base):
                     continue
                 backup = u._local_path(candidate.get("backup"))
                 helper = u._local_path(candidate.get("helper"))
-                if (not backup.is_file() or not 0 < backup.stat().st_size <= u.MAX_EXECUTABLE
-                        or helper != folder / "update-helper.exe" or not helper.is_file()
+                if (helper != folder / "update-helper.exe" or not helper.is_file()
                         or not 0 < helper.stat().st_size <= u.MAX_EXECUTABLE
                         or ("completion" in candidate and not isinstance(candidate["completion"], dict))):
                     continue
@@ -177,7 +202,10 @@ def _archive_history(path, current, base):
                     if (previous.get("state") != "completed" or Path(previous["target"]).parent != parent
                             or u.compare_versions(previous["version"], current["version"]) > 0):
                         continue
-                    _archive(previous_path, previous)
+                    _cleanup_legacy_lock(previous)
+                    backup = Path(previous["backup"])
+                    if backup.is_file() and 0 < backup.stat().st_size <= u.MAX_EXECUTABLE:
+                        _archive(previous_path, previous)
             except Exception as error:
                 logging.warning("Preserved an unverified previous launcher backup (%s): %s", folder.name, type(error).__name__)
     except OSError as error:
@@ -200,6 +228,7 @@ def prepare_completion(path, plan, base=None):
         if again_path != path or again != plan:
             u._fail("plan_changed")
         _archive(path, plan)
+        _cleanup_legacy_lock(plan, wait=True)
         _archive_history(path, plan, base)
         target = _canonical(plan)
         if source == target:

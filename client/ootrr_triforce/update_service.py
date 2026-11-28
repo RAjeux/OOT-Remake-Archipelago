@@ -5,6 +5,7 @@ copied outside PyInstaller's extraction directory. It waits for the old app and
 its bootloader, keeps the previous executable and never touches a game/save.
 """
 from datetime import datetime, timezone
+from contextlib import contextmanager
 import ctypes
 import hashlib
 import json
@@ -708,6 +709,66 @@ def _launch(command):
         stdin=subprocess_devnull(), stdout=subprocess_devnull(), stderr=subprocess_devnull())
 
 
+@contextmanager
+def _replacement_lock(path, *, existing_only=False):
+    """Keep the legacy lock identity, deleting it atomically on Windows close.
+
+    Removing a shared lock after releasing it can split concurrent updaters
+    across different files. Windows instead marks this exclusively held handle
+    for deletion, including when its helper exits unexpectedly. Save locks keep
+    their existing persistent behavior; the updater only runs on Windows.
+    """
+    path = Path(path)
+    if _local_path(str(path)) != path:
+        _fail("update_lock")
+    if os.name != "nt":
+        if existing_only and not path.exists():
+            raise FileNotFoundError(path)
+        with exclusive(path):
+            yield
+        return
+    from ctypes import wintypes as w
+    class FileInfo(ctypes.Structure):
+        _fields_ = [("attributes", w.DWORD), ("created", w.FILETIME),
+                    ("accessed", w.FILETIME), ("written", w.FILETIME),
+                    ("volume", w.DWORD), ("size_high", w.DWORD), ("size_low", w.DWORD),
+                    ("links", w.DWORD), ("index_high", w.DWORD), ("index_low", w.DWORD)]
+    class Disposition(ctypes.Structure):
+        _fields_ = [("delete", w.BYTE)]
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel.CreateFileW.argtypes = [w.LPCWSTR, w.DWORD, w.DWORD, ctypes.c_void_p, w.DWORD, w.DWORD, w.HANDLE]
+    kernel.CreateFileW.restype = w.HANDLE
+    kernel.GetFileInformationByHandle.argtypes = [w.HANDLE, ctypes.POINTER(FileInfo)]
+    kernel.GetFileInformationByHandle.restype = w.BOOL
+    kernel.SetFileInformationByHandle.argtypes = [w.HANDLE, w.DWORD, ctypes.c_void_p, w.DWORD]
+    kernel.SetFileInformationByHandle.restype = w.BOOL
+    kernel.CloseHandle.argtypes = [w.HANDLE]
+    kernel.CloseHandle.restype = w.BOOL
+    # OPEN_REPARSE_POINT never follows a replaced leaf. Existing legacy helpers
+    # use this same filename and share mode, so their lock still excludes ours.
+    handle = kernel.CreateFileW(str(path), 0xC0010000, 0, None,
+                                3 if existing_only else 4, 0x200080, None)
+    if handle == ctypes.c_void_p(-1).value:
+        error = ctypes.get_last_error()
+        if error in (5, 32, 33):
+            # Windows reports ACCESS_DENIED for an existing delete-pending
+            # handle as well as SHARING_VIOLATION for a legacy helper's lock.
+            raise BlockingIOError(error, "The launcher update lock is unavailable.", str(path))
+        raise ctypes.WinError(error)
+    try:
+        info = FileInfo()
+        if not kernel.GetFileInformationByHandle(handle, ctypes.byref(info)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        if info.attributes & (0x10 | 0x400) or info.size_high or info.size_low or info.links != 1:
+            _fail("update_lock")
+        disposition = Disposition(True)
+        if not kernel.SetFileInformationByHandle(handle, 4, ctypes.byref(disposition), ctypes.sizeof(disposition)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        yield
+    finally:
+        kernel.CloseHandle(handle)
+
+
 def apply_update_plan(path, base=None, wait_parent=None, launcher=None):
     """Wait, replace and restart only the launcher. Never terminate a process."""
     path, plan = _plan(path, base)
@@ -720,7 +781,7 @@ def apply_update_plan(path, base=None, wait_parent=None, launcher=None):
     target, backup, adjacent = (Path(plan[key]) for key in ("target", "backup", "adjacent"))
     moved, replaced = False, False
     # Share the lock between different staging directories and app instances.
-    with exclusive(target.with_name("." + target.name + ".archipelago-update.lock")):
+    with _replacement_lock(target.with_name("." + target.name + ".archipelago-update.lock")):
         if (not target.is_file() or _sha(target) != plan["original_sha256"] or backup.exists() or adjacent.exists()):
             _fail("target_changed")
         try:
