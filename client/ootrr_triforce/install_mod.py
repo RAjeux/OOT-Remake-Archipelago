@@ -55,7 +55,7 @@ def build_cache(base, token, host, entries, romfs):
     stamp = [(str(key),p.stat().st_size,p.stat().st_mtime_ns) for key,p in entries.items()]
     digest = hashlib.sha256(json.dumps([token,host,str(romfs),stamp]).encode()).hexdigest()[:24]
     # Receipts and dungeon-item messages must be rebuilt together.
-    return base / "mods-v22" / digest
+    return base / "mods-v23" / digest
 
 
 def state_dir(folder):

@@ -73,7 +73,7 @@ class PresentationModelTests(unittest.TestCase):
     def test_model_aliases_are_frozen_distinct_and_unrelated_items_unchanged(self):
         actors = {actor for row in ITEM_DATA.values() for actor in row.get("tiers", [row["actor"]])}
         changed = {actor: model_actor(actor) for actor in actors if model_actor(actor) != actor}
-        self.assertEqual(len(changed), 26)  # 25 incompatible models plus the known dungeon key.
+        self.assertEqual(len(changed), 29)  # 28 isolated models plus the known dungeon key.
         self.assertEqual(len(set(changed.values())), len(changed))
         self.assertNotEqual(model_actor("Item_Medal_Light"), chest_model_actor("Item_Medal_Light"))
         self.assertNotEqual(model_actor("Item_Stone_Forest"), chest_model_actor("Item_Stone_Forest"))
@@ -183,7 +183,7 @@ class PresentationModelTests(unittest.TestCase):
         actors = {actor for row in ITEM_DATA.values() for actor in row.get("tiers", [row["actor"]])}
         proxies = {actor: chest_model_actor(actor) for actor in actors
                    if chest_model_actor(actor).startswith("Item_AP_Chest_")}
-        self.assertEqual(len(proxies), 70)
+        self.assertEqual(len(proxies), 73)
         for actor in ("Shop_DekuStick", "Shop_Bottle_Bug", "Shop_ArrowBundle_03", "Item_DekuStick",
                       "Item_Bomb", "Obj_Heart_Piece", "Obj_Fairy", "Item_Sword_Giant"):
             with self.subTest(actor=actor):
@@ -243,7 +243,7 @@ class PresentationModelTests(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get("OOTRR_ROMFS"), "requires native v1.1.1 resources")
 class NativePresentationModelTests(unittest.TestCase):
-    def test_old_sixteen_model_constructor_gains_nine_visual_packs_before_receipt_migration(self):
+    def test_constructor_without_quest_models_gains_nine_visual_packs_before_receipt_migration(self):
         from ootrr_triforce import app_runtime, presentation_models
         from ootrr_triforce.mod_codec import Codec
         from ootrr_triforce.presentation_models import REST
@@ -263,7 +263,7 @@ class NativePresentationModelTests(unittest.TestCase):
                               lambda actor: actor not in quest and current_separate(actor)), patch.object(
                     presentation_models, "model_actor", old_model):
                 self.assertEqual(prepare_presentation_models(game, mod),
-                                 {"models": 16, "chest_models": 70, "written": 90})
+                                 {"models": 19, "chest_models": 73, "written": 98})
             codec = Codec((game / "Pack/ZsDic.pack.zs").read_bytes())
             aliases = {model_actor(actor) for actor in quest}
             self.assertTrue(all(not (mod / ("Pack/Actor/" + alias + ".pack.zs")).exists() for alias in aliases))
@@ -293,7 +293,7 @@ class NativePresentationModelTests(unittest.TestCase):
     def test_every_alias_has_getdemo_model_and_original_resources_remain_untouched(self):
         import struct
         import zlib
-        from ootrr_triforce import app_runtime
+        from ootrr_triforce import app_runtime, presentation_models as models
         from ootrr_triforce.mod_codec import Codec
         from oot_rando.formats import byml_codec
         from oot_rando.formats.inspect_resources import sarc
@@ -304,10 +304,10 @@ class NativePresentationModelTests(unittest.TestCase):
                 app_runtime, "_resource_override", Path(os.environ["OOTRR_CODEC_RESOURCES"])):
             mod = Path(tmp) / "mods/Archipelago/romfs"
             result = prepare_presentation_models(game, mod)
-            self.assertEqual(result, {"models": 25, "chest_models": 70, "written": 99})
+            self.assertEqual(result, {"models": 28, "chest_models": 73, "written": 107})
             snapshot = {p.relative_to(mod).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                         for p in mod.rglob("*") if p.is_file()}
-            self.assertEqual(prepare_presentation_models(game, mod), {"models": 25, "chest_models": 70, "written": 0})
+            self.assertEqual(prepare_presentation_models(game, mod), {"models": 28, "chest_models": 73, "written": 0})
             self.assertEqual(snapshot, {p.relative_to(mod).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                                         for p in mod.rglob("*") if p.is_file()})
 
@@ -319,7 +319,7 @@ class NativePresentationModelTests(unittest.TestCase):
             def read(path):
                 staged = mod / path
                 return codec.decode((staged if staged.is_file() else game / path).read_bytes())
-            self.assertEqual(validate_chest_models(read), {"actors": 167, "guests": 166, "proxies": 70})
+            self.assertEqual(validate_chest_models(read), {"actors": 167, "guests": 166, "proxies": 73})
             actors = {actor for row in ITEM_DATA.values() for actor in row.get("tiers", [row["actor"]])}
             aliases = {actor: model_actor(actor) for actor in actors if model_actor(actor) != actor}
             for actor, alias in aliases.items():
@@ -338,7 +338,18 @@ class NativePresentationModelTests(unittest.TestCase):
                         self.assertNotIn("EventPerformerRef", components)
                         self.assertIn("Item_GetDemo", components["ASInfoRef"])
                         animation = byml_codec.load(pack[components["AnimationRef"][1:]])["root"]
-                        self.assertEqual(animation["AnimationResources"], [{"ModelProjectName": "Item_Common_Animation"}])
+                        expected = [{"ModelProjectName": "Item_Common_Animation"}]
+                        if actor.startswith("Item_Ocarina_"):
+                            expected.append({"ModelProjectName": actor + "_Animation"})
+                        if actor == "Weapon_Sword_Master":
+                            expected.append({"ModelProjectName": models.MASTER_POSE_PROJECT})
+                        if actor == "Item_Range_Bow":
+                            expected.append({"ModelProjectName": models.BOW_POSE_PROJECT})
+                        if actor.startswith("Item_Quiver_"):
+                            native = sarc(codec.decode((game / ("Pack/Actor/" + actor + ".pack.zs")).read_bytes()))
+                            native_components = models._visual_root(native, "Actor/" + actor + ".engine__actor__ActorParam.bgyml", byml_codec)["root"]["Components"]
+                            expected = byml_codec.load(native[native_components["AnimationRef"][1:]])["root"]["AnimationResources"]
+                        self.assertEqual(animation["AnimationResources"], expected)
                     if actor.startswith(("Item_Medal_", "Item_Stone_")):
                         self.assertNotEqual(alias, chest_model_actor(actor))
                         self.assertIn("Item_GetDemo", components["ASInfoRef"])
@@ -371,11 +382,16 @@ class NativePresentationModelTests(unittest.TestCase):
                 "Component/AnimationParam/Item_Wallet_Medium.engine__component__AnimationParam.bgyml"))
             template = sarc(codec.decode((game / "Pack/Actor/Item_Medal_Forest.pack.zs").read_bytes()))
             for alias in chest_aliases:
+                actual = next(actor for actor in actors if chest_model_actor(actor) == alias)
                 pack = sarc(codec.decode((mod / ("Pack/Actor/" + alias + ".pack.zs")).read_bytes()))
                 root = byml_codec.load(pack["Actor/" + alias + ".engine__actor__ActorParam.bgyml"])["root"]
                 self.assertEqual(root["$parent"], "Work/Actor/Item_EventObject_Base.engine__actor__ActorParam.gyml")
-                self.assertEqual(root["Components"]["PouchContentRef"],
-                                 "?Component/PouchContentParam/KeyItemDefault.game__component__PouchContentParam.bgyml")
+                native_actual = sarc(codec.decode((game / ("Pack/Actor/" + actual + ".pack.zs")).read_bytes()))
+                expected_pouch = byml_codec.load(template[
+                    "Component/PouchContentParam/KeyItemDefault.game__component__PouchContentParam.bgyml"])
+                expected_pouch["root"]["GetDemoOffsetPos"] = dict(zip("XYZ",
+                    models._held_offset(actual, models._get_demo_offset(native_actual, actual, byml_codec))))
+                self.assertEqual(byml_codec.load(pack[root["Components"]["PouchContentRef"][1:]]), expected_pouch)
                 # Retain the exact same native pouch guest binding as the AP
                 # medallion chest actor; add no custom get-event/AI component.
                 for path in ("Actor/Item_EventObject_Base.engine__actor__ActorParam.bgyml",
@@ -388,7 +404,7 @@ class NativePresentationModelTests(unittest.TestCase):
                 old = byml_codec.load(codec.decode((game / path).read_bytes()))["root"]
                 new = byml_codec.load(codec.decode((mod / path).read_bytes()))["root"]
                 by_id = {row["__RowId"]: row for row in new}
-                self.assertEqual(len(new), len(old) + (70 if table == "PouchActorInfo" else 95))
+                self.assertEqual(len(new), len(old) + (73 if table == "PouchActorInfo" else 101))
                 self.assertTrue(all(by_id[row["__RowId"]] == row for row in old))
                 if table == "PouchActorInfo":
                     native = next(row for row in old if row["__RowId"] == "Item_Medal_Forest")
@@ -407,7 +423,7 @@ class NativePresentationModelTests(unittest.TestCase):
                       + b"".join(struct.pack("<II", *entry) for entry in kept) + effective_rest[22 + count * 8:])
             original_frame = (mod / REST).read_bytes()
             (mod / REST).write_bytes(codec.encode(legacy, original_frame))
-            self.assertEqual(prepare_presentation_models(game, mod), {"models": 25, "chest_models": 70, "written": 1})
+            self.assertEqual(prepare_presentation_models(game, mod), {"models": 28, "chest_models": 73, "written": 1})
             self.assertEqual(snapshot, {p.relative_to(mod).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                                         for p in mod.rglob("*") if p.is_file()})
 

@@ -97,6 +97,7 @@ def _packed_member_kind(path):
         ("Actor/", ".engine__actor__ActorParam.bgyml", "ActorParam"),
         ("Component/ModelInfo/", ".engine__component__ModelInfo.bgyml", "ModelInfo"),
         ("Component/AnimationParam/", ".engine__component__AnimationParam.bgyml", "AnimationParam"),
+        ("Component/PouchContentParam/", ".game__component__PouchContentParam.bgyml", "PouchContentParam"),
         ("Component/EventPerformerParam/", ".engine__component__EventPerformerParam.bgyml", "EventPerformer"),
         ("AI/", ".ainb", "AI"),
     )

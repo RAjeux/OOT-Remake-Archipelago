@@ -200,6 +200,7 @@ class NativeReward:
         self.grants = 0
         self.show_argument = SHOW_ACTOR_ARGUMENT
         self.separate_model = "local_item" in record and needs_model_alias(ITEM_DATA[record["local_item"]])
+        self._held_offset = None
 
     def clone(self, flow, entry):
         from evfl.event import SubFlowEvent, ActionEvent
@@ -231,6 +232,15 @@ class NativeReward:
             if (self.separate_model and action == "EventCreateShowItemFromActorFileName"
                     and isinstance(params.get("Actor"), Argument) and str(params["Actor"]) == "ActorName"):
                 params["Actor"] = Argument(self.show_argument)
+            if self.separate_model and action == "EventIgnitionShowItem":
+                from .held_framing import compensate_position, display_offset
+                if self._held_offset is None:
+                    self._held_offset = display_offset(ITEM_DATA[self.record["local_item"]], self.read)
+                if self._held_offset is not None and any(self._held_offset):
+                    # A copied NPC gift retains its authored camera and base
+                    # ItemPos. The isolated show model lacks the pouch offset
+                    # which this native command normally adds automatically.
+                    params["ItemPos"] = compensate_position(params, self._held_offset)
             inventory = (actor == "PouchSystemActor" and (
                 (action == "EventTriggerAddOrRemovePouchContent" and params.get("Num", 1) > 0)
                 or action in {"EventTriggerPushToEmptyBottle", "EventTriggerAddGameDataIntToRupee"}))

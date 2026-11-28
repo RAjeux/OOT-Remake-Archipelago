@@ -7,7 +7,9 @@ adding any saved flags, IsGet members, checks or custom event performers.
 """
 import copy
 import hashlib
+import math
 from pathlib import Path
+import struct
 
 SHOW_ACTOR_ARGUMENT = "ArchipelagoShowActor"
 TEMPLATE = "Item_Medal_Forest"
@@ -22,10 +24,45 @@ WORLD_CHEST_MODELS = frozenset({
     "Obj_Armor_Goron", "Obj_Armor_Zora", "Obj_Fairy", "Obj_Heart",
     "Obj_Heart_Container", "Obj_Heart_Piece",
 })
+# The held pose belongs to the displayed mesh. These native presentation
+# actors use the same meshes as the inventory/world actors, but also supply
+# their authored Pose_GetDemo/Pose_Common clips to Item_Common.
+POSE_LENDERS = {
+    "Item_Bomb": "Pouch_Bomb",
+    "Item_DekuStick": "Shop_DekuStick",
+    "Item_Ocarina_Fairy": "Pouch_Ocarina_Fairy",
+    "Item_Ocarina_Time": "Pouch_Ocarina_Time",
+    "Obj_Heart": "Shop_Heart",
+    "Obj_Heart_Piece": "Pouch_Heart_Piece",
+}
+MASTER_POSE_SOURCE = "Model/Weapon_Sword_Kokiri_Animation.anim.bfres.zs"
+MASTER_POSE_PROJECT = "Item_AP_MasterSwordPose"
+MASTER_POSE_PATH = "Model/" + MASTER_POSE_PROJECT + ".anim.bfres.zs"
+MASTER_MODEL_PATH = "Model/Weapon_Sword_Master.Weapon_Sword_Master.bfres.zs"
+# Measured from all native Master Sword vertices under the native Kokiri Sword
+# get orientation: 0.65 m maximum frame-zero width/height, centered 0.2 m above
+# the binding point. Only its two isolated held aliases use this presentation.
+MASTER_POSE_SCALE = 0.673380248831516
+MASTER_POSE_TRANSLATE = (0.0053876286634312, 0.20526260579718364, -0.011265083930306218)
+MASTER_POSE_SOURCE_SHA256 = "d9e6d1b62a25a4e332ff79e3c72f0f217ba9a28d44fff612e711c2618f02e8b4"
+MASTER_MODEL_SHA256 = "96691b71049528412f867727f21050c37d88bf4db56ac37c2c4f220d880e0c51"
+BOW_FAMILY = frozenset({"Item_Range_Bow", "Item_Quiver_Medium", "Item_Quiver_Large"})
+BOW_POSE_SOURCE = "Model/Weapon_Range_Bow_Animation.anim.bfres.zs"
+BOW_POSE_PROJECT = "Item_AP_BowPose"
+BOW_POSE_PATH = "Model/" + BOW_POSE_PROJECT + ".anim.bfres.zs"
+BOW_MODEL_PATH = "Model/Weapon_Range_Bow.Weapon_Range_Bow.bfres.zs"
+BOW_POSE_SOURCE_SHA256 = "803977ea577b13b229c85adea9a1f0c4185525552485fbd89ac91f0a85911e38"
+BOW_MODEL_SHA256 = "b2229431f5be2c802f232fb9c127bfef03e2c447b5b627821425182760320229"
+# Preserve the native bow orientation and string proportions. Scale every body
+# bone together (the limbs use segment-scale compensation), retaining a 0.60 m
+# vertical envelope centered at Y=0. Both ages use the same visual profile.
+BOW_POSE_FACTOR = 0.6972245681856358
+BOW_POSE_TRANSLATE = (0.020468193906702754, 0.024535849649834567, 0.0)
+BOW_DISPLAY_OFFSET = struct.unpack("<f", struct.pack("<f", 0.2))[0]
 
 
 def _separate_model(actor):
-    return (actor.startswith(("Item_Melody_", "Item_Medal_", "Item_Stone_")) or actor in {
+    return (actor in BOW_FAMILY or actor.startswith(("Item_Melody_", "Item_Medal_", "Item_Stone_")) or actor in {
         "Item_Ocarina_Fairy", "Item_Ocarina_Time", "Weapon_Sword_Master"})
 
 
@@ -211,6 +248,215 @@ def _visual_root(pack, path, byml_codec):
     return document
 
 
+def _held_pose(pack, actor, alias, byml_codec):
+    """Retain an item's native body pose alongside the shared rotation.
+
+    Item_Common blends Root rotation with the mesh's Pose_GetDemo (or its
+    native Common fallback). Keeping only Item_Common_Animation loses the
+    authored body scale, orientation and translation. Do not borrow world,
+    shop or weapon actor behavior; only the matching animation resource list
+    is attached to the isolated held model.
+    """
+    components = _visual_root(pack, "Actor/" + actor + ".engine__actor__ActorParam.bgyml",
+                              byml_codec)["root"]["Components"]
+    source = components.get("AnimationRef")
+    if components.get("ASRef") != "?AS/Item_Common.root.asb" or not source:
+        return None
+    source = _path(source)
+    animation = byml_codec.load(pack[source])
+    resources = animation["root"].get("AnimationResources", [])
+    if (not isinstance(resources, list) or not all(isinstance(row, dict) and
+            isinstance(row.get("ModelProjectName"), str) and row["ModelProjectName"]
+            for row in resources)):
+        raise ValueError("Native held-item animation resources are invalid: " + actor)
+    if not any(row["ModelProjectName"] == "Item_Common_Animation" for row in resources):
+        return None
+    if len(resources) == 1:
+        return None
+    target = "Component/AnimationParam/" + alias + ".engine__component__AnimationParam.bgyml"
+    return {"path": target, "data": pack[source], "peer": source,
+            "peer_data": pack[source], "info": {"AnimationResources": copy.deepcopy(resources)}}
+
+
+def _get_demo_offset(pack, actor, byml_codec):
+    """The native displayed actor's pouch offset, independent of its grant."""
+    components = _visual_root(pack, "Actor/" + actor + ".engine__actor__ActorParam.bgyml",
+                              byml_codec)["root"]["Components"]
+    reference = components.get("PouchContentRef")
+    seen = set()
+    while reference:
+        path = _path(reference)
+        if path in seen:
+            raise ValueError("Native held-item pouch inheritance loops: " + actor)
+        seen.add(path)
+        # The omitted engine Default uses its zero-initialized Vec3f. Other
+        # omitted components cannot be interpreted safely.
+        if path not in pack:
+            if path != "Component/PouchContentParam/Default.game__component__PouchContentParam.bgyml":
+                raise ValueError("Native held-item pouch component is missing: " + actor)
+            break
+        root = byml_codec.load(pack[path])["root"]
+        if "GetDemoOffsetPos" in root:
+            value = root["GetDemoOffsetPos"]
+            if (not isinstance(value, dict) or set(value) != {"X", "Y", "Z"}
+                    or not all(type(value[key]) in (int, float) and math.isfinite(value[key]) for key in "XYZ")):
+                raise ValueError("Native held-item display offset is invalid: " + actor)
+            return [float(value[key]) for key in "XYZ"]
+        reference = root.get("$parent")
+    return [0.0, 0.0, 0.0]
+
+
+def native_get_demo_offsets(read, actors=None):
+    """Read display offsets for receipt aliases without adding pouch behavior.
+
+    ``read`` supplies uncompressed effective RomFS resources. The values are
+    suitable for the native EventIgnitionShowItem.ItemPos input only when the
+    shown alias has no pouch component; ordinary actors already add their own.
+    """
+    from oot_rando.formats import byml_codec
+    from oot_rando.formats.inspect_resources import sarc
+    if actors is None:
+        from .catalog import ITEM_DATA
+        actors = {actor for row in ITEM_DATA.values() for actor in row.get("tiers", [row["actor"]])}
+    return {actor: _get_demo_offset(sarc(read("Pack/Actor/" + actor + ".pack.zs")), actor, byml_codec)
+            for actor in sorted(set(actors))}
+
+
+def _held_offset(actor, native):
+    return [0.0, BOW_DISPLAY_OFFSET, 0.0] if actor == "Item_Range_Bow" else native
+
+
+def held_model_offsets(read, actors=None):
+    """Display-only offsets; the factual native pouch metadata stays intact.
+
+    The Bow uses the same 0.2 m display anchor as its native quiver tiers.
+    Real inventory actors and their native pouch components are never edited.
+    """
+    return {actor: _held_offset(actor, value) for actor, value in native_get_demo_offsets(read, actors).items()}
+
+
+def _chest_offset(template, template_actor, actual_pack, actor, alias, byml_codec):
+    """Copy only the visual offset onto the established chest guest contract."""
+    offset = _held_offset(actor, _get_demo_offset(actual_pack, actor, byml_codec))
+    if offset == _get_demo_offset(template, template_actor, byml_codec):
+        return None
+    components = _visual_root(template, "Actor/" + template_actor + ".engine__actor__ActorParam.bgyml",
+                              byml_codec)["root"]["Components"]
+    source = _path(components["PouchContentRef"])
+    document = byml_codec.load(template[source])
+    document["root"]["GetDemoOffsetPos"] = dict(zip("XYZ", offset))
+    target = "Component/PouchContentParam/" + alias + ".game__component__PouchContentParam.bgyml"
+    return {"path": target, "data": byml_codec.dump(document), "peer": source,
+            "peer_data": template[source]}
+
+
+def _master_pose_bytes(raw):
+    """Adapt a user's exact native static sword pose without rewriting a mesh."""
+    if hashlib.sha256(raw).hexdigest() != MASTER_POSE_SOURCE_SHA256:
+        raise ValueError("Unsupported native Master Sword presentation pose.")
+    def u64(offset):
+        return struct.unpack_from("<Q", raw, offset)[0]
+    def text(offset):
+        count = struct.unpack_from("<H", raw, offset)[0]
+        return raw[offset + 2:offset + 2 + count].decode("utf-8")
+    offset = raw.find(b"FSKA")
+    if raw[:4] != b"FRES" or offset < 0 or raw.count(b"FSKA") != 1:
+        raise ValueError("Unsupported native Master Sword presentation animation.")
+    tracks = u64(offset + 40)
+    count = struct.unpack_from("<H", raw, offset + 76)[0]
+    if count != 2 or text(u64(offset + 8)) != "Pose_Common":
+        raise ValueError("Unsupported native Master Sword presentation tracks.")
+    positions = {}
+    for index in range(count):
+        track = tracks + index * 56
+        flags = struct.unpack_from("<I", raw, track + 40)[0]
+        if flags & 56 != 56 or raw[track + 46] != 0:
+            raise ValueError("Native Master Sword presentation must use static transforms.")
+        name, base = text(u64(track)), u64(track + 16)
+        if name in positions or base + 40 > len(raw):
+            raise ValueError("Ambiguous native Master Sword presentation bone.")
+        positions[name] = (base, track)
+    if set(positions) != {"Root", "Skl_Root"}:
+        raise ValueError("Native Master Sword presentation has incompatible bones.")
+    base, track = positions["Skl_Root"]
+    result = bytearray(raw)
+    struct.pack_into("<3f", result, base, *([MASTER_POSE_SCALE] * 3))
+    struct.pack_into("<3f", result, base + 28, *MASTER_POSE_TRANSLATE)
+    # Native Kokiri's zero translation uses BoneAnimFlagsTransform.TranslateZero
+    # (bit 27). The generated nonzero center must not retain that shortcut.
+    flags = struct.unpack_from("<I", raw, track + 40)[0]
+    struct.pack_into("<I", result, track + 40, flags & ~(1 << 27))
+    return bytes(result)
+
+
+def _master_pose_parts(alias, peer, peer_data, byml_codec):
+    info = {"AnimationResources": [{"ModelProjectName": "Item_Common_Animation"},
+                                   {"ModelProjectName": MASTER_POSE_PROJECT}]}
+    return {"path": "Component/AnimationParam/" + alias + ".engine__component__AnimationParam.bgyml",
+            "peer": peer, "peer_data": peer_data, "info": info,
+            "data": byml_codec.dump({"endian": "<", "version": 7, "root": copy.deepcopy(info)})}
+
+
+def _bow_pose_bytes(raw):
+    """Fit only the native static held pose, preserving every weapon clip."""
+    if hashlib.sha256(raw).hexdigest() != BOW_POSE_SOURCE_SHA256:
+        raise ValueError("Unsupported native Bow presentation pose.")
+    def u64(offset):
+        return struct.unpack_from("<Q", raw, offset)[0]
+    def text(offset):
+        count = struct.unpack_from("<H", raw, offset)[0]
+        return raw[offset + 2:offset + 2 + count].decode("utf-8")
+    poses = []
+    offset = raw.find(b"FSKA")
+    while offset >= 0:
+        if text(u64(offset + 8)) == "Pose_Common":
+            poses.append(offset)
+        offset = raw.find(b"FSKA", offset + 1)
+    if raw[:4] != b"FRES" or len(poses) != 1:
+        raise ValueError("Unsupported native Bow presentation animation.")
+    tracks = u64(poses[0] + 40)
+    count = struct.unpack_from("<H", raw, poses[0] + 76)[0]
+    expected = {"Root", "Skl_Root", "Bow_1_L", "Bow_2_L", "String_1_L", "String_2_L",
+                "Bow_1_R", "Bow_2_R", "String_1_R", "String_2_R"}
+    if count != len(expected):
+        raise ValueError("Unsupported native Bow presentation tracks.")
+    found, result = set(), bytearray(raw)
+    for index in range(count):
+        track = tracks + index * 56
+        flags = struct.unpack_from("<I", raw, track + 40)[0]
+        name, base = text(u64(track)), u64(track + 16)
+        if name in found or name not in expected or base + 40 > len(raw):
+            raise ValueError("Ambiguous native Bow presentation bone.")
+        found.add(name)
+        if flags & 56 != 56 or raw[track + 46] != 0:
+            raise ValueError("Native Bow presentation must use static transforms.")
+        if name == "Root":
+            continue
+        # The limbs' native segment-scale compensation cancels their parent's
+        # basis scale. Scale each body bone by the same factor, preserving the
+        # native nonuniform string scale ratios and all authored rotations.
+        scale = struct.unpack_from("<3f", raw, base)
+        scale = struct.unpack("<3f", struct.pack("<3f", *(value * BOW_POSE_FACTOR for value in scale)))
+        struct.pack_into("<3f", result, base, *scale)
+        flags = (flags | (1 << 24)) if scale[0] == scale[1] == scale[2] else (flags & ~(1 << 24))
+        flags &= ~(1 << 25)  # the reviewed body scales do not have unit volume
+        if name == "Skl_Root":
+            struct.pack_into("<3f", result, base + 28, *BOW_POSE_TRANSLATE)
+            flags &= ~(1 << 27)  # the recentered root still has a nonzero translation
+        struct.pack_into("<I", result, track + 40, flags)
+    if found != expected:
+        raise ValueError("Native Bow presentation has incompatible bones.")
+    return bytes(result)
+
+
+def _bow_pose_parts(alias, peer, peer_data, byml_codec):
+    info = {"AnimationResources": [{"ModelProjectName": "Item_Common_Animation"},
+                                   {"ModelProjectName": BOW_POSE_PROJECT}]}
+    return {"path": "Component/AnimationParam/" + alias + ".engine__component__AnimationParam.bgyml",
+            "peer": peer, "peer_data": peer_data, "info": info,
+            "data": byml_codec.dump({"endian": "<", "version": 7, "root": copy.deepcopy(info)})}
+
+
 def validate_chest_models(read):
     """Check the native guest contract and rendered assets for every AP item.
 
@@ -336,8 +582,33 @@ def prepare_presentation_models(romfs, mod):
     packed_resources = [{"path": path, "data": data, "peer": animation_peer,
                          "peer_data": native_spin[animation_peer]}
                         for path, data in spin_files.items() if path.startswith("Component/AnimationParam/")]
-    changed, outputs = {}, {}
+    changed, outputs, pack_growth = {}, {}, {}
+    master_pose = None
+    if "Weapon_Sword_Master" in all_actors:
+        if hashlib.sha256(read(MASTER_MODEL_PATH)).hexdigest() != MASTER_MODEL_SHA256:
+            raise ValueError("Unsupported native Master Sword presentation mesh.")
+        master_pose = _master_pose_bytes(read(MASTER_POSE_SOURCE))
+        if (mod / MASTER_POSE_PATH).is_file():
+            if read(MASTER_POSE_PATH) != master_pose:
+                raise ValueError("Incompatible existing Master Sword presentation pose.")
+        elif (romfs / MASTER_POSE_PATH).is_file():
+            raise ValueError("Native Master Sword presentation resource collision.")
+        else:
+            outputs[MASTER_POSE_PATH] = (master_pose, frame(MASTER_POSE_SOURCE))
+    if "Item_Range_Bow" in all_actors:
+        if hashlib.sha256(read(BOW_MODEL_PATH)).hexdigest() != BOW_MODEL_SHA256:
+            raise ValueError("Unsupported native Bow presentation mesh.")
+        bow_pose = _bow_pose_bytes(read(BOW_POSE_SOURCE))
+        if (mod / BOW_POSE_PATH).is_file():
+            if read(BOW_POSE_PATH) != bow_pose:
+                raise ValueError("Incompatible existing Bow presentation pose.")
+        elif (romfs / BOW_POSE_PATH).is_file():
+            raise ValueError("Native Bow presentation resource collision.")
+        else:
+            outputs[BOW_POSE_PATH] = (bow_pose, frame(BOW_POSE_SOURCE))
     donors = {}
+    pose_infos = {}
+    pose_lenders = {}
     chest_aliases = set()
     for actor, alias, chest in jobs:
         if chest:
@@ -363,6 +634,50 @@ def prepare_presentation_models(romfs, mod):
         alias_model = "Component/ModelInfo/" + alias + ".engine__component__ModelInfo.bgyml"
         files[alias_actor] = byml_codec.dump(param)
         files[alias_model] = byml_codec.dump(_model(pack, donor, byml_codec))
+        # Recognize the exact previous generated actor before upgrading its
+        # visual-only animation resource. Unknown constructor overrides still
+        # fail closed rather than silently changing a third-party actor.
+        legacy_raw = byml_codec.build_sarc(files)
+        if chest:
+            actual_pack = pack if actor == donor else sarc(read("Pack/Actor/" + actor + ".pack.zs"))
+            offset = _chest_offset(template, TEMPLATE, actual_pack, actor, alias, byml_codec)
+            if offset is not None:
+                components["PouchContentRef"] = "?" + offset["path"]
+                files[alias_actor] = byml_codec.dump(param)
+                files[offset["path"]] = offset["data"]
+                if native_template[offset["peer"]] != offset["peer_data"]:
+                    raise ValueError("Unsupported modified native chest guest pouch: " + actor)
+                packed_resources.append(offset)
+        lender = POSE_LENDERS.get(actor, donor)
+        pose_pack = pack if lender == donor else sarc(read("Pack/Actor/" + lender + ".pack.zs"))
+        donor_model, pose_model = (_model(source, name, byml_codec)["root"]
+                                   for source, name in ((pack, donor), (pose_pack, lender)))
+        if any(donor_model.get(key) != pose_model.get(key) for key in ("FmdbName", "ModelProjectName")):
+            raise ValueError("Native held-item pose uses a different mesh: " + actor)
+        pose = _held_pose(pose_pack, lender, alias, byml_codec)
+        if actor == "Weapon_Sword_Master":
+            # No native Master Sword get-item actor exists. Reuse the game's
+            # authored sword orientation on the compatible Root/Skl_Root
+            # skeleton, with the measured size and center above. The weapon,
+            # original model and all inventory/gameplay actors remain native.
+            lender = SPIN_TEMPLATE
+            pose = _master_pose_parts(alias, animation_peer, native_spin[animation_peer], byml_codec)
+        elif actor == "Item_Range_Bow":
+            # The actual weapon is kept for queries and inventory. Only these
+            # generic display actors use the bounded native held pose, without
+            # the weapon's age-dependent display behavior.
+            lender = SPIN_TEMPLATE
+            pose = _bow_pose_parts(alias, animation_peer, native_spin[animation_peer], byml_codec)
+        if pose is not None:
+            components["AnimationRef"] = "?" + pose["path"]
+            files[alias_actor] = byml_codec.dump(param)
+            files[pose["path"]] = pose["data"]
+            pose_infos[alias] = pose["info"]
+            pose_lenders[alias] = lender
+            native_pose = native_pack(lender)
+            if native_pose[pose["peer"]] != pose["peer_data"]:
+                raise ValueError("Unsupported modified native held-item pose: " + actor)
+            packed_resources.append({key: pose[key] for key in ("path", "data", "peer", "peer_data")})
         native_donor = native_pack(donor)
         model_peer = _model_path(native_donor, donor, byml_codec)
         packed_resources.extend((
@@ -374,8 +689,12 @@ def prepare_presentation_models(romfs, mod):
         path = "Pack/Actor/" + alias + ".pack.zs"
         raw = byml_codec.build_sarc(files)
         if (mod / path).is_file():
-            if read(path) != raw:
-                raise ValueError("Incompatible existing presentation model: " + alias)
+            before = read(path)
+            if before != raw:
+                if before != legacy_raw:
+                    raise ValueError("Incompatible existing presentation model: " + alias)
+                outputs[path] = (raw, frame(path))
+                pack_growth[path] = max(0, len(raw) - len(before))
         elif (romfs / path).is_file():
             raise ValueError("Native presentation alias collision: " + alias)
         else:
@@ -389,7 +708,7 @@ def prepare_presentation_models(romfs, mod):
         if len(by_id) != len(rows):
             raise ValueError("Ambiguous native presentation table: " + table)
         template_row = by_id[TEMPLATE]
-        new_rows = []
+        new_rows, updated = [], False
         for alias, donor in donors.items():
             if table == "PouchActorInfo" and alias not in chest_aliases:
                 continue
@@ -405,12 +724,23 @@ def prepare_presentation_models(romfs, mod):
                 row.update(copy.deepcopy(spin_info))
                 row["InstanceHeapSize"] = max(row["InstanceHeapSize"], donor_row["InstanceHeapSize"],
                                                by_id[SPIN_TEMPLATE]["InstanceHeapSize"])
+            legacy_row = copy.deepcopy(row)
+            if table == "ActorInfo" and alias in pose_infos:
+                row.update(copy.deepcopy(pose_infos[alias]))
+                lender_row = by_id[pose_lenders[alias]]
+                for key in ("InstanceHeapSize", "PreActorRenderInfoHeapSize"):
+                    if key in lender_row:
+                        row[key] = max(row.get(key, 0), lender_row[key])
             if alias in by_id:
                 if by_id[alias] != row:
-                    raise ValueError("Incompatible presentation actor row: " + alias)
+                    if by_id[alias] != legacy_row:
+                        raise ValueError("Incompatible presentation actor row: " + alias)
+                    by_id[alias].clear()
+                    by_id[alias].update(row)
+                    updated = True
             else:
                 new_rows.append(row)
-        if new_rows:
+        if new_rows or updated:
             rows.extend(new_rows)
             rows.sort(key=lambda row: row["__RowId"])
             changed[path] = (byml_codec.dump(document), frame(path), len(original))
@@ -426,10 +756,11 @@ def prepare_presentation_models(romfs, mod):
     rest_frame = frame(REST)
     rest = codec.decode(rest_frame)
     rest, _ = grow_resources(rest, {path: max(0, len(raw) - before)
-                                   for path, (raw, _, before) in changed.items()})
+                                   for path, (raw, _, before) in changed.items()} | pack_growth)
+    profile_sources = {MASTER_POSE_PATH: MASTER_POSE_SOURCE, BOW_POSE_PATH: BOW_POSE_SOURCE}
     rest, _ = add_resources(rest, {path: max((len(raw) + 8191) & ~4095,
-                                            allocation(rest, template_path) or 0)
-                                   for path, (raw, _) in outputs.items()})
+                                            allocation(rest, profile_sources.get(path, template_path)) or 0)
+                                   for path, (raw, _) in outputs.items() if allocation(rest, path) is None})
     native_rest = codec.decode((romfs / REST).read_bytes())
     rest, reserved = reserve_packed_resources(rest, native_rest, packed_resources)
     if not outputs and not changed and not reserved:

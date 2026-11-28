@@ -1,8 +1,9 @@
 """Independent native-flow audit; real assets are opt-in and read-only.
 
 Set OOTRR_ROMFS, OOTRR_AUDIT_MOD and OOTRR_CODEC_RESOURCES to audit a prepared
-private mod. The dependency delta additionally uses OOTRR_AUDIT_BASE, the
-generated base before room preparation. This is not a visual playthrough.
+private mod. Native fallback and dependency deltas additionally require
+OOTRR_AUDIT_BASE, the generated base before room preparation. This is not a
+visual playthrough.
 """
 from functools import lru_cache
 import io
@@ -27,6 +28,45 @@ def successors(event):
     if hasattr(data, "join") and data.join.v is not None:
         result.append(data.join.v)
     return result
+
+
+def native_pouch_fallback(chart):
+    """Follow unmatched AP guards and transparent native bank boundaries."""
+    from evfl.common import Argument
+    from evfl.event import ActionEvent, SubFlowEvent, SwitchEvent
+    points = {point.name: point for point in chart.entry_points}
+    assert len(points) == len(chart.entry_points), "Duplicate native pouch entry"
+    node = points["GetPouchContent"].main_event.v
+    seen, identities, banks = set(), set(), 0
+    while node.name.startswith(("OOTRR_APSkull_", "OOTRR_APDispatchBank_")):
+        assert node not in seen, "Native pouch fallback loops"
+        seen.add(node)
+        data = node.data
+        if node.name.startswith("OOTRR_APDispatchBank_"):
+            assert isinstance(data, SubFlowEvent), "Pouch bank is not a local tail call"
+            assert not data.res_flowchart_name and data.nxt.v is None, "Pouch bank changes the native return path"
+            assert data.entry_point_name.startswith("OOTRR_APDispatchBank_"), "Unknown pouch bank entry"
+            point = points[data.entry_point_name]
+            assert not point.variable_defs, "Pouch bank overrides native argument defaults"
+            params = data.params.data if data.params else {}
+            assert "ActorName" in params, "Pouch bank loses the native actor argument"
+            assert all(isinstance(value, Argument) and str(value) == key for key, value in params.items()), \
+                "Pouch bank modifies native arguments"
+            node = point.main_event.v
+            banks += 1
+        elif isinstance(data, ActionEvent):
+            assert data.actor_action.v.v in {"EventTriggerSetGameDataString64", "EventWait"}
+            node = data.nxt.v
+        else:
+            assert isinstance(data, SwitchEvent)
+            assert data.actor_query.v.v == "EventQueryIsGameDataString64"
+            params = data.params.data
+            assert params["GameDataName"] == "Archipelago.SelectedPickup" and params["Index"] == -1
+            assert isinstance(params["Value"], str) and params["Value"].startswith(("Item_AP_", "Obj_AP_"))
+            identities.add(params["Value"])
+            node = data.cases[1].v
+        assert node is not None, "Pouch dispatcher lost its native fallback"
+    return node, identities, banks
 
 
 class CallGraph:
@@ -269,6 +309,28 @@ def audit_parameter_dependencies(native, current, settings, analyzed, modified, 
 
 
 class CallGraphTests(unittest.TestCase):
+    def test_native_fallback_audit_crosses_transparent_local_dispatch_banks(self):
+        from oot_rando.patching.progressive import FlowEditor
+        from ootrr_triforce.dispatch_banks import bank_dispatch_flow
+        from test_dispatch_banks import fixture
+        for count in (20, 321):
+            raw, _ = bank_dispatch_flow(fixture(count), "GetPouchContent")
+            node, identities, banks = native_pouch_fallback(FlowEditor(raw, "Native audit bank fixture").chart)
+            self.assertEqual(node.name, "NativeFallback")
+            self.assertEqual(len(identities), count)
+            self.assertEqual(banks, 0 if count == 20 else 5)
+
+    def test_native_fallback_audit_rejects_changed_bank_arguments(self):
+        from oot_rando.patching.progressive import FlowEditor
+        from ootrr_triforce.dispatch_banks import bank_dispatch_flow
+        from test_dispatch_banks import fixture
+        raw, _ = bank_dispatch_flow(fixture(130), "GetPouchContent")
+        chart = FlowEditor(raw, "Tampered audit fixture").chart
+        call = next(event for event in chart.events if event.name.startswith("OOTRR_APDispatchBank_"))
+        call.data.params.data["ActorName"] = "ActorName"
+        with self.assertRaisesRegex(AssertionError, "modifies native arguments"):
+            native_pouch_fallback(chart)
+
     def fixture(self, name, *, call=None, transition=None, params=None):
         from evfl import EventFlow
         from evfl.actor import Actor
@@ -400,7 +462,6 @@ class NativeGameplayAuditTests(unittest.TestCase):
         self.report["preserved_native_minigame_commands"] = checked
 
     def test_native_non_ap_pouch_contents_cannot_enter_an_ap_source_callback(self):
-        from evfl.event import ActionEvent, SwitchEvent
         from oot_rando.formats import byml_codec
         from oot_rando.patching.event_patch import _flow
         path = "Event/EventFlow/GetPouchContent.bfevfl.zs"
@@ -408,24 +469,26 @@ class NativeGameplayAuditTests(unittest.TestCase):
         prepared = _flow(self.read(path)).flowchart
         root_of = lambda chart: next(p.main_event.v for p in chart.entry_points if p.name == "GetPouchContent")
         actor_names = {row["__RowId"] for row in byml_codec.load(self.read("RSDB/PouchActorInfo.Product.111.rstbl.byml.zs", native=True))["root"]}
-        node, seen, identities = root_of(prepared), set(), set()
-        while node.name.startswith("OOTRR_APSkull_"):
-            self.assertNotIn(node.name, seen)
-            seen.add(node.name)
-            data = node.data
-            if isinstance(data, ActionEvent):
-                self.assertIn(data.actor_action.v.v, {"EventTriggerSetGameDataString64", "EventWait"})
-                node = data.nxt.v
-            else:
-                self.assertIsInstance(data, SwitchEvent)
-                self.assertEqual(data.actor_query.v.v, "EventQueryIsGameDataString64")
-                identities.add(data.params.data["Value"])
-                node = data.cases[1].v
-            self.assertIsNotNone(node)
+        node, identities, banks = native_pouch_fallback(prepared)
         self.assertFalse(identities.intersection(actor_names))
-        self.assertEqual(node.name, root_of(original).name)
+        if not os.environ.get("OOTRR_AUDIT_BASE"):
+            self.skipTest("requires the constructor base to distinguish configured native wrappers")
+        # The constructor can legitimately wrap the native root, for example
+        # to preserve Sun's Song field lighting. AP preparation must retain
+        # that configured fallback instead of requiring the vanilla node.
+        baseline_path = Path(os.environ["OOTRR_AUDIT_BASE"]) / path
+        baseline = (_flow(self.codec.decode(baseline_path.read_bytes())).flowchart
+                    if baseline_path.is_file() else original)
+        expected, _, _ = native_pouch_fallback(baseline)
+        self.assertEqual(node.name, expected.name)
+        for field in ("actor_action", "actor_query"):
+            before, after = getattr(expected.data, field, None), getattr(node.data, field, None)
+            self.assertEqual(before.v.v if before else None, after.v.v if after else None)
+        self.assertEqual(node.data.params.data if node.data.params else None,
+                         expected.data.params.data if expected.data.params else None)
         self.report["native_pouch_fallback"] = dict(native_contents=len(actor_names), ap_identities=len(identities),
-                                                     native_root=node.name, fishing_rod="Item_FishingRod" in actor_names)
+                                                     native_root=node.name, dispatch_banks=banks,
+                                                     fishing_rod="Item_FishingRod" in actor_names)
 
     def test_new_call_targets_and_exact_quiet_restoration_dependencies_are_registered(self):
         from oot_rando.formats import byml_codec

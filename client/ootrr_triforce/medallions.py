@@ -16,7 +16,7 @@ from .mod_codec import Codec
 REST = "System/Resource/ResourceSizeTable.Product.111.Nin_Ounce_NVN2.rsizetable.zs"
 GET = ("Dm_SY_GetInEvent", "GetInEvent_NotTurn_NotNpc")
 CHEST_ENTRY = "Success_"
-REVISION = 25
+REVISION = 26
 
 
 def chest_flows(raw, records, *, native_pouch=None, small_raw=None):
@@ -365,6 +365,10 @@ def prepare(root, settings, roster, moved):
             prepare_offer_texts(romfs, mod, roster, settings)
         from .presentation_models import prepare_receipt_model_aliases
         prepare_receipt_model_aliases(romfs, mod)
+        from .bow_presentations import prepare_bow_presentations
+        prepare_bow_presentations(romfs, mod)
+        from .held_framing import prepare_held_framing
+        prepare_held_framing(romfs, mod, refresh_models=True)
         from .dispatch_banks import prepare_dispatch_banks
         prepare_dispatch_banks(romfs, mod)
         if settings.get("adult_trade_shuffle"):

@@ -1,8 +1,8 @@
 # Updating the launcher and APWorld
 
-**[Download the current Windows launcher, 0.10.4-alpha.13](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.13/OOT-Remake-Archipelago-0.10.4-alpha.13.exe)**
+**[Download the current Windows launcher, 0.10.4-alpha.14](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/download/v0.10.4-alpha.14/OOT-Remake-Archipelago-0.10.4-alpha.14.exe)**
 if your older launcher does not have an update button. The [versioned release
-page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.13)
+page](https://github.com/RAjeux/OOT-Remake-Archipelago/releases/tag/v0.10.4-alpha.14)
 identifies the supported native release. Prepared rooms, connection preferences
 and saves remain in LocalAppData when the executable is replaced.
 
@@ -27,6 +27,13 @@ or [the French quickstart](INSTALLATION.fr.md).
 | Your player file belongs to Full 0.11/0.12 | Export a fresh YAML in the current editor and generate a new room with the current APWorld; it is not an in-place conversion. |
 
 ## Update the launcher
+
+Version 0.10.4-alpha.14 restores native body poses and display offsets on held
+item models. The Master Sword also receives a presentation pose using the
+native sword orientation. Close Zelda and prepare the **same player file**
+again when requested. Existing rooms, placements and saves stay compatible;
+no host recompilation is required for these resource changes. See the
+[framing notes and validation scope](RELEASE-NOTES-0.10.4-alpha.14.md).
 
 Version 0.10.4-alpha.13 restores the destination dungeon in key, boss-key, map
 and compass messages. Close Zelda and prepare the **same player file** again

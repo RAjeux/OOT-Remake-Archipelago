@@ -53,6 +53,21 @@ class PackedResourceTests(unittest.TestCase):
         self.assertEqual(allocation(result, new), 6328)
         self.assertEqual(allocation(result, "AI/Alias.event.root.ainb"), 117720)
 
+    def test_isolated_chest_display_pouch_keeps_the_native_parser_budget(self):
+        peer = "Component/PouchContentParam/KeyItemDefault.game__component__PouchContentParam.bgyml"
+        target = peer.replace("KeyItemDefault", "Item_AP_Chest_fixture")
+        native = table([(peer, 7328), (ACTOR, 6312)])
+        request = job(target, b"p" * 192, peer, b"n" * 192)
+        result, records = reserve_packed_resources(native, native, [request])
+        self.assertEqual(allocation(result, target), 7328)
+        self.assertEqual(allocation(result, peer), 7328)
+        self.assertEqual(records[0]["kind"], "PouchContentParam")
+        self.assertEqual(reserve_packed_resources(result, native, [request]), (result, []))
+        with self.assertRaisesRegex(ValueError, "kinds differ"):
+            reserve_packed_resources(native, native, [job(target, b"p", ACTOR, b"n")])
+        with self.assertRaisesRegex(ValueError, "Unreviewed"):
+            reserve_packed_resources(native, native, [job(target.replace(".game__", ".engine__"), b"p", peer, b"n")])
+
     def test_no_shrink_existing_named_override_and_unrelated_entries(self):
         unrelated = "Actor/Other.engine__actor__ActorParam.bgyml"
         native = table([(ACTOR, 6312), (MODEL, 5320), (unrelated, 9000)])

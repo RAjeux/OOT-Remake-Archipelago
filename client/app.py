@@ -61,6 +61,9 @@ def self_test(destination):
     assert len(dungeon_messages) == 35
     assert dungeon_message(ITEM_DATA["Small Key (Forest Temple)"]) != dungeon_message(ITEM_DATA["Small Key (Fire Temple)"])
     assert dungeon_message(ITEM_DATA["Small Key (Treasure Chest Game)"]) is None
+    from ootrr_triforce.held_framing import compensate_position
+    held_position = compensate_position({"ItemPos": [0., .05, 0.]}, [0., .2, 0.])
+    assert held_position == [0., .25, 0.]
     window = tk.Tk()
     window.withdraw()
     apply_theme(window)

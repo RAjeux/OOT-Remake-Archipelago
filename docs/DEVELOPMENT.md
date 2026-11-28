@@ -254,6 +254,37 @@ AP callbacks require separate tests with a coherent generated room; a gallery
 which substitutes display models cannot prove those transactions. Do not
 publish copied game resources or their rendered screenshots with the report.
 
+### Review held item presentations
+
+`tools/audit_item_framing.py` reads the complete supported item catalogue and
+measures receipt and chest model variants under their native GetDemo body and
+rotation masks. Like the shop audit it requires NumPy only on the maintainer's
+machine. Supply a complete privately prepared overlay so the isolated AP
+models and their resource tables are present:
+
+```powershell
+python tools/audit_item_framing.py --romfs 'C:\path\to\romfs' --overlay 'build/private-seed/mods/Archipelago/romfs' --output build/held-framing.json
+```
+
+Repeated `--overlay` arguments are applied from lowest to highest priority for
+read-only analysis. A standalone actor stage is not a complete runnable mod:
+its resource tables must not replace an existing room's tables or allocation
+budgets. Use the normal preparation pipeline to merge changes into a complete
+private room before rendering it.
+
+The report measures skinned geometry, records hashes of the resources read,
+and separates the native item offset, displayed actor offset and reviewed
+display anchor. The Bow profile uses a 0.2 m visual anchor while its unchanged
+inventory actor retains its native 0.4 m offset. Missing pouch offsets on
+isolated receipt actors are supplied by their event's `ItemPos`; inspect the
+event as well as the model. The player's shown-item binding can
+apply additional scaling; mesh bounds alone do not include that runtime step.
+Geometry alone does not establish
+camera composition, visibility, input cleanup or inventory correctness.
+Compare actual native screenshots at multiple rotations and player ages, then
+test the corresponding real reward route separately. Keep game assets, saves
+and rendered game screenshots private.
+
 ## Build a distributable application
 
 Install the additional packaging dependencies, then build and inspect the

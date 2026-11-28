@@ -524,4 +524,7 @@ def prepare_receipts(romfs, mod, data):
         target = mod / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(frame)
+    if native_presentations:
+        from .held_framing import prepare_held_framing
+        prepare_held_framing(romfs, mod)
     return entries

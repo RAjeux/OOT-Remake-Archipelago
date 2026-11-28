@@ -126,6 +126,7 @@ class ReceiptRegistrationTests(unittest.TestCase):
             return build(pouch, presenter, token, names, **kwargs)
 
         with patch.object(receipt_events, "Codec", IdentityCodec), \
+                patch("ootrr_triforce.mod_codec.Codec", IdentityCodec), \
                 patch.object(presentation_models, "prepare_presentation_models") as models, \
                 patch.object(receipt_events, "build_presented_receipts", side_effect=selected), \
                 patch.object(resource_allocations, "grow_resources", return_value=(b"grown sizes", {})):
